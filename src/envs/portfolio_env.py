@@ -46,7 +46,6 @@ Notes
   current budget).
 - Cash inflows can optionally be reinvested to the spendable budget (default True).
 
-Author: you :-)
 """
 
 from __future__ import annotations
