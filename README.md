@@ -75,7 +75,3 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 8. **Repeat Optimization** for several epochs per batch.
 9. **Repeat Batches** until training budget is met.
 
----
-
-## Repository Structure
-
