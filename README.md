@@ -9,7 +9,6 @@ A **Deep Reinforcement Learning** (DRL) framework—built around **Proximal Poli
 Traditional portfolio budgeting often relies on **static, deterministic** assumptions and **one-shot** decisions. Real portfolios face **volatile cash flows**, **evolving risks**, and **competing objectives**. This project provides a **learning-based decision policy** that adapts over time, **maximizes value under uncertainty**, and **outperforms static baselines** in controlled simulations.
 
 ---
-
 ## Problem Formulation (MDP)
 
 - **State** \(s_t\): features per project and portfolio (progress, milestone needs, available liquidity, risk indices, cost variance, schedule slippage, etc.).
