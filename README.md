@@ -10,6 +10,7 @@ Traditional portfolio budgeting often relies on **static, deterministic** assump
 
 ---
 ## Problem Formulation (MDP)
+!!! to be updated
 
 - **State** \(s_t\): features per project and portfolio (progress, milestone needs, available liquidity, risk indices, cost variance, schedule slippage, etc.).
 - **Action** \(a_t\): **continuous** budget allocation vector subject to liquidity and policy constraints.
@@ -76,6 +77,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 
 
 ---
+
 To be planned:
 * devloping next.js frontend 
 * developing Django backend
