@@ -1,7 +1,8 @@
 
 # <div align="center">🤖 PPO Budget Allocation Agent for Project Portfolios
 
-A **Deep Reinforcement Learning** (DRL) framework—built around **Proximal Policy Optimization (PPO)**—for **dynamic, uncertainty-aware budget allocation** across multi-project portfolios. The agent learns **continuous allocation policies** that adapt to **stochastic cash flows, risks, and shifting priorities** over discrete time horizons.
+A **Deep Reinforcement Learning** (DRL) framework—built around **Proximal Policy Optimization (PPO)**—for **dynamic, uncertainty-aware budget allocation** across multi-project portfolios. 
+The agent learns **continuous allocation policies** that adapt to **stochastic cash flows, risks, and shifting priorities** over discrete time horizons.
 ---
 
 ## <div align="center"> Why this matters
@@ -81,6 +82,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 To be planned:
 * devloping next.js frontend 
 * developing Django backend
+
 
 
 
