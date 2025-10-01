@@ -1,6 +1,3 @@
-🤖
-<br/>
-
 # <div align="center">PPO Budget Allocation Agent for Project Portfolios
 
 <br/><br/>
