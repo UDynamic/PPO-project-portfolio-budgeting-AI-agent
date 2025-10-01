@@ -64,7 +64,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 
 ---
 
-<div align="center"> ## Method (aligned with “My PPO Reference Steps”)
+## <div align="center"> Method (aligned with “My PPO Reference Steps”)
 
 1. **Initialize Actor** (policy network).
 2. **Initialize Critic** (value network).
