@@ -41,7 +41,7 @@ r_t(\theta)=\frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_\text{old}}(a_t|s_t)}
 
 ---
 
-## <div align="center"> ##Synthetic Environment & Data Generator
+## <div align="center"> Synthetic Environment & Data Generator
 
 Because public, fully-labeled portfolio cash-flow datasets with transition details are **not available**, we implement a **reproducible synthetic generator** that doubles as the **training environment**:
 
@@ -54,7 +54,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 
 ---
 
-<div align="center"> ## Capabilities
+## <div align="center"> Capabilities
 
 1. **Continuous allocation** under liquidity constraints across many projects.
 2. **Adaptive** to non-stationary conditions (cost drift, contractor productivity shifts).
