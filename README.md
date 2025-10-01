@@ -41,7 +41,7 @@ r_t(\theta)=\frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_\text{old}}(a_t|s_t)}
 
 ---
 
-<center> ##Synthetic Environment & Data Generator
+## <div align="center"> ##Synthetic Environment & Data Generator
 
 Because public, fully-labeled portfolio cash-flow datasets with transition details are **not available**, we implement a **reproducible synthetic generator** that doubles as the **training environment**:
 
