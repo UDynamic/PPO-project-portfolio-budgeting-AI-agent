@@ -1,17 +1,18 @@
+# <div align="center">PPO Budget Allocation Agent for Project Portfolios
 
-# PPO Budget Allocation Agent for Project Portfolios
+<br/><br/>
+A **Deep Reinforcement Learning** (DRL) framework—built around **Proximal Policy Optimization (PPO)**—for **dynamic, uncertainty-aware budget allocation** across multi-project portfolios. 
+The agent learns **continuous allocation policies** that adapt to **stochastic cash flows, risks, and shifting priorities** over discrete time horizons.
 
-A **Deep Reinforcement Learning** (DRL) framework—built around **Proximal Policy Optimization (PPO)**—for **dynamic, uncertainty-aware budget allocation** across multi-project portfolios. The agent learns **continuous allocation policies** that adapt to **stochastic cash flows, risks, and shifting priorities** over discrete time horizons.
+<br/><br/><br/>
 
----
-
-## Why this matters
+## <div align="center"> Why this matters
 
 Traditional portfolio budgeting often relies on **static, deterministic** assumptions and **one-shot** decisions. Real portfolios face **volatile cash flows**, **evolving risks**, and **competing objectives**. This project provides a **learning-based decision policy** that adapts over time, **maximizes value under uncertainty**, and **outperforms static baselines** in controlled simulations.
 
 ---
-
-## Problem Formulation (MDP)
+## <div align="center"> Problem Formulation (MDP)
+!!!to be updated
 
 - **State** \(s_t\): features per project and portfolio (progress, milestone needs, available liquidity, risk indices, cost variance, schedule slippage, etc.).
 - **Action** \(a_t\): **continuous** budget allocation vector subject to liquidity and policy constraints.
@@ -23,12 +24,12 @@ Traditional portfolio budgeting often relies on **static, deterministic** assump
   \]
   with discount \(\gamma\in(0,1)\).
 
-**Advantage estimation** (using rewards-to-go \(R_t\) and value function \(V_\phi\)):
+<div align="center"> **Advantage estimation** (using rewards-to-go \(R_t\) and value function \(V_\phi\)):
 \[
 A_t = R_t - V_\phi(s_t)
 \]
 
-**PPO (clipped) objective**:
+<div align="center"> **PPO (clipped) objective**:
 \[
 \mathcal{L}^{\text{CLIP}}(\theta) =
 \mathbb{E}_t\Big[
@@ -40,7 +41,7 @@ r_t(\theta)=\frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_\text{old}}(a_t|s_t)}
 
 ---
 
-## Synthetic Environment & Data Generator
+## <div align="center"> Synthetic Environment & Data Generator
 
 Because public, fully-labeled portfolio cash-flow datasets with transition details are **not available**, we implement a **reproducible synthetic generator** that doubles as the **training environment**:
 
@@ -53,7 +54,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 
 ---
 
-## Capabilities
+## <div align="center"> Capabilities
 
 1. **Continuous allocation** under liquidity constraints across many projects.
 2. **Adaptive** to non-stationary conditions (cost drift, contractor productivity shifts).
@@ -63,7 +64,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 
 ---
 
-## Method (aligned with “My PPO Reference Steps”)
+## <div align="center"> Method (aligned with “My PPO Reference Steps”)
 
 1. **Initialize Actor** (policy network).
 2. **Initialize Critic** (value network).
@@ -75,7 +76,16 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 8. **Repeat Optimization** for several epochs per batch.
 9. **Repeat Batches** until training budget is met.
 
+
+
 ---
 
-## Repository Structure
+To be planned:
+* devloping next.js frontend 
+* developing Django backend
+
+
+
+
+
 
