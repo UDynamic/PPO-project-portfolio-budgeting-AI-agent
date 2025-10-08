@@ -56,4 +56,5 @@ typeguard==4.4.4
 typing_extensions==4.14.1
 tyro==0.9.28
 tzdata==2025.2
+watchdog==6.0.0
 Werkzeug==3.1.3
