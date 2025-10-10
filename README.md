@@ -24,12 +24,15 @@ Traditional portfolio budgeting often relies on **static, deterministic** assump
   \]
   with discount \(\gamma\in(0,1)\).
 
-<div align="center"> **Advantage estimation** (using rewards-to-go \(R_t\) and value function \(V_\phi\)):
+<div align="center"> **Advantage estimation** 
+  
+  (using rewards-to-go \(R_t\) and value function \(V_\phi\)):
 \[
 A_t = R_t - V_\phi(s_t)
 \]
 
 <div align="center"> **PPO (clipped) objective**:
+  
 \[
 \mathcal{L}^{\text{CLIP}}(\theta) =
 \mathbb{E}_t\Big[
@@ -41,7 +44,7 @@ r_t(\theta)=\frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_\text{old}}(a_t|s_t)}
 
 ---
 
-## <div align="center"> Synthetic Environment & Data Generator
+## <div align="center"> Synthetic Environment & Data Generator<div/>
 
 Because public, fully-labeled portfolio cash-flow datasets with transition details are **not available**, we implement a **reproducible synthetic generator** that doubles as the **training environment**:
 
@@ -54,7 +57,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 
 ---
 
-## <div align="center"> Capabilities
+## <div align="center"> Capabilities<div/>
 
 1. **Continuous allocation** under liquidity constraints across many projects.
 2. **Adaptive** to non-stationary conditions (cost drift, contractor productivity shifts).
@@ -64,7 +67,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 
 ---
 
-## <div align="center"> Method (aligned with “My PPO Reference Steps”)
+## <div align="center"> Method (aligned with “My PPO Reference Steps”)<div/>
 
 1. **Initialize Actor** (policy network).
 2. **Initialize Critic** (value network).
@@ -83,6 +86,7 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 To be planned:
 * devloping next.js frontend 
 * developing Django backend
+
 
 
 
