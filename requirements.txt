@@ -4,6 +4,7 @@ argon2-cffi==25.1.0
 argon2-cffi-bindings==25.1.0
 arrow==1.3.0
 asttokens==3.0.0
+astunparse==1.6.3
 async-lru==2.0.5
 attrs==25.4.0
 babel==2.17.0
@@ -28,14 +29,18 @@ Farama-Notifications==0.0.4
 fastjsonschema==2.21.2
 filelock==3.19.1
 flake8==7.3.0
+flatbuffers==25.9.23
 fonttools==4.59.1
 fqdn==1.5.1
 fsspec==2025.7.0
+gast==0.6.0
 gitdb==4.0.12
 GitPython==3.1.45
+google-pasta==0.2.0
 grpcio==1.75.1
 gymnasium==1.2.0
 h11==0.16.0
+h5py==3.14.0
 httpcore==1.0.9
 httpx==0.28.1
 idna==3.10
@@ -62,8 +67,10 @@ jupyterlab==4.4.9
 jupyterlab_git==0.51.2
 jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.3
+keras==3.11.3
 kiwisolver==1.4.9
 lark==1.3.0
+libclang==18.1.1
 Markdown==3.9
 markdown-it-py==4.0.0
 MarkupSafe==3.0.2
@@ -72,8 +79,10 @@ matplotlib-inline==0.1.7
 mccabe==0.7.0
 mdurl==0.1.2
 mistune==3.1.4
+ml_dtypes==0.5.3
 mpmath==1.3.0
 mypy_extensions==1.1.0
+namex==0.1.0
 nbclient==0.10.2
 nbconvert==7.16.6
 nbdime==4.0.2
@@ -82,6 +91,8 @@ nest-asyncio==1.6.0
 networkx==3.5
 notebook_shim==0.2.4
 numpy==2.3.2
+opt_einsum==3.4.0
+optree==0.17.0
 packaging==25.0
 pandas==2.3.1
 pandocfilters==1.5.1
@@ -130,6 +141,8 @@ stack-data==0.6.3
 sympy==1.14.0
 tensorboard==2.20.0
 tensorboard-data-server==0.7.2
+tensorflow==2.20.0
+termcolor==3.1.0
 terminado==0.18.1
 tinycss2==1.4.0
 torch==2.8.0
@@ -149,3 +162,5 @@ webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.9.0
 Werkzeug==3.1.3
+wheel==0.45.1
+wrapt==1.17.3
