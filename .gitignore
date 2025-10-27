@@ -3,6 +3,9 @@
 venv/
 .venv/Lib/
 venv/Lib/
+
+.vscode/
+vscode/
 # Python
 __pycache__/
 *.py[cod]
