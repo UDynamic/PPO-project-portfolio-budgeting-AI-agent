@@ -1,0 +1,571 @@
+{
+  "formatVersion": 3,
+  "id": "root",
+  "ideas": {
+    "1": {
+      "title": "System",
+      "id": 35,
+      "ideas": {
+        "1": {
+          "title": "budgeting agent",
+          "id": 1,
+          "attr": {
+            "position": [
+              154,
+              -156.61240196228027,
+              3
+            ]
+          },
+          "ideas": {
+            "1": {
+              "title": "Environment",
+              "id": 2,
+              "attr": {
+                "position": [
+                  185.9999876022339,
+                  -187.56248474121094,
+                  4
+                ],
+                "style": {
+                  "backgroundColor": "#008000",
+                  "text": {
+                    "color": "#FFFFFF"
+                  }
+                }
+              },
+              "ideas": {
+                "1": {
+                  "title": "Project Class",
+                  "id": 5,
+                  "attr": {
+                    "position": [
+                      602.0000123977661,
+                      -13.668073654174805,
+                      3
+                    ]
+                  },
+                  "ideas": {
+                    "3": {
+                      "title": "BAC [0, 1]",
+                      "id": 11,
+                      "attr": {
+                        "position": [
+                          225.9875612258911,
+                          -125.93753051757812,
+                          14
+                        ]
+                      }
+                    },
+                    "8": {
+                      "title": "S-Curve",
+                      "id": 20,
+                      "attr": {
+                        "position": [
+                          228.9875612258911,
+                          -51.862518310546875,
+                          12
+                        ]
+                      },
+                      "ideas": {}
+                    },
+                    "14": {
+                      "title": "performances",
+                      "id": 13,
+                      "attr": {
+                        "position": [
+                          412.9862060546875,
+                          -13.966697692871094,
+                          31
+                        ]
+                      },
+                      "ideas": {
+                        "1": {
+                          "title": "CPI (ACWP/BCWP)",
+                          "id": 25
+                        },
+                        "2": {
+                          "title": "SPI (BCWP/BCWS)",
+                          "id": 26
+                        },
+                        "3": {
+                          "title": "is_completed",
+                          "id": 24
+                        },
+                        "0.5": {
+                          "title": "ACWP [0, 1]",
+                          "id": 30,
+                          "attr": {}
+                        },
+                        "0.25": {
+                          "title": "data_date [0 , 12)",
+                          "id": 28,
+                          "ideas": {},
+                          "attr": {}
+                        },
+                        "0.125": {
+                          "title": "progress% [0, 100]",
+                          "id": 10,
+                          "attr": {}
+                        },
+                        "0.75": {
+                          "title": "BCWP [0, 1]",
+                          "id": 31
+                        },
+                        "0.875": {
+                          "title": "BCWS [0, 1]",
+                          "id": 32
+                        },
+                        "0.1875": {
+                          "title": "duration (~12 timesteps)",
+                          "id": 46,
+                          "attr": {
+                            "style": {
+                              "width": 209
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "15": {
+                      "title": "Priority (Weight)",
+                      "id": 19,
+                      "attr": {
+                        "position": [
+                          217.9862060546875,
+                          66.50553131103516,
+                          29
+                        ]
+                      }
+                    },
+                    "16": {
+                      "title": "Methods:",
+                      "id": 22,
+                      "attr": {
+                        "position": [
+                          212.9862060546875,
+                          189.63056182861328,
+                          30
+                        ]
+                      },
+                      "ideas": {
+                        "1": {
+                          "title": "project_update()",
+                          "id": 23,
+                          "attr": {
+                            "position": [
+                              77,
+                              80.85831451416016,
+                              1
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "5.5": {
+                      "title": "Inflow Progressive milestones",
+                      "id": 21,
+                      "attr": {
+                        "position": [
+                          220.9875612258911,
+                          -73.02503967285156,
+                          15
+                        ],
+                        "style": {
+                          "width": 198
+                        }
+                      }
+                    }
+                  }
+                },
+                "4": {
+                  "title": "Methods:",
+                  "id": 45,
+                  "ideas": {
+                    "2": {
+                      "title": "reset()",
+                      "id": 6,
+                      "ideas": {
+                        "1": {
+                          "title": "Total Budget = 1.000",
+                          "id": 33,
+                          "attr": {
+                            "position": [
+                              106.99998760223389,
+                              -53.541717529296875,
+                              10
+                            ]
+                          }
+                        },
+                        "6": {
+                          "title": "Time Step = 0",
+                          "id": 47,
+                          "attr": {
+                            "position": [
+                              108.99998760223389,
+                              -2.98614501953125,
+                              11
+                            ]
+                          }
+                        },
+                        "11": {
+                          "title": "portfolio",
+                          "id": 44,
+                          "attr": {
+                            "position": [
+                              305.98614501953125,
+                              10.005561828613281,
+                              12
+                            ],
+                            "style": {
+                              "width": 88
+                            }
+                          },
+                          "ideas": {
+                            "1": {
+                              "title": "5 to 20 projects",
+                              "id": 9,
+                              "ideas": {},
+                              "attr": {
+                                "position": [
+                                  145,
+                                  2.04168701171875,
+                                  1
+                                ]
+                              }
+                            },
+                            "2": {
+                              "title": "Action_space",
+                              "id": 51,
+                              "attr": {
+                                "position": [
+                                  146,
+                                  53.055572509765625,
+                                  2
+                                ]
+                              }
+                            },
+                            "3": {
+                              "title": "obseravation_space",
+                              "id": 52,
+                              "attr": {
+                                "position": [
+                                  145,
+                                  108.0694580078125,
+                                  3
+                                ]
+                              }
+                            },
+                            "4": {
+                              "title": "methods:",
+                              "id": 67,
+                              "ideas": {
+                                "1": {
+                                  "title": "Allocation()",
+                                  "id": 68,
+                                  "attr": {
+                                    "position": [
+                                      90.00006103515625,
+                                      38.20831298828125,
+                                      1
+                                    ]
+                                  }
+                                }
+                              },
+                              "attr": {
+                                "position": [
+                                  146.99993896484375,
+                                  155.875,
+                                  4
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "attr": {
+                        "position": [
+                          95,
+                          -236.91668701171875,
+                          6
+                        ]
+                      }
+                    },
+                    "12": {
+                      "title": "step()",
+                      "id": 8,
+                      "attr": {
+                        "position": [
+                          117,
+                          161.89444732666016,
+                          7
+                        ]
+                      },
+                      "ideas": {
+                        "3": {
+                          "title": "timestep =+ 1",
+                          "id": 56
+                        },
+                        "4": {
+                          "title": "Allocate_action()",
+                          "id": 57,
+                          "ideas": {},
+                          "attr": {
+                            "position": [
+                              63.00006103515625,
+                              -138.59166717529297,
+                              1
+                            ]
+                          }
+                        },
+                        "5": {
+                          "title": "Reward (Normalized)",
+                          "id": 58,
+                          "ideas": {
+                            "1": {
+                              "title": "(+) Completion",
+                              "id": 59
+                            },
+                            "2": {
+                              "title": "(+) Earned-value",
+                              "id": 60
+                            },
+                            "3": {
+                              "title": "(-) Delayed Milestone",
+                              "id": 61
+                            },
+                            "4": {
+                              "title": "(-) Sunk cash",
+                              "id": 65
+                            },
+                            "5": {
+                              "title": "(-) Incomplete project",
+                              "id": 66
+                            }
+                          }
+                        },
+                        "6": {
+                          "title": "Termination()",
+                          "id": 48,
+                          "ideas": {
+                            "1": {
+                              "title": "Timestep >= 12",
+                              "id": 49,
+                              "attr": {
+                                "position": [
+                                  112.9998779296875,
+                                  -28.58893585205078,
+                                  1
+                                ]
+                              }
+                            },
+                            "11": {
+                              "title": "All projects is_completed",
+                              "id": 53
+                            }
+                          }
+                        },
+                        "7": {
+                          "title": "render()",
+                          "id": 70
+                        },
+                        "4.5": {
+                          "title": "get_observation()",
+                          "id": 69,
+                          "attr": {
+                            "position": [
+                              54.99993896484375,
+                              -68.02780151367188,
+                              2
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "attr": {
+                    "position": [
+                      122.00001239776611,
+                      216.3041706085205,
+                      4
+                    ]
+                  }
+                }
+              }
+            },
+            "11": {
+              "title": "Agent model",
+              "id": 3,
+              "attr": {
+                "position": [
+                  181,
+                  272.13057136535645,
+                  5
+                ],
+                "style": {
+                  "backgroundColor": "#000000",
+                  "text": {
+                    "color": "#FFFFFF"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "11": {
+          "title": "Sulotion Baseline",
+          "id": 36,
+          "attr": {
+            "position": [
+              162.01388549804688,
+              453.0903835296631,
+              10
+            ]
+          },
+          "ideas": {
+            "1": {
+              "title": "Uniform Allocation",
+              "id": 37
+            },
+            "2": {
+              "title": "LP",
+              "id": 38
+            },
+            "3": {
+              "title": "Convex Optimization",
+              "id": 39
+            },
+            "4": {
+              "title": "Fuzzy Algorithm",
+              "id": 41
+            },
+            "5": {
+              "title": "Utility Theory",
+              "id": 43
+            }
+          }
+        },
+        "21": {
+          "title": "Results",
+          "id": 71,
+          "attr": {
+            "position": [
+              157.01388549804688,
+              582.5209255218506,
+              9
+            ],
+            "parentConnector": {
+              "arrow": "to",
+              "lineStyle": "solid"
+            }
+          }
+        }
+      },
+      "attr": {
+        "position": [
+          -166,
+          -229,
+          1
+        ]
+      }
+    }
+  },
+  "title": "System",
+  "links": [
+    {
+      "ideaIdFrom": 13,
+      "ideaIdTo": 23,
+      "attr": {
+        "style": {
+          "color": "#707070",
+          "lineStyle": "solid",
+          "arrow": "from"
+        }
+      }
+    },
+    {
+      "ideaIdFrom": 5,
+      "ideaIdTo": 44,
+      "attr": {
+        "style": {
+          "color": "#707070",
+          "lineStyle": "solid",
+          "arrow": "to",
+          "label": "Instanciate"
+        }
+      }
+    },
+    {
+      "ideaIdFrom": 3,
+      "ideaIdTo": 8,
+      "attr": {
+        "style": {
+          "color": "#707070",
+          "lineStyle": "solid",
+          "arrow": "to",
+          "label": "Action"
+        }
+      }
+    },
+    {
+      "ideaIdFrom": 57,
+      "ideaIdTo": 68,
+      "attr": {
+        "style": {
+          "color": "#707070",
+          "lineStyle": "solid",
+          "arrow": "to",
+          "label": "Action"
+        }
+      }
+    },
+    {
+      "ideaIdFrom": 68,
+      "ideaIdTo": 23,
+      "attr": {
+        "style": {
+          "color": "#707070",
+          "lineStyle": "solid",
+          "arrow": "to",
+          "label": "Allocation"
+        }
+      }
+    },
+    {
+      "ideaIdFrom": 68,
+      "ideaIdTo": 69,
+      "attr": {
+        "style": {
+          "color": "#707070",
+          "lineStyle": "solid",
+          "arrow": "to",
+          "label": "next state"
+        }
+      }
+    },
+    {
+      "ideaIdFrom": 36,
+      "ideaIdTo": 71,
+      "attr": {
+        "style": {
+          "color": "#707070",
+          "lineStyle": "dashed",
+          "arrow": "to"
+        }
+      }
+    },
+    {
+      "ideaIdFrom": 1,
+      "ideaIdTo": 71,
+      "attr": {
+        "style": {
+          "color": "#707070",
+          "lineStyle": "dashed",
+          "arrow": "to"
+        }
+      }
+    }
+  ],
+  "attr": {
+    "theme": "default"
+  }
+}
