@@ -1,4 +1,4 @@
-# <div align="center">PPO Budget Allocation Agent for Project Portfolios
+# <div align="center"> project portfolio budgeting under cashflow uncertainties <div/>
 
 <br/><br/><br/>
 A **Deep Reinforcement Learning** (DRL) framework—built around **Proximal Policy Optimization (PPO)**—for **dynamic, uncertainty-aware budget allocation** across multi-project portfolios. 
