@@ -81,9 +81,6 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 
 ---
 
-To be planned:
-* devloping next.js frontend 
-* developing Django backend
 
 
 
