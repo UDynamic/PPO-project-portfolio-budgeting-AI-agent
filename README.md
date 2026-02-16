@@ -82,9 +82,9 @@ Because public, fully-labeled portfolio cash-flow datasets with transition detai
 ---
 
 
-
-
-
-
+immediate requirements:
+* processing and selecting data
+* optimization model for known data
+* complete guidance and illustration of PPL algorithm in budgeting decision making
 
 
