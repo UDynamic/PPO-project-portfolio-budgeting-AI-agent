@@ -87,4 +87,5 @@ immediate requirements:
 * optimization model for known data
 * complete guidance and illustration of PPL algorithm in budgeting decision making
 
-
+The professor insists on beautiful and colorful design of graphs and charts.
+Max representational appeals.
