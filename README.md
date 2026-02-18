@@ -89,3 +89,5 @@ immediate requirements:
 
 The professor insists on beautiful and colorful design of graphs and charts.
 Max representational appeals.
+
+Need to determine an Uncertainty Proxy from Furtune 500 company data
