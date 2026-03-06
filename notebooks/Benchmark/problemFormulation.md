@@ -10,9 +10,11 @@ I want you to generate the code for a convex optimization problem defined as bel
 
 |**Project Parameters**|definition|
 |---|---|
-|bac|budget at completion of all the projects in the portfolio|
+|bac|budget at completion for the project. Total contractual cost for the project|
 |d|duration of the project statet in number of periods |
 |p|current period of the project. e.g. a project with duration of 12 has 12 periods|
+|l_sc|List of S-Curve comulative cost schedule for the project untill the budget at completion(bac) </br></br> $ \text{for} \quad n = d \quad \text{as the final period: } \text{l\_sc}_n = \text{bac} $ |
+|l_sc_n|List of the periodic S-Curves of the project. </br></br> $\begin{cases} \text{l\_sc\_n} = \text{l\_sc}_{n} - \text{l\_sc}_{n-1} \\ \sum{\text{l\_sc\_n}} = \text{bac} \end{cases}$ |
 |p%|cumulative earned progress untill the last period|
 |l_p%|List of cumulative earned progresses for all the project periods|
 |p%_n|periodic earned progress at the last period|
