@@ -6,24 +6,45 @@ Ok let's formulate the problem and generate the code.
 
 I want you to generate the code for a convex optimization problem defined as below:
 
-tests:
+### parameters
+
+**Project Parameters**
+* pl: cumulative earned progress list for times teps
+* bac: budget at completion of all the projects in the portfolio
+* d: duration of the project
+* t: current time step of the project
+* roi: return on investment rate for total allocated budget returning 
+
+**Portfolio Parameters**
+* nbac: Normalized bac of all the projects in the portfolio for all them to sum up to *1.000*.
+* 
+
+### example:
 
 **scenario-1:** 
 for a portfolio of 3 projects with these characteristics we must have the optimal budgeting plan.
 
-project-1:{
+project-1 (not started):{
+   roi: 0.1
+   bac: 1.000;
+   remaning budget: 1.000;
+   current time step: 0;
+   pl : [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0)];
+   d: 12;
+}
+project-1 (completed):{
    budget at completion: 1.000;
    current time step: 0;
-   progress % : 0;
+   progress list : [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0)];
    duration: 12;
 }
-project-2:{
+project-2 (in progress):{
    budget at completion: 1.000;
    current time step: 3;
-   progress % : 30;
+   progress list : [(0, 0), (1, 9), (2, 18), (3, 27), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0)];
    duration: 11;
    }
-project-3:{
+project-3 (in progress):{
    budget at completion: 1.000;
    current time step: 6;
    progress % : 40;
