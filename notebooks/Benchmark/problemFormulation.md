@@ -28,6 +28,7 @@ I want you to generate the code for a convex optimization problem defined as bel
 **remainings**
 * inflated s-curve (comulative and periodic)
 * roi formulation
+* should seperate parameter formulations (Earned value analysis has got it's own tabel and calculations based on the complete parameter of mine)
 
 ---
 ### example:
