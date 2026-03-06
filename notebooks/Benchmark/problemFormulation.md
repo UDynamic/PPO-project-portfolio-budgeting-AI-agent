@@ -21,6 +21,7 @@ This represented framework shows great capability in addressing almost all aspec
 |l_p%_n|List of periodic earned progresses for all the project periods|
 |roi|return on investment rate for total allocated budget returnings. </br> roi is set according to the industry standards </br></br> $ roi = \frac{tep}{bac}$|
 |tep|Total expected payment to recieve from the client in trade for spending budget at completion(bac) and delivering 100% progress. In other words the total expected inflow of the project. </br></br> $ tep = roi * bac$|
+|im|Inflow Model(im) will determine the distribution of contractual payments form client to the contractor. It's the model that the payment schedule was designed upon. <br><br>inflow model will calculate *l_ep* and *l_ep_n*|
 |l_ep|List of comulative expected payments untill each period.  |
 |l_ep_n|List of expected payments for each period. </br></br> $ l\_ep\_n = roi * l\_sc\_n \\ \text{advanced payment} = l\_ep\_n_0 \quad \text{or} \quad l\_ep_0 $  </br></br> final payment is calculated with respect to the inflow model. Inflow model will specify the distribution of payments according to contract and directly influences on for  |
 
