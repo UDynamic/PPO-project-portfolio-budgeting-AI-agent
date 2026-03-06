@@ -21,7 +21,7 @@ This represented framework shows great capability in addressing almost all aspec
 |l_p%_n|List of periodic earned progresses for all the project periods|
 |roi|return on investment rate for total allocated budget returnings. </br> roi is set according to the industry standards </br></br> $ roi = \frac{tep}{bac}$|
 |tep|Total expected payment to recieve from the client in trade for spending budget at completion(bac) and delivering 100% progress. In other words the total expected inflow of the project. </br></br> $ tep = roi * bac$|
-|l_ep|List of comulative expected payments untill each period. </br></br> $ l\_ep = roi * l\_sc$ |
+|l_ep|List of comulative expected payments untill each period.  |
 |l_ep_n|List of expected payments for each period. </br></br> $ l\_ep\_n = roi * l\_sc\_n \\ \text{advanced payment} = l\_ep\_n_0 \quad \text{or} \quad l\_ep_0 $  </br></br> final payment is calculated with respect to the inflow model. Inflow model will specify the distribution of payments according to contract and directly influences on for  |
 
 |**Portfolio Parameters**|definition|
@@ -30,8 +30,8 @@ This represented framework shows great capability in addressing almost all aspec
 
 |**Project Simulaiton Parameters**|definition|
 |---|---|
-|l_si|List of comulative simple periodic recieved payment.</br> in other words if we were to recieve the the total expected payment, simply and according to the cost schedule (S-Curve) we would expect this list of comulative payments untill each period. </br></br> It's used in payment shedule calculation for different inflow models |
-|l_si_n||
+|l_sei|List of comulative simple expected inflow for the project.</br> in other words if we were to recieve the the total expected payment, simply and according to the cost schedule (S-Curve) we would expect this list of comulative payments untill each period.</br></br> $ l\_sei = roi * l\_sc$ </br></br> It's used in payment shedule calculation for different inflow models. </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sei}_n = tep $|
+|l_sei_n|List of simple periodic simple expected inflow for the project.</br></br> $\begin{cases} \text{l\_sei\_n} = \text{l\_sei}_{n} - \text{l\_sei}_{n-1} \\ \sum{\text{l\_sei\_n}} = tep \end{cases}$|
 
 
 **remainings**
