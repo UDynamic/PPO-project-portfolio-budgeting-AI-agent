@@ -14,10 +14,10 @@ I want you to generate the code for a convex optimization problem defined as bel
 |d|duration of the project statet in number of periods |
 |p|current period of the project. e.g. a project with duration of 12 has 12 periods|
 |p%|cumulative earned progress untill the last period|
-|p%_n|periodic earned progress at the timestep n|
-|p%l|cumulative earned progress list for times teps|
-|roi|return on investment rate for total allocated budget returning| 
-
+|l_p%|List of cumulative earned progresses for all the project periods|
+|p%_n|periodic earned progress at the last period|
+|l_p%_n|List of periodic earned progresses for all the project periods|
+|roi|return on investment rate for total allocated budget returnings. </br></br> roi = $\frac{\text{Total recieved payment}}{\text{Total allocated or spent budget}}$| 
 
 |**Portfolio Parameters**|definition|
 |---|---|
