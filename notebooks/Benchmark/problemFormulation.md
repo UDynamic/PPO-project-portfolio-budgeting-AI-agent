@@ -8,16 +8,18 @@ I want you to generate the code for a convex optimization problem defined as bel
 
 ### parameters
 
-**Project Parameters**
-* pl: cumulative earned progress list for times teps
-* bac: budget at completion of all the projects in the portfolio
-* d: duration of the project
-* t: current time step of the project
-* roi: return on investment rate for total allocated budget returning 
+|**Project Parameters**|definition|
+|---|---|
+|pl|cumulative earned progress list for times teps|
+|bac|budget at completion of all the projects in the portfolio|
+|d|duration of the project|
+|t|current time step of the project|
+|roi|return on investment rate for total allocated budget returning| 
 
-**Portfolio Parameters**
-* nbac: Normalized bac of all the projects in the portfolio for all them to sum up to *1.000*.
-* 
+
+|**Portfolio Parameters**|definition|
+|---|---|
+|nbac|Normalized bac of all the projects in the portfolio for all them to sum up to *1.000*| 
 
 ### example:
 
