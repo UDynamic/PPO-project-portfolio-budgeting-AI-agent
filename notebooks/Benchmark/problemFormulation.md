@@ -13,13 +13,16 @@ I want you to generate the code for a convex optimization problem defined as bel
 |bac|budget at completion for the project. Total contractual cost for the project|
 |d|duration of the project statet in number of periods |
 |p|current period of the project. e.g. a project with duration of 12 has 12 periods|
-|l_sc|List of S-Curve comulative cost schedule for the project untill the budget at completion(bac) </br></br> $ \text{for} \quad n = d \quad \text{as the final period: } \text{l\_sc}_n = \text{bac} $ </br></br> S-curve values are estimated at the contract agreement but Actual cost is calculated proportional to earned value (Progress or p%)|
+|l_sc|List of S-Curve comulative cost schedule for the project untill the budget at completion(bac) </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sc}_n = \text{bac} $ </br></br> S-curve values are estimated at the contract agreement but Actual cost is calculated proportional to earned value (Progress or p%)|
 |l_sc_n|List of the periodic S-Curves of the project. </br></br> $\begin{cases} \text{l\_sc\_n} = \text{l\_sc}_{n} - \text{l\_sc}_{n-1} \\ \sum{\text{l\_sc\_n}} = \text{bac} \end{cases}$ |
 |p%|cumulative earned progress untill the last period|
 |l_p%|List of cumulative earned progresses for all the project periods|
 |p%_n|periodic earned progress at the last period|
 |l_p%_n|List of periodic earned progresses for all the project periods|
-|roi|return on investment rate for total allocated budget returnings. </br></br> roi = $\frac{\text{Total recieved payment}}{\text{Total allocated or spent budget}}$| 
+|roi|return on investment rate for total allocated budget returnings. </br> roi is set according to the industry standards </br></br> $ roi = \frac{tep}{bac}$|
+|tep|Total expected payment to recieve from the client in trade for spending budget at completion(bac) and delivering 100% progress. In other words the total expected inflow of the project. </br></br> $ tep = roi * bac$|
+|l_ep|List of comulative expected payments untill each period. </br></br> $ l\_ep = roi * l\_sc$ |
+|l_ep_n|List of periodic expected payment for each period. </br></br> $ l\_ep = roi * l\_sc\_n$|
 
 |**Portfolio Parameters**|definition|
 |---|---|
