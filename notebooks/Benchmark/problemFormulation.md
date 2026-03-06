@@ -12,8 +12,8 @@ I want you to generate the code for a convex optimization problem defined as bel
 |---|---|
 |pl|cumulative earned progress list for times teps|
 |bac|budget at completion of all the projects in the portfolio|
-|d|duration of the project|
-|t|current time step of the project|
+|d|duration of the project statet in number of periods |
+|p|current period of the project. e.g. a project with duration of 12 has 12 periods|
 |roi|return on investment rate for total allocated budget returning| 
 
 
