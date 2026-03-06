@@ -40,39 +40,6 @@ This represented framework shows great capability in addressing almost all aspec
 * should seperate parameter formulations (Earned value analysis has got it's own tabel and calculations based on the complete parameter of mine)
 
 ---
-### example:
-
-**scenario-1:** 
-for a portfolio of 3 projects with these characteristics we must have the optimal budgeting plan.
-
-project-1 (not started):{
-   roi: 0.1
-   bac: 1.000;
-   remaning budget: 1.000;
-   current time step: 0;
-   pl : [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0)];
-   d: 12;
-}
-project-1 (completed):{
-   budget at completion: 1.000;
-   current time step: 0;
-   progress list : [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0)];
-   duration: 12;
-}
-project-2 (in progress):{
-   budget at completion: 1.000;
-   current time step: 3;
-   progress list : [(0, 0), (1, 9), (2, 18), (3, 27), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0)];
-   duration: 11;
-   }
-project-3 (in progress):{
-   budget at completion: 1.000;
-   current time step: 6;
-   progress % : 40;
-   duration: 13;
-   }
-
-
 
 ## Prompt
 
