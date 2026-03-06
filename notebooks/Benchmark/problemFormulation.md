@@ -1,10 +1,8 @@
 # Problem formulation
+This is a Brand new and fundamentally revised framework on project portfolio problem definition and formulation.
 
-## Prompt
+This represented framework shows great capability in addressing almost all aspects of budgetting decisions for project portfolio. 
 
-Ok let's formulate the problem and generate the code.
-
-I want you to generate the code for a convex optimization problem defined as below:
 
 ### parameters
 
@@ -32,7 +30,7 @@ I want you to generate the code for a convex optimization problem defined as bel
 
 |**Promblem Simulaiton Parameters**|definition|
 |---|---|
-|l_si|List of comulative simple periodic recieved payment|
+|l_si|List of comulative simple periodic recieved payment.</br> in other words if we were to recieve the the total expected payment, simply and according to the cost schedule (S-Curve) we would expect this list of comulative payments untill each period. </br></br> It's used in payment shedule calculation for different inflow models |
 |l_si_n||
 
 
@@ -74,6 +72,23 @@ project-3 (in progress):{
    duration: 13;
    }
 
+
+
+## Prompt
+
+according to complete formulation of the problem above create a python convex optimization program for me to input projects for portfolio and return the optimal budgeting plan at each time step of the portfolio for each project.
+
+the output must be in following format with imaginary allocation plan values for one project (the program should fill this table including all the projects given to):
+
+|Projects|0|1|2|3|4|5|6|7|8|9|10|11|12|
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|P1|0|.5|.5|.1|.1|.1|.15|.15|.1|.1|.5|.25|.25|
+
+---
+---
+---
+---
+---
 
 ## Data preparation
 
