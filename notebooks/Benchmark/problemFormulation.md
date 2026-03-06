@@ -28,7 +28,7 @@ This represented framework shows great capability in addressing almost all aspec
 |---|---|
 |nbac|Normalized bac of all the projects in the portfolio for all them to sum up to *1.000*| 
 
-|**Promblem Simulaiton Parameters**|definition|
+|**Project Simulaiton Parameters**|definition|
 |---|---|
 |l_si|List of comulative simple periodic recieved payment.</br> in other words if we were to recieve the the total expected payment, simply and according to the cost schedule (S-Curve) we would expect this list of comulative payments untill each period. </br></br> It's used in payment shedule calculation for different inflow models |
 |l_si_n||
