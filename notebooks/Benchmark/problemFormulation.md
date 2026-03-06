@@ -1,6 +1,39 @@
-# Data preparation
+# Problem formulation
 
-## Plan
+## Prompt
+
+Ok let's formulate the problem and generate the code.
+
+I want you to generate the code for a convex optimization problem defined as below:
+
+tests:
+
+**scenario-1:** 
+for a portfolio of 3 projects with these characteristics we must have the optimal budgeting plan.
+
+project-1:{
+   budget at completion: 1.000;
+   current time step: 0;
+   progress % : 0;
+   duration: 12;
+}
+project-2:{
+   budget at completion: 1.000;
+   current time step: 3;
+   progress % : 30;
+   duration: 11;
+   }
+project-3:{
+   budget at completion: 1.000;
+   current time step: 6;
+   progress % : 40;
+   duration: 13;
+   }
+
+
+## Data preparation
+
+### Plan
 
 1. **Find a data set of companies**
 2. **Choose a good proxy for:**
@@ -11,7 +44,7 @@
 
 ---
 
-## prompt
+### prompt
 
 I need to do these planned steps above for my paper in progress.
 
