@@ -52,11 +52,16 @@ the output must be in following format with imaginary allocation plan values for
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 |P1|0|.5|.5|.1|.1|.1|.15|.15|.1|.1|.5|.25|.25|
 
+
 ---
----
----
----
----
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
 ## Data preparation
 
