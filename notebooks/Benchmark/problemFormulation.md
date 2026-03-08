@@ -13,8 +13,8 @@ This represented framework shows great capability in addressing almost all aspec
 |bac|budget at completion for the project. Total contractual cost for the project|
 |d|duration of the project statet in number of periods |
 |p|current period of the project. e.g. a project with duration of 12 has 12 periods|
-|l_sc|List of S-Curve comulative cost schedule for the project untill the budget at completion(bac) </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sc}_n = \text{bac} $ </br></br> S-curve values are estimated at the contract agreement but Actual cost is calculated proportional to earned value (Progress or p%)|
-|l_sc_n|List of the periodic S-Curves of the project. </br></br> $\begin{cases} \text{l\_sc\_n} = \text{l\_sc}_{n} - \text{l\_sc}_{n-1} \\ \sum{\text{l\_sc\_n}} = \text{bac} \end{cases}$ |
+|l_sc|**List** of comulative **S-Curve** cost schedule for the project untill the budget at completion(bac) </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sc}_n = \text{bac} $ </br></br> S-curve values are estimated at the contract agreement according to the project plan.|
+|l_sc_n|**List** of the **periodic S-Curves** of the project. </br></br> $\begin{cases} \text{l\_sc\_n} = \text{l\_sc}_{n} - \text{l\_sc}_{n-1} \\ \sum{\text{l\_sc\_n}} = \text{bac} \end{cases}$ |
 |p%|cumulative earned progress untill the last period|
 |l_p%|List of cumulative earned progresses for all the project periods|
 |p%_n|periodic earned progress at the last period|
@@ -32,7 +32,7 @@ This represented framework shows great capability in addressing almost all aspec
 |**Project Simulaiton Parameters**|definition|
 |---|---|
 |l_sei|**List** of comulative **simple expected inflow** for the project.</br> in other words if we were to recieve the the total expected payment, simply and according to the cost schedule (S-Curve) we would expect this list of comulative payments untill each period.</br></br> $ l\_sei = roi * l\_sc$ </br></br> It's used in payment shedule calculation for different inflow models. </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sei}_n = tep $|
-|l_sei_n|List of **periodic simple expected inflow** for the project.</br></br> $\begin{cases} \text{l\_sei\_n} = \text{l\_sei}_{n} - \text{l\_sei}_{n-1} \\ \sum{\text{l\_sei\_n}} = tep \end{cases}$|
+|l_sei_n|**List** of **periodic simple expected inflow** for the project.</br></br> $\begin{cases} \text{l\_sei\_n} = \text{l\_sei}_{n} - \text{l\_sei}_{n-1} \\ \sum{\text{l\_sei\_n}} = tep \end{cases}$|
 
 
 **remainings**
