@@ -34,7 +34,7 @@ a: list of integers
 |**Project Simulaiton Parameters**|definition|
 |---|---|
 |roi|**return on investment** of the project. </br></br>- $ roi = \frac{\text{total earnings}}{\text{total cost}}= \frac{\text{total inflow}}{\text{total outflow}}= \frac{tep}{bac}$ </br></br>- roi is set according to the industry standards |
-|l_sei|**List** of comulative **simple expected inflow** for the project.</br> simple being the assumption of recieving payment proportional to the spendt cost with **roi** as the multiplier for adding profit.</br></br>- $\begin{cases} l\_sei[n] = (1+ roi) \times l\_sc[n] & \quad \forall{n} \end{cases}$ </br></br>- It's used in payment shedule calculation for different inflow models. </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sei}_n = tep $|
+|l_sei|**List** of comulative **simple expected inflow** for the project.</br> simple being the assumption of recieving payment proportional to the spendt cost with **roi** as the multiplier for adding profit.</br></br>- $\begin{cases} l\_sei[n] = (1+ roi) \times l\_sc[n] & \quad \forall{n} \\ \text{l\_sei}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_sei}[n] = (1+roi) \times bac = tep & \quad \text{for} \quad n = d\end{cases}$ </br></br>- It's used in payment shedule calculation for different inflow models.|
 |l_sei_n|**List** of **periodic simple expected inflow** for the project.</br></br> $\begin{cases} \text{l\_sei\_n} = \text{l\_sei}_{n} - \text{l\_sei}_{n-1} \\ \sum{\text{l\_sei\_n}} = tep \end{cases}$|
 
 
