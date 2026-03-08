@@ -11,20 +11,22 @@ a: list of integers
 10th element: a[10]
 ```
 
+#### Project Parameters
 
-|**Project Parameters**|definition|
-|---|---|
-|bac|**budget at completion** for the project. Total contractual cost for the project|
-|d|**duration** of the project statet in number of periods |
-|p|current **period** of the project. e.g. a project with duration of 12 has 12 periods|
-|l_sc|**List** of comulative **S-Curve** values untill project is finished. It's the cost schedule for the project from the start untill the budget at completion(bac) </br></br>- $\begin{cases} \text{l\_sc}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_sc}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>- S-curve values are estimated at the contract agreement according to the project plan. |
-|pl_sc|**periodic List** of the **S-Curves** of the project. </br></br>- $\begin{cases} \text{pl\_sc}[n] = \text{l\_sc}[n] - \text{l\_sc}[n-1] \\ \sum_{n=0}^{n=d}{\text{l\_sc\_n}[n]} = \text{bac} \end{cases}$ |
-|pp|current **Project Progress** in percent value.|
-|l_pp|**List** of the comulative **project progresses** for all the periods. </br></br>- $\begin{cases} \text{l\_pp}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pp}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>|
-|pl_pp|**periodic List** of **project progresses**. </br></br>- $\begin{cases} \text{pl\_pp}[n] = \text{l\_pp}[n] - \text{l\_pp}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_pp}[n]} = 1 \quad \text{or} \quad 100\% \end{cases}$|
-|tep|**Total expected payment** to be recieved from the client of the project after delivering 100% project progress or completion.</br></br>- $ \begin{cases} tep =(1+roi) \times bac \\ \text{project profit} = tep - bac = roi \times bac \end{cases}$ <br><br>- It's the total expected inflow of the project. |
-|l_ep|List of comulative expected payments untill each period.  |
-|l_ep_n|List of expected payments for each period. </br></br> $ l\_ep\_n = roi * l\_sc\_n \\ \text{advanced payment} = l\_ep\_n_0 \quad \text{or} \quad l\_ep_0 $  </br></br> final payment is calculated with respect to the inflow model. Inflow model will specify the distribution of payments according to contract and directly influences on for  |
+|Type|name|definition|
+|---|---|---|
+|General||
+||bac|**budget at completion** for the project. Total contractual cost for the project|
+||d|**duration** of the project statet in number of periods |
+||p|current **period** of the project. e.g. a project with duration of 12 has 12 periods|
+||l_sc|**List** of comulative **S-Curve** values untill project is finished. It's the cost schedule for the project from the start untill the budget at completion(bac) </br></br>- $\begin{cases} \text{l\_sc}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_sc}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>- S-curve values are estimated at the contract agreement according to the project plan. |
+||pl_sc|**periodic List** of the **S-Curves** of the project. </br></br>- $\begin{cases} \text{pl\_sc}[n] = \text{l\_sc}[n] - \text{l\_sc}[n-1] \\ \sum_{n=0}^{n=d}{\text{l\_sc\_n}[n]} = \text{bac} \end{cases}$ |
+||pp|current **Project Progress** in percent value.|
+||l_pp|**List** of the comulative **project progresses** for all the periods. </br></br>- $\begin{cases} \text{l\_pp}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pp}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>|
+||pl_pp|**periodic List** of **project progresses**. </br></br>- $\begin{cases} \text{pl\_pp}[n] = \text{l\_pp}[n] - \text{l\_pp}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_pp}[n]} = 1 \quad \text{or} \quad 100\% \end{cases}$|
+||tep|**Total expected payment** to be recieved from the client of the project after delivering 100% project progress or completion.</br></br>- $ \begin{cases} tep =(1+roi) \times bac \\ \text{project profit} = tep - bac = roi \times bac \end{cases}$ <br><br>- It's the total expected inflow of the project. |
+||l_ep|**List** of comulative **expected payments** untill each period.  |
+||pl_ep|List of expected payments for each period. </br></br> $ l\_ep\_n = roi * l\_sc\_n \\ \text{advanced payment} = l\_ep\_n_0 \quad \text{or} \quad l\_ep_0 $  </br></br> final payment is calculated with respect to the inflow model. Inflow model will specify the distribution of payments according to contract and directly influences on for  |
 
 |**Portfolio Parameters**|definition|
 |---|---|
@@ -44,7 +46,6 @@ for creating simulated projects using the real world examples we need to set som
 
 **remainings**
 * inflated s-curve (comulative and periodic)
-* roi formulation
 * should seperate parameter formulations (Earned value analysis has got it's own tabel and calculations based on the complete parameter of mine)
 
 ---
