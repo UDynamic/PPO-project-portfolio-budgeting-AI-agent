@@ -53,7 +53,8 @@ for creating simulated projects using the real world examples we need to set som
 
 **remainings**
 * inflated s-curve (comulative and periodic)
-* should seperate parameter formulations (Earned value analysis has got it's own tabel and calculations based on the complete parameter of mine)
+* actuals
+* uncertainty proxies for real dataset or simulation.
 
 ---
 
