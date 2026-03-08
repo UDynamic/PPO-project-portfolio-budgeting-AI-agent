@@ -31,8 +31,8 @@ This represented framework shows great capability in addressing almost all aspec
 
 |**Project Simulaiton Parameters**|definition|
 |---|---|
-|l_sei|List of comulative simple expected inflow for the project.</br> in other words if we were to recieve the the total expected payment, simply and according to the cost schedule (S-Curve) we would expect this list of comulative payments untill each period.</br></br> $ l\_sei = roi * l\_sc$ </br></br> It's used in payment shedule calculation for different inflow models. </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sei}_n = tep $|
-|l_sei_n|List of simple periodic simple expected inflow for the project.</br></br> $\begin{cases} \text{l\_sei\_n} = \text{l\_sei}_{n} - \text{l\_sei}_{n-1} \\ \sum{\text{l\_sei\_n}} = tep \end{cases}$|
+|l_sei|**List** of comulative **simple expected inflow** for the project.</br> in other words if we were to recieve the the total expected payment, simply and according to the cost schedule (S-Curve) we would expect this list of comulative payments untill each period.</br></br> $ l\_sei = roi * l\_sc$ </br></br> It's used in payment shedule calculation for different inflow models. </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sei}_n = tep $|
+|l_sei_n|List of **periodic simple expected inflow** for the project.</br></br> $\begin{cases} \text{l\_sei\_n} = \text{l\_sei}_{n} - \text{l\_sei}_{n-1} \\ \sum{\text{l\_sei\_n}} = tep \end{cases}$|
 
 
 **remainings**
