@@ -5,7 +5,11 @@ This represented framework shows great capability in addressing almost all aspec
 
 
 ### parameters
-
+for parameters and valuables of type list or array, we will use bracket notation for accessing or assigning to specific index. 
+```
+a: list of integers 
+10th element: a[10]
+```
 
 
 |**Project Parameters**|definition|
