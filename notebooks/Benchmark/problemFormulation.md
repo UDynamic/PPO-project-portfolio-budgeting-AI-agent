@@ -10,9 +10,9 @@ This represented framework shows great capability in addressing almost all aspec
 
 |**Project Parameters**|definition|
 |---|---|
-|bac|budget at completion for the project. Total contractual cost for the project|
-|d|duration of the project statet in number of periods |
-|p|current period of the project. e.g. a project with duration of 12 has 12 periods|
+|bac|**budget at completion** for the project. Total contractual cost for the project|
+|d|**duration** of the project statet in number of periods |
+|p|current **period** of the project. e.g. a project with duration of 12 has 12 periods|
 |l_sc|**List** of comulative **S-Curve** cost schedule for the project untill the budget at completion(bac) </br></br> $ \text{for} \quad n = d \quad \text{as the final period:} \\ \text{l\_sc}_n = \text{bac} $ </br></br> S-curve values are estimated at the contract agreement according to the project plan.|
 |l_sc_n|**List** of the **periodic S-Curves** of the project. </br></br> $\begin{cases} \text{l\_sc\_n} = \text{l\_sc}_{n} - \text{l\_sc}_{n-1} \\ \sum{\text{l\_sc\_n}} = \text{bac} \end{cases}$ |
 |p%|cumulative earned progress untill the last period|
