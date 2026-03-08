@@ -22,7 +22,7 @@ a: list of integers
 |pp|current **Project Progress** in percent value.|
 |l_pp|**List** of the comulative **project progresses** for all the periods. </br></br>- $\begin{cases} \text{l\_pp}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pp}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>|
 |pl_pp|**periodic List** of **project progresses**. </br></br>- $\begin{cases} \text{pl\_pp}[n] = \text{l\_pp}[n] - \text{l\_pp}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_pp}[n]} = 1 \quad \text{or} \quad 100\% \end{cases}$|
-|roi|**return on investment** of the project. </br>- roi is set according to the industry standards </br></br>- $ roi = \frac{tep}{bac}$|
+|roi|**return on investment** of the project. </br></br>- $ roi = \frac{\text{total earnings}}{\text{total cost}}= \frac{\text{total inflow}}{\text{total outflow}}= \frac{tep}{bac}$ </br></br>- roi is set according to the industry standards |
 |tep|Total expected payment to recieve from the client in trade for spending budget at completion(bac) and delivering 100% progress. In other words the total expected inflow of the project. </br></br> $ tep = roi * bac$|
 |im|Inflow Model(im) will determine the distribution of contractual payments form client to the contractor. It's the model that the payment schedule was designed upon. <br><br>inflow model will calculate *l_ep* and *l_ep_n*|
 |l_ep|List of comulative expected payments untill each period.  |
