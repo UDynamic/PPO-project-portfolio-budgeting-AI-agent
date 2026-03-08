@@ -17,13 +17,12 @@ a: list of integers
 |bac|**budget at completion** for the project. Total contractual cost for the project|
 |d|**duration** of the project statet in number of periods |
 |p|current **period** of the project. e.g. a project with duration of 12 has 12 periods|
-|l_sc|**List** of comulative **S-Curve** values untill project is finished. It's the cost schedule for the project from the start untill the budget at completion(bac) </br></br> $\begin{cases} \text{l\_sc}[n] = 0 & \text{for} \quad n = 0 \\ \text{l\_sc}[n] = \text{bac} & \text{for} \quad n = d \end{cases}$ </br></br> S-curve values are estimated at the contract agreement according to the project plan. |
-|pl_sc|**periodic List** of the **S-Curves** of the project. </br></br> $\begin{cases} \text{pl\_sc}[n] = \text{l\_sc}[n] - \text{l\_sc}[n-1] \\ \sum_{n=0}^{n=d}{\text{l\_sc\_n}[n]} = \text{bac} \end{cases}$ |
-|p%|cumulative earned progress untill the last period|
-|l_p%|List of cumulative earned progresses for all the project periods|
-|p%_n|periodic earned progress at the last period|
-|l_p%_n|List of periodic earned progresses for all the project periods|
-|roi|return on investment rate for total allocated budget returnings. </br> roi is set according to the industry standards </br></br> $ roi = \frac{tep}{bac}$|
+|l_sc|**List** of comulative **S-Curve** values untill project is finished. It's the cost schedule for the project from the start untill the budget at completion(bac) </br></br>- $\begin{cases} \text{l\_sc}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_sc}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>- S-curve values are estimated at the contract agreement according to the project plan. |
+|pl_sc|**periodic List** of the **S-Curves** of the project. </br></br>- $\begin{cases} \text{pl\_sc}[n] = \text{l\_sc}[n] - \text{l\_sc}[n-1] \\ \sum_{n=0}^{n=d}{\text{l\_sc\_n}[n]} = \text{bac} \end{cases}$ |
+|pp|current **Project Progress** in percent value.|
+|l_pp|**List** of the comulative **project progresses** for all the periods. </br></br>- $\begin{cases} \text{l\_pp}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pp}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>|
+|pl_pp|**periodic List** of **project progresses**. </br></br>- $\begin{cases} \text{pl\_pp}[n] = \text{l\_pp}[n] - \text{l\_pp}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_pp}[n]} = 1 \quad \text{or} \quad 100\% \end{cases}$|
+|roi|**return on investment** of the project. </br>- roi is set according to the industry standards </br></br>- $ roi = \frac{tep}{bac}$|
 |tep|Total expected payment to recieve from the client in trade for spending budget at completion(bac) and delivering 100% progress. In other words the total expected inflow of the project. </br></br> $ tep = roi * bac$|
 |im|Inflow Model(im) will determine the distribution of contractual payments form client to the contractor. It's the model that the payment schedule was designed upon. <br><br>inflow model will calculate *l_ep* and *l_ep_n*|
 |l_ep|List of comulative expected payments untill each period.  |
