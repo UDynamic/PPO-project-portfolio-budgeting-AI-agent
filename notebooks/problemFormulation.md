@@ -52,7 +52,8 @@ these parameters are directly related to the project parameters and state of the
 |general|im|Inflow Model(im) will determine the distribution of contractual payments form client to the contractor. It's the model that the payment schedule was designed upon. <br><br>inflow model will calculate *l_ep* and *pl_ep*|
 |revenue|l_sei|**List** of comulative **simple expected inflow** for the project.</br> simple being the assumption of recieving payment proportional to the spendt cost with **roi** as the multiplier for adding profit.</br></br>- $\begin{cases} \text{l\_sei}[n] = (1+ roi) \times l\_sc[n] & \quad \forall{n} \\ \text{l\_sei}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_sei}[n] = (1+roi) \times bac = tep & \quad \text{for} \quad n = d\end{cases}$ </br></br>- It's used in payment shedule calculation for different inflow models.`|
 |revenue|pl_sei|**periodic List** of **simple expected inflow** for the project.</br></br>- $\begin{cases} \text{pl\_sei}[n] = \text{l\_sei}[n] - \text{l\_sei}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_sei}[n]} = 1 \quad \text{or} \quad 100\% \end{cases}$ |
-|general|ir|**Inflation Rate** is a proxy for the contractor's general performance on cost expenditure. |
+|general|air|**Annual Inflation Rate** is a general parameter. future assumed costs will cost more as the time passes. so it's applied to the remaining costs of each period to the next periods. |
+|general|pl_ir|**periodic list** of **inflation rates** of each period summing up to the annual iflation rate|
 |cost|❓l_isc|**list** for the comulative **inflated S-Curve** as a proxy for the uncertain performance of the contractor on allocated budget|
 |cost|❓pl_isc|**periodic list** for the **inflated S-Curve** as a proxy for the uncertain performance of the contractor on allocated budget|
 
@@ -60,7 +61,19 @@ these parameters are directly related to the project parameters and state of the
 **remainings**
 * inflated s-curve (comulative and periodic)
 * actuals
-* uncertainty proxies for real dataset or simulation.
+* performance metrics:
+    * Inflation (as a general parameter. future assumed costs will cost more as the time passes)
+    * contractor performance: (not gonna go in details for this paper, just a percentage of success or accomplishment rate for the allocated budget. we don't do delay analysis here.)
+        * resources:
+            * labor
+            * machinary
+            * cost
+        * major forces: 
+            * war
+            * weather
+    * client reliability: 
+        * shorted payment with respect to expected payment schedule()
+        * delayed payment with respect to expected payment schedule()
 
 ---
 
