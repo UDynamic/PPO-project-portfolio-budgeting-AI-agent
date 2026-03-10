@@ -45,6 +45,7 @@ I need data from companies that:
    - Revenue deviation
    - Payment delay distribution
 4. **Use those parameters to generate synthetic project-level data**.
+4. **Use sensitivity analysis for proof of model's robustness**.
 
 Now your PPO environment is:
 
