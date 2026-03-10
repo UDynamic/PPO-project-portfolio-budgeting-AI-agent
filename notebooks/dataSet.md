@@ -1,18 +1,17 @@
 
-## What Kind of Companies Do You Actually Need?
+## What Kind of Companies data Do I Need?
 
 You need companies that:
 
 - Run **multiple parallel projects**
 - Have **contract-based revenue**
-- Experience **payment timing risk**
+- Experience **payment amount and timing risk**
 - Report enough financial detail publicly
 
+## why the kind of data I need is not accessible?
+
+
 ## How to Build Your Synthetic Portfolio from Real Companies
-
-You won’t get project-level data.
-
-So do this:
 
 1. Choose 5–10 engineering contractors.
 2. Extract:
@@ -29,9 +28,7 @@ Now your PPO environment is:
 
 > Statistically grounded in real Fortune 500 contractor behavior.
 
-That’s defensible.
 
-**I would write:**
 
 > “We calibrate uncertainty parameters using financial data from publicly listed engineering and construction firms within the Fortune 500.”
 
@@ -40,5 +37,3 @@ Then cite:
 - Industry volatility
 - DSO dispersion
 - Margin variation
-
-That’s publishable.

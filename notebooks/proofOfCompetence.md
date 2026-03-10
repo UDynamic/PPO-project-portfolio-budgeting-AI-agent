@@ -1,8 +1,7 @@
-# question: 
-> 
+# Question: 
+> the challenge of proving my competence and establishing my knowledge domain for the complete grasp of the problem and formulation of it to be able to create a real life resemblance of model for data generation. <br><br> I have been Project controler as my first job for about one year even before my graduation at a major general contractor in oil and gas building a multidisciplinary utilities and offsite project. <br><br> later I became senior project planner and Project management officer in several other general contractors for oil and gas. <br><br> then started my master's degree in the same industrial engineering but the engineering management branch and this is my master's thesis. <br><br> my main motive for this work has been the admiration for the high level portfolio managers of these major corporates and also government sectors and ministries as the high level clients. <br><br> I wanted to overcome the human limitations of these positions making an Ai powerful and intelligent enough to learn all the data, projects and History there is and make the best decision not knowing the future. <br><br> So I would benchmark it using the convex model optimized solution with known future. <br><br> then I will prove my work to be as good as knowing the future.
 
 ---
-# answer
 
 ## 1. Where to Write background, motivation, and justification for competence?
 
