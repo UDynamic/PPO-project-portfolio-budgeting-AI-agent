@@ -39,7 +39,12 @@ a: list of integers
 
 #### Project simulation parameters
 
-for creating simulated projects using the real world examples we need to set some intermidiate parameters making us able to set the **project parameters**
+to be able to create synthetic projects we need to set some intermidiate parameters making us able to set the **project parameters**
+
+these parameters are directly related to the project parameters and state of the project or portfolio.
+
+**for example:** 
+> in real use case of the model we have the **ROI** for the project according to the contractual agreements and legal documentations between client and contractor, but in the simulation we don't have an agreed upon contract as an input. we simulate the parameters based on the observed standards in the market. 
 
 |Type|name|definition|
 |---|---|---|
