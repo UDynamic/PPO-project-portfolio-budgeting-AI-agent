@@ -67,12 +67,12 @@ these parameters are directly related to the project parameters and state of the
 #### APAM (Action Plan Analysis Method) Parameters
 |Type|name|definition|
 |---|---|---|
-|revenue|l_evic|**List** of cumulative **Earned value inflow curve**. </br> - $\begin{cases} \text{l\_evic}[n] = \text{bac} \times \text{SCURVE\_LIST}[n] & \quad \forall{n} \\ \text{l\_evic}[0] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_evic}[n] = \text{total\_payment} & \quad \text{for} \quad n = d \end{cases}$ |
+|revenue|l_evic|**List** of cumulative **Earned value inflow curve**. in this model we have both **ap** and **fp**, so we schedule for the remaining payments as below: <br></br> - $\begin{cases} l\_evic[0] = ap & n = 0 \\ \begin{cases} l\_evic[n] = l\_sc[n] & \text{if } (l\_evic[n] < l\_sc[n] ) \& (l\_sc[n] \leq (tpac - fp)) \\ l\_evic[n] = l\_evic[n-1] & \text{else} \\ \end{cases} & \forall{n} \in \{1, \dots, d-1\} \\ l\_evic[n] = tpac & n = d  \end{cases}$ |
+|revenue|l_evic|**List** of cumulative **Earned value inflow curve**. in this model we have both **ap** and **fp**, so we schedule for the remaining payments as below: <br></br> - $\begin{cases} n = 0 & \quad \quad \text{l\_evic}[0] = ap \\ \forall{n} \in \{1, \dots, d-1\} & \quad \quad \begin{cases} \text{if } (l\_evic[n] < l\_sc[n] ) \& (l\_sc[n] \leq (tpac - fp)) & l\_evic[n] = l\_sc[n] \\ \text{else} &  l\_evic[n] = l\_evic[n-1] \\ \end{cases} \\ n = d & \quad \quad \text{l\_evic}[n] = tpac \end{cases}$ |
 |revenue|l_msic|**List** of cumulative **Milestone based Inflow curve**. </br> - $\begin{cases} \text{l\_mlic}[n] = \text{bac} \times  & \quad \forall{n} \\ \text{l\_mlic}[0] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_mlic}[n] = \text{total\_payment} & \quad \text{for} \quad n = DURATION \end{cases}$ |
 |revenue|l_lsic|**List** of cumulative **Lump-sum Inflow curve**. <br> for fully final payment method, all the **tpac** is received at the final period and project delivary, but with the fully advanced payment some amount should be retained as the insurance for the approved quality of project delivary. <br></br>- $\begin{cases} \text{fully advanced:} & \begin{cases} fp = l\_lsic[n] - l\_lsic[n-1] \\\\ l\_lsic[n] = fp & n=d\\ l\_lsic[n] = tpac - fp & \forall{n} \in \{0, \dots, d-1\} \end{cases} \\\\ \text{fully final:} & \begin{cases}l\_lsic[n] = tpac & \quad \quad n=d\\ l\_lsic[n] = 0 & \quad \quad \forall{n} \in \{0, \dots, d-1\} \end{cases} \end{cases}$ |
 
 ---
-
 **remainings**
 * actuals
 * performance metrics:
