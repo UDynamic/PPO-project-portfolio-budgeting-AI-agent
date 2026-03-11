@@ -32,8 +32,7 @@ tenth_element = a[9]  # 10th element (index starts at 0)
 |EVM|l_acwp|**List** of cumulative **Actual Cost of Work Performed**. This Earned Value Management (EVM) metric reflects the actual costs incurred for the work completed up to this period. <br><br>- It provides insight into the actual expenditure against the planned budget. <br><br>- This metric accounts for all uncertainties affecting project progress. |
 |EVM|l_bcwp|**List** of cumulative **Budgeted Cost of Work Performed**. This Earned Value Management (EVM) metric indicates the value of work that was planned to be completed by this period, based on the budget. <br><br>- A greater deviation from the ACWP signifies poorer performance and potential cost overruns. |
 |EVM|l_cpi|**List** of cumulative **Cost Performance Index (CPI)**. This metric measures the cost efficiency of the work accomplished. It is calculated by dividing the Earned Value (EV) by the Actual Cost (AC). <br><br>- $l\_cpi[n] = \frac{l\_bcwp[n]}{l\_acwp[n]} \rightarrow \begin{cases} l\_cpi[n] > 1 : & \text{project is under budget} \\ l\_cpi[n] < 1 : & \text{project is over budget} \end{cases}$ |
-|EVM|SPI|**Schedule Performance Index (SPI)**. This metric assesses the schedule efficiency of the work completed. It is calculated by dividing the Earned Value (EV) by the Planned Value (PV). <br><br>- An SPI greater than 1 indicates that the project is ahead of schedule, while an SPI less than 1 indicates that the project is behind schedule. <br><br>- $$SPI = \frac{EV}{PV}$$ |
-
+|EVM|l_spi|**List** of cumulative **Schedule Performance Index (SPI)**. This metric assesses the schedule efficiency of the work completed. It is calculated by dividing the Earned Value (EV) by the Planned Value (PV). <br><br>- $l\_spi[n] = \frac{l\_bcwp[n]}{l\_bcws[n]} \rightarrow \begin{cases} l\_spi[n] > 1 : & \text{project is ahead of schedule} \\ l\_spi[n] < 1 : & \text{project is behind schedule} \end{cases}$ |
 
 #### Portfolio Parameters
 
