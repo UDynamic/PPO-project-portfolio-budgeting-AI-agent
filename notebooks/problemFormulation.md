@@ -14,6 +14,7 @@ tenth_element = a[9]  # 10th element (index starts at 0)
 
 
 #### Project Parameters
+all the parameters specifying the project state according to the Project contract as an input to the problem.
 
 |Type|name|definition|
 |---|---|---|
@@ -22,8 +23,9 @@ tenth_element = a[9]  # 10th element (index starts at 0)
 |General|dd|current **data date** or **period** of the project. e.g. a project with duration of 12 has 12 periods and analytical data date.|
 |cost|l_sc|**List** of comulative **S-Curve** values untill project is finished. It's the cost schedule for the project from the start untill the budget at completion(bac) </br></br>- $\begin{cases} \text{l\_sc}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_sc}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>- S-curve values are estimated at the contract agreement according to the project plan. |
 |cost|pl_sc|**periodic List** of the **S-Curves** of the project. </br></br>- $\begin{cases} \text{pl\_sc}[n] = \text{l\_sc}[n] - \text{l\_sc}[n-1] \\\\ \sum_{n=0}^{n=d}{\text{pl\_sc}[n]} = \text{bac} \end{cases}$ |
-|revenue|im|**Inflow Model** will specify the distribution of payments according to contract and directly influences on the payment schedule. <br><br>- **typical inflow models**: <br>&nbsp; (1) Lump-sum: fully advanced or fully final payment. <br>&nbsp; (2) Milestone-based: In milestone-based contracts, there’s almost always an advance payment (15–30%) and a final retention/delivery payment (≥15%), with the rest distributed among intermediate milestones. <br>&nbsp; (3) EV-Based: proportional to the earned progress of the project |
 |revenue|tpac|**Total Payment at Completion** to be received from the client of the project after delivering 100% project progress or completion.</br></br>- $ \begin{cases} tpac =(1+roi) \times bac \\ \text{project profit} = tpac - bac = roi \times bac \end{cases}$ <br><br>- It's the total planned and agreeded opun inflow of the project. |
+|revenue|ap|**Advanced Payment**|
+|revenue|fp|**Final Payment**|
 |revenue|l_ic|**List** of comulative **Inflow curve** untill each period. <br><br>- It's the payment schedule agreed upon in the project contract. <br><br>- It's directly calculated from the contractual agreement and the inflow model of the project |
 |revenue|pl_ic|**periodic List** of **Inflow curve** for each period. <br><br>- It's directly calculated from the contractual agreement and the inflow model of the project </br></br>- $ pl\_ic = roi * l\_sc\_n $ <br><br>- Advance payment = $pl\_ic[0] \quad \text{or} \quad l\_ic[0] $  </br>- Final payment is calculated with respect to the **inflow model**. |
 |actual|pp|current **Project Progress** in percent value.|
@@ -48,20 +50,26 @@ to be able to create synthetic projects we need to set some intermidiate paramet
 these parameters are directly related to the project parameters and state of the project or portfolio.
 
 **for example:** 
-> in real use case of the model we have the **ROI** for the project according to the contractual agreements and legal documentations between client and contractor, but in the simulation we don't have an agreed upon contract as an input. we simulate the parameters based on the observed standards in the market. 
+> in real use case of the model we have the **Inflow Curve** for the project according to the contractual agreements and legal documentations between client and contractor. <br><br> but in the simulation we don't have an agreed upon contract as an input so we have to simulate one, and doing so we need to define **Inflow models** and set the **inflow curve** using those models.
 
 |Type|name|definition|
 |---|---|---|
 |general|roi|**return on investment** of the project. </br></br>- $ roi = \frac{\text{total earnings}}{\text{total cost}}= \frac{\text{total inflow}}{\text{total outflow}}= \frac{tpac}{bac}$ </br></br>- roi is set according to the industry standards. It is set at the contract negotiation time. |
 |revenue|l_pic|**List** of comulative **Proportional inflow curve** for the project.</br> proportional being the assumption of recieving payment proportional to the spent cost with **roi** as the multiplier for adding profit. It's like Earned value based inflow model without advanced or final retention payment. </br></br>- $\begin{cases} \text{l\_pic}[n] = (1+ roi) \times l\_sc[n] & \quad \forall{n} \\ \text{l\_pic}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pic}[n] = (1+roi) \times bac = tpac & \quad \text{for} \quad n = d\end{cases}$ </br></br>- It's used as base payment shedule for different inflow models. __all other models are different distributions of this simple schedule__.|
 |revenue|pl_pic|**periodic List** of **Proportional inflow curve** for the project.</br></br>- $\begin{cases} \text{pl\_pic}[n] = \text{l\_pic}[n] - \text{l\_pic}[n-1] \\\\ \sum_{n=0}^{n=d}{\text{pl\_pic}[n]} = tpac \end{cases}$ |
+|revenue|im|**Inflow Model** will specify the distribution of payments according to contract and directly influences on the payment schedule. <br><br>- **typical inflow models**: <br>&nbsp; (1) Lump-sum: fully advanced or fully final payment. <br>&nbsp; (2) Milestone-based: In milestone-based contracts, there’s almost always an advance payment (15–30%) and a final retention/delivery payment (≥15%), with the rest distributed among intermediate milestones. <br>&nbsp; (3) EV-Based: proportional to the earned progress of the project |
+|revenue|l_evic|**List** of cumulative **Earned value based inflow curve**.|
+|revenue|l_mlic|**List** of cumulative **Earned value based Inflow Model**.|
+|revenue|l_lsic|**List** of cumulative **Earned value based Inflow Model**.|
 |EVM|l_cpi|**List** of cumulative **Cost Performance Index (CPI)**. This metric measures the cost efficiency of the work accomplished. It is calculated by dividing the Earned Value (EV) by the Actual Cost (AC). <br><br>- $l\_cpi[n] = \frac{l\_bcwp[n]}{l\_acwp[n]} \rightarrow \begin{cases} l\_cpi[n] > 1 : & \text{project is under budget} \\ l\_cpi[n] < 1 : & \text{project is over budget} \end{cases}$ |
 |EVM|l_spi|**List** of cumulative **Schedule Performance Index (SPI)**. This metric assesses the schedule efficiency of the work completed. It is calculated by dividing the Earned Value (EV) by the Planned Value (PV). <br><br>- $l\_spi[n] = \frac{l\_bcwp[n]}{l\_bcws[n]} \rightarrow \begin{cases} l\_spi[n] > 1 : & \text{project is ahead of schedule} \\ l\_spi[n] < 1 : & \text{project is behind schedule} \end{cases}$ |
 
 #### APAM (Action Plan Analysis Method) Parameters
 |Type|name|definition|
 |---|---|---|
-||||
+|revenue|l_evic|**List** of cumulative **Earned value based inflow curve**. </br> - $\begin{cases} \text{l\_evic}[n] = \text{bac} \times \text{SCURVE\_LIST}[n] & \quad \forall{n} \\ \text{l\_evic}[0] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_evic}[n] = \text{total\_payment} & \quad \text{for} \quad n = d \end{cases}$ |
+|revenue|l_mlic|**List** of cumulative **Earned value based Inflow curve**. </br> - $\begin{cases} \text{l\_mlic}[n] = \text{bac} \times  & \quad \forall{n} \\ \text{l\_mlic}[0] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_mlic}[n] = \text{total\_payment} & \quad \text{for} \quad n = DURATION \end{cases}$ |
+|revenue|l_lsic|**List** of cumulative **Lump-sum based Inflow curve**. </br>- $\begin{cases} \text{fully advanced:} & \begin{cases} fp = l\_lsic[n] - l\_lsic[n-1] \\\\ l\_lsic[n] = fp & n=d\\ l\_lsic[n] = tpac - fp & \forall{n} \in \{0, \dots, d-1\} \end{cases} \\\\ \text{fully final:} \\\\\text{l\_lsic}[n] = \text{bac} \times & \quad \forall{n} \\ \text{l\_lsic}[0] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_lsic}[n] = \text{total\_payment} & \quad \text{for} \quad n = DURATION \end{cases}$ |
 
 ---
 
