@@ -6,7 +6,7 @@ This represented framework shows great capability in addressing almost all aspec
 
 ### parameters
 for parameters and valuables of type list or array, we will use square bracket notation for accessing or assigning to specific index. 
-```
+``` python
 a: list of integers 
 10th element: a[10]
 ```
@@ -23,7 +23,7 @@ a: list of integers
 |cost|pl_sc|**periodic List** of the **S-Curves** of the project. </br></br>- $\begin{cases} \text{pl\_sc}[n] = \text{l\_sc}[n] - \text{l\_sc}[n-1] \\ \sum_{n=0}^{n=d}{\text{l\_sc\_n}[n]} = \text{bac} \end{cases}$ |
 |revenue|tep|**Total expected payment** to be recieved from the client of the project after delivering 100% project progress or completion.</br></br>- $ \begin{cases} tep =(1+roi) \times bac \\ \text{project profit} = tep - bac = roi \times bac \end{cases}$ <br><br>- It's the total expected inflow of the project. |
 |revenue|l_ep|**List** of comulative **expected payments** untill each period.  |
-|revenue|pl_ep|List of expected payments for each period. </br></br> $ l\_ep\_n = roi * l\_sc\_n \\ \text{advanced payment} = l\_ep\_n_0 \quad \text{or} \quad l\_ep_0 $  </br></br> final payment is calculated with respect to the inflow model. Inflow model will specify the distribution of payments according to contract and directly influences on for  |
+|revenue|pl_ep|List of expected payments for each period. </br></br>- $ l\_ep\_n = roi * l\_sc\_n \\  \text{- advanced payment} = l\_ep\_n_0 \quad \text{or} \quad l\_ep_0 $  </br></br>- final payment is calculated with respect to the inflow model. Inflow model will specify the distribution of payments according to contract and directly influences on for  |
 |actual|pp|current **Project Progress** in percent value.|
 |actual|l_pp|**List** of the comulative **project progresses** for all the periods. </br></br>- $\begin{cases} \text{l\_pp}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pp}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>|
 |actual|pl_pp|**periodic List** of **project progresses**. </br></br>- $\begin{cases} \text{pl\_pp}[n] = \text{l\_pp}[n] - \text{l\_pp}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_pp}[n]} = 1 \quad \text{or} \quad 100\% \end{cases}$|
