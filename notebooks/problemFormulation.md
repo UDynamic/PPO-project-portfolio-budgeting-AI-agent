@@ -26,11 +26,11 @@ tenth_element = a[9]  # 10th element (index starts at 0)
 |revenue|l_ep|**List** of comulative **expected payments** untill each period.  |
 |revenue|pl_ep|List of expected payments for each period. </br></br>- $ l\_ep\_n = roi * l\_sc\_n \\  \text{- advanced payment} = l\_ep\_n_0 \quad \text{or} \quad l\_ep_0 $  </br></br>- final payment is calculated with respect to the inflow model. Inflow model will specify the distribution of payments according to contract and directly influences on for  |
 |actual|pp|current **Project Progress** in percent value.|
-|actual|l_pp|**List** of the comulative **project progresses** for all the periods. </br></br>- $\begin{cases} \text{l\_pp}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pp}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>|
-|actual|pl_pp|**periodic List** of **project progresses**. </br></br>- $\begin{cases} \text{pl\_pp}[n] = \text{l\_pp}[n] - \text{l\_pp}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_pp}[n]} = 1 \quad \text{or} \quad 100\% \end{cases}$|
-|actual|l_acwp||
-|actual|l_bcwp||
-|actual|l_bcwp||
+|actual|l_pp|**List** of the comulative **project progresses** for all the periods. for a completed project we have: </br>- $\begin{cases} \text{l\_pp}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pp}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>|
+|actual|pl_pp|**periodic List** of **project progresses**. </br></br>- $\begin{cases} \text{pl\_pp}[n] = \text{l\_pp}[n] - \text{l\_pp}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_pp}[n]} = 1 \quad \text{or} \quad 100\% & \text{for a completed project} \end{cases}$|
+|EVM|l_acwp||
+|EVM|l_bcwp||
+|EVM|l_bcwp||
 
 #### Portfolio Parameters
 
