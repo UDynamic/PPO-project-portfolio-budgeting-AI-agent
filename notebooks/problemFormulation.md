@@ -3,7 +3,7 @@ This is a Brand new and fundamentally revised framework on project portfolio pro
 
 This represented framework shows great capability in addressing almost all aspects of budgetting decisions for project portfolio. 
 
-
+---
 ### parameters
 for parameters and valuables of type list or array, we will use square bracket notation for accessing or assigning to specific index. 
 
@@ -56,7 +56,7 @@ these parameters are directly related to the project parameters and state of the
 |revenue|l_sei|**List** of comulative **simple expected inflow** for the project.</br> simple being the assumption of recieving payment proportional to the spendt cost with **roi** as the multiplier for adding profit.</br></br>- $\begin{cases} \text{l\_sei}[n] = (1+ roi) \times l\_sc[n] & \quad \forall{n} \\ \text{l\_sei}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_sei}[n] = (1+roi) \times bac = tep & \quad \text{for} \quad n = d\end{cases}$ </br></br>- It's used in payment shedule calculation for different inflow models.`|
 |revenue|pl_sei|**periodic List** of **simple expected inflow** for the project.</br></br>- $\begin{cases} \text{pl\_sei}[n] = \text{l\_sei}[n] - \text{l\_sei}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_sei}[n]} = 1 \quad \text{or} \quad 100\% \end{cases}$ |
 
-
+---
 
 **remainings**
 * actuals
