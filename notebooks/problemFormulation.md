@@ -6,9 +6,10 @@ This represented framework shows great capability in addressing almost all aspec
 
 ### parameters
 for parameters and valuables of type list or array, we will use square bracket notation for accessing or assigning to specific index. 
-``` python
-a: list of integers 
-10th element: a[10]
+
+```python
+a: List[int]  # list of integers
+tenth_element = a[9]  # 10th element (index starts at 0)
 ```
 
 
@@ -20,7 +21,7 @@ a: list of integers
 |General|d|**duration** of the project statet in number of periods |
 |General|dd|current **data date** or **period** of the project. e.g. a project with duration of 12 has 12 periods and analytical data date.|
 |cost|l_sc|**List** of comulative **S-Curve** values untill project is finished. It's the cost schedule for the project from the start untill the budget at completion(bac) </br></br>- $\begin{cases} \text{l\_sc}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_sc}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>- S-curve values are estimated at the contract agreement according to the project plan. |
-|cost|pl_sc|**periodic List** of the **S-Curves** of the project. </br></br>- $\begin{cases} \text{pl\_sc}[n] = \text{l\_sc}[n] - \text{l\_sc}[n-1] \\ \sum_{n=0}^{n=d}{\text{l\_sc\_n}[n]} = \text{bac} \end{cases}$ |
+|cost|pl_sc|**periodic List** of the **S-Curves** of the project. </br></br>- $\begin{cases} \text{pl\_sc}[n] = \text{l\_sc}[n] - \text{l\_sc}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_sc}[n]} = \text{bac} \end{cases}$ |
 |revenue|tep|**Total expected payment** to be recieved from the client of the project after delivering 100% project progress or completion.</br></br>- $ \begin{cases} tep =(1+roi) \times bac \\ \text{project profit} = tep - bac = roi \times bac \end{cases}$ <br><br>- It's the total expected inflow of the project. |
 |revenue|l_ep|**List** of comulative **expected payments** untill each period.  |
 |revenue|pl_ep|List of expected payments for each period. </br></br>- $ l\_ep\_n = roi * l\_sc\_n \\  \text{- advanced payment} = l\_ep\_n_0 \quad \text{or} \quad l\_ep_0 $  </br></br>- final payment is calculated with respect to the inflow model. Inflow model will specify the distribution of payments according to contract and directly influences on for  |
