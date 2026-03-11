@@ -28,9 +28,10 @@ tenth_element = a[9]  # 10th element (index starts at 0)
 |actual|pp|current **Project Progress** in percent value.|
 |actual|l_pp|**List** of the comulative **project progresses** for all the periods. for a completed project we have: </br>- $\begin{cases} \text{l\_pp}[n] = 0 & \quad \text{for} \quad n = 0 \\ \text{l\_pp}[n] = \text{bac} & \quad \text{for} \quad n = d \end{cases}$ </br></br>|
 |actual|pl_pp|**periodic List** of **project progresses**. </br></br>- $\begin{cases} \text{pl\_pp}[n] = \text{l\_pp}[n] - \text{l\_pp}[n-1] \\ \sum_{n=0}^{n=d}{\text{pl\_pp}[n]} = 1 \quad \text{or} \quad 100\% & \text{for a completed project} \end{cases}$|
-|EVM|l_acwp|**list** of comulative **Actual Cost of Work Performed**. The Earned value method metric for the actual Cost of the work that has been done up to this period. <br><br>- actual cost of earned progress for the project. <br><br>- it includes all the uncertainties affecting progress. |
-|EVM|l_bcwp|**list** of comulative **Budgeted Cost of Work Performed**. The Earned value method metric declaring expected planned progress with respect actual cost occured up to this period. <br><br>- the more diviation from the **acwp** the worse the performance. |
-|EVM|l_bcws|**list** of comulative **Budgeted Cost of Work Scheduled**. the Earned value method metric for the actual Cost of the work that has been done up to this period. <br><br>- the more diviation from the **acwp** the worse the performance.|
+|EVM|l_bcws|**List** of cumulative **Budgeted Cost of Work Scheduled**. This Earned Value Management (EVM) metric represents the planned value of work that was scheduled to be completed by this period. <br><br>- It serves as a baseline for measuring project performance. <br><br>- A significant deviation from the BCWP indicates potential scheduling issues or delays in project execution. |
+|EVM|l_acwp|**List** of cumulative **Actual Cost of Work Performed**. This Earned Value Management (EVM) metric reflects the actual costs incurred for the work completed up to this period. <br><br>- It provides insight into the actual expenditure against the planned budget. <br><br>- This metric accounts for all uncertainties affecting project progress. |
+|EVM|l_bcwp|**List** of cumulative **Budgeted Cost of Work Performed**. This Earned Value Management (EVM) metric indicates the value of work that was planned to be completed by this period, based on the budget. <br><br>- A greater deviation from the ACWP signifies poorer performance and potential cost overruns. |
+
 
 #### Portfolio Parameters
 
