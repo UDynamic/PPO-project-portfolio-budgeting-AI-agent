@@ -67,6 +67,7 @@ these parameters are directly related to the project parameters and state of the
 |EVM|l_cpi|**List** of cumulative **Cost Performance Index (CPI)**. This metric measures the cost efficiency of the work accomplished. It is calculated by dividing the Earned Value (EV) by the Actual Cost (AC). <br><br>- $l\_cpi[n] = \frac{l\_bcwp[n]}{l\_acwp[n]} \rightarrow \begin{cases} l\_cpi[n] > 1 : & \text{project is under budget} \\ l\_cpi[n] < 1 : & \text{project is over budget} \end{cases}$ |
 |EVM|l_spi|**List** of cumulative **Schedule Performance Index (SPI)**. This metric assesses the schedule efficiency of the work completed. It is calculated by dividing the Earned Value (EV) by the Planned Value (PV). <br><br>- $l\_spi[n] = \frac{l\_bcwp[n]}{l\_bcws[n]} \rightarrow \begin{cases} l\_spi[n] > 1 : & \text{project is ahead of schedule} \\ l\_spi[n] < 1 : & \text{project is behind schedule} \end{cases}$ |
 
+
 #### APAM (Action Plan Analysis Method) Parameters
 |Type|name|definition|
 |---|---|---|
