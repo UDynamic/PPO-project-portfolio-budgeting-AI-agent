@@ -4,7 +4,7 @@ This is a Brand new and fundamentally revised framework on project portfolio pro
 This represented framework shows great capability in addressing almost all aspects of budgetting decisions for project portfolio. 
 
 ---
-### parameters
+## parameters
 for parameters and valuables of type list or array, we will use square bracket notation for accessing or assigning to specific index. 
 
 ```python
@@ -13,7 +13,7 @@ tenth_element = a[9]  # 10th element (index starts at 0)
 ```
 
 
-#### Project Parameters
+### Project Parameters
 all the parameters specifying the project state according to the Project contract as an input to the problem.
 
 |Type|name|definition|
@@ -35,7 +35,7 @@ all the parameters specifying the project state according to the Project contrac
 |EVM|l_acwp|**List** of cumulative **Actual Cost of Work Performed**. This Earned Value Management (EVM) metric reflects the actual costs incurred for the work completed up to this period. <br><br>- It provides insight into the actual expenditure against the planned budget. <br><br>- This metric accounts for all uncertainties affecting project progress. |
 |EVM|l_bcwp|**List** of cumulative **Budgeted Cost of Work Performed**. This Earned Value Management (EVM) metric indicates the value of work that was planned to be completed by this period, based on the budget. <br><br>- A greater deviation from the ACWP signifies poorer performance and potential cost overruns. |
 
-#### Portfolio Parameters
+### Portfolio Parameters
 
 |Type|name|definition|
 |---|---|---|
@@ -43,7 +43,7 @@ all the parameters specifying the project state according to the Project contrac
 |general|pd|**Portfolio Duration** is the the total periods of the problem. total time steps of the model for taking actions. <br><br>- as a symbol of 12 months of the year, it's set to 12|
 |general|pdd|**Portfolio data date** is the current period of the portfolio in it's duration. <br><br>- each episode is consisted of **pd** numbers of **pdd**|
 
-#### Project simulation parameters
+### Project simulation parameters
 
 to be able to create synthetic projects we need to set some intermidiate parameters making us able to set the **project parameters**
 
@@ -68,12 +68,12 @@ these parameters are directly related to the project parameters and state of the
 |EVM|l_spi|**List** of cumulative **Schedule Performance Index (SPI)**. This metric assesses the schedule efficiency of the work completed. It is calculated by dividing the Earned Value (EV) by the Planned Value (PV). <br><br>- $l\_spi[n] = \frac{l\_bcwp[n]}{l\_bcws[n]} \rightarrow \begin{cases} l\_spi[n] > 1 : & \text{project is ahead of schedule} \\ l\_spi[n] < 1 : & \text{project is behind schedule} \end{cases}$ |
 
 
-#### APAM (Action Plan Analysis Method) Parameters
+### APAM (Action Plan Analysis Method) Parameters
 |Type|name|definition|
 |---|---|---|
 ---
 
-**remainings**
+### remainings
 * actuals
 * performance metrics:
     * Inflation (as a general parameter. future assumed costs will cost more as the time passes)
