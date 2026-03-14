@@ -92,10 +92,13 @@ these parameters are directly related to the project parameters and state of the
 
 ## Prompt
 
+### instructions
+
 **responses should be at Q1 journal quality.**
 
 according to complete formulation of the problem above create a python convex optimization program for me to input projects for portfolio and return the optimal budgeting plan at each time step of the portfolio for each project.
 
+### expected output
 the output must be in following format with imaginary allocation plan values for one project (the program should fill this table including all the projects given to):
 
 |Projects|0|1|2|3|4|5|6|7|8|9|10|11|12|
