@@ -90,7 +90,7 @@ these parameters are directly related to the project parameters and state of the
         * delayed payment with respect to expected payment schedule()
 ---
 
-## Prompt
+## Ai Prompt
 
 ### instructions
 
