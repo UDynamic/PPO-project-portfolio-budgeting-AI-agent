@@ -22,6 +22,13 @@ python -m pip install --trusted-host mirror-pypi.runflare.com -i https://mirror-
 ```
 
 **for local installation with manual download**
-``` cmd
+
+```cmd
 python -m pip install path_to_downloaded_file.whl
 ```
+
+    **Desktop**
+
+    ```cmd
+    python -m pip install "C:\Users\Mahriar\Desktop\pyqt6-6.10.2-cp39-abi3-win_amd64.whl"
+    ```
