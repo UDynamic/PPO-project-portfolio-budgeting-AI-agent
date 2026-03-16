@@ -4,7 +4,7 @@
 
 due to black out I can't download the necessary packages needed for Convex Optimization problem formulation.
 
-**Using **Zigap.ir** as the Ai assistant.
+Using **Zigap.ir** as the Ai assistant.
 
 Used **Mirror runflare** as the source for package installation and this is the command for the required packages for convex optimization:
 
@@ -19,4 +19,9 @@ python -m pip install --trusted-host mirror-pypi.runflare.com -i https://mirror-
 
 python -m pip install --trusted-host mirror-pypi.runflare.com -i https://mirror-pypi.runflare.com/simple/ matplotlib
 
+```
+
+**for local installation with manual download**
+``` cmd
+python -m pip install path_to_downloaded_file.whl
 ```
