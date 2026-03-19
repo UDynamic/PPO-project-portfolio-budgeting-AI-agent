@@ -5,9 +5,10 @@ Normal shell commands scroll fine — only GAP/GAPCode breaks scrolling.
 This issue is caused by GAP switching the terminal into **alternate screen mode**, which VS Code cannot scroll.
 
 ---
+
 ## Easiest solution:
 
-**use wsl itself instead of IDE terminals**
+### **Use `wsl` itself instead of IDE terminals**
 
 ```  
   - Navigate to your project folder in Explorer.
