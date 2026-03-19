@@ -1,4 +1,4 @@
-# VS Code + WSL Terminal Not Scrolling When Running GAP/GAPCode
+# cursor + WSL Terminal Not Scrolling When Running GAP/GAPCode
 When running GAP/GAPCode inside the VS Code integrated WSL terminal, the terminal becomes stuck at the bottom few lines and cannot scroll up at all (mouse, PgUp, Shift+PgUp all fail).  
 Normal shell commands scroll fine — only GAP/GAPCode breaks scrolling.
 
