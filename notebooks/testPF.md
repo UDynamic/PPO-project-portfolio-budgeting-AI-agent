@@ -191,22 +191,6 @@ A projection/clipping layer should enforce hard feasibility before state transit
 
 ---
 
-## 9) Alignment with `portfolio_env.ipynb`
-The starter notebook already defines core primitives that are retained here:
-- Scenario-based risk configurations.
-- Project generator (`ProjectClass`) with ROI, duration, BAC, S-curve, payments, and data date logic.
-- Portfolio generator (`PortfolioClass`) assembling multiple projects.
-- Initial Gymnasium environment class (`ENV`) as interface scaffold.
-- Payment delay uncertainty as critical stochastic mechanism.
-
-What this formulation adds beyond the notebook:
-- Full MDP definition with explicit state/action/reward/transition design.
-- Clear mapping between project economics (cost/inflow/progress/EVM) and RL signals.
-- Constraint handling and feasibility enforcement design.
-- Synthetic-data calibration rationale for thesis-grade defensibility.
-
----
-
 ## 10) Synthetic Data Credibility Strategy
 To keep simulation academically credible:
 - Calibrate ROI, delay, margin variability, and cash-flow volatility from public contractor/industry financials.
