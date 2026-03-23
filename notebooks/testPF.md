@@ -250,10 +250,3 @@ Given a portfolio of `N` projects over `PD` periods, with project-specific cost 
 
 ---
 
-## 14) Next Implementation Step
-Translate this formulation into a new clean environment module (separate from starter notebook), then train PPO using Stable-Baselines3 with:
-- vectorized environments,
-- reward component logging,
-- scenario-wise evaluation,
-- baseline policy comparison.
-
