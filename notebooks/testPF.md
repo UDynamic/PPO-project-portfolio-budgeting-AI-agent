@@ -38,6 +38,7 @@ Project-level duration may vary:
 
 ---
 
+
 ## 4) Project Parameterization
 The following structure consolidates your `problemFormulation.md` and notebook logic.
 
