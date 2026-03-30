@@ -236,3 +236,5 @@ Given a portfolio of `N` projects over `PD` periods, with project-specific cost 
 ---
 
 ## 14) Simulation results
+
+### 15) Trained model
