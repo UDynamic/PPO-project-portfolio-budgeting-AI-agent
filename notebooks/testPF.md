@@ -46,6 +46,7 @@ For each project `i`:
 - `ROI_i`: return-on-investment margin parameter.
 - `TPAC_i = (1 + ROI_i) * BAC_i`: total contractual inflow at completion.
 - `d_i`: project duration.
+- `j ∈ {0, …, d_i}`: project period index.
 - `dd_{i,t}`: project data date at period `t` (current reporting step).
 
 ### 4.2 Cost Baseline (S-curve)
