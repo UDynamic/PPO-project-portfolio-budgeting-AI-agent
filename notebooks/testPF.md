@@ -28,14 +28,12 @@ PPO is suitable because it supports:
 ---
 
 ## 3) Sets, Indices, and Horizon
-- `i ∈ {1, …, N}`: project index.
 - `t ∈ {0, …, PD}`: portfolio period index.
+- `i ∈ {1, …, N}`: project index.
+- `d_i ≤ PD`: duration of project `i`.
+- `j ∈ {0, …, d_i}`: project period index.
 - `N`: number of projects in current portfolio.
 - `PD`: portfolio duration (total decision periods).
-
-Project-level duration may vary:
-- `d_i ≤ PD`: duration of project `i`.
-
 ---
 
 
