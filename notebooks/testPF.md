@@ -1,5 +1,8 @@
 # Test Problem Formulation: PPO for Project Portfolio Budgeting
 
+**⚠️ we must scope down the project**
+scoping down to the EPC projects of Oil and Gas would narrow everything down and the data availability could be minimized to the a lesser issue.
+
 ## 1) Scope and Objective
 This document defines a clean and complete formulation of the **Project Portfolio Budgeting** problem as a **reinforcement learning environment** for training a **PPO agent**.
 
