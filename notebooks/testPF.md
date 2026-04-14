@@ -3,6 +3,12 @@
 **⚠️ we must scope down the project**
 scoping down to the EPC projects of Oil and Gas would narrow everything down and the data availability could be minimized to the a lesser issue.
 
+*wirte from the perspective of an oil and gas EPC general contractor*
+* portfolio will be consisted of the same kind of projects.
+* ROI could be eliminated or be fixed in a specific range.
+* s-curve model could be of only of two types of milestone based and EV based because of the high contract budget. (lump-sum to be removed)
+* earned value method is a standard project performance management metric.
+
 ## 1) Scope and Objective
 This document defines a clean and complete formulation of the **Project Portfolio Budgeting** problem as a **reinforcement learning environment** for training a **PPO agent**.
 
