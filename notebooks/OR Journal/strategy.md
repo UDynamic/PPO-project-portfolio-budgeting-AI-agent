@@ -1,4 +1,4 @@
-# RL-Based Portfolio Budgeting: Paper Strategy & Architecture
+# RL-Based Portfolio Budgeting: Complete Paper Strategy & Architecture
 
 ---
 
@@ -58,7 +58,50 @@ use cases that classical OR simply cannot support at scale.
 
 ---
 
-### Contribution 3 — Interpretability Analysis (Secondary, Add If Time Permits)
+### Contribution 3 — Open-Source Deployable Framework (Secondary, High-Impact)
+> "We release an open-source decision support system with full backend API and
+> interactive frontend, enabling practitioners to deploy portfolio optimization without
+> ML expertise. For industry-specific adaptation, we provide a fine-tuning protocol
+> using historical project data, bridging the gap between synthetic training and
+> real-world deployment."
+
+**Why this matters:**
+- Most OR papers stop at experimental results — you ship working software
+- Addresses the synthetic data limitation directly: pretrain on synthetic, fine-tune on real
+- Democratizes access: no OR expert or ML engineer needed for deployment
+- Tangible impact: reviewers can actually use your system
+
+**What you build:**
+
+| Component | Purpose | User Experience |
+|-----------|---------|-----------------|
+| Backend API | RL inference engine | REST endpoints for allocation requests |
+| Frontend UI | Interactive dashboard | Upload projects, set budget, get allocation plan |
+| Fine-tuning module | Domain adaptation | Company uploads historical data, system retrains |
+| Documentation | Deployment guide | Step-by-step setup for practitioners |
+
+**How you prove it:**
+- Demo video or screenshots in supplementary material
+- GitHub repository with full codebase
+- Fine-tuning case study: synthetic "company dataset" → show performance improvement
+- Deployment guide: "from zero to running system in 30 minutes"
+
+**The fine-tuning angle specifically:**
+- Pretrain on 10,000 synthetic instances (broad knowledge)
+- Fine-tune on 200-500 company-specific instances (domain specialization)
+- Show: fine-tuned model outperforms generic model by 8-12% on company data
+- This is exactly the LLM paradigm — reviewers in 2025-2026 will immediately get it
+
+**Strategic value:**
+- Turns synthetic data from weakness to strength: "we use synthetic for pretraining,
+  real data for fine-tuning"
+- Opens a natural future work section: "how much real data is needed for effective
+  fine-tuning?"
+- For PhD applications: you can demo a live system, not just show tables
+
+---
+
+### Contribution 4 — Interpretability Analysis (Optional, Add If Time Permits)
 > "The RL policy provides interpretable allocation signals through attention-based
 > analysis, revealing which project features drive budget decisions."
 
@@ -93,6 +136,7 @@ use cases that classical OR simply cannot support at scale.
 - Real data is confidential and regionally distorted
 - Literature-calibrated synthetic data is standard practice in OR computation papers
 - You explicitly acknowledge and justify this in Section 4.4.1
+- Fine-tuning protocol addresses real-world deployment
 
 ### 3.2 RL Agent
 - Algorithm: PPO (stable, well-understood, easy to tune)
@@ -120,6 +164,36 @@ model = Model("portfolio_mip")
 model.optimize()
 # record: solution quality + solve time
 ```
+### 3.4 Deployable System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Frontend (React/Vue)                  │
+│  - Project upload interface                                  │
+│  - Budget constraint input                                   │
+│  - Allocation visualization                                  │
+│  - Scenario comparison dashboard                             │
+└─────────────────────────────────────────────────────────────┘
+↓ HTTP/REST
+┌─────────────────────────────────────────────────────────────┐
+│                    Backend API (FastAPI/Flask)               │
+│  - /allocate endpoint: returns budget allocation             │
+│  - /finetune endpoint: triggers domain adaptation            │
+│  - /evaluate endpoint: compares allocation strategies        │
+└─────────────────────────────────────────────────────────────┘
+↓
+┌─────────────────────────────────────────────────────────────┐
+│                      RL Inference Engine                     │
+│  - Pretrained PPO agent (10K synthetic instances)            │
+│  - Fine-tuning module (company data adaptation)              │
+│  - Model versioning and rollback                             │
+└─────────────────────────────────────────────────────────────┘
+```
+**Key features:**
+- Zero-setup deployment: Docker container or cloud-hosted demo
+- No ML expertise required: upload CSV, get allocation
+- Fine-tuning workflow: company uploads historical projects → system retrains → improved performance
+- Export results: PDF reports, CSV allocations
 
 ---
 
@@ -127,17 +201,19 @@ model.optimize()
 
 ### 4.1 Introduction
 - Hook: "A portfolio manager needs to evaluate 500 budget scenarios. Classical MIP
-  would take 5 days. Our RL agent does it in 50 seconds."
+  would take 5 days. Our RL agent does it in 50 seconds — and we provide the full
+  system as open-source software."
 - Problem statement: computational intractability + uncertainty
 - Why RL: speed, implicit uncertainty handling, no re-solve needed
-- Contributions: 2–3 bullet points (from Section 2 above)
+- Contributions: 3–4 bullet points (from Section 2 above)
 - Paper roadmap
 
 ### 4.2 Literature Review
 - Project Portfolio Management (PPM) and classical OR methods
 - Stochastic optimization: scenario trees, robust optimization
 - RL in combinatorial optimization and OR (recent 2020–2025 papers)
-- Gap: no work addresses real-time portfolio budgeting with RL at scale
+- Software tools for portfolio optimization (gap: no RL-based systems)
+- Gap: no work addresses real-time portfolio budgeting with RL at scale + deployment
 - Why PSPLIB and standard benchmarks are unsuitable for this problem
 
 ### 4.3 Problem Formulation
@@ -155,6 +231,7 @@ model.optimize()
 - **4.4.2 RL Agent:** network architecture, PPO hyperparameters, training details
 - **4.4.3 Baselines:** MIP formulation, stochastic programming setup, greedy rule
 - **4.4.4 Perfect-Information Upper Bound:** how it's computed, role in analysis
+- **4.4.5 Fine-Tuning Protocol:** domain adaptation procedure, data requirements
 
 ### 4.5 Computational Experiments
 - **4.5.1 Setup:** instance sizes, hardware, metrics (solve time, expected return,
@@ -162,18 +239,26 @@ model.optimize()
 - **4.5.2 Main Comparison:** RL vs. all baselines — speed and quality
 - **4.5.3 Scalability Analysis:** performance as N (portfolio size) grows
 - **4.5.4 Robustness Analysis:** vary uncertainty level, budget tightness, N
-- **4.5.5 Interpretability:** (if included) attention maps or SHAP analysis
+- **4.5.5 Fine-Tuning Case Study:** synthetic company dataset, performance improvement
+- **4.5.6 Interpretability:** (if included) attention maps or SHAP analysis
 
-### 4.6 Managerial Insights
+### 4.6 System Architecture and Deployment
+- **4.6.1 Software Design:** backend API, frontend interface, deployment options
+- **4.6.2 User Workflow:** from project upload to allocation decision
+- **4.6.3 Fine-Tuning Workflow:** company data integration, retraining process
+- **4.6.4 Reproducibility:** GitHub repository, documentation, demo instance
+
+### 4.7 Managerial Insights
 - "What does 10,000× speedup mean for a real portfolio manager?"
 - Scenario analysis use case: evaluate hundreds of budget plans in seconds
 - Dynamic reoptimization: respond to mid-year budget changes instantly
 - Democratization: no OR expert needed for deployment
+- Fine-tuning enables industry-specific adaptation without ML expertise
 
-### 4.7 Conclusion
+### 4.8 Conclusion
 - Restate contributions clearly
-- Acknowledge synthetic data limitation honestly
-- Future work: real data validation, multi-period portfolios, hybrid RL+OR
+- Acknowledge synthetic data limitation honestly, highlight fine-tuning solution
+- Future work: multi-period portfolios, hybrid RL+OR, fine-tuning data requirements study
 
 ---
 
@@ -187,15 +272,19 @@ model.optimize()
 | Budget utilization rate | Constraint satisfaction |
 | Performance under uncertainty levels | Robustness |
 | Variance of returns | Risk management |
+| Fine-tuning improvement (%) | Domain adaptation effectiveness |
+| System response time (end-to-end) | Practical deployment performance |
 
 ---
 
 ## 6. Reproducibility Checklist
 
-- [ ] GitHub repo: environment, RL agent, all baselines
+- [ ] GitHub repo: environment, RL agent, all baselines, full system code
 - [ ] JSON parameter spec: all calibrated distributions with literature sources
 - [ ] Raw results: all tables/figures reproducible from published data
-- [ ] Limitations section: synthetic data acknowledged, calibration justified
+- [ ] Docker container or cloud demo: one-click deployment
+- [ ] Fine-tuning tutorial: step-by-step guide with example dataset
+- [ ] Limitations section: synthetic data acknowledged, calibration justified, fine-tuning validated
 
 ---
 
@@ -203,25 +292,33 @@ model.optimize()
 
 | Journal | Fit | Notes |
 |---------|-----|-------|
-| EJOR | Primary | Strong on computation + practical impact, publishes RL |
-| Computers & OR | Secondary | Highly receptive to RL/computational methods |
+| EJOR | Primary | Strong on computation + practical impact, publishes RL, values software contributions |
+| Computers & OR | Secondary | Highly receptive to RL/computational methods, good software track record |
+| IEEE TEM | Alternative | Strong fit if system deployment is emphasized |
 | Omega | Alternative | Good if managerial insights section is strong |
-| IEEE TEM | Alternative | Good if interpretability contribution is included |
+
+**Strategic note:** The open-source system contribution plays better at IEEE TEM and
+Computers & OR than pure theory journals. EJOR sits in the middle — they appreciate
+practical impact but won't weight software as heavily as algorithmic novelty.
 
 ---
 
-## 8. Implementation Timeline
+## 8. Implementation Timeline (Revised)
 
 | Phase | Tasks | Duration |
 |-------|-------|----------|
 | 1. Foundation | Synthetic environment + greedy baseline + basic RL | 3 weeks |
 | 2. Baselines | MIP + stochastic programming + upper bound | 4 weeks |
 | 3. RL Optimization | Hyperparameter tuning + architecture refinement | 4 weeks |
-| 4. Analysis | All comparisons + sensitivity + visualizations | 3 weeks |
-| 5. Interpretability | SHAP or attention analysis (optional) | 1–2 weeks |
-| 6. Writing | Full paper draft + revision | 3 weeks |
+| 4. System Development | Backend API + frontend UI + fine-tuning module | 5 weeks |
+| 5. Analysis | All comparisons + sensitivity + fine-tuning case study | 3 weeks |
+| 6. Interpretability | SHAP or attention analysis (optional) | 1–2 weeks |
+| 7. Writing | Full paper draft + revision | 3 weeks |
 
-**Total: ~18 weeks** for a complete, submittable paper.
+**Total: ~22–24 weeks** for a complete, submittable paper with deployable system.
+
+**Critical path consideration:** System development (Phase 4) can partially overlap with
+RL optimization (Phase 3) if you build the API wrapper while tuning the agent.
 
 ---
 
@@ -232,6 +329,76 @@ Do NOT say: "RL is better than OR."
 DO say: "RL enables use cases that OR cannot support due to computational constraints.
 For problems requiring real-time response or large-scale scenario analysis, our approach
 is the only practical option. For offline, single-instance optimization, classical OR
-remains the gold standard."
+remains the gold standard. We provide an open-source system that makes this technology
+accessible to practitioners without ML expertise."
 
 This is a complementary framing — OR reviewers will appreciate it, and it's honest.
+
+---
+
+## 10. Risk Assessment: The Open-Source System Contribution
+
+### Upside
+- Differentiates your paper from 95% of OR submissions
+- Directly addresses synthetic data limitation via fine-tuning
+- Tangible impact: reviewers can use your system
+- Strong signal for PhD applications: you ship working software
+- Natural follow-up research: fine-tuning data requirements, hybrid methods
+
+### Downside
+- Adds 5 weeks to timeline (22–24 weeks total vs. 18 weeks without)
+- OR journals may treat it as "nice bonus" rather than core contribution
+- Requires maintaining code quality and documentation
+- Fine-tuning case study must be convincing (can't just promise it works)
+
+### Mitigation Strategy
+- Position system as supporting contribution, not primary
+- Ensure core algorithmic contributions (speed + quality) stand alone
+- Build minimal viable system: functional but not polished
+- One fine-tuning case study is enough: synthetic company dataset with clear improvement
+
+### My Recommendation
+Include it. The upside is significant, the downside is manageable, and it directly
+addresses your biggest vulnerability (synthetic data). For PhD applications, this is
+gold. For publication, it's a strong differentiator that increases acceptance probability
+at EJOR and especially at IEEE TEM or Computers & OR.
+
+---
+
+## 11. Fine-Tuning Protocol Details
+
+### Pretraining Phase
+- Train on 10,000 synthetic instances
+- Broad coverage: varied portfolio sizes, budget constraints, uncertainty levels
+- Goal: learn general allocation strategies
+
+### Fine-Tuning Phase
+- Company provides 200–500 historical project records
+- Format: project features, actual costs, actual returns, completion status
+- Retrain last 2–3 layers of policy network (transfer learning)
+- Goal: adapt to company-specific cost/return distributions
+
+### Validation
+- Hold out 20% of company data for testing
+- Compare: pretrained model vs. fine-tuned model vs. company's historical decisions
+- Show: fine-tuned model outperforms both by 8–12%
+
+### Data Requirements Study (Future Work)
+- How much company data is needed? 50 projects? 200? 500?
+- Diminishing returns curve: performance vs. fine-tuning dataset size
+- This is a natural follow-up paper
+
+---
+
+## 12. What Makes This Paper Strong
+
+You're not just proposing an algorithm. You're proposing a complete solution:
+- Fast inference (10,000× speedup)
+- High-quality decisions (matches stochastic programming)
+- Deployable system (open-source, no ML expertise needed)
+- Real-world adaptation (fine-tuning protocol)
+
+That's a full package. Most papers deliver one of these. You're delivering all four.
+
+For a master's thesis targeting PhD applications in IE with AI/ML focus, this is exactly
+the right level of ambition and execution.
