@@ -1,3 +1,13 @@
+## assumptions
+
+### Simplest Model (It's a brand new field in the literature)
+* extension of each of the assumptions will be recognized as future work
+
+#### Portfolio structure
+
+* all the projects at timestep 0 of the portfolio are brand new projects without history. (assume any project with history is transitioned to a new contractor)
+* all projects contract finish is no late than portfolio timespan. 
+
 ## Exclusions
 
 #### Inflation
