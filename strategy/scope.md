@@ -3,6 +3,9 @@
 ### Simplest Model (It's a brand new field in the literature)
 * extension of each of the assumptions will be recognized as future work
 
+#### Project Structure
+* all are earned value based payments (EVM is the project performance method)
+
 #### Portfolio structure
 
 * all the projects at timestep 0 of the portfolio are brand new projects without history. (assume any project with history is transitioned to a new contractor)
