@@ -325,8 +325,8 @@ Validation and sensitivity analysis will evaluate how different choices of \( \s
 At each timestep $t$:
 - **Observation Window**: Current portfolio state
 - **Planning Horizon**: $[t, t+H]$ where $H=12$ periods
-- **Decision**: Budget allocation for period $t$ only
-- **Lookahead**: Plans for $[t+1, t+H]$ to inform current decision but does not commit
+- **Decision**: Complete budget allocation plan for entire horizon $[t, t+H]$
+- **Execution**: Only the allocation for period $t$ is executed; plan for $[t+1, t+H]$ guides current decision but remains uncommitted
 
 #### State Representation
 For each project $i$ at timestep $t$:
@@ -350,10 +350,14 @@ For each project $i$ at timestep $t$:
 - Masked projects contribute zero to state vectors and receive zero allocation
 
 #### Action Space
-- Budget allocation vector for current period: $\mathbf{b}(t) = [b_1(t), b_2(t), ..., b_n(t)]$
-- Constraint: $\sum_i b_i(t) \leq B_{\text{available}}(t)$
-- Only unmasked, active projects ($\alpha_i(t) = 1$ and $\text{start}_i \leq t < \text{finish}_i$) receive non-zero allocations
-- Minimum payment constraints: $b_i(t) \geq b_{\min,i}$ if $\alpha_i(t) = 1$
+- **Full horizon budget plan**: $\mathbf{B}(t) = [\mathbf{b}(t), \mathbf{b}(t+1), ..., \mathbf{b}(t+H)]$
+  - Where $\mathbf{b}(\tau) = [b_1(\tau), b_2(\tau), ..., b_n(\tau)]$ for each period $\tau \in [t, t+H]$
+- **Execution**: Only $\mathbf{b}(t)$ is applied to the environment
+- **Constraints**:
+  - Period-wise budget: $\sum_i b_i(\tau) \leq B_{\text{available}}(\tau)$ for all $\tau \in [t, t+H]$
+  - Cumulative budget: $\sum_{\tau=t}^{t+H} \sum_i b_i(\tau) \leq B_{\text{rem}}(t)$
+  - Only unmasked, active projects receive non-zero allocations
+  - Minimum payment: $b_i(\tau) \geq b_{\min,i}$ if project $i$ is active at $\tau$
 
 #### Episode Termination
 An episode ends when:
@@ -380,13 +384,13 @@ The framework is designed to handle diverse portfolio configurations through its
 **Scenario 1: Projects start after portfolio origin**  
 *Example: Portfolio spans January–December, but all projects start in March*
 - **Handling**: Projects are masked for $t \in [\text{Jan}, \text{Feb}]$
-- **Behavior**: Agent observes empty action space; no allocations made
+- **Behavior**: Agent produces horizon plan with zero allocations for masked projects; no execution during gap months
 - **Impact**: Episode progresses normally; seasonal indicator still tracks from January origin
 
 **Scenario 2: Temporal gaps between projects**  
 *Example: Project A finishes in April, Project B starts in July*
 - **Handling**: Both projects masked during $t \in [\text{May}, \text{Jun}]$
-- **Behavior**: Agent makes no decisions during gap months
+- **Behavior**: Agent plans ahead for Project B activation; no execution during gap months
 - **Impact**: Budget preserved; episode continues until $t_{\text{end}}$
 
 **Scenario 3: Planning starts mid-project**  
@@ -396,16 +400,17 @@ The framework is designed to handle diverse portfolio configurations through its
   - These metrics become the **initial conditions** for agent decision-making
 - **Behavior**: 
   - Agent receives actual performance history (Feb–May) as part of state at $t = \text{June}$
-  - Makes first allocation decision at $t_{\text{planning\_start}}$ using real historical context
-  - No simulation or inference of missing months required
+  - Produces first horizon plan at $t_{\text{planning\_start}}$ using real historical context
+  - Executes $\mathbf{b}(\text{June})$ from that plan
 - **Implementation**: Introduce parameter $t_{\text{planning\_start}} \geq t_{\text{start}}$
   - For $t < t_{\text{planning\_start}}$: historical data only (no agent actions)
-  - For $t \geq t_{\text{planning\_start}}$: agent actively allocates budget
+  - For $t \geq t_{\text{planning\_start}}$: agent actively plans and executes
 - **Impact**: Framework supports both fresh portfolio starts ($t_{\text{planning\_start}} = t_{\text{start}}$) and mid-project entry with known history
 
 **Design Rationale**:
 - **Temporal origin** ($t_{\text{start}}$) remains anchored to January for seasonal consistency and model generalization
 - **Planning start** ($t_{\text{planning\_start}}$) decouples decision-making from temporal origin, enabling flexible deployment
+- **Horizon planning** with single-period execution balances long-term foresight with adaptive replanning as uncertainty resolves
 - **Masking** ensures agent never acts on unavailable or completed projects, maintaining action space validity across all scenarios
 
 
