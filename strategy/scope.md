@@ -33,6 +33,18 @@ As of 2026, no practical, validated models exist for portfolio budgeting optimiz
 
 ## 2. Proposed Solution
 
+$$P(s_{t+1}|s_t, a_t) \text{ is unknown due to contractor performance uncertainty}$$
+
+Traditional methods require:
+- Known transition probabilities → **unavailable**
+- Complete scenario enumeration → **intractable**
+- Static optimization → **incompatible with sequential decisions**
+
+RL provides:
+- Model-free learning from experience
+- Adaptive policy under uncertainty
+- Scalable to real-time decision-making
+
 ### 2.1 Methodology
 Train a Reinforcement Learning (RL) agent using **Rolling Horizon Control** with:
 1. **Pre-training**: Literature and industry-wide project data
