@@ -92,6 +92,18 @@ This mechanism allows the model to handle arbitrary project configurations witho
 - Provides consistent performance measurement framework
 - Enables quantifiable uncertainty modeling
 
+#### Aggregate Performance Uncertainty
+- **All project uncertainties are modeled as a single aggregated performance risk factor**
+- Human resource variability, inflation effects, supply chain disruptions, and regulatory impacts are **not treated separately**
+- Uncertainty enters the model through a unified performance noise term affecting project progress and cost
+- No decomposition of uncertainty sources; only portfolio-level aggregate volatility is modeled
+
+**Justification**:
+- Simplifies stochastic modeling and avoids multi-factor calibration
+- Keeps the environment stationary and tractable for RL/optimization
+- Enables consistent uncertainty treatment across heterogeneous projects
+- Prevents overfitting to specific external factors that are outside Q1 scope
+
 ### 3.3 Portfolio Structure Assumptions
 
 #### Temporal Structure: Rolling Horizon Framework
