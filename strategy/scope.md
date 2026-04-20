@@ -1,9 +1,5 @@
 # Scope of Work: Q1 Research Paper
-
-## Paper Title
-**Reinforcement Learning for Dynamic Project Portfolio Budgeting under Cashflow Uncertainty**
-
-*Alternative:* Developing an RL Agent for Project Portfolio Budgeting Optimization under Cashflow Uncertainties
+## Reinforcement Learning for Dynamic Project Portfolio Budgeting under Cashflow Uncertainty: A Rolling Horizon Approach
 
 ---
 
@@ -14,6 +10,8 @@ Project portfolio budgeting under cashflow uncertainty requires dynamic decision
 - Future contractor performance is unpredictable
 - Traditional optimization methods fail due to incomplete observability
 - Sequential decisions must adapt to emerging information
+- Projects have staggered start times and variable durations
+- Portfolio horizons extend beyond fixed planning windows
 
 ### 1.2 Limitations of Existing Approaches
 Classic Operations Research (OR) algorithms (MIP, Stochastic Programming) are inadequate because:
@@ -21,27 +19,57 @@ Classic Operations Research (OR) algorithms (MIP, Stochastic Programming) are in
 - They assume known probability distributions of future uncertainties
 - They cannot adapt to real-time information updates
 - They fail to handle the sequential nature of budget allocation decisions
+- Scenario tree formulations become computationally intractable for variable-horizon portfolios
 
 ### 1.3 Research Gap
 As of 2026, no practical, validated models exist for portfolio budgeting optimization that:
 - Handle cashflow uncertainty dynamically
 - Adapt to company-specific historical patterns
 - Provide sequential decision-making capabilities under partial observability
+- Accommodate variable-length portfolios with staggered project lifecycles
+- Balance computational tractability with real-world complexity
 
 ---
 
 ## 2. Proposed Solution
 
 ### 2.1 Methodology
-Train a Reinforcement Learning (RL) agent using:
+Train a Reinforcement Learning (RL) agent using **Rolling Horizon Control** with:
 1. **Pre-training**: Literature and industry-wide project data
 2. **Fine-tuning**: Company-specific historical performance data
+3. **Rolling Horizon Framework**: Fixed lookahead window (H=12 periods) with receding control
 
-### 2.2 Key Advantages of RL Approach
+### 2.2 Rolling Horizon Architecture
+
+#### Core Concept
+At each timestep $t$, the system:
+1. Observes current portfolio state (active projects, budget status, performance trends)
+2. Plans budget allocation for next $H=12$ periods
+3. Executes only the allocation for period $t$
+4. Advances to $t+1$ and re-plans with updated information
+
+#### Key Properties
+- **Fixed Episode Length**: RL trains on 12-period episodes regardless of total portfolio duration
+- **Variable Portfolio Horizons**: Naturally handles portfolios spanning 12, 24, 36+ periods through sequential re-planning
+- **Dynamic Project Management**: Accommodates projects starting/finishing at different times through masking and padding mechanisms
+- **Computational Tractability**: Maintains feasible state-space size for both RL and OR baselines
+
+#### Handling Variable Project Lifecycles
+The rolling horizon framework uses **masking and padding** to handle:
+- Projects that start after the current timestep (masked until start date)
+- Projects that complete before the horizon end (masked after completion)
+- Projects with partial completion at portfolio initialization
+- Variable project durations and staggered entry/exit times
+
+This mechanism allows the model to handle arbitrary project configurations without requiring all projects to be new at $t=0$.
+
+### 2.3 Key Advantages of RL Approach
 - **Adaptability**: Learns from sequential interactions rather than requiring complete upfront knowledge
 - **Partial Observability**: Handles uncertainty without needing full probability distributions
-- **Dynamic Optimization**: Adjusts decisions as new information emerges
+- **Dynamic Optimization**: Adjusts decisions as new information emerges through rolling re-planning
 - **Transferability**: Pre-trained model can be specialized for specific organizational contexts
+- **Scalability**: Rolling horizon prevents state-space explosion for long-duration portfolios
+- **Real-World Alignment**: Mimics actual planning behavior (annual budgets with periodic updates)
 
 ---
 
@@ -66,44 +94,34 @@ Train a Reinforcement Learning (RL) agent using:
 
 ### 3.3 Portfolio Structure Assumptions
 
-#### Initial State (Timestep 0)
-- **All projects at portfolio start (t=0) are brand new projects without history**
-- Any project with prior history is assumed to have transitioned to a new contractor
-- No legacy projects carry over into the portfolio timespan
+#### Temporal Structure: Rolling Horizon Framework
+- **Planning Horizon**: Fixed $H=12$ periods lookahead window
+- **Portfolio Duration**: Variable, determined by $[\min(\text{project start times}), \max(\text{project finish times})]$
+- **Project Lifecycles**: Projects may start at different times and have different durations
+- **Re-planning Frequency**: Every period (monthly)
 
 **Justification**:
-- Simplifies state representation for initial RL model
-- Eliminates complexity of partial project histories
-- Provides clean starting point for sequential decision-making
+- Reflects real-world planning cycles (annual budgets with monthly/quarterly reviews)
+- Balances computational tractability with planning depth
+- Allows natural handling of staggered project entries and completions
+- Prevents state-space explosion for long-duration portfolios
 
-**Implication**:
-- RL agent learns from scratch for each portfolio cycle
-- Fine-tuning uses historical data from completed portfolios, not in-progress projects
+**Handling Variable Horizons**:
+- Portfolio spanning 24 periods: Solve 24 sequential 12-period planning problems
+- Projects starting at $t=6$: Enter planning window when $t+H \geq 6$
+- Projects finishing at $t=18$: Exit planning window after completion
+- Budget exhaustion or all projects complete: Portfolio terminates early
 
-#### Temporal Constraint
-- **All project contracts finish no later than portfolio timespan (12 periods)**
-- No projects extend beyond the 12-period horizon
-
-**Justification**:
-- Aligns with fixed time horizon assumption
-- Eliminates need for modeling project continuation beyond portfolio boundary
-- Consistent with annual budget cycle reset due to price/regulation adjustments
-
-**Handling Edge Cases**:
-- Projects that would naturally extend beyond 12 periods are either:
-  - Not included in the portfolio, OR
-  - Restructured/split to fit within the timespan
+#### Myopia Mitigation
+- **Terminal Value Function**: Estimates value of projects extending beyond current planning horizon
+- **Prevents Short-Termism**: Ensures decisions account for long-term project value
+- **Implementation**: Learned as part of RL value function or approximated using remaining BAC
 
 ---
 
 ## 4. Exclusions
 
 ### 4.1 Out of Scope for Q1 Paper
-
-**Multi-Period Project Histories**:
-- Projects with partial completion at portfolio start
-- Carryover projects from previous budget cycles
-- Mid-contract contractor transitions with preserved history
 
 **Disaggregated Uncertainty**:
 - Separate modeling of human resource quality
@@ -121,10 +139,25 @@ Train a Reinforcement Learning (RL) agent using:
 - Hybrid payment models (EVM + milestone-based)
 - Performance incentive mechanisms
 
-**Extended Time Horizons**:
-- Portfolios spanning multiple years
-- Rolling horizon optimization
-- Dynamic project addition/removal during portfolio execution
+**Explicit Holiday Calendars**:
+- Country-specific holiday tracking
+- Explicit zero-productivity periods
+- Detailed calendar-based scheduling
+
+**Year-End Parameter Discontinuities**:
+- Explicit modeling of price index changes at year boundaries
+- Regulatory updates at calendar year-end
+- Contract renegotiation mechanics
+- Fiscal year budget resets
+
+**Justification for Year-End Exclusion**:
+Year-end parameter changes introduce non-stationarity in the environment that requires:
+- Explicit modeling of economic policy cycles
+- Calibration with real-world fiscal data
+- Separate treatment of deterministic (policy-driven) vs. stochastic (market-driven) changes
+- Additional complexity in reward function design
+
+For the foundational Q1 paper, these effects are absorbed into the seasonal variance component of the aggregated uncertainty parameter. This maintains model simplicity while allowing the RL agent to learn conservative behavior during high-uncertainty periods. Explicit year-end parameter modeling represents a natural extension for future work once the core rolling horizon RL framework is validated.
 
 ### 4.2 Justification for Exclusions
 Each exclusion represents:
@@ -145,56 +178,103 @@ Each exclusion represents:
 - Supply chain disruptions
 - Regulatory changes (within-year)
 - Technical challenges
+- **Seasonal productivity variations (including holiday effects)**
 
 **Justification**:
 - Establishes foundational model for proof-of-concept
 - Reduces state-space complexity for initial validation
 - Allows focus on RL architecture and learning dynamics
+- Maintains consistency with aggregated uncertainty framework
 
+**Holiday Effect Integration**:
+- Year-end holidays (November, December, January) affect contractor productivity
+- Rather than explicit holiday calendars, this impact is captured through **time-varying uncertainty parameter** $\sigma(t)$
+- Periods near year-end have higher variance: $\sigma_{\text{year-end}} > \sigma_{\text{baseline}}$
+- RL agent learns to be more conservative with budget allocation during high-uncertainty periods
+
+**Implementation**:
+Contractor performance distribution:
+```
+EV_i(t) ~ N(μ_i(t), σ(t)²)
+
+where:
+σ(t) = σ_baseline           for t mod 12 ∈ {2,3,...,10}
+σ(t) = σ_year-end          for t mod 12 ∈ {11,12,1}
+σ_year-end ≈ 1.5 × σ_baseline
+```
 **Mitigation Strategy**:
-- Frame as "aggregated contractor performance uncertainty"
+- Frame as "aggregated contractor performance uncertainty with seasonal variation"
 - Conduct sensitivity analysis on this parameter
 - Document as explicit limitation with future work directions
+- Demonstrate RL learns seasonal patterns without explicit calendar modeling
 
-### 5.2 Temporal Boundaries
+### 5.2 Rolling Horizon Framework Details
 
-#### Fixed Time Horizon
-- **Portfolio timespan**: 12 periods (symbolic representation)
-- **Rationale**: Provides sufficient horizon for sequential decision-making while maintaining computational tractability
+#### Planning Window Structure
+At each timestep $t$:
+- **Observation Window**: Current portfolio state
+- **Planning Horizon**: $[t, t+H]$ where $H=12$ periods
+- **Decision**: Budget allocation for period $t$ only
+- **Lookahead**: Plans for $[t+1, t+H]$ to inform current decision but does not commit
 
-#### Project Handling Rules
+#### State Representation
+For each project $i$ at timestep $t$:
 
-**Projects Starting Before Portfolio Period**:
-- Not applicable under current assumptions (all projects start at t=0)
-- If encountered in future extensions: split at portfolio start date, treat remainder as new project
+Project-level state:
+- Progress ratio: p_i = EV_i(t) / BAC_i
+- Remaining duration: r_i = finish_i - t
+- Performance trend: SPI_i (moving average over last 3 periods)
+- Active status: α_i ∈ {0,1}
+- Time to start: s_i = max(0, start_i - t)
 
-**Projects Extending Beyond 12 Periods**:
-- Not included in portfolio under current assumptions
-- Future work: model as new projects for next cycle due to annual parameter adjustments (prices, regulations)
+Portfolio-level state:
+- Remaining budget: B_rem(t)
+- Current period: t
+- Periods to horizon end: H - (t - t_episode_start)
+- Active project count: n_active(t)
+- Seasonal indicator: t mod 12 (captures year-end effects)
 
-**Boundary Assumption**:
-- Year-end represents natural reset point due to:
-  - Budget cycle boundaries
-  - Regulatory updates
-  - Price/cost adjustments
-  - Contract renegotiations
+#### Action Space
+- Budget allocation vector for current period: $\mathbf{b}(t) = [b_1(t), b_2(t), ..., b_n(t)]$
+- Constraint: $\sum_i b_i(t) \leq B_{\text{available}}(t)$
+- Only active projects ($\alpha_i(t) = 1$) receive non-zero allocations
+- Minimum payment constraints: $b_i(t) \geq b_{\min,i}$ if $\alpha_i(t) = 1$
+
+#### Episode Termination
+An episode ends when:
+1. $t - t_{\text{episode\_start}} = H$ (reached planning horizon), OR
+2. All active projects completed, OR
+3. Budget exhausted
+
+#### Reward Function
+
+Immediate reward at timestep t:
+r(t) = Σ_i [EV_i(t) - EV_i(t-1)] - penalty_budget_overrun - penalty_project_delay
+
+Terminal reward (at episode end):
+r_terminal = Σ_i EV_i(t_end) + terminal_value(incomplete_projects)
+
+where terminal_value estimates remaining project value beyond horizon
 
 ---
 
 ## 6. Research Contribution
 
 ### 6.1 Primary Contribution
-First validated demonstration of RL viability for project portfolio budgeting under cashflow uncertainty in an EVM-based environment.
+First validated demonstration of RL viability for project portfolio budgeting under cashflow uncertainty in an EVM-based environment using rolling horizon control for variable-length portfolios.
 
 ### 6.2 Novelty Claims
-- **Methodological**: Application of RL with transfer learning (pre-training + fine-tuning) to portfolio budgeting
-- **Practical**: Framework for adapting general models to company-specific contexts
-- **Theoretical**: Demonstration that sequential decision-making under partial observability outperforms static optimization
-- **Domain**: First application to EVM-based portfolio budgeting with aggregated uncertainty
+- **Methodological**: Application of RL with rolling horizon framework to handle variable-duration portfolios
+- **Architectural**: Transfer learning (pre-training + fine-tuning) for portfolio budgeting with fixed-horizon episodes
+- **Technical**: Masking and padding mechanisms for handling arbitrary project lifecycle configurations
+- **Practical**: Framework for adapting general models to company-specific contexts while maintaining computational tractability
+- **Theoretical**: Demonstration that sequential decision-making under partial observability with rolling re-planning outperforms static optimization
+- **Domain**: First application to EVM-based portfolio budgeting with aggregated seasonal uncertainty
 
 ### 6.3 Positioning Strategy
-- Emphasize RL's adaptability advantage over static optimization
-- Focus on practical validation rather than claiming theoretical completeness
+- Emphasize rolling horizon as bridge between theoretical elegance and practical implementation
+- Focus on RL's ability to learn seasonal patterns (including holiday effects) without explicit calendar modeling
+- Highlight computational tractability advantage over scenario tree approaches
 - Position simplifications as pragmatic choices for foundational work in a new field
 - Clearly articulate assumptions as deliberate scope management
 
@@ -205,45 +285,60 @@ First validated demonstration of RL viability for project portfolio budgeting un
 ### 7.1 Critical Sections
 
 **Section 1: Problem Justification**
-- Why stochastic programming fails for this problem class
+- Why stochastic programming fails for variable-horizon portfolios
+- Computational intractability of scenario trees for long-duration portfolios
 - Requirements for complete observability vs. reality of uncertainty
 - Gap between theoretical models and practical applicability
 - Importance of EVM-based portfolio management
 
-**Section 2: RL Advantage**
+**Section 2: Rolling Horizon Framework**
+- Motivation: balancing planning depth with computational tractability
+- Architecture: fixed lookahead window with receding control
+- Handling variable portfolio durations through sequential re-planning
+- Masking and padding mechanisms for arbitrary project configurations
+- Terminal value function for myopia mitigation
+
+**Section 3: RL Advantage**
 - Sequential decision-making under partial observability
 - Learning from historical patterns without explicit probability distributions
-- Adaptability to emerging information
+- Adaptability to emerging information through rolling re-planning
+- Learning seasonal patterns (including holiday effects) from aggregated uncertainty
 
-**Section 3: Methodology**
+**Section 4: Methodology**
 - Pre-training on literature/industry data
 - Fine-tuning process and its value proposition
 - Generalization vs. specialization trade-off
+- Rolling horizon episode structure for RL training
 
-**Section 4: Model Scope & Assumptions**
+**Section 5: Model Scope & Assumptions**
 - Explicit documentation of all assumptions (project structure, portfolio structure)
+- Rolling horizon framework details
 - Justification for simplest model approach
 - Clear articulation of exclusions
-- Temporal boundary assumptions
+- Aggregated uncertainty with seasonal variation
 
-**Section 5: Model Design**
-- State representation (EVM metrics, budget status, time)
-- Action space (budget allocation decisions)
-- Reward function (cashflow optimization objectives)
-- Aggregated uncertainty parameter modeling
+**Section 6: Model Design**
+- State representation (EVM metrics, budget status, time, seasonal indicators)
+- Action space (budget allocation decisions for current period)
+- Reward function (cashflow optimization with terminal value)
+- Aggregated uncertainty parameter with time-varying variance
+- Terminal value function design
+- Masking and padding implementation
 
-**Section 6: Validation**
-- Demonstration of RL viability
-- Sensitivity analysis on uncertainty parameter
-- Comparison with baseline approaches
+**Section 7: Validation**
+- Demonstration of RL viability across variable-horizon portfolios
+- Sensitivity analysis on uncertainty parameter and seasonal variance
+- Comparison with OR baseline (rolling horizon MIP)
 - Robustness across different portfolio compositions
+- Evidence of learned seasonal adaptation
 
-**Section 7: Limitations & Future Work**
+**Section 8: Limitations & Future Work**
 - Disaggregating uncertainty into multiple parameters
-- Incorporating projects with history at t=0
-- Extending temporal horizon beyond 12 periods
+- Explicit holiday calendar modeling for region-specific deployments
+- Year-end parameter discontinuities (prices, regulations, fiscal resets)
 - Multi-objective optimization (cost, risk, strategic value)
 - Alternative payment structures beyond EVM
+- Adaptive horizon length selection
 
 ---
 
@@ -251,41 +346,56 @@ First validated demonstration of RL viability for project portfolio budgeting un
 
 ### 8.1 Coverage Requirements
 - Comprehensive review of OR approaches to portfolio optimization
+- Rolling horizon control in operations research and control theory
 - EVM-based project management and performance measurement
 - Existing applications of RL in project management (if any)
 - Stochastic programming limitations in uncertain environments
 - Transfer learning and fine-tuning methodologies
+- Seasonal pattern learning in RL
 
 ### 8.2 Positioning Statement
-Support the claim: "No practical, validated models exist as of 2026 for dynamic portfolio budgeting under cashflow uncertainty using RL."
+Support the claim: "No practical, validated models exist as of 2026 for dynamic portfolio budgeting under cashflow uncertainty using RL with rolling horizon control for variable-duration portfolios."
 
 **Evidence Required**:
 - Systematic review of portfolio optimization literature (2015-2026)
-- Analysis of why existing approaches fail under uncertainty
+- Analysis of why existing approaches fail under uncertainty with variable horizons
 - Documentation of gap between theoretical models and practical implementation
-- Absence of RL applications to EVM-based portfolio budgeting
+- Absence of RL applications to EVM-based portfolio budgeting with rolling horizon
+- Review of rolling horizon applications in other domains (manufacturing, logistics)
 
 ---
 
 ## 9. Validation Requirements
 
 ### 9.1 Minimum Viable Demonstration
-- RL agent successfully learns budget allocation policy
-- Performance improvement over baseline (random, heuristic, or static optimization)
+- RL agent successfully learns budget allocation policy in rolling horizon setting
+- Performance improvement over baseline (rolling horizon MIP, greedy heuristic)
 - Stability across multiple training runs
 - Convergence of learning process
+- Effective handling of portfolios with different total durations (12, 24, 36 periods)
+- Correct handling of variable project lifecycles through masking/padding
 
 ### 9.2 Robustness Checks
 - Sensitivity analysis on aggregated uncertainty parameter
-- Performance across different portfolio compositions (varying project counts, sizes)
+- Sensitivity analysis on seasonal variance ratio ($\sigma_{\text{year-end}} / \sigma_{\text{baseline}}$)
+- Performance across different portfolio compositions (varying project counts, sizes, start times)
 - Fine-tuning effectiveness with varying amounts of company data
 - Generalization from pre-training to fine-tuning
+- Terminal value function accuracy assessment
 
-### 9.3 Practical Viability
+### 9.3 Rolling Horizon Specific Validation
+- Comparison of RL vs. MIP in rolling horizon setting (both use same framework)
+- Demonstration that RL learns to anticipate seasonal productivity drops
+- Analysis of decision consistency across re-planning cycles
+- Myopia assessment: do decisions near horizon boundary degrade?
+- Computational time comparison: RL inference vs. MIP solve time per timestep
+
+### 9.4 Practical Viability
 - Computational feasibility for real-world portfolio sizes
 - Interpretability of learned policies
 - Transferability of pre-trained model
 - Alignment with EVM best practices
+- Real-time decision-making capability (inference speed)
 
 ---
 
@@ -294,26 +404,55 @@ Support the claim: "No practical, validated models exist as of 2026 for dynamic 
 ### 10.1 Documentation Approach
 **In Paper**:
 - Dedicate subsection to "Model Assumptions and Scope"
+- Present rolling horizon framework as architectural choice with clear justification
 - Present each assumption with clear justification
 - Link assumptions to "simplest model" strategy
 - Frame as deliberate choices for foundational research
 
 ### 10.2 Defense Strategy
-**Anticipated Criticism**: "Too many simplifying assumptions"
+**Anticipated Criticism 1**: "Rolling horizon introduces myopia"
+
+**Response Framework**:
+1. Terminal value function explicitly addresses this concern
+2. Validation demonstrates decision quality near horizon boundaries
+3. Real-world planning actually operates this way (annual budgets with updates)
+4. Computational tractability enables practical deployment vs. theoretical optimality
+
+**Anticipated Criticism 2**: "Aggregating holiday effects into uncertainty is imprecise"
+
+**Response Framework**:
+1. Consistent with aggregated uncertainty assumption for foundational model
+2. Seasonal variance pattern captures holiday impact without calendar complexity
+3. RL demonstrates ability to learn seasonal adaptation
+4. Explicit holiday calendars are natural extension for future work
+5. Validation shows effective handling of year-end productivity variations
+
+**Anticipated Criticism 3**: "Too many simplifying assumptions"
 
 **Response Framework**:
 1. This is a brand new field—foundational models require clear scope
 2. Each assumption is relaxable in future work (provide roadmap)
 3. Even with simplifications, the model demonstrates RL viability
-4. Complexity can be added incrementally once foundation is validated
+4. Rolling horizon framework provides practical implementation path
+5. Complexity can be added incrementally once foundation is validated
+
+**Anticipated Criticism 4**: "Year-end parameter changes are ignored"
+
+**Response Framework**:
+1. Explicit year-end discontinuities require economic policy modeling beyond scope
+2. Effects absorbed into seasonal uncertainty variance for foundational model
+3. Separating deterministic policy changes from stochastic uncertainty requires additional theoretical framework
+4. Natural extension once core RL+rolling horizon methodology is validated
+5. Current approach allows RL to learn conservative behavior during transition periods
 
 ### 10.3 Future Work Roadmap
 Present clear progression:
-- **Phase 1 (Q1)**: Simplest model with aggregated uncertainty, clean portfolio start
-- **Phase 2**: Disaggregate uncertainty into 2-3 key factors
-- **Phase 3**: Incorporate projects with history at t=0
-- **Phase 4**: Extend time horizon and multi-period optimization
+- **Phase 1 (Q1)**: Rolling horizon RL with aggregated seasonal uncertainty, masking/padding for variable lifecycles
+- **Phase 2**: Disaggregate uncertainty into 2-3 key factors (labor, supply chain, economic)
+- **Phase 3**: Explicit holiday calendar modeling for region-specific deployments
+- **Phase 4**: Year-end parameter discontinuities (price indices, fiscal resets, regulatory updates)
 - **Phase 5**: Multi-objective optimization and alternative payment structures
+- **Phase 6**: Adaptive horizon length selection based on portfolio characteristics
 
 ---
 
@@ -322,18 +461,20 @@ Present clear progression:
 ### Q1 Deliverable
 Complete research paper demonstrating:
 1. Clear problem formulation and gap identification
-2. RL methodology with pre-training + fine-tuning framework
+2. Rolling horizon RL methodology with pre-training + fine-tuning framework
 3. Explicit assumptions and exclusions documentation
-4. Initial validation results
+4. Validation results across variable-horizon portfolios
 5. Documented scope and limitations
 6. Future research directions with clear progression path
 
 ### Success Criteria
-- Crystal-clear contribution statement
-- Well-validated demonstration of RL viability
+- Crystal-clear contribution statement emphasizing rolling horizon innovation
+- Well-validated demonstration of RL viability in rolling horizon setting
 - Defensible simplifications with clear justification
 - Comprehensive literature review supporting novelty claims
 - Transparent assumption documentation
+- Evidence of seasonal pattern learning without explicit calendar modeling
+- Demonstration of masking/padding effectiveness for variable project lifecycles
 
 ---
 
@@ -343,20 +484,31 @@ Complete research paper demonstrating:
 **Risk**: Reviewers find existing work that addresses similar problems.
 
 **Mitigation**:
-- Conduct exhaustive literature review
+- Conduct exhaustive literature review including rolling horizon applications
 - Position contribution carefully (practical validation vs. theoretical novelty)
-- Emphasize unique combination: RL + transfer learning + EVM-based portfolio budgeting + aggregated uncertainty
+- Emphasize unique combination: RL + rolling horizon + transfer learning + EVM-based portfolio budgeting + aggregated seasonal uncertainty
 
 ### 12.2 Simplification Criticism
-**Risk**: Reviewers question aggregated uncertainty parameter or "all new projects" assumption.
+**Risk**: Reviewers question aggregated uncertainty parameter or holiday effect absorption.
 
 **Mitigation**:
 - Frame as explicit modeling choice for foundational work in new field
-- Provide sensitivity analysis
-- Document clear path for future disaggregation
+- Provide sensitivity analysis on seasonal variance
+- Demonstrate RL learns seasonal patterns effectively
+- Document clear path for future disaggregation and explicit calendar modeling
 - Show that even simplified model provides value
 
-### 12.3 Assumption Overload
+### 12.3 Rolling Horizon Myopia Concern
+**Risk**: Reviewers question short-sightedness of fixed horizon.
+
+**Mitigation**:
+- Terminal value function design and validation
+- Demonstrate decision quality near horizon boundaries
+- Compare with full-horizon optimization on small test cases
+- Emphasize computational tractability vs. theoretical optimality trade-off
+- Show real-world alignment with actual planning practices
+
+### 12.4 Assumption Overload
 **Risk**: Too many assumptions weaken contribution.
 
 **Mitigation**:
@@ -364,53 +516,177 @@ Complete research paper demonstrating:
 - Show that each assumption is independently relaxable
 - Provide future work roadmap demonstrating progression
 - Emphasize that foundational research requires clear boundaries
+- Highlight rolling horizon as practical implementation enabler
 
-### 12.4 Validation Concerns
+### 12.5 Validation Concerns
 **Risk**: Insufficient demonstration of practical viability.
 
 **Mitigation**:
-- Use realistic portfolio scenarios consistent with assumptions
-- Compare against meaningful baselines
+- Use realistic portfolio scenarios with variable durations
+- Compare against meaningful baselines (rolling horizon MIP, greedy heuristics)
 - Show robustness across multiple conditions within scope
 - Demonstrate learning convergence and stability
+- Validate seasonal adaptation behavior
+- Measure computational performance for real-time decision-making
+
+### 12.6 Year-End Parameter Exclusion
+**Risk**: Reviewers consider year-end effects too important to exclude.
+
+**Mitigation**:
+- Emphasize absorption into seasonal variance component
+- Show RL learns conservative behavior during transition periods
+- Argue that explicit modeling requires economic policy framework beyond foundational scope
+- Position as high-priority future work with clear implementation path
+- Demonstrate that current model still captures practical value
 
 ---
-
 ## 13. Key Messages
 
-1. **Problem**: Existing OR methods fail under cashflow uncertainty due to observability requirements.
-2. **Solution**: RL provides adaptive, sequential decision-making under partial observability.
-3. **Innovation**: Transfer learning (pre-training + fine-tuning) enables practical deployment for EVM-based portfolios.
-4. **Scope**: Foundational model with pragmatic simplifications for proof-of-concept in a brand new field.
-5. **Assumptions**: Deliberate choices to establish simplest viable model; each assumption is relaxable in future work.
-6. **Contribution**: First validated demonstration of RL viability for this problem class.
-7. **Progression**: Clear roadmap from foundational model to comprehensive solution.
+### 1. Problem Statement
+Existing OR methods (MIP, Stochastic Programming) fail for dynamic project portfolio budgeting under cashflow uncertainty because:
+- Traditional portfolio optimization assumes a **fixed planning horizon**, while real-world project portfolios evolve over time with **staggered project lifecycles**
+- Complete observability requirement incompatible with emerging uncertainty
+- Computational intractability of scenario trees for long-duration portfolios
+- Static optimization paradigm cannot handle sequential decision-making under partial observability
 
----
+### 2. Core Innovation
+**Sequential Re-Planning with Fixed Horizon ($H=12$)**
 
-## 14. Documentation Checklist
+Rolling Horizon RL framework that:
+- Mimics real-world planning cycles (monthly re-planning)
+- Handles variable portfolio durations through receding control
+- Maintains fixed-episode training architecture
+- Uses masking/padding for dynamic project lifecycles
+- Mitigates myopia via terminal value function
 
-### Before Submission
-- [ ] All assumptions explicitly stated and justified
-- [ ] All exclusions clearly documented
-- [ ] Future work roadmap provided for each assumption/exclusion
-- [ ] Sensitivity analysis conducted on aggregated uncertainty parameter
-- [ ] Baseline comparisons completed
-- [ ] Literature review confirms novelty claim
-- [ ] EVM framework properly integrated
-- [ ] Validation demonstrates RL viability within stated scope
-- [ ] Limitations section is transparent and comprehensive
-- [ ] Contribution statement is precise and defensible
+### 3. Methodological Contribution
+First application of RL with rolling horizon control to EVM-based portfolio budgeting, featuring:
+- Transfer learning (pre-training on literature → fine-tuning on company data)
+- Aggregated seasonal uncertainty with time-varying variance: $\sigma(t) = \sigma_0 \times (1 + \lambda S(t))$
+- Computationally tractable framework bridging theory and practice
+- Demonstration that sequential decision-making under uncertainty outperforms static optimization
 
----
+### 4. Key Design Decisions
 
-## Document Version
-Version 2.0 | Date: 1405/01/31 (2026/04/20)
+**✅ Included:**
+- Rolling horizon control with 12-period lookahead
+- EVM-based performance measurement
+- Aggregated contractor uncertainty with seasonal variation ($\lambda S(t)$)
+- Variable project lifecycles (staggered starts, different durations)
+- Transfer learning architecture
 
-**Changelog**:
-- Added comprehensive Assumptions section (3.0)
-- Added Exclusions section (4.0)
-- Integrated EVM-based payment structure
-- Added Assumption Management Strategy (10.0)
-- Expanded risk mitigation for assumption-related concerns
-- Added documentation checklist
+**❌ Excluded (with justification):**
+- **Disaggregated uncertainty factors**: Simplest Model principle for Q1 foundation (Phase 2 future work)
+- **Explicit holiday calendars**: Effects absorbed into seasonal variance $\sigma(t)$ (Phase 3 future work)
+- **Year-end parameter discontinuities**: Requires economic policy modeling; effects captured via $\lambda S(t)$ (Phase 4 future work)
+- **Multi-objective optimization**: Single objective (EV maximization) for foundational proof-of-concept (Phase 5 future work)
+
+### 5. Why RL is Justified (Not Overkill)
+$$P(s_{t+1}|s_t, a_t) \text{ is unknown due to contractor performance uncertainty}$$
+
+Traditional methods require:
+- Known transition probabilities → **unavailable**
+- Complete scenario enumeration → **intractable**
+- Static optimization → **incompatible with sequential decisions**
+
+RL provides:
+- Model-free learning from experience
+- Adaptive policy under uncertainty
+- Scalable to real-time decision-making
+
+### 6. State Representation Enhancement
+Current state includes project-level EVM metrics. **Critical addition for Q1 paper:**
+
+**Liquidity Pressure:**
+$$L(t) = \frac{B_{\text{remaining}}(t)}{B_{\text{total}}}$$
+
+This captures **proximity to budget exhaustion**, which critically affects allocation decisions.
+
+### 7. Reward Function Formulation
+$$r(t) = \sum_i \Delta EV_i(t) - \lambda_b \cdot \text{BudgetOveruse}(t) - \lambda_d \cdot \text{Delay}(t)$$
+
+Where:
+- $\Delta EV_i(t)$: Earned Value gained by project $i$
+- $\lambda_b$: Penalty coefficient for budget inefficiency
+- $\lambda_d$: Penalty coefficient for schedule delays
+
+This ensures RL learns **capital efficiency**, not just EV maximization.
+
+### 8. Seasonal Uncertainty Formalization
+Replace informal notation with:
+
+$$\sigma(t) = \sigma_0 \times (1 + \lambda S(t))$$
+
+Where:
+- $\sigma_0$: Baseline contractor performance variance
+- $\lambda$: Seasonal volatility intensity
+- $S(t) \in \{0, 1\}$: Seasonal indicator (1 for months 11, 12, 1)
+
+**Benefits:**
+- Formal mathematical representation
+- Enables sensitivity analysis on $\lambda$
+- Avoids non-stationary environment complexity
+
+### 9. Validation Strategy (Critical for Q1 Acceptance)
+
+**Baseline 1: Rolling Horizon MIP**
+- Same $H=12$ horizon
+- Perfect information within horizon
+- Demonstrates RL performance under uncertainty vs. OR under certainty
+
+**Baseline 2: Greedy Allocation**
+- Allocate to highest SPI deficit: $\text{argmax}_i (1 - \text{SPI}_i)$
+- Simple heuristic benchmark
+- Shows value of learned policy
+
+**Metrics:**
+- Total EV delivered
+- Budget utilization efficiency
+- Schedule adherence
+- Computational time
+
+### 10. Defense Against Common Reviewer Objections
+
+**Objection 1:** "Why not just use MIP with rolling horizon?"
+**Response:** MIP requires known $P(s_{t+1}|s_t, a_t)$; RL learns from uncertain transitions.
+
+**Objection 2:** "Model too simple (aggregated uncertainty)."
+**Response:** Simplest Model principle for foundational Q1 paper; disaggregation is Phase 2 future work with clear roadmap.
+
+**Objection 3:** "Fixed horizon arbitrary."
+**Response:** $H=12$ matches industry practice (annual planning cycles); sensitivity analysis on $H$ included.
+
+**Objection 4:** "Year-end effects oversimplified."
+**Response:** Explicit parameter resets require economic policy modeling (out of scope); seasonal variance $\lambda S(t)$ captures operational effects.
+
+### 11. Contribution Positioning
+
+**To OR Community:**
+RL provides practical solution where traditional methods become intractable under uncertainty.
+
+**To RL Community:**
+First successful application to EVM-based portfolio budgeting with rolling horizon architecture.
+
+**To Practitioners:**
+Computationally feasible framework mimicking real-world monthly planning cycles.
+
+**To Reviewers:**
+Clear scope, defensible assumptions, validated methodology, transparent limitations, concrete future work roadmap.
+
+### 12. Critical Success Factors for Q1 Publication
+
+✅ **Strong baselines** (Rolling MIP + Greedy)  
+✅ **Formal mathematical notation** ($\sigma(t)$, $L(t)$, reward function)  
+✅ **Sensitivity analysis** (on $\lambda$, $H$, portfolio composition)  
+✅ **Computational feasibility** demonstration  
+✅ **Clear contribution** statement in Introduction  
+✅ **Transparent limitations** with future work roadmap  
+
+### 13. Next Phase: RL Architecture Selection
+
+For implementation, recommend evaluating:
+- **PPO** (stable, widely validated)
+- **SAC** (continuous action spaces)
+- **Transformer-based RL** (multi-project attention mechanism)
+
+Architecture choice can strengthen contribution if justified by problem structure.
