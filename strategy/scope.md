@@ -119,22 +119,37 @@ This mechanism allows the model to handle arbitrary project configurations witho
 ### 3.3 Portfolio Structure Assumptions
 
 #### Temporal Structure: Rolling Horizon Framework
-- **Planning Horizon**: Fixed $H=12$ periods lookahead window
-- **Portfolio Duration**: Variable, determined by $[\min(\text{project start times}), \max(\text{project finish times})]$
-- **Project Lifecycles**: Projects may start at different times and have different durations
-- **Re-planning Frequency**: Every period (monthly)
+
+- **Planning Horizon**: Fixed $H = 12$ periods (months) lookahead window  
+- **Portfolio Duration**: Variable, determined by $[t_{\text{start}}, t_{\text{end}}]$ where:
+  - $t_{\text{start}}$ = January of the year containing $\min(\text{project start times})$
+  - $t_{\text{end}}$ = $\max(\text{project finish times})$
+- **Project Lifecycles**: Heterogeneous start dates and durations  
+- **Re-planning Frequency**: Monthly rolling re-optimization
 
 **Justification**:
-- Reflects real-world planning cycles (annual budgets with monthly/quarterly reviews)
-- Balances computational tractability with planning depth
-- Allows natural handling of staggered project entries and completions
-- Prevents state-space explosion for long-duration portfolios
+
+Anchoring $t_{\text{start}}$ to the calendar year start of the earliest project ensures explicit capture of **year-end productivity degradation** encoded in the seasonal variance function $\sigma(t)$. Key rationale:
+
+- **Material Year-End Effects**: Contractor performance drops during November–January significantly impact portfolio outcomes. Aligning the temporal origin to January ensures seasonal shocks occur at consistent, interpretable month indices across all episodes.
+
+- **Model Stability**: Mid-year temporal origins introduce shifted or aliased seasonal variance, complicating agent learning. A January anchor stabilizes the annual cycle and enables reliable pattern recognition.
+
+- **Budget Cycle Alignment**: Most organizations operate on January–December fiscal cycles; this alignment improves realism and interpretability.
+
+- **Stochastic Consistency**: Seasonal uncertainties (e.g., $\sigma_{\text{year-end}}$) synchronize cleanly with month indices, eliminating discontinuities or edge cases in the variance structure.
+
+- **Agent Generalization**: Predictable recurrence of high-uncertainty months at fixed positions within episodes enables robust learning of seasonal dynamics.
+
+This design balances realism and tractability without requiring explicit holiday calendars or variable season boundaries.
 
 **Handling Variable Horizons**:
-- Portfolio spanning 24 periods: Solve 24 sequential 12-period planning problems
-- Projects starting at $t=6$: Enter planning window when $t+H \geq 6$
-- Projects finishing at $t=18$: Exit planning window after completion
-- Budget exhaustion or all projects complete: Portfolio terminates early
+
+- Portfolio spanning 26 months: Solve 26 sequential 12-month rolling planning problems  
+- Projects starting at $t = 7$: Enter planning window when current time $t_{\text{current}} + H \geq 7$  
+- Projects finishing at $t = 19$: Exit planning window after EV target achieved  
+- **Project Masking**: Projects not yet started ($t_{\text{current}} < t_{\text{project start}}$) or already completed are masked from the action space and state representation, ensuring the agent only allocates resources to active or imminent projects  
+- **Termination**: Portfolio concludes when all projects complete or budget exhausts
 
 #### Myopia Mitigation
 - **Terminal Value Function**: Estimates value of projects extending beyond current planning horizon
