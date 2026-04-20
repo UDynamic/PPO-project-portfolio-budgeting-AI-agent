@@ -156,7 +156,7 @@ Each exclusion reflects a deliberate methodological choice. Introducing these el
 At the same time, these components represent **natural extensions of the framework (future work)** and provide clear opportunities for incremental research progression once the foundational RL formulation and experimental results are validated.
 
 
-#### Resource‑Level Budgeting & Micro‑Scheduling
+### Resource‑Level Budgeting & Micro‑Scheduling
 - No modeling of task‑level schedules, activity networks, or WBS structures  
 - No representation of resource calendars, skill categories, or utilization profiles  
 - No simulation of material lead times or supply‑chain task sequences  
@@ -168,7 +168,7 @@ At the same time, these components represent **natural extensions of the framewo
 - Focus remains on financial and timing decisions, not execution logistics  
 
 
-#### Disaggregated Uncertainty
+### Disaggregated Uncertainty
 - No separate modeling of human resource variability  
 - No explicit inflation modeling by category or market segment  
 - No independent treatment of supply-chain disruption  
@@ -180,7 +180,7 @@ At the same time, these components represent **natural extensions of the framewo
 - Maintains a stationary stochastic environment needed for stable RL training  
 
 
-#### Multi‑Objective Optimization
+### Multi‑Objective Optimization
 - No explicit modeling of strategic value maximization  
 - No risk-adjusted utility or weighted preference functions  
 - No stakeholder-specific objective formulations  
@@ -191,7 +191,7 @@ At the same time, these components represent **natural extensions of the framewo
 - Requires stakeholder preference modeling outside the scope of automated RL  
 
 
-#### Advanced EVM Variations
+### Advanced EVM Variations
 - No mixed or hybrid payment schemes (EVM + milestones)  
 - No portfolio with multiple payment logics simultaneously  
 - No incentive/penalty mechanisms tied to performance metrics  
@@ -202,7 +202,7 @@ At the same time, these components represent **natural extensions of the framewo
 - Avoids heterogeneous contract structures that complicate the RL environment  
 
 
-#### Explicit Holiday Calendars
+### Explicit Holiday Calendars
 - No country-specific holiday calendars or productivity shutdown periods  
 - No modeling of seasonal workforce productivity  
 - No date-specific scheduling impacts  
@@ -213,7 +213,7 @@ At the same time, these components represent **natural extensions of the framewo
 - Q1 uses continuous time approximations, not calendar simulation  
 
 
-#### Year‑End Parameter Discontinuities
+### Year‑End Parameter Discontinuities
 - No modeling of price index resets at new-year boundaries  
 - No explicit regulatory update cycles at year-end  
 - No contract renegotiation events tied to fiscal closure  
