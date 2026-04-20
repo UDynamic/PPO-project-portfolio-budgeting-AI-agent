@@ -319,41 +319,83 @@ At each timestep $t$:
 #### State Representation
 For each project $i$ at timestep $t$:
 
-Project-level state:
-- Progress ratio: p_i = EV_i(t) / BAC_i
-- Remaining duration: r_i = finish_i - t
-- Performance trend: SPI_i (moving average over last 3 periods)
-- Active status: α_i ∈ {0,1}
-- Time to start: s_i = max(0, start_i - t)
+**Project-level state** (only for unmasked projects):
+- Progress ratio: $p_i = \frac{EV_i(t)}{BAC_i}$
+- Remaining duration: $r_i = \text{finish}_i - t$
+- Performance trend: $\text{SPI}_i$ (moving average over last 3 periods)
+- Active status: $\alpha_i \in \{0,1\}$
+- Time to start: $s_i = \max(0, \text{start}_i - t)$
 
-Portfolio-level state:
-- Remaining budget: B_rem(t)
-- Current period: t
-- Periods to horizon end: H - (t - t_episode_start)
-- Active project count: n_active(t)
-- Seasonal indicator: t mod 12 (captures year-end effects)
+**Portfolio-level state**:
+- Remaining budget: $B_{\text{rem}}(t)$
+- Current period: $t$
+- Periods to portfolio end: $t_{\text{end}} - t$
+- Active project count: $n_{\text{active}}(t)$
+- Seasonal indicator: $(t - t_{\text{start}}) \mod 12$ (captures year-end effects relative to portfolio origin)
+
+**Project Masking**:
+- Projects with $t < \text{start}_i$ (not yet started) or $EV_i(t) = BAC_i$ (completed) are masked from state and action space
+- Masked projects contribute zero to state vectors and receive zero allocation
 
 #### Action Space
 - Budget allocation vector for current period: $\mathbf{b}(t) = [b_1(t), b_2(t), ..., b_n(t)]$
 - Constraint: $\sum_i b_i(t) \leq B_{\text{available}}(t)$
-- Only active projects ($\alpha_i(t) = 1$) receive non-zero allocations
+- Only unmasked, active projects ($\alpha_i(t) = 1$ and $\text{start}_i \leq t < \text{finish}_i$) receive non-zero allocations
 - Minimum payment constraints: $b_i(t) \geq b_{\min,i}$ if $\alpha_i(t) = 1$
 
 #### Episode Termination
 An episode ends when:
-1. $t - t_{\text{episode\_start}} = H$ (reached planning horizon), OR
-2. All active projects completed, OR
-3. Budget exhausted
+1. $t = t_{\text{end}}$ (all projects completed or reached latest finish time), OR
+2. Budget exhausted ($B_{\text{rem}}(t) = 0$), OR
+3. All projects masked (none active or imminent within horizon)
 
 #### Reward Function
 
-Immediate reward at timestep t:
-r(t) = Σ_i [EV_i(t) - EV_i(t-1)] - penalty_budget_overrun - penalty_project_delay
+**Immediate reward** at timestep $t$:
+$$r(t) = \sum_i [EV_i(t) - EV_i(t-1)] - \text{penalty}_{\text{budget overrun}} - \text{penalty}_{\text{project delay}}$$
 
-Terminal reward (at episode end):
-r_terminal = Σ_i EV_i(t_end) + terminal_value(incomplete_projects)
+**Terminal reward** (at episode end):
+$$r_{\text{terminal}} = \sum_i EV_i(t_{\text{end}}) + \text{terminal\_value}(\text{incomplete projects})$$
 
-where terminal_value estimates remaining project value beyond horizon
+where $\text{terminal\_value}$ estimates remaining project value for any unfinished work beyond $t_{\text{end}}$
+
+---
+
+#### Handling Edge-Case Portfolio Scenarios
+
+The framework is designed to handle diverse portfolio configurations through its masking and temporal anchoring mechanisms:
+
+**Scenario 1: Projects start after portfolio origin**  
+*Example: Portfolio spans January–December, but all projects start in March*
+- **Handling**: Projects are masked for $t \in [\text{Jan}, \text{Feb}]$
+- **Behavior**: Agent observes empty action space; no allocations made
+- **Impact**: Episode progresses normally; seasonal indicator still tracks from January origin
+
+**Scenario 2: Temporal gaps between projects**  
+*Example: Project A finishes in April, Project B starts in July*
+- **Handling**: Both projects masked during $t \in [\text{May}, \text{Jun}]$
+- **Behavior**: Agent makes no decisions during gap months
+- **Impact**: Budget preserved; episode continues until $t_{\text{end}}$
+
+**Scenario 3: Planning starts mid-project**  
+*Example: Planning begins in June for projects that started in February*
+- **Handling**: Historical data provided as initial state at $t_{\text{planning\_start}}$
+  - Client supplies: $EV_i(t)$, $AC_i(t)$, $\text{SPI}_i(t)$, $\text{CPI}_i(t)$ for all $t < t_{\text{planning\_start}}$
+  - These metrics become the **initial conditions** for agent decision-making
+- **Behavior**: 
+  - Agent receives actual performance history (Feb–May) as part of state at $t = \text{June}$
+  - Makes first allocation decision at $t_{\text{planning\_start}}$ using real historical context
+  - No simulation or inference of missing months required
+- **Implementation**: Introduce parameter $t_{\text{planning\_start}} \geq t_{\text{start}}$
+  - For $t < t_{\text{planning\_start}}$: historical data only (no agent actions)
+  - For $t \geq t_{\text{planning\_start}}$: agent actively allocates budget
+- **Impact**: Framework supports both fresh portfolio starts ($t_{\text{planning\_start}} = t_{\text{start}}$) and mid-project entry with known history
+
+**Design Rationale**:
+- **Temporal origin** ($t_{\text{start}}$) remains anchored to January for seasonal consistency and model generalization
+- **Planning start** ($t_{\text{planning\_start}}$) decouples decision-making from temporal origin, enabling flexible deployment
+- **Masking** ensures agent never acts on unavailable or completed projects, maintaining action space validity across all scenarios
+
 
 ---
 
