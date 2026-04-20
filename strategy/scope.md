@@ -82,6 +82,18 @@ This mechanism allows the model to handle arbitrary project configurations witho
 
 ### 3.2 Project Structure Assumptions
 
+#### Cashflow‑Based Budgeting Assumption
+- **All budgeting decisions are made solely using aggregated project cashflows (inflows and outflows)**
+- Detailed resource‑level requirements (labor, materials, equipment) are **not modeled individually**
+- Project execution schedules and resource demands are **compressed into a contractual S‑curve spending profile**
+- Portfolio optimization operates on these S‑curves rather than task‑level or resource‑level data
+
+**Justification**:
+- S‑curve budgeting is the industry standard for high‑level financial planning
+- Avoids unnecessary granularity inconsistent with Q1 scope
+- Ensures tractable state and action spaces for RL models
+- Maintains focus on strategic financial decisions rather than operational scheduling
+
 #### Payment & Performance Method
 - **All projects use Earned Value Management (EVM)** for performance measurement and payment
 - Payments are tied to earned value milestones
@@ -133,49 +145,87 @@ This mechanism allows the model to handle arbitrary project configurations witho
 
 ## 4. Exclusions
 
+For the foundational paper, several modeling elements are intentionally excluded to preserve tractability and maintain a clear focus on the core contribution: **the rolling‑horizon reinforcement learning framework for portfolio budgeting decisions.** 
+
+Detailed operational mechanisms—such as resource‑level scheduling, disaggregated uncertainty sources, multi‑objective optimization, heterogeneous contract structures, explicit holiday calendars, and year‑end parameter discontinuities are abstracted away in favor of a simplified, portfolio high level representation.
+
+Instead, **many of these effects are absorbed into the seasonal variance component of the aggregated uncertainty parameter.** This allows the RL agent to learn conservative behavior during higher‑uncertainty periods while avoiding the need for explicit modeling of each underlying driver.
+
+Each exclusion reflects a deliberate methodological choice. Introducing these elements would significantly increase model dimensionality, calibration requirements, and environmental non‑stationarity, potentially obscuring the primary contribution of the study. 
+
+At the same time, these components represent **natural extensions of the framework (future work)** and provide clear opportunities for incremental research progression once the foundational RL formulation and experimental results are validated.
+
+
 ### 4.1 Out of Scope for Q1 Paper
 
-**Disaggregated Uncertainty**:
-- Separate modeling of human resource quality
-- Explicit inflation modeling
-- Supply chain disruption as independent variable
-- Regulatory change as separate uncertainty source
+#### Resource‑Level Budgeting & Micro‑Scheduling
+- No modeling of task‑level schedules, activity networks, or WBS structures  
+- No representation of resource calendars, skill categories, or utilization profiles  
+- No simulation of material lead times or supply‑chain task sequences  
+- No optimization of labor/equipment/material allocation within projects  
 
-**Multi-Objective Optimization**:
-- Strategic value maximization
-- Risk-adjusted portfolio selection
-- Stakeholder preference modeling
+**Justification**:  
+- These require operational project scheduling (CPM/PERT), outside strategic budgeting  
+- Adds high dimensionality and non-stationarity incompatible with portfolio-level RL  
+- Focus remains on financial and timing decisions, not execution logistics  
 
-**Advanced EVM Variations**:
-- Multiple payment structures within same portfolio
-- Hybrid payment models (EVM + milestone-based)
-- Performance incentive mechanisms
 
-**Explicit Holiday Calendars**:
-- Country-specific holiday tracking
-- Explicit zero-productivity periods
-- Detailed calendar-based scheduling
+#### Disaggregated Uncertainty
+- No separate modeling of human resource variability  
+- No explicit inflation modeling by category or market segment  
+- No independent treatment of supply-chain disruption  
+- No separate uncertainty source for regulatory or policy changes  
 
-**Year-End Parameter Discontinuities**:
-- Explicit modeling of price index changes at year boundaries
-- Regulatory updates at calendar year-end
-- Contract renegotiation mechanics
-- Fiscal year budget resets
+**Justification**:  
+- Q1 models rely on aggregated uncertainty for tractability  
+- Avoids multi-factor calibration against external economic datasets  
+- Maintains a stationary stochastic environment needed for stable RL training  
 
-**Justification for Year-End Exclusion**:
-Year-end parameter changes introduce non-stationarity in the environment that requires:
-- Explicit modeling of economic policy cycles
-- Calibration with real-world fiscal data
-- Separate treatment of deterministic (policy-driven) vs. stochastic (market-driven) changes
-- Additional complexity in reward function design
 
-For the foundational Q1 paper, these effects are absorbed into the seasonal variance component of the aggregated uncertainty parameter. This maintains model simplicity while allowing the RL agent to learn conservative behavior during high-uncertainty periods. Explicit year-end parameter modeling represents a natural extension for future work once the core rolling horizon RL framework is validated.
+#### Multi‑Objective Optimization
+- No explicit modeling of strategic value maximization  
+- No risk-adjusted utility or weighted preference functions  
+- No stakeholder-specific objective formulations  
 
-### 4.2 Justification for Exclusions
-Each exclusion represents:
-- Additional complexity that would obscure core contribution
-- Natural extension for future work
-- Opportunity for incremental research progression
+**Justification**:  
+- Q1 problem focuses on single-objective financial optimization  
+- Multi-objective frameworks introduce Pareto front complexity  
+- Requires stakeholder preference modeling outside the scope of automated RL  
+
+
+#### Advanced EVM Variations
+- No mixed or hybrid payment schemes (EVM + milestones)  
+- No portfolio with multiple payment logics simultaneously  
+- No incentive/penalty mechanisms tied to performance metrics  
+
+**Justification**:  
+- Single EVM model ensures uniform performance and payment measurement  
+- Simplifies reward computation and state transitions  
+- Avoids heterogeneous contract structures that complicate the RL environment  
+
+
+#### Explicit Holiday Calendars
+- No country-specific holiday calendars or productivity shutdown periods  
+- No modeling of seasonal workforce productivity  
+- No date-specific scheduling impacts  
+
+**Justification**:  
+- Calendar-driven productivity patterns introduce fine-grained temporal non-stationarity  
+- Requires region-specific datasets outside Q1 scope  
+- Q1 uses continuous time approximations, not calendar simulation  
+
+
+#### Year‑End Parameter Discontinuities
+- No modeling of price index resets at new-year boundaries  
+- No explicit regulatory update cycles at year-end  
+- No contract renegotiation events tied to fiscal closure  
+- No fiscal-year budget resets or rollover constraints  
+
+**Justification**:  
+- Year-end effects introduce deterministic discontinuities that break stationarity  
+- Requires modeling economic policy cycles and real fiscal data calibration  
+- Necessitates separating deterministic vs. stochastic drivers  
+- Complicates reward design by adding discontinuous incentive structures  
 
 ---
 
