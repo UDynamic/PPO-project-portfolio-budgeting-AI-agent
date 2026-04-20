@@ -229,44 +229,68 @@ At the same time, these components represent **natural extensions of the framewo
 
 ## 5. Modeling Scope & Simplifications
 
-### 5.1 Uncertainty Aggregation
-**Decision**: Aggregate all factors affecting contractor performance and Earned Value into a single uncertainty parameter.
+### 5.1 Aggregated Contractor Performance Uncertainty with Seasonal Variation
 
-**Factors Collapsed**:
-- Human resource availability and performance
-- Inflation and economic conditions
-- Supply chain disruptions
-- Regulatory changes (within-year)
-- Technical challenges
-- **Seasonal productivity variations (including holiday effects)**
+To model contractor behavior in a tractable yet realistic manner, all sources of performance variability are consolidated into a single stochastic uncertainty parameter. This parameter governs deviations between planned progress and realized Earned Value (EV). Seasonal productivity effects, including year‑end holiday slowdowns, are incorporated through a time‑dependent variance structure.
 
-**Justification**:
-- Establishes foundational model for proof-of-concept
-- Reduces state-space complexity for initial validation
-- Allows focus on RL architecture and learning dynamics
-- Maintains consistency with aggregated uncertainty framework
+#### 5.1.1 Unified Stochastic Representation
 
-**Holiday Effect Integration**:
-- Year-end holidays (November, December, January) affect contractor productivity
-- Rather than explicit holiday calendars, this impact is captured through **time-varying uncertainty parameter** $\sigma(t)$
-- Periods near year-end have higher variance: $\sigma_{\text{year-end}} > \sigma_{\text{baseline}}$
-- RL agent learns to be more conservative with budget allocation during high-uncertainty periods
+For each project \( i \) and time period \( t \), realized Earned Value is modeled as a normally distributed random variable:
 
-**Implementation**:
-Contractor performance distribution:
-```
-EV_i(t) ~ N(μ_i(t), σ(t)²)
+\[
+EV_i(t) \sim \mathcal{N}\big(\mu_i(t),\, \sigma(t)^2 \big)
+\]
 
 where:
-σ(t) = σ_baseline           for t mod 12 ∈ {2,3,...,10}
-σ(t) = σ_year-end          for t mod 12 ∈ {11,12,1}
-σ_year-end ≈ 1.5 × σ_baseline
-```
-**Mitigation Strategy**:
-- Frame as "aggregated contractor performance uncertainty with seasonal variation"
-- Conduct sensitivity analysis on this parameter
-- Document as explicit limitation with future work directions
-- Demonstrate RL learns seasonal patterns without explicit calendar modeling
+
+- \( \mu_i(t) \) is the planned progress for project \( i \),
+- \( \sigma(t) \) captures the aggregated performance uncertainty.
+
+The unified uncertainty parameter \( \sigma(t) \) represents the combined effects of:
+
+- workforce availability and performance fluctuations  
+- inflation and macroeconomic conditions  
+- supply chain instability  
+- short-term regulatory shifts  
+- technical and engineering challenges  
+- **seasonal productivity variation**
+
+These factors are not modeled individually; instead, their joint effect is absorbed into the stochastic variance term.
+
+#### 5.1.2 Seasonal Variance Structure
+
+Contractor productivity typically declines around the year‑end period (November, December, January). Instead of encoding explicit holiday calendars, this effect is introduced by allowing the uncertainty parameter to vary seasonally.
+
+Let the model operate in monthly time steps with \( t \bmod 12 \) denoting the month of the year (0 = December, 1 = January, ..., 11 = November). The variance is defined piecewise:
+
+\[
+\sigma(t) =
+\begin{cases}
+\sigma_{\text{baseline}}, 
+& t \bmod 12 \in \{2,3,\dots,10\} \\[6pt]
+\sigma_{\text{year-end}}, 
+& t \bmod 12 \in \{11,0,1\}
+\end{cases}
+\]
+
+with:
+
+\[
+\sigma_{\text{year-end}} \approx 1.5 \,\sigma_{\text{baseline}}
+\]
+
+indicating a 50% increase in performance variance during the high‑uncertainty season. This elevates the risk of underperformance near the year‑end and encourages the RL agent to adopt more conservative allocation strategies during these periods.
+
+#### 5.1.3 Modeling Rationale and Validation
+
+This formulation is intentionally designed as an **aggregated contractor performance uncertainty model with seasonal variation**. It provides:
+
+- a compact, low-dimensional representation suitable for RL training  
+- sufficient realism to induce seasonally-aware agent behavior  
+- a controlled structure that avoids explicit holiday calendars and discontinuities  
+
+Validation and sensitivity analysis will evaluate how different choices of \( \sigma_{\text{baseline}} \) and \( \sigma_{\text{year-end}} \) affect system behavior. This approach is documented as a modeling simplification, with future extensions enabling explicit modeling of calendar effects or disaggregated uncertainty sources.
+
 
 ### 5.2 Rolling Horizon Framework Details
 
