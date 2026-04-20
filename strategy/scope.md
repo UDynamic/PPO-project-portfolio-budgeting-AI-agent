@@ -143,7 +143,7 @@ This mechanism allows the model to handle arbitrary project configurations witho
 
 ---
 
-## 4. Exclusions
+## 4. Out of Scope Exclusions
 
 For the foundational paper, several modeling elements are intentionally excluded to preserve tractability and maintain a clear focus on the core contribution: **the rolling‑horizon reinforcement learning framework for portfolio budgeting decisions.** 
 
@@ -155,8 +155,6 @@ Each exclusion reflects a deliberate methodological choice. Introducing these el
 
 At the same time, these components represent **natural extensions of the framework (future work)** and provide clear opportunities for incremental research progression once the foundational RL formulation and experimental results are validated.
 
-
-### 4.1 Out of Scope for Q1 Paper
 
 #### Resource‑Level Budgeting & Micro‑Scheduling
 - No modeling of task‑level schedules, activity networks, or WBS structures  
