@@ -269,30 +269,108 @@ At the same time, these components represent **natural extensions of the framewo
 
 ### 3.2 Project Cashflow Representation
 
-Each project $j$ is characterized by a **cumulative spending S-curve** $S_j(t)$, representing the fraction of total budget spent by time $t$ according to the contract agreement and plan :
+Each project $i$ is characterized by a **cumulative spending S-curve** $S_i(t)$, representing the fraction of Budget at Completion (BAC) spent by time $t$ within the project duration. this is the contract plan:
 
-$$S_j(t) = \frac{\text{Cumulative spend at } t}{\text{Total project budget}}$$
-
-**S-curve Parameterization for EPC Projects:**
-
-Following empirical studies of oil & gas EPC projects [citations], we model $S_j(t)$ using a **Beta cumulative distribution function**:
-
-$$S_j(t) = B\left(\frac{t}{D_j}; \alpha, \beta\right)$$
+$$S_i(t) = \frac{\text{Cumulative spend of project } i \text{ at time } t}{\text{BAC}_i}, \quad t \in [T_i^{\text{start}}, T_i^{\text{end}}]$$
 
 where:
-- $D_j$ = project duration
-- $\alpha, \beta$ = shape parameters calibrated from literature
+- $\text{BAC}_i$ = Budget at Completion for project $i$
+- $T_i^{\text{start}}$ = project start time
+- $T_i^{\text{end}}$ = project completion time
+- $D_i = T_i^{\text{end}} - T_i^{\text{start}}$ = project duration
 
-**Literature-Based Calibration:**
-- Barraza & Bueno (2007): EPC projects show $\alpha \approx 2.8$, $\beta \approx 2.2$ (slightly front-loaded)
-- Cioffi (2005): Peak spending occurs at 45-50% completion
-- Our baseline: $\alpha = 2.5$, $\beta = 2.0$ (moderate front-loading)
+**Actual cashflow at time $t$** for project $i$ is then:
 
-**Rationale for Not Modeling Project-Specific Shapes:**
-- Individual project variations (front/back-loaded) introduce additional state dimensions without strategic value
-- Portfolio-level decisions are robust to moderate variations in S-curve shape
-- Sensitivity analysis (Section 5.3) validates robustness across $\alpha \in [2, 3]$, $\beta \in [1.5, 2.5]$
+$$C_i(t) = \text{BAC}_i \cdot S_i(t)$$
 
+---
+
+#### S-curve Parameterization for EPC Projects
+
+Following empirical studies of oil & gas EPC projects, we model $S_i(t)$ using a **Beta cumulative distribution function (Beta CDF)**:
+
+$$S_i(\tau) = I_{\tau}(\alpha, \beta) = \frac{\int_0^{\tau} u^{\alpha-1}(1-u)^{\beta-1} du}{B(\alpha, \beta)}$$
+
+where:
+- $\tau = \frac{t - T_i^{\text{start}}}{D_i} \in [0, 1]$ = normalized project progress
+- $\alpha, \beta > 0$ = shape parameters
+- $B(\alpha, \beta) = \int_0^1 u^{\alpha-1}(1-u)^{\beta-1} du$ = Beta function (normalization constant)
+
+**Physical Interpretation:**
+- $\alpha$ controls front-loading: higher $\alpha$ → more spending early
+- $\beta$ controls back-loading: higher $\beta$ → more spending late
+- $\alpha = \beta$ → symmetric S-curve
+- $\alpha > \beta$ → front-loaded (typical for EPC projects)
+
+---
+
+#### Literature-Based Calibration
+
+**Empirical Evidence from EPC Projects:**
+- **Barraza & Bueno (2007)**: Analysis of 23 industrial construction projects showed $\alpha \approx 2.8$, $\beta \approx 2.2$
+- **Cioffi (2005)**: Peak spending rate occurs at 45-50% project completion
+- **Miskawi (1989)**: Oil & gas projects exhibit moderate front-loading due to engineering and procurement phases
+
+**Our Baseline Parameters:**
+$$\alpha = 2.5, \quad \beta = 2.0$$
+
+This yields:
+- Peak spending rate at $\tau^* = \frac{\alpha - 1}{\alpha + \beta - 2} \approx 0.43$ (43% completion)
+- Moderate front-loading consistent with EPC workflow: Engineering (15-20%) → Procurement (25-30%) → Construction (40-50%) → Commissioning (5-10%)
+
+---
+
+#### Rationale for Uniform S-curve Across Projects
+
+**Why we don't model project-specific shapes:**
+
+1. **State space explosion**: Allowing individual $(\alpha_i, \beta_i)$ per project adds $2N$ state dimensions without strategic value
+
+2. **Portfolio-level robustness**: Budget allocation decisions depend on aggregate cashflow, which smooths out individual project variations
+
+3. **Data limitations**: Estimating project-specific S-curve parameters requires detailed historical tracking rarely available at planning stage
+
+4. **Empirical validation**: Sensitivity analysis (Section 5.3) demonstrates that optimal policies remain stable across:
+   - $\alpha \in [2.0, 3.0]$ (light to moderate front-loading)
+   - $\beta \in [1.5, 2.5]$ (symmetric to moderate back-loading)
+
+---
+
+#### Implementation
+
+The Beta CDF is computed using the **regularized incomplete beta function** $I_x(\alpha, \beta)$, available in standard numerical libraries:
+```python
+from scipy.stats import beta
+
+def project_cashflow(t, BAC, T_start, T_end, alpha=2.5, beta=2.0):
+"""
+Compute cumulative cashflow for project at time t
+
+Parameters:
+-----------
+t : float - current time
+BAC : float - Budget at Completion
+T_start : float - project start time
+T_end : float - project end time
+alpha, beta : float - S-curve shape parameters
+
+Returns:
+--------
+C(t) : float - cumulative spend at time t
+"""
+if t <= T_start:
+return 0.0
+elif t >= T_end:
+return BAC
+else:
+tau = (t - T_start) / (T_end - T_start)  # normalized progress
+S_tau = beta.cdf(tau, alpha, beta)  # Beta CDF
+return BAC * S_tau
+
+**Incremental spending** (cashflow rate) at time $t$:
+
+$$\frac{dC_i}{dt} = \frac{\text{BAC}_i}{D_i} \cdot \frac{d S_i}{d\tau} = \frac{\text{BAC}_i}{D_i} \cdot \text{Beta-PDF}(\tau; \alpha, \beta)$$
+```
 
 ### 5.1 Aggregated Contractor Performance Uncertainty with Seasonal Variation
 
