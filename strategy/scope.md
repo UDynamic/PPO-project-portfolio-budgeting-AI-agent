@@ -355,7 +355,6 @@ At the same time, these components represent **natural extensions of the framewo
 - Necessitates separating deterministic vs. stochastic drivers  
 - Complicates reward design by adding discontinuous incentive structures  
 
-> ⚠️ needs checking (exclusions below)
 
 #### Excluded: Project-Specific S-Curve Calibration
 - No estimation of **individual project spending profiles** from historical data
