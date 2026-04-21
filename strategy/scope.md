@@ -139,8 +139,6 @@ This mechanism allows the model to handle arbitrary project configurations witho
 - Enables consistent uncertainty treatment across heterogeneous projects
 - Prevents overfitting to specific external factors that are outside Q1 scope
 
-> ⚠️ needs checking (assumptions below)
-
 #### Uniform S-Curve Shape Across All Projects
 - **All projects follow the same Beta CDF parameterization** with $\alpha = 2.5$, $\beta = 2.0$ for cost progression
 - **No project-specific S-curve variations** based on project type, size, or complexity
@@ -206,7 +204,7 @@ This mechanism allows the model to handle arbitrary project configurations witho
 
 #### Advance Payments Are Immediate and Risk-Free
 - **Advance payment deposited at $t = T_i^{\text{start}}$ with zero delay**
-- **Advance ratio $\alpha_{\text{adv}} \in [0.15, 0.25]$ is exogenous** and contractually fixed
+- **Advance ratio $\alpha_{\text{adv}} \in \{0.15, 0.20, 0.25\}$ is exogenous** and contractually fixed
 - **No modeling of advance payment guarantees**, bank instruments, or collateral requirements
 - **Clients always honor advance payment obligations** (no default risk on initial mobilization funds)
 
