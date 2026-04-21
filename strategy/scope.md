@@ -87,12 +87,23 @@ This mechanism allows the model to handle arbitrary project configurations witho
 
 ## 3. Assumptions
 
-### 3.1 Foundational Principle: Simplest Model
+### 3.1 Industry Context: EPC Oil & Gas Projects
+- **The model is calibrated for Engineering, Procurement, and Construction (EPC) contractors in the oil & gas sector**
+- Project cashflow profiles reflect typical EPC spending patterns observed in literature
+- S-curve parameters (shape, peak timing, skewness) are derived from empirical studies of large-scale energy infrastructure projects
+
+**Justification**:
+- EPC projects exhibit relatively predictable cashflow structures due to standardized contracting practices
+- Oil & gas sector provides rich historical data for S-curve calibration
+- Findings remain generalizable to other capital-intensive project portfolios with similar contractual frameworks
+
+
+### 3.2 Foundational Principle: Simplest Model
 **Rationale**: This is a brand new field in the literature. The Q1 paper establishes foundational proof-of-concept.
 
 **Strategy**: Extension of each assumption will be explicitly recognized as future work.
 
-### 3.2 Project Structure Assumptions
+### 3.3 Project Structure Assumptions
 
 #### Cashflow‑Based Budgeting Assumption
 - **All budgeting decisions are made solely using aggregated project cashflows (inflows and outflows)**
@@ -106,7 +117,7 @@ This mechanism allows the model to handle arbitrary project configurations witho
 - Ensures tractable state and action spaces for RL models
 - Maintains focus on strategic financial decisions rather than operational scheduling
 
-#### Payment & Performance Method
+#### 3.4 Payment & Performance Method
 - **All projects use Earned Value Management (EVM)** for performance measurement and payment
 - Payments are tied to earned value milestones
 - Contractor performance is measured through EVM metrics
@@ -116,7 +127,7 @@ This mechanism allows the model to handle arbitrary project configurations witho
 - Provides consistent performance measurement framework
 - Enables quantifiable uncertainty modeling
 
-#### Aggregate Performance Uncertainty
+#### 3.5 Aggregate Performance Uncertainty
 - **All project uncertainties are modeled as a single aggregated performance risk factor**
 - Human resource variability, inflation effects, supply chain disruptions, and regulatory impacts are **not treated separately**
 - Uncertainty enters the model through a unified performance noise term affecting project progress and cost
@@ -255,6 +266,33 @@ At the same time, these components represent **natural extensions of the framewo
 ---
 
 ## 5. Modeling Scope & Simplifications
+
+### 3.2 Project Cashflow Representation
+
+Each project $j$ is characterized by a **cumulative spending S-curve** $S_j(t)$, representing the fraction of total budget spent by time $t$ according to the contract agreement and plan :
+
+$$S_j(t) = \frac{\text{Cumulative spend at } t}{\text{Total project budget}}$$
+
+**S-curve Parameterization for EPC Projects:**
+
+Following empirical studies of oil & gas EPC projects [citations], we model $S_j(t)$ using a **Beta cumulative distribution function**:
+
+$$S_j(t) = B\left(\frac{t}{D_j}; \alpha, \beta\right)$$
+
+where:
+- $D_j$ = project duration
+- $\alpha, \beta$ = shape parameters calibrated from literature
+
+**Literature-Based Calibration:**
+- Barraza & Bueno (2007): EPC projects show $\alpha \approx 2.8$, $\beta \approx 2.2$ (slightly front-loaded)
+- Cioffi (2005): Peak spending occurs at 45-50% completion
+- Our baseline: $\alpha = 2.5$, $\beta = 2.0$ (moderate front-loading)
+
+**Rationale for Not Modeling Project-Specific Shapes:**
+- Individual project variations (front/back-loaded) introduce additional state dimensions without strategic value
+- Portfolio-level decisions are robust to moderate variations in S-curve shape
+- Sensitivity analysis (Section 5.3) validates robustness across $\alpha \in [2, 3]$, $\beta \in [1.5, 2.5]$
+
 
 ### 5.1 Aggregated Contractor Performance Uncertainty with Seasonal Variation
 
