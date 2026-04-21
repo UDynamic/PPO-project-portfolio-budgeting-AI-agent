@@ -269,7 +269,7 @@ At the same time, these components represent **natural extensions of the framewo
 
 ### 3.2 Project Cashflow Representation
 
-Each project $i$ is characterized by a **cumulative spending S-curve** $S_i(t)$, representing the fraction of Budget at Completion (BAC) spent by time $t$ within the project duration. this is the contract plan:
+Each project $i$ is characterized by a **cumulative spending S-curve** $S_i(t)$, representing the fraction of Budget at Completion (BAC) spent by time $t$ within the project duration. This is the contract plan:
 
 $$S_i(t) = \frac{\text{Cumulative spend of project } i \text{ at time } t}{\text{BAC}_i}, \quad t \in [T_i^{\text{start}}, T_i^{\text{end}}]$$
 
@@ -371,6 +371,201 @@ return BAC * S_tau
 
 $$\frac{dC_i}{dt} = \frac{\text{BAC}_i}{D_i} \cdot \frac{d S_i}{d\tau} = \frac{\text{BAC}_i}{D_i} \cdot \text{Beta-PDF}(\tau; \alpha, \beta)$$
 ```
+---
+
+### 5.3 Project Revenue Inflow Model
+
+#### Overview
+Project revenue follows a **Cost-Plus pricing structure** with 10% ROI markup, reflecting government value-added regulations. Revenue recognition follows the **Percentage-of-Completion method** (IFRS 15 / ASC 606), while cash inflow follows a two-phase payment structure with administrative delays.
+
+---
+
+#### Contract Pricing Structure
+
+For project $i$ with Budget at Completion $\text{BAC}_i$:
+
+$$\text{Contract Value}_i = \text{BAC}_i \times (1 + \rho)$$
+
+where:
+- $\rho = 0.10$ = target Return on Investment (ROI) / profit margin
+- $\text{Gross Profit}_i = \text{BAC}_i \times \rho$
+
+**Rationale**: In Cost-Plus contracts, the contractor receives actual costs plus a fixed percentage profit margin, ensuring predictable returns while incentivizing cost control.
+
+---
+
+#### Revenue Recognition vs. Cash Inflow
+
+**Earned Value (EV)** — basis for revenue recognition:
+$$EV_i(t) = \text{BAC}_i \cdot I_{\tau}(\alpha=2.5, \beta=2.0)$$
+
+**Recognized Revenue** — accounting revenue at time $t$:
+$$\text{Rev}_i(t) = \text{Contract Value}_i \cdot I_{\tau}(\alpha, \beta) = \text{BAC}_i \times (1 + \rho) \cdot I_{\tau}(\alpha, \beta)$$
+
+**Components**:
+- Cost recovery: $EV_i(t)$
+- Profit recognition: $EV_i(t) \times \rho$
+
+---
+
+#### Payment Structure
+
+**Phase 1: Advance Payment**
+- **Timing**: Upon project initiation (period $t = T_i^{\text{start}}$)
+- **Amount**: $R_{\text{adv},i} = \alpha_{\text{adv}} \cdot \text{Contract Value}_i$ where $\alpha_{\text{adv}} \in [0.15, 0.25]$
+- **Characteristics**: 
+  - Immediate deposit (no delay)
+  - One-time payment
+  - Includes proportional profit: $\alpha_{\text{adv}} \times \text{BAC}_i \times \rho$
+  - Reduces client financial risk and provides initial working capital
+
+**Example**: If $\text{BAC}_i = \$1M$, $\rho = 0.10$, $\alpha_{\text{adv}} = 0.20$:
+$$R_{\text{adv},i} = 0.20 \times \$1.1M = \$220K \quad (\$200K \text{ cost recovery} + \$20K \text{ profit})$$
+
+---
+
+**Phase 2: Progress-Based Payments**
+- **Trigger**: Activated after $\text{Rev}_i(t) \geq R_{\text{adv},i}$
+- **Submission Cycle**: Monthly evaluation at period $t$
+- **Payment Calculation**:
+  $$R_i(t) = \text{Rev}_i(t) - \sum_{\tau=T_i^{\text{start}}}^{t-1} R_i(\tau)$$
+  (Revenue increment since last payment, based on Contract Value)
+
+**Administrative Delay**
+- **Evaluation & Approval**: $d_{\text{eval},i} \sim \text{Uniform}(10, 30)$ days
+- **Actual Deposit**: Revenue $R_i(t)$ submitted at period $t$ is deposited at period $t + \lceil d_{\text{eval},i}/30 \rceil$
+- **Stochastic Component**: Delay varies by project and submission, reflecting:
+  - Client review processes
+  - Documentation completeness
+  - Approval workflows
+  - Banking transfer times
+
+---
+
+#### Cash Inflow Function
+
+For project $i$ at timestep $t$:
+
+$$ \text{CashIn}_i(t) =  \begin{cases} \alpha_{\text{adv}} \cdot \text{BAC}_i \times (1 + \rho) & \text{if } t = T_i^{\text{start}} \\ \text{Rev}_i(t - d_i) - \sum_{\tau=T_i^{\text{start}}}^{t-1} \text{CashIn}_i(\tau) & \text{if } t > T_i^{\text{start}} + d_i \\ 0 & \text{otherwise} \end{cases} $$
+
+where:
+- $d_i = \lceil d_{\text{eval},i}/30 \rceil$ = delay in periods for project $i$'s current submission
+- $\text{Rev}_i(t - d_i)$ = recognized revenue at delayed time
+
+---
+
+#### Portfolio-Level Dynamics
+
+**Total Cash Inflow** at period $t$:
+$$B_{\text{inflow}}(t) = \sum_{i=1}^{n} \text{CashIn}_i(t)$$
+
+**Budget Update**:
+$$B_{\text{available}}(t) = B_{\text{rem}}(t-1) - \sum_i C_i(t-1) + B_{\text{inflow}}(t)$$
+
+**Cumulative Profit** (accounting):
+$$\Pi(t) = \sum_{i=1}^{n} [\text{Rev}_i(t) - C_i(t)] = \sum_{i=1}^{n} \text{BAC}_i \times \rho \cdot I_{\tau_i}(t)$$
+
+---
+
+#### Model Parameters
+
+| Parameter | Distribution | Rationale |
+|-----------|-------------|-----------|
+| Profit margin ($\rho$) | Fixed: 0.10 | Government value-added regulation (10% ROI) |
+| Advance payment ratio ($\alpha_{\text{adv}}$) | Uniform(0.15, 0.25) | Industry standard range for construction contracts |
+| Evaluation delay ($d_{\text{eval},i}$) | Uniform(10, 30) days | Captures variability in client approval processes |
+| Submission frequency | Monthly (aligned with $t$) | Standard billing cycle in project management |
+
+---
+
+#### Implementation
+
+```python
+from scipy.stats import beta
+import numpy as np
+
+def project_revenue_with_roi(t, BAC, T_start, T_end, rho=0.10, 
+alpha_adv=0.20, delay_days=20,
+alpha=2.5, beta_param=2.0):
+"""
+Compute cash inflow and recognized revenue with ROI markup
+
+Parameters:
+-----------
+t : float - current time
+BAC : float - Budget at Completion
+T_start : float - project start time
+T_end : float - project end time
+rho : float - profit margin (default 0.10 for 10% ROI)
+alpha_adv : float - advance payment ratio
+delay_days : int - payment processing delay
+alpha, beta_param : float - S-curve shape parameters
+
+Returns:
+--------
+cash_inflow : float - actual cash received at time t
+recognized_revenue : float - accounting revenue at time t
+"""
+contract_value = BAC * (1 + rho)
+delay_periods = int(np.ceil(delay_days / 30))
+
+# Advance payment at start
+if t == T_start:
+advance = alpha_adv * contract_value
+return advance, advance
+
+# No cash before delay period
+if t < T_start + delay_periods:
+return 0.0, 0.0
+
+# Normalized progress
+tau_current = (t - T_start) / (T_end - T_start)
+tau_delayed = ((t - delay_periods) - T_start) / (T_end - T_start)
+
+# Clamp to [0, 1]
+tau_current = np.clip(tau_current, 0, 1)
+tau_delayed = np.clip(tau_delayed, 0, 1)
+
+# Recognized revenue (accounting, no delay)
+S_current = beta.cdf(tau_current, alpha, beta_param)
+recognized_rev = contract_value * S_current
+
+# Cash inflow (with delay)
+S_delayed = beta.cdf(tau_delayed, alpha, beta_param)
+cash_inflow = contract_value * S_delayed
+
+return cash_inflow, recognized_rev
+```
+---
+
+#### Critical Differences: Cost vs Revenue S-curves
+
+| Aspect | Cost Outflow S-curve | Revenue Inflow S-curve |
+|--------|---------------------|------------------------|
+| **Magnitude** | $\text{BAC}_i$ | $\text{BAC}_i \times (1 + \rho) = \text{BAC}_i \times 1.10$ |
+| **Shape** | $I_{\tau}(\alpha=2.5, \beta=2.0)$ | Same shape (Beta CDF with identical parameters) |
+| **Timing** | Immediate (as work progresses) | Delayed by $d_i \sim \text{Uniform}(10, 30)$ days |
+| **Purpose** | Cash outflow planning | Cash inflow forecasting |
+| **Accounting** | Cost recognition = Cash outflow | Revenue recognition ≠ Cash inflow |
+
+**Key Insight**: Revenue S-curve is a **scaled and time-shifted** version of the cost S-curve. The 10% markup ensures profitability, while the delay creates liquidity constraints that the RL agent must manage.
+
+---
+
+#### Agent Planning Impact
+
+**State Augmentation**:
+- Add to project-level state: 
+  - Advance payment received: $\mathbb{1}_{t \geq T_i^{\text{start}}}$
+  - Pending revenue: $\sum_{\tau} R_i(\tau)$ for $\tau \in [t-d_{\max}, t]$ (in transit)
+  - Expected inflow: $\mathbb{E}[B_{\text{inflow}}(t+1)]$ based on current $EV$ trajectories
+
+**Liquidity Constraint**: 
+The agent must anticipate revenue delays when planning allocations. Even with positive cumulative profit $\Pi(t) > 0$, the portfolio may face cash shortages if:
+$$B_{\text{available}}(t) < \sum_i C_i(t)$$
+
+This necessitates strategic timing of project starts to maintain positive cash flow.
+
 
 ### 5.1 Aggregated Contractor Performance Uncertainty with Seasonal Variation
 
