@@ -139,6 +139,100 @@ This mechanism allows the model to handle arbitrary project configurations witho
 - Enables consistent uncertainty treatment across heterogeneous projects
 - Prevents overfitting to specific external factors that are outside Q1 scope
 
+> ⚠️ needs checking (assumptions below)
+
+#### Uniform S-Curve Shape Across All Projects
+- **All projects follow the same Beta CDF parameterization** with $\alpha = 2.5$, $\beta = 2.0$ for cost progression
+- **No project-specific S-curve variations** based on project type, size, or complexity
+- **Peak spending occurs uniformly at ~43% completion** for all projects in the portfolio
+- **Front-loading intensity is constant** regardless of engineering/procurement/construction phase mix
+
+**Justification**:
+- Prevents state space explosion from adding $2N$ shape parameters ($\alpha_i$, $\beta_i$ per project)
+- Maintains consistency with foundational simplicity principle (Section 3.2)
+- Literature shows EPC projects cluster around similar spending profiles (Barraza & Bueno 2007)
+- Portfolio-level aggregation smooths individual project variations
+- Strategic budget allocation decisions depend on aggregate cashflow dynamics, not micro-level spending patterns
+- Sensitivity analysis can demonstrate policy robustness across reasonable parameter ranges
+
+---
+
+#### Fixed 10% Profit Margin (Cost-Plus Pricing)
+- **All projects priced at Contract Value = BAC × 1.10** regardless of risk, complexity, or client
+- **Profit margin is deterministic and non-negotiable** (no competitive bidding dynamics)
+- **ROI target is uniform across portfolio** and does not vary by project characteristics
+
+**Justification**:
+- Reflects government value-added regulations mandating 10% ROI for public sector contracts
+- Eliminates pricing uncertainty to focus on budget allocation and liquidity management under payment delays
+- Consistent with Cost-Plus contracting norms in oil & gas EPC sector (Section 3.1)
+- Simplifies revenue modeling while maintaining realistic profit dynamics
+- Aligns with foundational simplicity principle: single contractual framework across portfolio
+
+---
+
+#### Revenue Recognition Follows Cost Progress (Percentage-of-Completion with Stochastic EV)
+- **Revenue S-curve has identical shape to cost S-curve** (same $\alpha$, $\beta$ parameters) under baseline planned conditions
+- **Percentage-of-Completion method ties revenue recognition to Earned Value (EV)**, not actual cost incurred
+- **Earned Value (EV) is stochastic** and subject to aggregated contractor performance uncertainty: $EV_i(t) \sim \mathcal{N}(\mu_i(t), \sigma(t)^2)$ (Section 5.1)
+- **Revenue recognized is proportional to realized EV**: $\text{Rev}_i(t) = EV_i(t) \times (1 + \rho)$ where $\rho = 0.10$
+- **Revenue recognition timing matches EVM measurement cycles** (monthly, Section 3.4)
+- **Seasonal variance in EV propagates to revenue recognition**, creating higher revenue uncertainty during year-end periods
+
+**Justification**:
+- Standard practice in IFRS 15 / ASC 606 for construction contracts with continuous transfer of control
+- Consistent with EVM-based payment framework where payments are tied to earned value milestones (Section 3.4)
+- Maintains tractable relationship between performance and revenue while incorporating realistic uncertainty
+- Stochastic EV model (Section 5.1) ensures revenue recognition reflects actual contractor performance variability
+- Focus remains on cash timing mismatch (payment delays) while acknowledging performance-driven revenue uncertainty
+- Aligns with cashflow-based budgeting assumption (Section 3.3) by using EV as the bridge between cost and revenue
+
+---
+
+#### Payment Delays Are Independent and Identically Distributed
+- **Each progress payment experiences independent administrative delay** $d_i \sim \text{Uniform}(10, 30)$ days
+- **No correlation between delays** across projects or time periods
+- **No modeling of client-specific payment behaviors** (e.g., chronic late payers vs. prompt payers)
+- **Delay distribution is stationary** and does not change with economic conditions or client financial health
+
+**Justification**:
+- Captures realistic administrative variability without introducing client-level state variables
+- Uniform distribution reflects lack of historical data on delay patterns in foundational study
+- Independence assumption prevents exponential growth in state space from delay correlations
+- Maintains tractable stochastic environment consistent with aggregate uncertainty principle (Section 3.5)
+- Sensitivity analysis can test impact of wider delay ranges in future work
+
+---
+
+#### Advance Payments Are Immediate and Risk-Free
+- **Advance payment deposited at $t = T_i^{\text{start}}$ with zero delay**
+- **Advance ratio $\alpha_{\text{adv}} \in [0.15, 0.25]$ is exogenous** and contractually fixed
+- **No modeling of advance payment guarantees**, bank instruments, or collateral requirements
+- **Clients always honor advance payment obligations** (no default risk on initial mobilization funds)
+
+**Justification**:
+- Advance payments are contractually secured and processed before project mobilization in EPC practice
+- Simplifies initial liquidity modeling without affecting core budget allocation problem
+- Default risk on advance payments is negligible in government/major oil company contracts (Section 3.1)
+- Allows focus on progress payment delays, which dominate liquidity uncertainty
+- Consistent with foundational simplicity: single deterministic advance payment mechanism
+
+---
+
+#### Monthly Billing Cycle Alignment
+- **Revenue submissions and payment evaluations occur at discrete monthly intervals** aligned with simulation timesteps
+- **No intra-month billing** or ad-hoc payment requests
+- **All projects follow synchronized billing calendar** regardless of start date
+- **Billing cycles align with rolling horizon re-planning frequency** (Section 3.3)
+
+**Justification**:
+- Standard industry practice for EPC contracts (monthly progress reports)
+- Aligns with discrete-time MDP formulation and monthly decision epochs (Section 3.3)
+- Avoids continuous-time complexity while maintaining realistic cash flow dynamics
+- Consistent with EVM measurement cycles (Section 3.4)
+- Maintains tractable temporal structure for RL training
+
+
 ### 3.3 Portfolio Structure Assumptions
 
 #### Temporal Structure: Rolling Horizon Framework
@@ -262,6 +356,97 @@ At the same time, these components represent **natural extensions of the framewo
 - Requires modeling economic policy cycles and real fiscal data calibration  
 - Necessitates separating deterministic vs. stochastic drivers  
 - Complicates reward design by adding discontinuous incentive structures  
+
+> ⚠️ needs checking (exclusions below)
+
+#### Excluded: Project-Specific S-Curve Calibration
+- No estimation of **individual project spending profiles** from historical data
+- No modeling of **phase-specific spending patterns** (e.g., 20% engineering, 30% procurement, 45% construction)
+- No representation of **project type heterogeneity** (onshore vs. offshore, greenfield vs. brownfield)
+- No dynamic adjustment of S-curve shape based on **real-time project performance**
+
+**Reason for Exclusion**:
+- Requires detailed historical cashflow data rarely available at portfolio planning stage
+- Introduces $2N$ additional parameters inconsistent with foundational simplicity principle (Section 3.2)
+- Phase-level modeling belongs to operational execution layer, not strategic budgeting (Section 4)
+- Performance-based adjustments require real-time monitoring outside Q1 scope
+- Aggregate uncertainty model (Section 3.5) absorbs project-level variability
+
+---
+
+#### Excluded: Variable Profit Margins and Competitive Pricing
+- No modeling of **bid competitiveness** or market-driven pricing
+- No representation of **risk-adjusted margins** (higher profit for higher uncertainty projects)
+- No **client negotiation dynamics** or discount structures
+- No **incentive fee structures** (e.g., cost-plus-incentive-fee contracts)
+
+**Reason for Exclusion**:
+- Government contracts with fixed 10% ROI eliminate pricing competition in target domain
+- Variable margins introduce contract-level uncertainty orthogonal to budget allocation problem
+- Competitive bidding requires game-theoretic modeling outside RL portfolio optimization scope
+- Maintains single contractual framework consistent with foundational approach (Section 3.2)
+- Focus is on managing fixed-margin contracts under payment uncertainty, not winning variable-margin bids
+
+---
+
+#### Excluded: Milestone-Based and Output-Based Revenue Recognition
+- No modeling of **discrete milestone payments** (e.g., 30% at design approval, 60% at mechanical completion)
+- No representation of **deliverable-based billing** (per equipment unit, per facility module)
+- No **retainage/holdback provisions** (e.g., 10% withheld until final acceptance)
+- No **performance bonuses** or liquidated damages affecting revenue magnitude or timing
+
+**Reason for Exclusion**:
+- Milestone structures create discontinuous revenue jumps incompatible with continuous EV-based progress measurement (Section 3.4)
+- Output-based billing requires detailed scope decomposition outside strategic budgeting level (Section 4)
+- Retainage modeling adds state complexity (tracking withheld amounts per project) without altering core allocation problem
+- Performance incentives beyond the fixed 10% margin introduce additional outcome uncertainty better addressed in future multi-objective extensions (Section 4)
+- Maintains consistency with EVM-based continuous progress measurement where revenue follows realized EV with stochastic variance (Section 5.1)
+- The model already captures performance-driven revenue variability through stochastic EV; milestone-based recognition would introduce orthogonal structural complexity
+
+---
+
+#### Excluded: Client-Specific Payment Behavior and Default Risk
+- No modeling of **client creditworthiness** or financial distress
+- No representation of **systematic payment delays** by specific clients (e.g., government agencies with budget cycles)
+- No **default risk** or **partial payment scenarios**
+- No **currency risk** or **cross-border payment complications**
+
+**Reason for Exclusion**:
+- Client-level heterogeneity requires tracking payment history and credit ratings per client
+- Default risk in major oil & gas EPC contracts is negligible (clients are typically investment-grade entities, Section 3.1)
+- Systematic delays (e.g., fiscal year-end bottlenecks) are absorbed into aggregate seasonal variance (Section 3.5)
+- Currency and cross-border issues belong to financial risk management, not operational budgeting
+- Maintains stationary stochastic environment required for stable RL training (Section 3.5)
+
+---
+
+#### Excluded: Intra-Month Cash Flow Dynamics
+- No modeling of **daily or weekly cash positions**
+- No representation of **short-term borrowing** or **overdraft facilities** to cover intra-month gaps
+- No **cash flow forecasting** at sub-monthly granularity
+- No **working capital optimization** within billing cycles
+
+**Reason for Exclusion**:
+- Monthly timesteps align with strategic planning horizon and billing cycles (Section 3.3)
+- Intra-month liquidity management is a treasury function, not portfolio allocation decision
+- Short-term financing instruments (credit lines, overdrafts) are operational tools outside RL action space
+- Sub-monthly granularity increases computational cost without improving allocation policy quality
+- Consistent with cashflow-based budgeting at strategic level (Section 3.3)
+
+---
+
+#### Excluded: Billing Disputes and Payment Holds
+- No modeling of **invoice rejections** due to scope disagreements
+- No representation of **rework-related payment suspensions**
+- No **change order negotiations** affecting payment timing
+- No **lien/claim processes** or legal disputes delaying payments
+
+**Reason for Exclusion**:
+- Billing disputes are rare in well-managed EPC projects with clear scope definitions
+- Rework and change orders introduce project execution risks outside financial planning scope (Section 4)
+- Legal disputes are low-probability events that do not affect baseline portfolio strategy
+- Focus is on normal payment variability (administrative delays), not exceptional disruptions
+- Maintains tractable stochastic model consistent with aggregate uncertainty principle (Section 3.5)
 
 ---
 
