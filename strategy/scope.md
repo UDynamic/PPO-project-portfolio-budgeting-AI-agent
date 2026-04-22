@@ -461,6 +461,7 @@ where:
 - $T_i^{\text{end}}$ = project completion time
 - $D_i = T_i^{\text{end}} - T_i^{\text{start}}$ = project duration
 
+
 **Actual cashflow at time $t$** for project $i$ is then:
 
 $$C_i(t) = \text{BAC}_i \cdot S_i(t)$$
