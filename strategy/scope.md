@@ -451,21 +451,18 @@ At the same time, these components represent **natural extensions of the framewo
 > ⚠️ needs checking (inflow outflow modeling)
 ### 3.2 Project Cashflow Representation
 
-Each project $i$ is characterized by a **cumulative spending S-curve** $S_i(t)$, representing the contract planned fraction of Budget at Completion (BAC) spent by time $t$ within the project duration:
+Each project `i` is characterized by a **cumulative spending S-curve** $S_i(t)$, representing the contract planned fraction of Budget at Completion (BAC) spent by time $t$ within the project duration:
 
-$$S_i(t) = \frac{\text{Cumulative spend of project } i \text{ at time } t}{\text{BAC}_i}, \quad t \in [T_i^{\text{start}}, T_i^{\text{end}}]$$
+$$C_i(t) = \text{Cumulative planed spend of project } i \text{ at time } t \\
+S_i(t) = \frac{C_i(t)}{\text{BAC}_i}, \quad t \in [T_i^{\text{start}}, T_i^{\text{end}}]$$
 
 where:
 - $\text{BAC}_i$ = Budget at Completion for project $i$
 - $T_i^{\text{start}}$ = project start time
 - $T_i^{\text{end}}$ = project completion time
 - $D_i = T_i^{\text{end}} - T_i^{\text{start}}$ = project duration
-
-
-**Actual cashflow at time $t$** for project $i$ is then:
-
-$$C_i(t) = \text{BAC}_i \cdot S_i(t)$$
-
+- $S_i(t) \in [0, 1] $
+- $ C_i(t) = S_i(t) \times \text{BAC}_i $
 ---
 
 #### S-curve Parameterization for EPC Projects
@@ -915,6 +912,3 @@ The framework is designed to handle diverse portfolio configurations through its
 - **Planning start** ($t_{\text{planning\_start}}$) decouples decision-making from temporal origin, enabling flexible deployment
 - **Horizon planning** with single-period execution balances long-term foresight with adaptive replanning as uncertainty resolves
 - **Masking** ensures agent never acts on unavailable or completed projects, maintaining action space validity across all scenarios
-
-
----
