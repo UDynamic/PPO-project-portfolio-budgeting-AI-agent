@@ -451,7 +451,7 @@ At the same time, these components represent **natural extensions of the framewo
 > ⚠️ needs checking (inflow outflow modeling)
 ### 3.2 Project Cashflow Representation
 
-Each project $i$ is characterized by a **cumulative spending S-curve** $S_i(t)$, representing the fraction of Budget at Completion (BAC) spent by time $t$ within the project duration:
+Each project $i$ is characterized by a **cumulative spending S-curve** $S_i(t)$, representing the contract planned fraction of Budget at Completion (BAC) spent by time $t$ within the project duration:
 
 $$S_i(t) = \frac{\text{Cumulative spend of project } i \text{ at time } t}{\text{BAC}_i}, \quad t \in [T_i^{\text{start}}, T_i^{\text{end}}]$$
 
