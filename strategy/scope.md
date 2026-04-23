@@ -565,7 +565,7 @@ $$\tau^* = \frac{\alpha - 1}{\alpha + \beta - 2} = 0.60 \quad \text{(for } \alph
 ### 5.3 Project Revenue Inflow Model
 
 #### Overview
-Project revenue follows a **Cost-Plus pricing structure** with 10% ROI markup, reflecting government value-added regulations. Revenue recognition follows the **Percentage-of-Completion method** (IFRS 15 / ASC 606) based on stochastic Earned Value, while cash inflow follows a two-phase payment structure with administrative delays.
+Project revenue follows a **Cost-Plus pricing structure** with 10% ROI markup, reflecting government value-added regulations. Revenue recognition follows the **Percentage-of-Completion(POC) method** (IFRS 15 / ASC 606) based on stochastic Earned Value, while cash inflow follows a two-phase payment structure with administrative delays.
 
 ---
 
