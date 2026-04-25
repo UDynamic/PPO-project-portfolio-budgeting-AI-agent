@@ -35,28 +35,3 @@ Reinforcement learning framework
 All documents follow the structure in `0. promptTemplate.md`
 
 ---
-
-### templatePrompt refinement:
-
-```
-I loved your output.
-excellent job on the literature review first document.
-
-bring in to the template everything detail neccessary for offline (like online chatbots new converation) quality persistence and context maintenance.
-
-now I want you to update the root/strategy/modularModeling/0. promptTemplate.md for better quality responce
-generation such as your recent projectScurves.md.
-
-read all the documents and files mentioned for better context.
-
----
-
-your previous instruction was:
-"ok go on and write the /root/strategy/modularModeling/projectsPortfolioModel/projectSCurves.md.
-
-using root/strategy/scope.md and files next to it.
-like strategy.md and literatureCalibratedSyntheticData.md.
-
-use root/strategy/modularModeling/0. promptTemplate.md as your instruction."
-
-```
