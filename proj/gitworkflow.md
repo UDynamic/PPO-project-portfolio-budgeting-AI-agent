@@ -13,5 +13,6 @@ git commit -m "created README.md: imported first draft"
 > for more than one modification in same commit:
 > ```bash
 > git add .
-> git commit -m "created README.md: imported first draft --- updated README.md: first polish "
+> git commit -m "created README.md: imported first draft 
+> --- updated README.md: first polish "
 > ```
