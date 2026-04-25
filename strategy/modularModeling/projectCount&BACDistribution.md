@@ -284,8 +284,6 @@ $$
 
 Model margin as **function of BAC**:
 $$
-\mu_{\pi}(\text{BAC}) = \mu_{\pi,0
-```markdown
 \mu_{\pi}(\text{BAC}) = \mu_{\pi,0} + \beta \ln\!\left(\frac{\text{BAC}}{\text{BAC}_{\text{median}}}\right)
 $$
 
