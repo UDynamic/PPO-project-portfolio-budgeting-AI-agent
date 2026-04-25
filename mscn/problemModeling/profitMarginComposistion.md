@@ -683,22 +683,18 @@ where:
 - Requires **empirical validation** with company-specific data showing size-margin relationship in their market
 
 ---
-
 #### 4.6.5 Final Recommendation
 
 **EXCLUDE BAC-margin correlation from the foundational model.**
 
-**Rationale Summary:**
+**Rationale:**
 - Literature evidence is **conflicting and context-dependent**
-- Iranian market (study context) shows **negligible correlation** (Khanzadi et al., 2018)
-- Adds **unnecessary complexity** to a foundational proof-of-concept
-- **Orthogonal to research question**: Focus is budget allocation, not pricing strategy
-- Can be addressed in **future work** with market-specific calibration
+- Iranian market shows **negligible correlation** (Khanzadi et al., 2018)
+- Adds **unnecessary complexity** to a foundational model
+- **Orthogonal to research question** (RL-based budget allocation)
+- Can be addressed in **future work** if market-specific data warrants inclusion
 
 **Implementation:**
-- Profit margins sampled from **category-specific truncated normal distributions** (Section 4.3)
-- BAC sampled **independently** from uniform distribution (Section 4.4)
-- No correlation term in margin generation algorithm (Section 4.5)
-
-This decision maintains **scientific rigor** (acknowledges literature ambiguity), **methodological clarity** (simplest defensible model), and **practical tractability** (reduces parameter space for RL training).
-- Correlation coefficient: $\rho_{\text{BAC}, \pi} \$
+- Profit margins sampled from **category-specific truncated normal distributions**
+- BAC sampled **independently** from category-specific distributions
+- **No correlation term** in margin generation algorithm
