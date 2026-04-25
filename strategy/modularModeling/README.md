@@ -2,11 +2,16 @@
 
 ## Directory Organization
 
+## Status
+- ✅ Completed: 2/12
+- 🟨 Under review
+- ⬜ To be developed: 10/12
+
 ### projectsPortfolioModel/
 Portfolio composition and project-level characteristics
 1. ✅ profitMarginsComposistions.md - Profit margin distributions by category
 2. ✅ projectCounts&BACsDistributions.md - Portfolio size and BAC distributions
-3. ⬜ projectSCurves.md - S-curve cashflow model (Beta distribution)
+3. 🟨 projectSCurves.md - S-curve cashflow model (Beta distribution)
 4. ⬜ projectDurations.md - Duration distributions and start time staggering
 5. ⬜ projectRevenuePlans.md - Revenue recognition and payment structures
 
@@ -25,10 +30,6 @@ Synthetic data generation and validation
 Reinforcement learning framework
 11. ⬜ rewardFunction.md - Reward function design and components
 12. ⬜ MDP.md - MDP formulation (state, action, transition, reward)
-
-## Status
-- ✅ Completed: 2/12
-- ⬜ To be developed: 10/12
 
 ## Template
 All documents follow the structure in `0. promptTemplate.md`
