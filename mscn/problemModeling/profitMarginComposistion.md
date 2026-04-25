@@ -77,6 +77,15 @@ where:
 - $\mathcal{P}_{\text{international}}$ = international projects (competitive bidding, market-driven pricing)
 - $\mathcal{P}_{\text{domestic}} \cap \mathcal{P}_{\text{international}} = \emptyset$ (mutually exclusive)
 
+> **⚠️ sensitivity analysis on this weight is the key to represent 3 models:** 
+> 1. fully local model (specialized for domestic projects) 
+    **+** fine tunning protocol for local country specific configuration 
+> 2. optimal local+internatinal model (specialized for optimall portfolio compositions)
+> 3. fully International model (specialized for international only portfolios)
+    **+** fine tunning protocol for local country specific configuration 
+
+
+
 **Composition Weights (by Budget Allocation):**
 
 Let $W_{\text{domestic}}$ and $W_{\text{international}}$ denote the fraction of total portfolio budget allocated to each category:

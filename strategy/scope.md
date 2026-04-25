@@ -912,3 +912,90 @@ The framework is designed to handle diverse portfolio configurations through its
 - **Planning start** ($t_{\text{planning\_start}}$) decouples decision-making from temporal origin, enabling flexible deployment
 - **Horizon planning** with single-period execution balances long-term foresight with adaptive replanning as uncertainty resolves
 - **Masking** ensures agent never acts on unavailable or completed projects, maintaining action space validity across all scenarios
+
+---
+
+## 6. Future Work & Extensions
+
+This section outlines natural extensions of the foundational methodology established in this work. Each direction represents a scientifically rigorous path for follow-up research.
+
+### 6.1 Portfolio Composition Specialization: Local vs. International Projects
+
+#### Research Question
+**Do portfolios dominated by domestic vs. international projects require specialized model variants, or does a unified pre-trained model generalize across composition ratios?**
+
+#### Motivation
+The current work employs a **unified model** pre-trained on international EPC literature and fine-tuned on company-specific data. However, real-world portfolios exhibit varying compositions:
+- **Domestic-heavy portfolios**: Government infrastructure, national energy projects
+- **International-heavy portfolios**: Multinational EPC contractors, cross-border joint ventures
+- **Mixed portfolios**: Diversified project companies balancing local and international work
+
+These portfolio types may exhibit distinct operational characteristics:
+
+| Characteristic | Domestic Projects | International Projects |
+|----------------|-------------------|------------------------|
+| Payment delays | 1-2 periods (local banking) | 3-5 periods (wire transfers, currency conversion) |
+| Seasonal volatility | High year-end spikes (fiscal cycles) | Smoother (diversified calendar effects) |
+| Regulatory constraints | Strict local compliance deadlines | Variable cross-border coordination |
+| Contractor behavior | Known local performance patterns | Higher uncertainty from unfamiliar vendors |
+
+#### Proposed Extension: Three Model Variants
+
+**Variant 1: Fully Local Model**
+- **Specialization**: Domestic-only project portfolios
+- **Fine-tuning protocol**: Country-specific contractor performance distributions, local regulatory payment schedules, domestic banking delays
+- **Use case**: National infrastructure agencies, domestic energy companies
+
+**Variant 2: Optimal Mixed Model**
+- **Specialization**: Balanced local + international portfolio compositions
+- **Sensitivity analysis**: Performance across local/international weight ratios (100%/0%, 75%/25%, 50%/50%, 25%/75%, 0%/100%)
+- **Use case**: Diversified EPC contractors, multinational project portfolios
+
+**Variant 3: Fully International Model**
+- **Specialization**: International-only project portfolios
+- **Fine-tuning protocol**: Cross-border payment delays, currency risk patterns, international contracting norms
+- **Use case**: Global EPC firms, offshore energy projects
+
+#### Key Research Challenges
+
+**1. Data Availability**
+- Requires empirical calibration of **country-specific contractor performance distributions**
+- Current literature lacks granular data on domestic vs. international cashflow volatility patterns
+- Synthetic data generation must be validated against regional industry benchmarks
+
+**2. Model Architecture Decision**
+- **Option A**: Train 3 separate models (higher specialization, 3× training cost)
+- **Option B**: Single model with portfolio composition as input feature (lower cost, potential generalization loss)
+- **Trade-off analysis**: Specialization benefit vs. computational burden
+
+**3. Sensitivity Analysis Design**
+- Define threshold ratios where fine-tuning becomes necessary (e.g., >80% local projects)
+- Measure performance degradation as portfolio composition deviates from training distribution
+- Establish guidelines: "When should practitioners use Variant 1 vs. Variant 2 vs. Variant 3?"
+
+#### Experimental Design (Lightweight Approach)
+
+To address this question **without full model re-architecture**, a sensitivity analysis can be conducted:
+
+1. **Generate portfolios** with varying local/international ratios: 100%/0%, 75%/25%, 50%/50%, 25%/75%, 0%/100%
+2. **Define project types** by operational parameters:
+   - **Local projects**: Payment delay ~ Uniform(1, 2 periods), seasonal volatility σ_year-end = 0.25
+   - **International projects**: Payment delay ~ Uniform(3, 5 periods), seasonal volatility σ_year-end = 0.15
+3. **Train one unified model** on mixed portfolios (50%/50% baseline)
+4. **Test performance** across all composition ratios
+5. **Analyze**:
+   - Plot: Portfolio composition (x-axis) vs. NPV/Budget utilization (y-axis)
+   - Identify: Composition ranges where performance degrades >10%
+   - Conclude: When fine-tuning for specific compositions becomes necessary
+
+**Expected Outcome**: Either (a) unified model generalizes well across all compositions, or (b) performance degrades at extremes (>80% local or >80% international), justifying specialized variants.
+
+#### Scientific Contribution
+- **Methodological**: Establishes when portfolio composition warrants model specialization vs. unified approach
+- **Practical**: Provides decision framework for practitioners selecting model variants
+- **Theoretical**: Extends transfer learning theory to portfolio composition heterogeneity
+
+#### Timeline & Scope
+- **Effort**: 2-3 weeks (1 week data generation, 1 week training/testing, 1 week analysis)
+- **Positioning**: Natural follow-up paper (Q2/Q3 journal) or extended journal version
+- **Prerequisite**: Foundational Q1 paper must establish baseline unified model first
