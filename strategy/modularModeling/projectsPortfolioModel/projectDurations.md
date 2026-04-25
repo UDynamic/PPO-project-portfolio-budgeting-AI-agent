@@ -1,4 +1,3 @@
-```markdown
 # 4. Project Durations and Start Time Staggering
 
 ## 4.1 Scope Definition
@@ -472,6 +471,7 @@ if __name__ == "__main__":
     print(f"  Mean: {np.mean(active_counts):.2f}")
     print(f"  Min:  {np.min(active_counts)}")
     print(f"  Max:  {np.max(active_counts)}")
+```
 
 ---
 ## 4.6 Validation
