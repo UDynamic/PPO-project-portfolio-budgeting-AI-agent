@@ -4,8 +4,8 @@
 
 ## Status
 - ✅ Completed: 2/12
-- 🟨 Under review
-- ⬜ To be developed: 10/12
+- 🟨 Under review: 3/12
+- ⬜ To be developed: 7/12
 
 ### projectsPortfolioModel/
 Portfolio composition and project-level characteristics
