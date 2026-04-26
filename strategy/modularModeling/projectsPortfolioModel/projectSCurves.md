@@ -892,24 +892,24 @@ where:
 
 The actual project completion time evolves dynamically based on performance:
 
-$$D_i^{actual}(t) = D_i^{baseline} + \Delta D_i^{recovery}(t) + \Delta D_i^{extension}(t)$$
+$$D_i^{\text{actual}}(t) = D_i^{\text{baseline}} + \Delta D_i^{\text{recovery}}(t) + \Delta D_i^{\text{extension}}(t)$$
 
 **Recovery Delay Component:**
 
 Accumulated delay from performance deviations:
 
-$$\Delta D_i^{recovery}(t) = \sum_{	au=T_i^{start}}^{t} \delta_i(	au)$$
+$$\Delta D_i^{\text{recovery}}(t) = \sum_{\tau=T_i^{\text{start}}}^{t} \delta_i(\tau)$$
 
 where the period-by-period delay increment is:
 
 $$\delta_i(t) = \begin{cases}
 (1 - SPI_i(t)) \cdot \Delta t & \text{if no action plan active} \\
-(1 - SPI_i^{eff}(t)) \cdot \Delta t & \text{if action plan active}
+(1 - SPI_i^{\text{eff}}(t)) \cdot \Delta t & \text{if action plan active}
 \end{cases}$$
 
 and the effective SPI under action plan is:
 
-$$SPI_i^{eff}(t) = SPI_i(t) + \eta_i (1 - SPI_i(t))$$
+$$SPI_i^{\text{eff}}(t) = SPI_i(t) + \eta_i (1 - SPI_i(t))$$
 
 where $\eta_i \in [0.3, 0.7]$ is the action plan effectiveness (sampled per project).
 
@@ -923,9 +923,9 @@ where $\eta_i \in [0.3, 0.7]$ is the action plan effectiveness (sampled per proj
 
 Near project completion, formal contractual extensions are negotiated:
 
-$$\Delta D_i^{extension}(t) = \begin{cases}
-0.5 \cdot \Delta D_i^{recovery}(t) & 	\text{if } T_i^{planned\_end} - t < 2 	\text{ months and } P_i(t) < 0.95 \\
-0 & 	\text{otherwise}
+$$\Delta D_i^{\text{extension}}(t) = \begin{cases}
+0.5 \cdot \Delta D_i^{\text{recovery}}(t) & \text{if } T_i^{\text{planned\_end}} - t < 2 \text{ months and } P_i(t) < 0.95 \\
+0 & \text{otherwise}
 \end{cases}$$
 
 **Rationale:**
@@ -939,19 +939,19 @@ $$\Delta D_i^{extension}(t) = \begin{cases}
 
 Management decides to activate schedule recovery action plan when:
 
-$$	ext{Progress Gap} = P_i^{planned}(t) - P_i^{actual}(t) > 	heta_{	ext{gap}}$$
+$$\text{Progress Gap} = P_i^{\text{planned}}(t) - P_i^{\text{actual}}(t) > \theta_{\text{gap}}$$
 
-where $	heta_{	ext{gap}} = 0.10$ (10% behind planned progress).
+where $\theta_{\text{gap}} = 0.10$ (10% behind planned progress).
 
 **Action Plan Cost:**
 
-$$	ext{Cost}_{	ext{action}} = \kappa \cdot 	ext{BAC}_i \cdot 	ext{Progress Gap}$$
+$$\text{Cost}_{\text{action}} = \kappa \cdot \text{BAC}_i \cdot \text{Progress Gap}$$
 
 where $\kappa \in [0.15, 0.25]$ is the cost multiplier (crashing activities costs 1.2-1.5× normal rate).
 
 **Action Plan Duration:**
 
-Action plans remain active for $T_{	ext{action}} = 3$ months, then expire (must be re-activated if gap persists).
+Action plans remain active for $T_{\text{action}} = 3$ months, then expire (must be re-activated if gap persists).
 
 ---
 
