@@ -460,9 +460,9 @@ where $p_m$ are calibrated monthly probabilities.
 
 #### 3.3.1 Planned Cumulative Spending S-Curve
 
-Each project $i$ is characterized by a **planned cumulative spending function** $C_i(t)$, representing the total cost incurred from project start $T_i^{\text{start}}$ to time $t$:
+Each project $i$ is characterized by a **planned cumulative spending function** $C_i(t)$, representing the total cost incurred from project start $T_i^{\text{start}}$ up to and including time $t$:
 
-$$C_i(t) = \text{BAC}_i \cdot S_i(\tau), \quad t \in [T_i^{\text{start}}, T_i^{\text{end}}]$$
+$$C_i(t) = \text{BAC}_i \cdot S_i(\tau), \quad t \in [T_i^{\text{start}}, T_i^{\text{finish}}]$$
 
 where $S_i(\tau)$ is the **normalized S-curve** (fraction of BAC spent by normalized progress $\tau$):
 
@@ -474,11 +474,23 @@ $$\tau = \frac{t - T_i^{\text{start}}}{D_i} \in [0, 1]$$
 
 with:
 - $\text{BAC}_i$ = Budget at Completion for project $i$
-- $T_i^{\text{start}}$, $T_i^{\text{end}}$ = project start and end times (in periods)
-- $D_i = T_i^{\text{end}} - T_i^{\text{start}}$ = project duration (in periods)
+- $T_i^{\text{start}}$ = project start time (period index)
+- $T_i^{\text{finish}}$ = project finish time (period index)
+- $D_i = T_i^{\text{finish}} - T_i^{\text{start}} + 1$ = project duration (in periods)
 - $\alpha, \beta > 0$ = shape parameters (shared across all projects)
 - $B(\alpha, \beta) = \int_0^1 u^{\alpha-1}(1-u)^{\beta-1}\, du$ = Beta function (normalization constant)
 - $I_\tau(\alpha, \beta)$ = regularized incomplete Beta function
+
+**Timing Convention and Literature Calibration**: 
+
+The project is active during the closed interval $[T_i^{\text{start}}, T_i^{\text{finish}}]$, meaning both the start period and finish period are included in the project duration. This convention aligns with discrete-time project scheduling standards in the literature:
+
+- **PMI PMBOK Guide**: Activities are scheduled over discrete time periods (days, weeks, months). An activity starting on day 1 and finishing on day 5 has a duration of 5 days (both endpoints inclusive).
+- **Critical Path Method (CPM)** (Kelley & Walker, 1959): For activity $i$ with Early Start $ES_i$ and Early Finish $EF_i$, the duration is $D_i = EF_i - ES_i + 1$ when both endpoints are inclusive.
+- **Earned Value Management (EVM)** (Fleming & Koppelman, 2010): Time is measured at end-of-period. A project starting in period 0 and finishing in period 4 spans 5 active periods.
+
+For example, a project starting at $t=0$ and finishing at $t=4$ has duration $D_i = 4 - 0 + 1 = 5$ periods. At $t = T_i^{\text{finish}}$, we have $\tau = 1$ and $C_i(T_i^{\text{finish}}) = \text{BAC}_i$ (project complete). This formulation is consistent with discrete-time scheduling frameworks and differs from continuous-time models where duration would be computed as $T_i^{\text{finish}} - T_i^{\text{start}}$ without the +1 adjustment.
+
 
 **Boundary conditions:**
 $$S_i(0) = I_0(\alpha, \beta) = 0, \qquad S_i(1) = I_1(\alpha, \beta) = 1$$
