@@ -485,7 +485,7 @@ with:
 
 The project is active during the closed interval $[T_i^{\text{start}}, T_i^{\text{finish}}]$, meaning both the start period and finish period are included in the project duration. This convention aligns with discrete-time project scheduling standards in the literature:
 
-- **PMI PMBOK Guide**: Activities are scheduled over discrete time periods (days, weeks, months). An activity starting on day 1 and finishing on day 5 has a duration of 5 days (both endpoints inclusive).
+- **PMI PMBOK Guide** (Project Management Institute, 2021): Activities are scheduled over discrete time periods (days, weeks, months). An activity starting on day 1 and finishing on day 5 has a duration of 5 days (both endpoints inclusive).
 - **Critical Path Method (CPM)** (Kelley & Walker, 1959): For activity $i$ with Early Start $ES_i$ and Early Finish $EF_i$, the duration is $D_i = EF_i - ES_i + 1$ when both endpoints are inclusive.
 - **Earned Value Management (EVM)** (Fleming & Koppelman, 2010): Time is measured at end-of-period. A project starting in period 0 and finishing in period 4 spans 5 active periods.
 
