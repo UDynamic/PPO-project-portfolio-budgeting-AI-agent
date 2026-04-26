@@ -8,7 +8,7 @@ for every commit message there is at least two identifiers:
     ```json
     {first import: "first import", 
     minor formatting or dictation: "polish", 
-    "Archived", }
+    move into the deprecated: "Archived", }
     ```
 **syntax template:**
 ```bash
