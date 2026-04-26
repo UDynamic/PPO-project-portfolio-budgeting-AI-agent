@@ -127,6 +127,7 @@ This represents:
 The following modeling elements are **explicitly excluded** from the current scope. Each represents a natural extension for follow-up research, consistent with the foundational simplicity principle (scope Section 3.2).
 
 **1. Project-Specific S-Curve Calibration:**
+The model assumes homogeneous project characteristics. In practice, offshore projects exhibit higher weather sensitivity ($\gamma_{\text{offshore}} > \gamma_{\text{onshore}}$), brownfield projects have greater scope creep risk, and reimbursable contracts show different cost performance patterns. Future work could introduce project-type-specific parameter sets to capture this heterogeneity.
 - **Excluded**: Estimation of individual $(\alpha_i, \beta_i)$ from project historical data
 - **Excluded**: Phase-specific spending patterns (e.g., 20% engineering, 30% procurement, 45% construction, 5% commissioning modeled as separate sub-curves)
 - **Excluded**: Project type heterogeneity (onshore vs. offshore, greenfield vs. brownfield, lump-sum vs. reimbursable)
@@ -889,9 +890,9 @@ $$\Delta D_i^{recovery}(t) = \sum_{	au=T_i^{start}}^{t} \delta_i(	au)$$
 
 where the period-by-period delay increment is:
 
-$$\delta_i(t) = egin{cases}
-(1 - SPI_i(t)) \cdot \Delta t & 	ext{if no action plan active} \\
-(1 - SPI_i^{eff}(t)) \cdot \Delta t & 	ext{if action plan active}
+$$\delta_i(t) = \begin{cases}
+(1 - SPI_i(t)) \cdot \Delta t & \text{if no action plan active} \\
+(1 - SPI_i^{eff}(t)) \cdot \Delta t & \text{if action plan active}
 \end{cases}$$
 
 and the effective SPI under action plan is:
@@ -910,9 +911,9 @@ where $\eta_i \in [0.3, 0.7]$ is the action plan effectiveness (sampled per proj
 
 Near project completion, formal contractual extensions are negotiated:
 
-$$\Delta D_i^{extension}(t) = egin{cases}
-0.5 \cdot \Delta D_i^{recovery}(t) & 	ext{if } T_i^{planned\_end} - t < 2 	ext{ months and } P_i(t) < 0.95 \\
-0 & 	ext{otherwise}
+$$\Delta D_i^{extension}(t) = \begin{cases}
+0.5 \cdot \Delta D_i^{recovery}(t) & 	\text{if } T_i^{planned\_end} - t < 2 	\text{ months and } P_i(t) < 0.95 \\
+0 & 	\text{otherwise}
 \end{cases}$$
 
 **Rationale:**
