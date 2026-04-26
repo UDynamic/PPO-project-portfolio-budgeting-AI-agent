@@ -12,7 +12,7 @@ Portfolio composition and project-level characteristics
 1. ✅ profitMarginsComposistions.md - Profit margin distributions by category
 2. ✅ projectCounts&BACsDistributions.md - Portfolio size and BAC distributions
 3. 🟨 projectSCurves.md - S-curve cashflow model (Beta distribution)
-4. ⬜ projectDurations.md - Duration distributions and start time staggering
+4. 🟨 projectDurations.md - Duration distributions and start time staggering
 5. ⬜ projectRevenuePlans.md - Revenue recognition and payment structures
 
 ### uncertaintyModel/
