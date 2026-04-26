@@ -870,9 +870,9 @@ $$D_i^{baseline} \sim 	\text{Gamma}(k_{	\text{category}}, 	\theta_{\text{categor
 
 where:
 - $k$ = shape parameter (controls skewness)
-- $	heta$ = scale parameter (controls mean duration)
-- Mean duration: $\mu_D = k \cdot 	heta$
-- Variance: $\sigma_D^2 = k \cdot 	heta^2$
+- $	\theta$ = scale parameter (controls mean duration)
+- Mean duration: $\mu_D = k \cdot 	\theta$
+- Variance: $\sigma_D^2 = k \cdot 	\theta^2$
 
 **Category-Specific Parameters:**
 
