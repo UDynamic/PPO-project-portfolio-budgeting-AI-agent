@@ -59,7 +59,7 @@ where:
 
 **Third Assumption — Budget Cycle-Driven Start Time Distribution:**
 
-Project start times exhibit **strong seasonal clustering** driven by organizational budget cycles and capital allocation processes, rather than uniform random distribution.
+Project start times exhibit **strong seasonal clustering** driven by organizational budget cycles and capital allocation processes.
 
 $$P(T_i^{start} \in \text{month } m) = p_m$$
 
