@@ -4,7 +4,7 @@ for every commit message there is at least two identifiers:
 1. modified messegaes: 
     `["created", "updated", "renamed", "moved", "deprecated", "removed"]`
 2. file name.
-3. specific acction.
+3. specific action.
     ```json
     {first import: "first import", 
     minor formatting or dictation: "polish", 
