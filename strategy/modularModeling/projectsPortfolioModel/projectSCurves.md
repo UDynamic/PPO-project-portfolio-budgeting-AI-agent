@@ -866,7 +866,7 @@ The literature converges on **Gamma distribution** as the best-fit model for EPC
 
 Project durations are sampled from category-specific Gamma distributions:
 
-$$D_i^{baseline} \sim 	ext{Gamma}(k_{	ext{category}}, 	heta_{	ext{category}})$$
+$$D_i^{baseline} \sim 	\text{Gamma}(k_{	\text{category}}, 	\theta_{\text{category}})$$
 
 where:
 - $k$ = shape parameter (controls skewness)
