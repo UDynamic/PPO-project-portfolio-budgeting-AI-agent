@@ -1059,22 +1059,6 @@ where $\eta_i \in [0.3, 0.7]$ is the action plan effectiveness (sampled per proj
 
 ---
 
-**Formal Replanning Extension:**
-
-Near project completion, formal contractual extensions are negotiated:
-
-$$\Delta D_i^{\text{extension}}(t) = \begin{cases}
-0.5 \cdot \Delta D_i^{\text{recovery}}(t) & \text{if } T_i^{\text{planned\_end}} - t < 2 \text{ months and } P_i(t) < 0.95 \\
-0 & \text{otherwise}
-\end{cases}$$
-
-**Rationale:**
-- Contractor and client negotiate extension when project is near planned end but incomplete
-- Extension typically covers 50% of accumulated delay (compromise between parties)
-- Triggered only in final 2 months before planned completion
-
----
-
 **Action Plan Decision Logic:**
 
 Management decides to activate schedule recovery action plan when:
@@ -1092,6 +1076,22 @@ where $\kappa \in [0.15, 0.25]$ is the cost multiplier (crashing activities cost
 **Action Plan Duration:**
 
 Action plans remain active for $T_{\text{action}} = 3$ months, then expire (must be re-activated if gap persists).
+
+---
+
+**Formal Replanning Extension:**
+
+Near project completion, formal contractual extensions are negotiated:
+
+$$\Delta D_i^{\text{extension}}(t) = \begin{cases}
+0.5 \cdot \Delta D_i^{\text{recovery}}(t) & \text{if } T_i^{\text{planned\_end}} - t < 2 \text{ months and } P_i(t) < 0.95 \\
+0 & \text{otherwise}
+\end{cases}$$
+
+**Rationale:**
+- Contractor and client negotiate extension when project is near planned end but incomplete
+- Extension typically covers 50% of accumulated delay (compromise between parties)
+- Triggered only in final 2 months before planned completion
 
 ---
 
