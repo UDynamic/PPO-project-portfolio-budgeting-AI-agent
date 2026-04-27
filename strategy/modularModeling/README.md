@@ -18,7 +18,7 @@ Portfolio composition and project-level characteristics
 
 ### uncertaintyModel/
 Stochastic performance and uncertainty modeling
-6. ⬜ projectsPerformances.md - Contractor performance uncertainty (SPI/CPI)
+6. 🟨 projectsPerformances.md - Contractor performance uncertainty (SPI/CPI)
 7. ⬜ projectsRevenues.md - Payment delays and revenue uncertainty
 8. ⬜ portfolioTemporalStructre.md - Temporal structure and seasonal effects
 
