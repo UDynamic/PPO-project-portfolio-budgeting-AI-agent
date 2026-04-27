@@ -50,7 +50,7 @@ Ignoring schedule dynamics eliminates a primary mechanism by which budget constr
 
 Schedule delays are **not exogenous shocks** but **endogenous responses** to budget allocation decisions. The causal chain operates as follows:
 
-$$\text{Underfunding} \rightarrow \text{Reduced work rate} \rightarrow \text{Progress slippage} \rightarrow \text{Duration extension} \rightarrow \text{Increased cost exposure}$$
+$$\text{Underfunding} \\ \downarrow \\ \text{Reduced work rate} \\ \downarrow \\ \text{Progress slippage} \\ \downarrow \\ \text{Duration extension} \\ \downarrow \\ \text{Increased cost exposure}$$
 
 This feedback loop is central to RL-based portfolio budgeting under cashflow uncertainty. The agent must learn that:
 - Starving a project of funds (low $b_i(t)$) triggers schedule pressure
