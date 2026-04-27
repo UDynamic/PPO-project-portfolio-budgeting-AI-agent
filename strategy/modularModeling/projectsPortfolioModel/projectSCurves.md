@@ -44,7 +44,7 @@ Schedule overruns are endemic in EPC projects. Industry benchmarking studies sho
 - Mean delay ranges from 15-25% of baseline duration for offshore platforms and processing facilities (Flyvbjerg et al., 2002)
 - Megaprojects (>$1B) exhibit even higher variance, with 45% experiencing delays >6 months (Flyvbjerg, 2014)
 
-Ignoring schedule dynamics eliminates a primary mechanism by which budget constraints affect project outcomes. Static duration assumptions decouple cost performance from schedule performance, violating the empirical reality of EPC project execution.
+Ignoring schedule dynamics eliminates a primary mechanism by which budget constraints affect project outcomes. **Static duration assumptions decouple cost performance from schedule performance**, violating the empirical reality of EPC project execution.
 
 **2. Coupling with cashflow uncertainty:**
 
