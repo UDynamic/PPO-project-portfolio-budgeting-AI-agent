@@ -439,7 +439,7 @@ $$1.167 - 0.489 = 0.678 \text{ months} \approx 20.3 \text{ days}$$
 
 ### Insight 3: The Cost of Delay
 
-**If this project has BAC = $10M and overhead = $200K/month:**
+**If this project has BAC = \$10M and overhead = \$200K/month:**
 
 **Without action plan:**
 - Total delay: ~2.5 months
