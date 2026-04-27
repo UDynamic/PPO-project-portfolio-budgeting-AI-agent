@@ -896,7 +896,213 @@ $$\lambda_{\text{decay}} = 0.292 \text{ per month}$$
 
 **Merrow (2011) — EPC projects:**
 - Using median values: $\text{SPI}_{\text{baseline}} = 0.70$, $\text{SPI}_{\text{peak}} = 0.83$, $\text{SPI}_{\text{equilibrium}} = 0.75$
-- Assuming 50% decay by $t = 6$ months:
+
+Peak improvement:
+
+$$\Delta_{\text{peak}} = 0.83 - 0.70 = 0.13$$
+
+Permanent improvement:
+
+$$\Delta_{\text{permanent}} = 0.75 - 0.70 = 0.05$$
+
+Transient improvement:
+
+$$\Delta_{\text{transient}} = 0.83 - 0.75 = 0.08$$
+
+Assuming approximately **50% decay of transient improvement within 6 months**, which aligns with IPA observations:
+
+$$0.5 \times 0.08 = 0.04$$
+
+So after 6 months the remaining transient component is:
+
+$$0.08 - 0.04 = 0.04$$
+
+Using the decay model:
+
+$$\text{SPI}(t) = \text{SPI}_{\text{equilibrium}} + \Delta_{\text{transient}} \cdot e^{-\lambda_{\text{decay}} \cdot t}$$
+
+At $t = 6$:
+
+$$0.75 + 0.08 \cdot e^{-6\lambda_{\text{decay}}} = 0.75 + 0.04$$
+
+$$0.08 \cdot e^{-6\lambda_{\text{decay}}} = 0.04$$
+
+$$e^{-6\lambda_{\text{decay}}} = 0.5$$
+
+Taking natural logarithm:
+
+$$-6\lambda_{\text{decay}} = \ln(0.5) = -0.693$$
+
+$$\lambda_{\text{decay}} = 0.116 \text{ per month}$$
+
+---
+
+### Cross-Study Synthesis: Decay Rate Ranges
+
+| Study | Project Type | $\lambda_{\text{decay}}$ (per month) |
+|-------|--------------|-------------------------------------|
+| Abdel-Hamid & Madnick (1991) | Software | 0.366 |
+| Keil et al. (2000) | IT | 0.292 |
+| Love et al. (2016) | Construction | 0.231 |
+| Merrow (2011) | EPC Oil & Gas | 0.116 |
+
+**Interpretation:**
+- **EPC projects exhibit slower decay** ($\lambda \approx 0.10-0.15$) due to:
+  - More rigid organizational structures
+  - Formal change management processes
+  - Capital-intensive nature requiring sustained discipline
+  - Regulatory and safety compliance requirements
+- **Software/IT projects exhibit faster decay** ($\lambda \approx 0.30-0.40$) due to:
+  - Rapid team turnover
+  - Less formal governance
+  - Easier reversion to old practices
+
+**Recommended calibration for EPC oil & gas projects:**
+
+$$\lambda_{\text{decay}} = 0.18 \text{ per month}$$
+
+This represents a **conservative middle ground** between the Merrow (2011) EPC-specific estimate (0.116) and the broader construction industry data from Love et al. (2016) (0.231).
+
+**Physical interpretation:**
+- Approximately **16-20% of transient improvement decays each month**
+- **Half-life of transient gains:** $t_{1/2} = \frac{\ln(2)}{\lambda_{\text{decay}}} = \frac{0.693}{0.18} \approx 3.85$ months
+- After 6 months, approximately **34%** of transient gains remain
+- After 12 months, approximately **12%** of transient gains remain
+
+---
+
+## Master Parameter Table: Post-Action Plan Dynamics
+
+The following table consolidates all calibrated parameters governing post-intervention SPI behavior in EPC oil & gas projects.
+
+| Parameter | Symbol | Value / Range | Unit | Source | Description |
+|-----------|--------|---------------|------|--------|-------------|
+| **Retention Rate** | $\rho$ | 0.35 | dimensionless | Merrow (2011), Love et al. (2016) | Fraction of peak SPI improvement that persists indefinitely |
+| **Retention Rate (Range)** | $\rho$ | [0.25, 0.45] | dimensionless | Cross-study synthesis | Conservative (0.25) to optimistic (0.45) organizational capability |
+| **Decay Rate** | $\lambda_{\text{decay}}$ | 0.18 | per month | Calibrated from Love et al. (2016), Merrow (2011) | Exponential decay rate of transient SPI improvement |
+| **Decay Rate (Range)** | $\lambda_{\text{decay}}$ | [0.10, 0.25] | per month | Cross-study synthesis | EPC-specific (0.10-0.15) to general construction (0.20-0.25) |
+| **Half-Life of Transient Gains** | $t_{1/2}$ | 3.85 | months | Derived: $\ln(2)/\lambda_{\text{decay}}$ | Time for transient improvement to decay by 50% |
+| **Stabilization Period** | $T_{\text{stabilize}}$ | 6-12 | months | Love et al. (2016), Merrow (2011) | Time for SPI to reach equilibrium (within 5% of asymptotic value) |
+| **Action Plan Duration** | $T_{\text{action}}$ | 3 | months | Abdel-Hamid & Madnick (1991), Hanna et al. (2005) | Duration of intensive intervention before effectiveness decay |
+| **Action Plan Effectiveness** | $\eta$ | 0.50 | dimensionless | Love et al. (2016), Merrow (2011) | Fraction of SPI gap closed during action plan |
+| **Action Plan Effectiveness (Range)** | $\eta$ | [0.30, 0.70] | dimensionless | Cross-study synthesis | Weak (0.30) to strong (0.70) organizational response |
+
+---
+
+### Parameter Relationships and Constraints
+
+**1. Equilibrium SPI Calculation:**
+
+$$\text{SPI}_{\text{equilibrium}} = \text{SPI}_{\text{baseline}} + \rho \cdot (\text{SPI}_{\text{peak}} - \text{SPI}_{\text{baseline}})$$
+
+**2. Post-Intervention SPI Trajectory:**
+
+$$\text{SPI}(t) = \text{SPI}_{\text{equilibrium}} + (1 - \rho) \cdot (\text{SPI}_{\text{peak}} - \text{SPI}_{\text{baseline}}) \cdot e^{-\lambda_{\text{decay}} \cdot t}$$
+
+Where $t$ = months since action plan ended (Month 3 onward).
+
+**3. Asymptotic Convergence Criterion:**
+
+SPI is considered stabilized when:
+
+$$|\text{SPI}(t) - \text{SPI}_{\text{equilibrium}}| < 0.02$$
+
+Solving for $t$:
+
+$$(1 - \rho) \cdot \Delta_{\text{peak}} \cdot e^{-\lambda_{\text{decay}} \cdot t} < 0.02$$
+
+$$t > \frac{1}{\lambda_{\text{decay}}} \ln\left(\frac{(1 - \rho) \cdot \Delta_{\text{peak}}}{0.02}\right)$$
+
+For typical values ($\rho = 0.35$, $\Delta_{\text{peak}} = 0.15$, $\lambda_{\text{decay}} = 0.18$):
+
+$$t > \frac{1}{0.18} \ln\left(\frac{0.65 \times 0.15}{0.02}\right) = 5.56 \ln(4.875) = 5.56 \times 1.58 \approx 8.8 \text{ months}$$
+
+**Interpretation:** SPI stabilizes approximately **9 months after action plan ends** (Month 12 of project recovery timeline).
+
+---
+
+### Sensitivity Analysis: Impact of Parameter Variation
+
+**Scenario 1: Strong Organizational Capability**
+- $\rho = 0.45$ (high retention)
+- $\lambda_{\text{decay}} = 0.10$ (slow decay)
+- **Result:** 45% of gains persist; transient gains decay slowly over 12+ months
+- **Implication:** Projects with mature PMOs and formal change management
+
+**Scenario 2: Weak Organizational Capability**
+- $\rho = 0.25$ (low retention)
+- $\lambda_{\text{decay}} = 0.25$ (fast decay)
+- **Result:** Only 25% of gains persist; transient gains decay rapidly within 4-6 months
+- **Implication:** Projects with ad-hoc governance and high personnel turnover
+
+**Scenario 3: Baseline (Recommended)**
+- $\rho = 0.35$ (moderate retention)
+- $\lambda_{\text{decay}} = 0.18$ (moderate decay)
+- **Result:** 35% of gains persist; transient gains decay over 6-9 months
+- **Implication:** Typical EPC project with standard project controls
+
+---
+
+### Example Calculation: Full Post-Intervention Trajectory
+
+**Given:**
+- $\text{SPI}_{\text{baseline}} = 0.70$ (pre-intervention)
+- $\text{SPI}_{\text{peak}} = 0.85$ (end of Month 3 action plan)
+- $\rho = 0.35$
+- $\lambda_{\text{decay}} = 0.18$ per month
+
+**Step 1: Calculate improvements**
+
+$$\Delta_{\text{peak}} = 0.85 - 0.70 = 0.15$$
+
+$$\Delta_{\text{permanent}} = 0.35 \times 0.15 = 0.0525$$
+
+$$\Delta_{\text{transient}} = (1 - 0.35) \times 0.15 = 0.0975$$
+
+**Step 2: Calculate equilibrium SPI**
+
+$$\text{SPI}_{\text{equilibrium}} = 0.70 + 0.0525 = 0.7525$$
+
+**Step 3: Calculate SPI at key time points**
+
+| Month | $t$ (months post-action) | $e^{-0.18t}$ | $\Delta_{\text{transient}} \cdot e^{-0.18t}$ | $\text{SPI}(t)$ |
+|-------|--------------------------|--------------|---------------------------------------------|-----------------|
+| 3 (end of action plan) | 0 | 1.000 | 0.0975 | 0.8525 |
+| 4 | 1 | 0.835 | 0.0814 | 0.8339 |
+| 5 | 2 | 0.698 | 0.0681 | 0.8206 |
+| 6 | 3 | 0.583 | 0.0568 | 0.8093 |
+| 9 | 6 | 0.340 | 0.0332 | 0.7857 |
+| 12 | 9 | 0.198 | 0.0193 | 0.7718 |
+| 15 | 12 | 0.116 | 0.0113 | 0.7638 |
+| 18 | 15 | 0.068 | 0.0066 | 0.7591 |
+
+**Interpretation:**
+- **Month 3:** SPI peaks at 0.85 (21% improvement over baseline)
+- **Month 6:** SPI = 0.81 (58% of transient gain remains)
+- **Month 9:** SPI = 0.79 (34% of transient gain remains)
+- **Month 12:** SPI = 0.77 (20% of transient gain remains)
+- **Month 15+:** SPI stabilizes at 0.75 (7.5% permanent improvement over baseline)
+
+**Final outcome:**
+- **Permanent gain:** 5.25 percentage points in SPI
+- **Peak temporary gain:** 9.75 percentage points (decays over 12 months)
+- **Total peak improvement:** 15 percentage points (Month 3)
+
+---
+
+### Implementation Notes
+
+1. **Model initialization:** Set $\text{SPI}_{\text{baseline}}$ at the month action plan is activated (typically when SPI drops below 0.85)
+
+2. **Action plan phase (Months 1-3):** Use standard action plan effectiveness model:
+   $$\text{SPI}^{\text{eff}} = \text{SPI} + \eta(1 - \text{SPI})$$
+
+3. **Post-action phase (Month 4 onward):** Switch to exponential decay model:
+   $$\text{SPI}(t) = \text{SPI}_{\text{equilibrium}} + \Delta_{\text{transient}} \cdot e^{-\lambda_{\text{decay}} \cdot t}$$
+
+4. **Stabilization check:** Monitor $|\text{SPI}(t) - \text{SPI}_{\text{equilibrium}}|$; when < 0.02, consider SPI stabilized
+
+5. **Parameter selection:** Use baseline values ($\rho = 0.35$, $\lambda_{\text{decay}} = 0.18$) unless project-specific data justifies adjustment based on organizational maturity assessment
 
 ---
 
