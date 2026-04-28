@@ -4,8 +4,8 @@
 
 ## Status
 - ✅ Completed: 2/12
-- 🟨 Under review: 2/12
-- ⬜ To be developed: 7/12
+- 🟨 Under review: 3/12
+- ⬜ To be developed: 6/12
 - ⬛ Deprecated: 1/12
 
 ### projectsPortfolioModel/
