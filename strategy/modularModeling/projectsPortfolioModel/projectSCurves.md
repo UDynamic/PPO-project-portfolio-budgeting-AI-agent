@@ -1413,7 +1413,9 @@ This section provides rigorous empirical calibration and mathematical modeling o
 
 ## 4. Mathematical Model
 
-### 4.1 Planned Cumulative Spending S-Curve
+### 4. Cumulative Spending S-Curve Model
+
+#### 4.1 Planned Cumulative Spending S-Curve
 
 Each project $i$ is characterized by a **planned cumulative spending function** $C_i(t)$, representing the total cost incurred from project start $T_i^{\text{start}}$ up to and including time $t$:
 
@@ -1421,20 +1423,22 @@ $$C_i(t) = \text{BAC}_i \cdot S_i(\tau), \quad t \in [T_i^{\text{start}}, T_i^{\
 
 where $S_i(\tau)$ is the **normalized S-curve** (fraction of BAC spent by normalized progress $\tau$):
 
-$$S_i(\tau) = I_{\tau}(\alpha, \beta) = \frac{B(\tau; \alpha, \beta)}{B(\alpha, \beta)} = \frac{\int_0^{\tau} u^{\alpha-1}(1-u)^{\beta-1}\, du}{B(\alpha, \beta)}$$
+$$S_i(\tau) = I_{\tau}(\alpha_i, \beta_i) = \frac{B(\tau; \alpha_i, \beta_i)}{B(\alpha_i, \beta_i)} = \frac{\int_0^{\tau} u^{\alpha_i-1}(1-u)^{\beta_i-1}\, du}{B(\alpha_i, \beta_i)}$$
 
 and the normalized project progress is:
 
 $$\tau = \frac{t - T_i^{\text{start}}}{D_i} \in [0, 1]$$
 
 with:
-- $\text{BAC}_i$ = Budget at Completion for project $i$
+- $\text{BAC}_i$ = Budget at Completion for project $i$ (externally provided)
 - $T_i^{\text{start}}$ = project start time (period index)
 - $T_i^{\text{finish}}$ = project finish time (period index)
-- $D_i = T_i^{\text{finish}} - T_i^{\text{start}} + 1$ = project duration (in periods)
-- $\alpha, \beta > 0$ = shape parameters (shared across all projects)
-- $B(\alpha, \beta) = \int_0^1 u^{\alpha-1}(1-u)^{\beta-1}\, du$ = Beta function (normalization constant)
-- $I_\tau(\alpha, \beta)$ = regularized incomplete Beta function
+- $D_i = T_i^{\text{finish}} - T_i^{\text{start}} + 1$ = project duration (in periods, externally provided)
+- $\alpha_i, \beta_i > 0$ = **project-specific shape parameters** assigned by the literature-calibrated parameter model (Section 3)
+- $B(\alpha_i, \beta_i) = \int_0^1 u^{\alpha_i-1}(1-u)^{\beta_i-1}\, du$ = Beta function (normalization constant)
+- $I_\tau(\alpha_i, \beta_i)$ = regularized incomplete Beta function
+
+**Critical note on parameterization:** Unlike naive uniform-parameter models, $\alpha_i$ and $\beta_i$ vary across projects based on BAC, duration, category, and risk level. This heterogeneity reflects empirically observed variation in spending profiles (Kenley & Wilson, 1986; Kaka & Price, 1993; Barraza & Bueno, 2007).
 
 **Timing Convention and Literature Calibration**: 
 
@@ -1446,16 +1450,14 @@ The project is active during the closed interval $[T_i^{\text{start}}, T_i^{\tex
 
 For example, a project starting at $t=0$ and finishing at $t=4$ has duration $D_i = 4 - 0 + 1 = 5$ periods. At $t = T_i^{\text{finish}}$, we have $\tau = 1$ and $C_i(T_i^{\text{finish}}) = \text{BAC}_i$ (project complete). This formulation is consistent with discrete-time scheduling frameworks and differs from continuous-time models where duration would be computed as $T_i^{\text{finish}} - T_i^{\text{start}}$ without the +1 adjustment.
 
-
 **Boundary conditions:**
-$$S_i(0) = I_0(\alpha, \beta) = 0, \qquad S_i(1) = I_1(\alpha, \beta) = 1$$
+$$S_i(0) = I_0(\alpha_i, \beta_i) = 0, \qquad S_i(1) = I_1(\alpha_i, \beta_i) = 1$$
 
 confirming the S-curve spans from zero spend at project start to full BAC consumption at project end.
 
 ---
 
-
-### 4.2 Incremental Spending Rate (Cashflow Velocity)
+#### 4.2 Incremental Spending Rate (Cashflow Velocity)
 
 The **period-level cost outflow** for project $i$ at discrete period $t$ is:
 
@@ -1463,18 +1465,26 @@ $$\Delta C_i(t) = C_i(t) - C_i(t-1) = \text{BAC}_i \cdot \left[ S_i\!\left(\frac
 
 In continuous form, the **instantaneous spending rate** is:
 
-$$\frac{dC_i}{dt} = \frac{\text{BAC}_i}{D_i} \cdot f(\tau;\, \alpha, \beta)$$
+$$\frac{dC_i}{dt} = \frac{\text{BAC}_i}{D_i} \cdot f(\tau;\, \alpha_i, \beta_i)$$
 
-where $f(\tau;\, \alpha, \beta)$ is the Beta probability density function:
+where $f(\tau;\, \alpha_i, \beta_i)$ is the Beta probability density function:
 
-$$f(\tau;\, \alpha, \beta) = \frac{\tau^{\alpha-1}(1-\tau)^{\beta-1}}{B(\alpha, \beta)}$$
+$$f(\tau;\, \alpha_i, \beta_i) = \frac{\tau^{\alpha_i-1}(1-\tau)^{\beta_i-1}}{B(\alpha_i, \beta_i)}$$
+
+**Project-specific spending dynamics:** The peak spending rate for project $i$ occurs at:
+
+$$\tau_i^* = \frac{\alpha_i - 1}{\alpha_i + \beta_i - 2} \quad \text{(for } \alpha_i, \beta_i > 1\text{)}$$
+
+This timing varies systematically across projects:
+- **Large international projects:** Higher $\alpha_i$ → later peak (delayed by procurement)
+- **High-risk projects:** Lower $\alpha_i$, higher $\beta_i$ → earlier peak with extended tail (rework, disputes)
+- **Small domestic projects:** Lower $\alpha_i$ → earlier peak (rapid mobilization)
 
 ---
 
+#### 4.3 Analytical Properties of the Baseline Parameterization
 
-### 4.3 Analytical Properties of the Baseline Parameterization
-
-With $\alpha = 2.5$, $\beta = 2.0$:
+For reference and validation purposes, we document the analytical properties of the **baseline parameterization** ($\alpha = 2.5$, $\beta = 2.0$), which corresponds to a domestic, low-risk project at median BAC and duration under the literature-calibrated model. **This is not a universal parameterization**—actual projects will have different $(\alpha_i, \beta_i)$ values based on their attributes.
 
 **Peak spending rate** occurs at the mode of the Beta PDF:
 $$\tau^* = \frac{\alpha - 1}{\alpha + \beta - 2} = \frac{1.5}{2.5} = 0.60$$
@@ -1482,7 +1492,7 @@ $$\tau^* = \frac{\alpha - 1}{\alpha + \beta - 2} = \frac{1.5}{2.5} = 0.60$$
 **Inflection point** (maximum rate of spending acceleration) is located at:
 $$\tau_{\text{inflection}} \approx 0.43$$
 
-**Cumulative spend at key milestones:**
+**Cumulative spend at key milestones** (for baseline parameterization only):
 
 | Normalized Progress $\tau$ | $S(\tau)$ | Interpretation |
 |---|---|---|
@@ -1490,30 +1500,41 @@ $$\tau_{\text{inflection}} \approx 0.43$$
 | 0.25 | 0.161 | Engineering phase completing |
 | 0.43 | 0.391 | Inflection — maximum spending acceleration |
 | 0.50 | 0.500 | Project midpoint — symmetric balance |
-| 0.60 | 0.618 | Peak spending rate |
+| 0.60 | 0.618 | Peak spending rate (baseline only) |
 | 0.75 | 0.840 | Construction phase dominance ending |
 | 1.00 | 1.000 | Project completion — full BAC consumed |
 
-**Physical interpretation of EPC phase alignment:**
+**Physical interpretation of EPC phase alignment** (baseline parameterization):
 - $\tau \in [0.00, 0.20]$: Engineering (design, specifications, procurement planning) — slow ramp-up
 - $\tau \in [0.20, 0.50]$: Procurement (equipment ordering, long-lead items) — acceleration phase
 - $\tau \in [0.50, 0.85]$: Construction (field installation, civil works) — peak expenditure
 - $\tau \in [0.85, 1.00]$: Commissioning (testing, startup, handover) — spending taper
 
+**Variation across project types:** Actual projects deviate from this baseline profile:
+- **International projects:** Peak shifts later ($\tau^* \approx 0.60$–$0.65$) due to higher $\alpha_i$
+- **High-risk projects:** Peak shifts earlier ($\tau^* \approx 0.35$–$0.45$) with heavier tail due to lower $\alpha_i$, higher $\beta_i$
+- **Large projects:** More gradual mobilization and close-out due to higher $\alpha_i$ and $\beta_i$
+
 ---
 
-
-### 4.4 Portfolio-Level Planned Spending
+#### 4.4 Portfolio-Level Planned Spending
 
 The **portfolio aggregate planned cashflow** at period $t$ is:
 
-$$\Delta C_{\text{portfolio}}(t) = \sum_{i=1}^{N} \Delta C_i(t) \cdot \mathbf{1}\left[T_i^{\text{start}} \leq t \leq T_i^{\text{end}}\right]$$
+$$\Delta C_{\text{portfolio}}(t) = \sum_{i=1}^{N} \Delta C_i(t) \cdot \mathbf{1}\left[T_i^{\text{start}} \leq t \leq T_i^{\text{finish}}\right]$$
 
 where $\mathbf{1}[\cdot]$ is the indicator function enforcing project-level temporal boundaries (inactive projects contribute zero spend, consistent with the masking mechanism in the RL framework).
 
 **Cumulative portfolio spend** up to period $t$:
 
-$$C_{\text{portfolio}}(t) = \sum_{i=1}^{N} C_i\!\left(\min(t, T_i^{\text{end}})\right)$$
+$$C_{\text{portfolio}}(t) = \sum_{i=1}^{N} C_i\!\left(\min(t, T_i^{\text{finish}})\right)$$
+
+**Portfolio-level heterogeneity:** Because each project has distinct $(\alpha_i, \beta_i)$ parameters, the portfolio aggregate cashflow profile reflects the composition of project types:
+- Portfolios dominated by international projects exhibit later aggregate peak spending
+- Portfolios with high-risk projects show more volatile period-to-period cashflow due to extended tails
+- Mixed portfolios produce smoother aggregate profiles due to diversification of individual S-curve shapes
+
+This heterogeneity is critical for realistic cashflow forecasting and capital planning, as uniform-parameter models systematically underestimate portfolio-level variance (Kenley & Wilson, 1989).
 
 ---
 
