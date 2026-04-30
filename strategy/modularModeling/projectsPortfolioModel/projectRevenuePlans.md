@@ -4,6 +4,7 @@
 
 #### 4.8.1.1 Foundational Assumptions
 
+
 **Primary Assumption — Milestone-Based Payment Structure:**
 
 We assume all EPC oil & gas projects in the portfolio follow **milestone-based payment schedules**, where the client releases payments to the contractor upon achievement of predefined project milestones (e.g., engineering completion, procurement delivery, construction phases, commissioning). This reflects the dominant payment mechanism in the EPC industry.
