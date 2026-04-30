@@ -35,12 +35,12 @@ The payment modeling module receives the following inputs for each project $i$:
 - **Progress Function**: $\tau_i(t) = \frac{C_i(t)}{\text{BAC}_i} \in [0, 1]$
 
 Typically modeled as Beta S-curve:
-$$\tau_i(t) = S\left(\frac{t - T_i^{\text{start}}}{D_i}\right)$$
+$$\tau_i(t) = S_{i}\left(\frac{t - T_i^{\text{start}}}{D_i}\right)$$
 
 where:
-$$S(x) = \frac{x^\alpha}{x^\alpha + (1-x)^\beta}$$
+$$S_{i}(x) = \frac{x^\alpha_{i}}{x^\alpha_{i} + (1-x)^\beta_{i}}$$
 
-with $\alpha=2.5$, $\beta=2.0$ (standard construction S-curve parameters).
+with $\alpha_{i}$, $\beta_{i}$ (per project s-curve shape).
 
 ### 1.3 Contract Value
 - **Profit Margin**: $\mu_i$ (derived from category or specified)
@@ -69,21 +69,25 @@ with $\alpha=2.5$, $\beta=2.0$ (standard construction S-curve parameters).
 **Implementation:**
 
 **Step 1: Determine if advance is granted**
+```
 has_advance_i = Bernoulli(P(Advance)_Cat_i)
-
+```
 
 **Step 2: Sample advance percentage**
+
+```
 if has_advance_i:
     α_i ~ TruncNormal(μ_Cat_i, σ_Cat_i, min_Cat_i, max_Cat_i)
     A_i = α_i × R_i^total
 else:
     A_i = 0
-
+```
 
 **Step 3: Advance payment timing**
+```
 t_advance_i = T_i^start
 Cash_in(t_advance_i) += A_i
-
+```
 
 **Step 4: Advance recovery schedule**
 
@@ -119,8 +123,9 @@ Recovery complete when $A_i^{\text{remaining}} \leq 0$, typically at 40-60% proj
 **Implementation:**
 
 **Step 1: Sample number of milestones**
+```
 K_i ~ DiscreteUniform(K_min_Cat_i, K_max_Cat_i)
-
+```
 
 **Step 2: Define milestone progress thresholds**
 
@@ -136,20 +141,24 @@ $$\tau_{i,k} = \begin{cases}
 For category-specific milestone templates:
 
 **Domestic Low-Risk (K=4):**
+```
 τ = [0.25, 0.50, 0.80, 1.00]
-
+```
 
 **Domestic High-Risk (K=5):**
+```
 τ = [0.15, 0.30, 0.50, 0.70, 1.00]
-
+```
 
 **International Low-Risk (K=6):**
+```
 τ = [0.10, 0.25, 0.40, 0.60, 0.80, 1.00]
-
+```
 
 **International High-Risk (K=8):**
+```
 τ = [0.08, 0.18, 0.30, 0.45, 0.60, 0.75, 0.90, 1.00]
-
+```
 
 **Step 3: Define payment fractions**
 
@@ -160,14 +169,16 @@ $$w_k = \exp\left(-\lambda \cdot \frac{k-1}{K_i-1}\right)$$
 with $\lambda = 0.3$ (front-loading parameter).
 
 Normalized payment fractions:
+
 $$f_{i,k} = \frac{w_k}{\sum_{j=1}^{K_i} w_j}$$
 
 **Constraint:** $\sum_{k=1}^{K_i} f_{i,k} = 1.0$
 
 **Example for K=5:**
+```
 Raw weights:     [1.000, 0.928, 0.861, 0.799, 0.741]
 Payment fractions: [0.232, 0.215, 0.199, 0.185, 0.172]
-
+```
 
 **Step 4: Calculate eligible payment amounts**
 
@@ -190,9 +201,10 @@ $$t_{i,k} = T_i^{\text{start}} + D_i \times S^{-1}(\tau_{i,k})$$
 where $S^{-1}$ is the inverse S-curve function.
 
 **Payment becomes eligible at milestone achievement:**
+```
 At time t_i,k:
     Payment_eligible_i,k = f_i,k × R_i^total
-
+```
 
 ---
 
