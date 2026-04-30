@@ -56,12 +56,27 @@ This assumes **fixed-price EPC contracts** (lump-sum or unit-price with quantity
 
 **Third Assumption — Payment Timing Linked to Planned Progress:**
 
-Milestone achievement times are determined by the **planned S-curve** (Section 4.2: projectSCurves.md), not actual performance. This reflects contractual payment terms based on scheduled milestones, independent of contractor execution delays.
+Milestone payments are triggered by **actual achievement** of contractually defined deliverables or progress thresholds, not by calendar dates. Payment timing is therefore coupled to actual project performance (SPI).
 
 **Rationale:**
-- Standard EPC contracts define milestone payment triggers by **calendar dates** or **planned progress thresholds**, not actual completion (FIDIC Clause 14.3)
-- Decouples revenue timing from cost performance uncertainty (modeled separately in uncertaintyModel/projectsRevenues.md)
-- Maintains analytical tractability for portfolio cash flow forecasting
+- Standard EPC contracts require **verification of milestone completion** before payment release (FIDIC Clause 14.3: "The Contractor shall be entitled to payment of the amount stated in the Appendix to Tender for each milestone, upon achieving such milestone")
+- If contractor is behind schedule (SPI < 1.0), milestone achievement is delayed, and so is the corresponding payment
+- This creates a direct link between execution performance and cash inflow timing
+- Revenue timing uncertainty is therefore driven by the same SPI uncertainty that affects costs
+
+**Modeling Implication:**
+
+For a project with planned milestone at time $t_m^{plan}$ and actual SPI performance, the actual milestone achievement time is:
+
+$$t_m^{actual} = \frac{t_m^{plan}}{\text{SPI}}$$
+
+where SPI is the Schedule Performance Index from the uncertainty model (Section 4.7: uncertaintyModel/).
+
+**Example:**
+- Planned milestone: Month 12 (50% progress)
+- Actual SPI: 0.8 (20% behind schedule)
+- Actual milestone achievement: Month 12 / 0.8 = Month 15
+- Payment received: Month 15 (not Month 12)
 
 *Citation:* FIDIC. (2017). *Conditions of Contract for Construction (Red Book)*, Clause 14.3: Payment on Milestones.
 
