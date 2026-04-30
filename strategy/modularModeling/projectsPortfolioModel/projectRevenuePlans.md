@@ -297,7 +297,6 @@ $$t_{i,k} = T_i^{\text{start}} + D_i \times S^{-1}(\tau_{i,k})$$
 where $S^{-1}$ is the inverse S-curve function.
 
 **Payment becomes eligible at milestone achievement:**
-```
 
 **Payment Fractions (Front-Loading):**
 
@@ -575,10 +574,12 @@ Beyond stochastic delays, discrete payment failure events can occur due to:
 **Implementation:**
 
 **Step 1: Sample default event**
+```
 is_disputed_i,k ~ Bernoulli(P(Default)_Cat_i)
-
+```
 
 **Step 2: If disputed, apply recovery parameters**
+```
 if is_disputed_i,k:
     Recovery_rate = Recovery_rate_Cat_i
     Recovery_time = Recovery_time_Cat_i
@@ -588,7 +589,7 @@ if is_disputed_i,k:
 else:
     P_i,k^actual = P_i,k^net
     t_i,k^cash = t_i,k + Δ_i,k^total
-
+```
 
 **Example:**
 - Milestone payment (after retention and recovery): $P_{i,k}^{\text{net}} = \$1.84M$
@@ -596,10 +597,11 @@ else:
 - Default occurs: $\text{is\_disputed}_{i,k} = \text{True}$
 
 **Calculation:**
+```
 P_i,k^actual = 1.84M × 0.85 = $1.564M
 Additional delay = 180 days
 t_i,k^cash = t_i,k + Δ_i,k^total + 180 days
-
+```
 
 **Loss:** $1.84M - 1.564M = \$0.276M$ (15% of payment)
 
@@ -610,19 +612,23 @@ t_i,k^cash = t_i,k + Δ_i,k^total + 180 days
 **For each milestone $k$ of project $i$:**
 
 **Step 1: Milestone achievement**
+```
 t_i,k = time when τ_i(t) ≥ τ_i,k
-
+```
 
 **Step 2: Eligible payment**
+```
 P_i,k^eligible = f_i,k × R_i^total
-
+```
 
 **Step 3: Retention deduction**
+```
 P_i,k^after-retention = (1 - ρ_i) × P_i,k^eligible
 Retention_held_i,k = ρ_i × P_i,k^eligible
-
+```
 
 **Step 4: Advance recovery**
+```
 if A_i^remaining > 0:
     Recovery_i,k = min(A_i^remaining, (A_i / R_i^total) × P_i,k^eligible)
     A_i^remaining -= Recovery_i,k
@@ -630,17 +636,19 @@ else:
     Recovery_i,k = 0
 
 P_i,k^net = P_i,k^after-retention - Recovery_i,k
-
+```
 
 **Step 5: Payment delays**
+```
 Δ_1,i,k ~ LogNormal(μ_1,Cat_i, σ_1,Cat_i)
 Δ_2,i,k ~ LogNormal(μ_2,Cat_i, σ_2,Cat_i)
 Δ_3,i,k ~ LogNormal(μ_3,Cat_i, σ_3,Cat_i)
 
 Δ_i,k^total = Δ_1,i,k + Δ_2,i,k + Δ_3,i,k
-
+```
 
 **Step 6: Payment uncertainty**
+```
 is_disputed_i,k ~ Bernoulli(P(Default)_Cat_i)
 
 if is_disputed_i,k:
@@ -649,38 +657,43 @@ if is_disputed_i,k:
 else:
     P_i,k^actual = P_i,k^net
     Additional_delay = 0
-
+```
 
 **Step 7: Actual cash receipt**
+```
 t_i,k^cash = t_i,k + Δ_i,k^total + Additional_delay
 Cash_in(t_i,k^cash) += P_i,k^actual
-
+```
 
 ---
 
 ### 2.9 Retention Release Cash Flow
 
 **First retention release (50%):**
+```
 t_retention_1 = T_i^start + 0.97 × D_i
 Amount_1 = 0.5 × ρ_i × R_i^total
-
+```
 # Apply collection delay (Δ_3 only, no certification/invoicing)
+```
 Δ_retention_1 ~ LogNormal(μ_3,Cat_i, σ_3,Cat_i)
 
 t_retention_1^cash = t_retention_1 + Δ_retention_1
 Cash_in(t_retention_1^cash) += Amount_1
-
+```
 
 **Second retention release (50%):**
+```
 t_retention_2 = T_i^end + DLP_i
 Amount_2 = 0.5 × ρ_i × R_i^total
-
+```
 # Apply collection delay
+```
 Δ_retention_2 ~ LogNormal(μ_3,Cat_i, σ_3,Cat_i)
 
 t_retention_2^cash = t_retention_2 + Δ_retention_2
 Cash_in(t_retention_2^cash) += Amount_2
-
+```
 
 ---
 
