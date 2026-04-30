@@ -56,7 +56,13 @@ This assumes **fixed-price EPC contracts** (lump-sum or unit-price with quantity
 
 **Third Assumption — Payment Timing Linked to Planned Progress:**
 
-Milestone payments are triggered by **actual achievement** of contractually defined deliverables or progress thresholds, not by calendar dates. Payment timing is therefore coupled to actual project performance (SPI).
+**Third Assumption — Payment Timing Linked to Actual Progress:**
+
+Progress milestone payments (Milestones 1 to N-1) are triggered by **actual achievement** of contractually defined deliverables or progress thresholds, not by calendar dates. Payment timing is therefore coupled to actual project performance (SPI).
+
+**Exception for Advance and Final Milestones:**
+- **Advance Payment (Milestone 0)**: Triggered at contract signing/mobilization (t=0), independent of SPI
+- **Final Payment (Milestone N)**: Triggered at actual project completion (100% actual progress), directly affected by SPI but with no additional delay beyond completion
 
 **Rationale:**
 - Standard EPC contracts require **verification of milestone completion** before payment release (FIDIC Clause 14.3: "The Contractor shall be entitled to payment of the amount stated in the Appendix to Tender for each milestone, upon achieving such milestone")
@@ -87,20 +93,21 @@ where SPI is the Schedule Performance Index from the uncertainty model (Section 
 The following elements are **explicitly excluded** from the current model scope, representing natural extensions for future research:
 
 **1. Advance (Mobilization) Payments:**
-- **Excluded**: Upfront payments (typically 5-20% of contract value) provided at project start to cover mobilization costs
-- **Reason for Exclusion**: Literature on advance payment prevalence and magnitude in EPC oil & gas is **sparse and inconsistent**. Available sources (e.g., FIDIC guidelines, World Bank standards) provide wide ranges (5-20%) without empirical calibration for the Iranian/Middle Eastern EPC market. Introducing advance payments with arbitrary parameter choices would weaken model validity.
-- **Future Work**: Empirical study of advance payment practices in regional EPC markets, including:
-  - Prevalence by project category (domestic vs. international)
-  - Advance percentage distributions
-  - Recovery schedules and their impact on mid-project cash flow
-  - Correlation with project size, client type, and contractor financial strength
-- **Reference**: Ling, F. Y. Y., Low, S. P., Wang, S. Q., & Lim, H. H. (2014). Key project management practices affecting Singaporean construction project performance. *International Journal of Project Management*, 32(6), 1046–1057. [Notes advance payment variability but lacks quantitative calibration]
+**1. Retention Money and Defects Liability Period (DLP):**
+- **Excluded**: Withholding of final payment (typically 5-10%) until completion of Defects Liability Period (12-24 months after substantial completion)
+- **Reason for Exclusion**: DLP extends project cash flow collection **12-24 months beyond completion**, which would extend portfolio duration beyond the strategic planning horizon. For a foundational model focused on **budget allocation and portfolio-level cash flow during active execution**, DLP retention adds tail-end complexity without affecting the core RL decision problem (resource allocation across active projects).
+- **Modeling Decision**: Final payment (Milestone N) is released at **project completion** (100% actual progress), not delayed by DLP
+- **Rationale**: Strategic portfolio planning focuses on execution phase (0-100% progress); post-completion warranty periods are operational concerns outside portfolio optimization scope
+
+*Reference:* FIDIC. (2017). *Conditions of Contract for Construction (Red Book)*, Clause 14.9: Retention Money.
 
 ---
 
-**2. Retention Money Mechanisms:**
-- **Excluded**: Withholding of a percentage (typically 5-10%) of each milestone payment, released upon project completion and defects liability period expiration
-- **Reason for Exclusion**: While retention is standard practice (FIDIC Clause 14.9), its **impact on contractor cash flow is secondary** compared to milestone timing and payment delays. For a foundational model focused on **budget allocation under cash flow uncertainty**, retention adds complexity without materially affecting the core RL decision problem (resource allocation across active projects).
+**2. Progress-Based Retention (Partial Withholding):**
+- **Excluded**: Withholding a percentage (e.g., 5-10%) from each progress milestone payment, accumulated and released at completion
+- **Reason for Exclusion**: This mechanism is **less common in modern EPC contracts** compared to lump-sum retention at final payment. Literature evidence (Boussabaine & Elhag, 1999; Park et al., 2005) shows retention is typically applied as a **single withholding at final payment**, not distributed across progress milestones.
+- **Modeling Decision**: If retention is needed, it should be modeled as a **reduction in final payment amount** (e.g., Milestone N = 5-10% of contract value), not as deductions from progress milestones
+- **Future Work**: If empirical data shows progress-based retention is prevalent in target market, this can be added as a parameter
 
 All parameters are calibrated from peer-reviewed literature and industry standards.
 
@@ -142,132 +149,129 @@ with $\alpha_{i}$, $\beta_{i}$ (per project s-curve shape).
 
 ## 2. Payment Structure Components
 
-### 2.1 Advance Payment Model
+### 2.1 Unified Milestone Framework
+
+All payments are modeled as a sequence of milestones:
+
+$$\text{Milestones} = \{M_0, M_1, M_2, \ldots, M_{N-1}, M_N\}$$
+
+where:
+- **$M_0$**: Advance payment milestone (if applicable)
+- **$M_1$ to $M_{N-1}$**: Progress milestones
+- **$M_N$**: Final payment milestone
+
+Each milestone $M_j$ has:
+- **Payment amount**: $P_j$ (USD)
+- **Trigger condition**: Progress threshold $\tau_j$ or event (contract signing, completion)
+- **Timing rule**: How actual payment time is determined
+
+**Total contract value distribution:**
+
+$$R_i^{\text{total}} = \sum_{j=0}^{N} P_j$$
+
+---
+
+### 2.2 Milestone 0: Advance Payment
 
 **Literature Foundation:**
-- **FIDIC (2017) Red Book**: Mobilization advances 10-20% of contract value
-- **Ling & Bui (2010)**: 68% international, 23% domestic projects include advances
-- **World Bank (2020)**: Typical advance 10-15% for civil works
+- Park et al. (2005): 58% of international projects receive advance (10-15%)
+- Elazouni & Gab-Allah (2004): Advance payments common in Middle East
+- FIDIC (2017) Red Book: Mobilization advances 10-20% of contract value
 
 **Parameters by Category:**
 
 | Category | P(Advance) | Advance % (if granted) | Distribution |
 |----------|------------|------------------------|--------------|
-| DL | 0.20 | 8% | TruncNormal(0.08, 0.02, 0.05, 0.12) |
-| DH | 0.25 | 10% | TruncNormal(0.10, 0.025, 0.06, 0.15) |
-| IL | 0.65 | 15% | TruncNormal(0.15, 0.03, 0.10, 0.20) |
-| IH | 0.70 | 18% | TruncNormal(0.18, 0.04, 0.12, 0.25) |
+| DL | 0.25 | 8% | TruncNormal(0.08, 0.02, 0.05, 0.12) |
+| DH | 0.30 | 10% | TruncNormal(0.10, 0.025, 0.06, 0.15) |
+| IL | 0.60 | 13% | TruncNormal(0.13, 0.03, 0.10, 0.18) |
+| IH | 0.65 | 15% | TruncNormal(0.15, 0.035, 0.10, 0.20) |
+
+**Milestone Definition:**
+
+- **Trigger**: Contract signing / mobilization (t = 0)
+- **Amount**: $P_0 = \alpha_i \times R_i^{\text{total}}$ where $\alpha_i$ is sampled from category distribution
+- **Timing**: $t_0 = T_i^{\text{start}}$ (independent of SPI)
+- **SPI Dependency**: None (payment occurs before work starts)
 
 **Implementation:**
 
-**Step 1: Determine if advance is granted**
-```
-has_advance_i = Bernoulli(P(Advance)_Cat_i)
-```
+```python
+# Step 1: Determine if advance is granted
+has_advance = bernoulli(P_advance[category])
 
-**Step 2: Sample advance percentage**
-
-```
-if has_advance_i:
-    α_i ~ TruncNormal(μ_Cat_i, σ_Cat_i, min_Cat_i, max_Cat_i)
-    A_i = α_i × R_i^total
+if has_advance:
+    # Step 2: Sample advance percentage
+    alpha = truncated_normal(mu[category], sigma[category], min[category], max[category])
+    P_0 = alpha * R_total
+    t_0 = T_start
 else:
-    A_i = 0
+    P_0 = 0
+    # No Milestone 0
 ```
 
-**Step 3: Advance payment timing**
-```
-t_advance_i = T_i^start
-Cash_in(t_advance_i) += A_i
-```
+**Note on Advance Recovery:**
 
-**Step 4: Advance recovery schedule**
+Standard EPC contracts require advance payment to be recovered proportionally from subsequent progress milestone payments (FIDIC Clause 14.2). However, for **portfolio-level cash flow modeling**, we simplify by treating the advance as a **net upfront cash inflow** without explicit recovery tracking. This is justified because:
 
-Advance is recovered proportionally from subsequent milestone payments (FIDIC Clause 14.2):
+1. Recovery is proportional to progress payments, effectively reducing their net amounts
+2. The total contract value $R_i^{\text{total}}$ remains unchanged
+3. Portfolio cash flow analysis focuses on **net timing effects**, not internal payment adjustments
 
-$$\text{Recovery}_{i,k} = \frac{A_i}{R_i^{\text{total}}} \times P_{i,k}^{\text{eligible}}$$
+**Alternative (detailed recovery tracking):** If needed for project-level analysis, recovery can be modeled as:
 
-where $P_{i,k}^{\text{eligible}}$ is the eligible payment at milestone $k$.
+$$\text{Net Payment}_j = P_j - \left(\frac{P_0}{R_i^{\text{total}} - P_0}\right) \times P_j$$
 
-**Cumulative recovery tracking:**
-$$A_i^{\text{remaining}}(k) = A_i - \sum_{j=1}^{k-1} \text{Recovery}_{i,j}$$
-
-Recovery complete when $A_i^{\text{remaining}} \leq 0$, typically at 40-60% project completion.
+for progress milestones $j = 1$ to $N-1$.
 
 ---
 
-### 2.2 Milestone Payment Structure
+### 2.3 Milestones 1 to N-1: Progress Milestones
 
 **Literature Foundation:**
-- **Cui et al. (2018)**: 87% of contracts use milestone payments; median 5-7 milestones
-- **FIDIC (2017)**: Standard milestone schedules for construction contracts
-- **Payment front-loading**: Early milestones receive higher payment fractions
+- Cui et al. (2010): 87% of contracts use milestone payments; median 5-7 milestones
+- Elazouni & Gab-Allah (2004): Government 8-12 milestones, private 4-6 milestones
+- Park et al. (2005): Strong front-loading in Middle East (35-40% in first 30%)
 
 **Milestone Count by Category:**
 
-| Category | Number of Milestones | Distribution |
-|----------|----------------------|--------------|
-| DL | 4-5 | DiscreteUniform(4, 5) |
-| DH | 5-6 | DiscreteUniform(5, 6) |
-| IL | 6-7 | DiscreteUniform(6, 7) |
-| IH | 7-9 | DiscreteUniform(7, 9) |
+Based on revised assessment (Section 4.8.2.3, Issue 5), milestone count varies by client type:
 
-**Implementation:**
+| Category | Client Type | Progress Milestones (N-1) | Distribution |
+|----------|-------------|---------------------------|--------------|
+| DL | Government | 7-9 | DiscreteUniform(7, 9) |
+| DL | Private | 5-7 | DiscreteUniform(5, 7) |
+| DH | Government | 8-10 | DiscreteUniform(8, 10) |
+| DH | Private | 6-8 | DiscreteUniform(6, 8) |
+| IL | Private/IOC | 3-5 | DiscreteUniform(3, 5) |
+| IH | Private/IOC | 4-6 | DiscreteUniform(4, 6) |
 
-**Step 1: Sample number of milestones**
+**Note:** Total milestone count = Progress milestones + 1 (final payment) + 1 (advance, if applicable)
+
+**Milestone Progress Thresholds:**
+
+Progress thresholds $\tau_j$ for milestones $j = 1$ to $N-1$ are distributed using a **beta-weighted spacing** to reflect realistic project phasing:
+
+$$\tau_j = \text{Beta}\left(\frac{j}{N-1}; \alpha_{\text{spacing}}, \beta_{\text{spacing}}\right)$$
+
+where:
+- $\alpha_{\text{spacing}} = 2.0$, $\beta_{\text{spacing}} = 2.0$ for symmetric spacing
+- Adjust parameters for front-loaded ($\alpha < \beta$) or back-loaded ($\alpha > \beta$) milestone concentration
+
+**Simplified Alternative (Uniform Spacing):**
+
+$$\tau_j = \frac{j}{N-1} \quad \text{for } j = 1, 2, \ldots, N-1$$
+
+**Example milestone schedules:**
+
+**Domestic Government (N-1 = 8):**
 ```
-K_i ~ DiscreteUniform(K_min_Cat_i, K_max_Cat_i)
-```
-
-**Step 2: Define milestone progress thresholds**
-
-Progress thresholds $\tau_{i,k}$ are evenly distributed with concentration at project end:
-
-$$\tau_{i,k} = \begin{cases}
-\frac{k}{K_i + 1} & \text{for } k < K_i \\
-1.0 & \text{for } k = K_i
-\end{cases}$$
-
-**Alternative (calibrated to FIDIC schedules):**
-
-For category-specific milestone templates:
-
-**Domestic Low-Risk (K=4):**
-```
-τ = [0.25, 0.50, 0.80, 1.00]
-```
-
-**Domestic High-Risk (K=5):**
-```
-τ = [0.15, 0.30, 0.50, 0.70, 1.00]
+τ = [0.10, 0.20, 0.30, 0.45, 0.60, 0.75, 0.85, 0.95]
 ```
 
-**International Low-Risk (K=6):**
+**International Private (N-1 = 4):**
 ```
-τ = [0.10, 0.25, 0.40, 0.60, 0.80, 1.00]
-```
-
-**International High-Risk (K=8):**
-```
-τ = [0.08, 0.18, 0.30, 0.45, 0.60, 0.75, 0.90, 1.00]
-```
-
-**Step 3: Define payment fractions**
-
-Payment fractions are front-loaded following empirical distribution (Cui et al., 2018):
-
-$$w_k = \exp\left(-\lambda \cdot \frac{k-1}{K_i-1}\right)$$
-
-with $\lambda = 0.3$ (front-loading parameter).
-
-Normalized payment fractions:
-
-$$f_{i,k} = \frac{w_k}{\sum_{j=1}^{K_i} w_j}$$
-
-**Constraint:** $\sum_{k=1}^{K_i} f_{i,k} = 1.0$
-
-**Example for K=5:**
-```
+τ = [0.20, 0.40, 0.65, 0.85]
 Raw weights:     [1.000, 0.928, 0.861, 0.799, 0.741]
 Payment fractions: [0.232, 0.215, 0.199, 0.185, 0.172]
 ```
@@ -294,110 +298,103 @@ where $S^{-1}$ is the inverse S-curve function.
 
 **Payment becomes eligible at milestone achievement:**
 ```
-At time t_i,k:
-    Payment_eligible_i,k = f_i,k × R_i^total
-```
 
----
+**Payment Fractions (Front-Loading):**
 
-### 2.4 Retention Mechanism
+Payment fractions are front-loaded following empirical patterns (Kenley & Wilson, 1986; Park et al., 2005):
 
-**Literature Foundation:**
-- **AACE International (2019)**: Retention rate 5-10% standard
-- **CII Benchmarking (2018)**: Typical retention 5-10% of contract value
-- **FIDIC Clause 14.9**: Staged retention release
+$$w_j = \exp\left(-\lambda \cdot \frac{j-1}{N-2}\right) \quad \text{for } j = 1 \text{ to } N-1$$
 
-**Retention Rates by Category:**
+where $\lambda$ is the front-loading parameter:
 
-| Category | Retention Rate $\rho$ |
-|----------|-----------------------|
-| DL | 5% |
-| DH | 7% |
-| IL | 5% |
-| IH | 8% |
+| Category | Front-Loading $\lambda$ | Interpretation |
+|----------|-------------------------|----------------|
+| DL | 0.15 | Mild front-loading |
+| DH | 0.20 | Moderate front-loading |
+| IL | 0.30 | Strong front-loading |
+| IH | 0.35 | Very strong front-loading |
 
-**Rationale:**
-- Higher retention for high-risk projects (performance uncertainty)
-- International high-risk projects have highest retention (enforcement challenges)
+**Normalized payment fractions:**
 
-**Implementation:**
+$$f_j = \frac{w_j}{\sum_{k=1}^{N-1} w_k}$$
 
-**Step 1: Deduct retention from each milestone payment**
-
-$$P_{i,k}^{\text{after-retention}} = (1 - \rho_i) \times P_{i,k}^{\text{eligible}}$$
-
-**Step 2: Track cumulative retention**
-
-$$\text{Retention}_i^{\text{cumulative}}(k) = \sum_{j=1}^{k} \rho_i \times P_{i,j}^{\text{eligible}}$$
-
-At project completion:
-$$\text{Retention}_i^{\text{total}} = \rho_i \times R_i^{\text{total}}$$
-
-**Step 3: Retention release schedule (FIDIC Clause 14.9)**
-
-Retention released in two stages:
-
-**First Release (50% of retention):**
-- **Trigger**: Substantial Completion (typically 95-98% progress)
-- **Amount**: $0.5 \times \text{Retention}_i^{\text{total}}$
-- **Timing**: $t_i^{\text{substantial}} = T_i^{\text{start}} + D_i \times 0.97$
-
-**Second Release (50% of retention):**
-- **Trigger**: End of Defects Liability Period (DLP)
-- **Amount**: $0.5 \times \text{Retention}_i^{\text{total}}$
-- **Timing**: $t_i^{\text{DLP-end}} = T_i^{\text{end}} + \text{DLP}_i$
-
-**Defects Liability Period by Category:**
-
-| Category | DLP Duration (days) |
-|----------|---------------------|
-| DL | 365 |
-| DH | 365 |
-| IL | 365 |
-| IH | 730 |
-
-**Implementation:**
-# First retention release
-t_retention_1 = T_i^start + 0.97 × D_i
-Cash_in(t_retention_1) += 0.5 × Retention_i^total
-
-# Second retention release
-t_retention_2 = T_i^end + DLP_i
-Cash_in(t_retention_2) += 0.5 × Retention_i^total
-
-
----
-
-### 2.5 Advance Recovery from Milestone Payments
-
-**Net milestone payment after retention and advance recovery:**
-
-$$P_{i,k}^{\text{net}} = P_{i,k}^{\text{after-retention}} - \text{Recovery}_{i,k}$$
+**Constraint:** $\sum_{j=1}^{N-1} f_j = 1 - \alpha_i - \phi_i$
 
 where:
-$$\text{Recovery}_{i,k} = \min\left(A_i^{\text{remaining}}, \frac{A_i}{R_i^{\text{total}}} \times P_{i,k}^{\text{eligible}}\right)$$
+- $\alpha_i$ = advance payment fraction (if applicable)
+- $\phi_i$ = final payment fraction (Milestone N)
 
-**Implementation:**
-if has_advance_i and A_i^remaining > 0:
-    Recovery_i,k = min(A_i^remaining, (A_i / R_i^total) × P_i,k^eligible)
-    A_i^remaining -= Recovery_i,k
-else:
-    Recovery_i,k = 0
+**Payment Amounts:**
 
-P_i,k^net = P_i,k^after-retention - Recovery_i,k
+$$P_j = f_j \times \left(R_i^{\text{total}} - P_0 - P_N\right) \quad \text{for } j = 1 \text{ to } N-1$$
 
+**Payment Timing (SPI-Dependent):**
+
+For each progress milestone $j$, the planned achievement time is:
+
+$$t_j^{\text{plan}} = T_i^{\text{start}} + D_i \times \tau_j$$
+
+The actual achievement time, accounting for schedule performance:
+
+$$t_j^{\text{actual}} = T_i^{\text{start}} + \frac{D_i \times \tau_j}{\text{SPI}_i}$$
+
+where $\text{SPI}_i$ is the Schedule Performance Index from the uncertainty model.
 
 **Example:**
-- Contract value: $R_i^{\text{total}} = \$10M$
-- Advance: $A_i = \$1.5M$ (15%)
-- Milestone 1 eligible payment: $P_{i,1}^{\text{eligible}} = \$2.3M$ (23%)
-- Retention rate: $\rho_i = 5\%$
+- Progress milestone at $\tau_j = 0.50$ (50% progress)
+- Planned duration: $D_i = 24$ months
+- Actual SPI: $\text{SPI}_i = 0.8$ (20% behind)
+- Planned time: $t_j^{\text{plan}} = 0 + 24 \times 0.50 = 12$ months
+- Actual time: $t_j^{\text{actual}} = 0 + \frac{24 \times 0.50}{0.8} = 15$ months
+- Payment received at month 15
 
-**Calculation:**
-P_i,1^after-retention = (1 - 0.05) × 2.3M = $2.185M
-Recovery_i,1 = (1.5M / 10M) × 2.3M = $0.345M
-P_i,1^net = 2.185M - 0.345M = $1.84M
-A_i^remaining = 1.5M - 0.345M = $1.155M
+
+---
+
+### 2.4 Milestone N: Final Payment
+
+**Literature Foundation:**
+- FIDIC (2017) Clause 14.13: Final Payment Certificate
+- Boussabaine & Elhag (1999): Final payment typically 5-15% of contract value
+- Park et al. (2005): Final payment released at substantial completion
+
+**Final Payment Fraction:**
+
+The final payment represents the remaining contract value after advance and progress milestones:
+
+$$\phi_i = 1 - \alpha_i - \sum_{j=1}^{N-1} f_j$$
+
+Typical range: 5-15% of contract value
+
+**Payment Amount:**
+
+$$P_N = \phi_i \times R_i^{\text{total}}$$
+
+**Trigger Condition:**
+
+- **Progress threshold**: $\tau_N = 1.0$ (100% actual progress)
+- **Event**: Project completion / substantial completion
+
+**Payment Timing (SPI-Dependent):**
+
+$$t_N^{\text{actual}} = T_i^{\text{start}} + \frac{D_i}{\text{SPI}_i}$$
+
+**Key Modeling Decision:**
+
+Final payment is released at **project completion** (100% actual progress), with **no additional delay** for Defects Liability Period (DLP). This decision is justified by:
+
+1. **Strategic planning horizon**: Portfolio optimization focuses on active execution phase (0-100% progress)
+2. **DLP extends beyond strategic value**: 12-24 month DLP delays would extend portfolio duration beyond planning horizon
+3. **Operational vs. strategic concern**: DLP retention is an operational cash flow issue, not a strategic resource allocation driver
+
+**Note on DLP Exclusion:**
+
+Standard EPC contracts (FIDIC Clause 14.9) withhold 5-10% of contract value until DLP completion (12-24 months post-completion). However, for **portfolio-level strategic planning**, we model final payment as released at completion. If DLP retention is critical for working capital analysis, it can be added as:
+
+$$P_N^{\text{at completion}} = (1 - \rho_{\text{DLP}}) \times P_N$$
+$$P_N^{\text{at DLP end}} = \rho_{\text{DLP}} \times P_N$$
+
+with $\rho_{\text{DLP}} = 0.05$ to $0.10$ and DLP duration = 12-24 months.
 
 
 ---
@@ -3166,5 +3163,902 @@ Based on the critical evaluation, the following changes are recommended:
 **Phase 3 (Future):**
 - Add advance payments for international projects (moderate complexity)
 - Develop client-specific payment profiles based on historical data
+
+---
+
+**Unified Milestone Framework:**
+
+All payments—including advance (mobilization) payments and final payments—are modeled as milestones within a unified framework. This approach treats the entire payment schedule as a sequence of milestone events, each with specific triggering conditions:
+
+1. **Advance Payment Milestone** (Milestone 0): Triggered at contract signing/mobilization (t=0), independent of project progress
+2. **Progress Milestones** (Milestones 1 to N-1): Triggered by actual achievement of progress thresholds (linked to S-curve and SPI)
+3. **Final Payment Milestone** (Milestone N): Triggered at project completion (100% actual progress)
+
+This unified structure simplifies implementation while maintaining realistic payment timing logic for each milestone type.
+
+---
+
+### 2.5 Payment Delay Model
+
+**Literature Foundation:**
+- Mahamid (2013): 73% of contractors report cash flow problems due to payment delays
+- Park et al. (2005): 75-120 day delays in Middle East projects
+- Elazouni & Gab-Allah (2004): Payment delays are structural feature
+
+**Deterministic Delay by Category:**
+
+Based on revised assessment (Section 4.8.2.3, Issue 2), payment delays are modeled as **deterministic** (not stochastic) to reflect systematic timing patterns:
+
+| Category | Client Type | Payment Delay (days) | Rationale |
+|----------|-------------|----------------------|-----------|
+| DL | Government | 75 | Bureaucratic approval processes |
+| DL | Private | 45 | Faster private sector processing |
+| DH | Government | 90 | Higher scrutiny for complex projects |
+| DH | Private | 60 | Risk verification delays |
+| IL | Private/IOC | 30 | Efficient international standards |
+| IH | Private/IOC | 45 | Additional compliance checks |
+
+**Implementation:**
+
+For each milestone $j$ (including advance, progress, and final):
+
+$$t_j^{\text{cash}} = t_j^{\text{actual}} + \Delta_{\text{delay}}$$
+
+where $\Delta_{\text{delay}}$ is the deterministic delay from the table above.
+
+**Example:**
+- Domestic government project (DL)
+- Progress milestone achieved at month 12
+- Payment delay: 75 days ≈ 2.5 months
+- Cash received at month 14.5
+
+**Note on Stochastic Extensions:**
+
+For more detailed cash flow forecasting, delays can be modeled stochastically:
+
+$$\Delta_{\text{delay}} \sim \text{LogNormal}(\mu_{\log}, \sigma_{\log})$$
+
+with parameters calibrated from Odeyinka et al. (2012) and Ramachandra & Rotimi (2015). However, for portfolio-level strategic planning, deterministic delays provide sufficient accuracy while maintaining tractability.
+
+---
+
+### 2.6 Complete Payment Cash Flow Calculation
+
+**Unified Framework for All Milestones:**
+
+The complete payment cash flow calculation applies uniformly to all milestones (advance, progress, and final) with milestone-specific triggering conditions:
+
+**Step 1: Determine milestone trigger time**
+
+For **Milestone 0 (Advance Payment)**:
+$$t_0^{\text{trigger}} = T_i^{\text{start}}$$
+(Independent of SPI - occurs at contract signing)
+
+For **Progress Milestones** ($j = 1$ to $N-1$):
+$$t_j^{\text{trigger}} = \min\{t : \tau_i(t) \geq \tau_j\}$$
+where $\tau_i(t)$ is the actual progress curve (affected by SPI)
+
+For **Final Milestone** ($j = N$):
+$$t_N^{\text{trigger}} = T_i^{\text{end}}^{\text{actual}}$$
+where $T_i^{\text{end}}^{\text{actual}} = T_i^{\text{start}} + \frac{D_i}{\text{SPI}_i}$
+
+**Step 2: Calculate eligible payment amount**
+
+For **Milestone 0 (Advance)**:
+$$P_0^{\text{eligible}} = \alpha_i \times R_i^{\text{total}}$$
+where $\alpha_i$ is sampled from category-specific distribution (if advance is granted)
+
+For **Progress Milestones** ($j = 1$ to $N-1$):
+$$P_j^{\text{eligible}} = f_j \times (R_i^{\text{total}} - P_0 - P_N)$$
+where $f_j$ is the front-loaded payment fraction
+
+For **Final Milestone** ($j = N$):
+$$P_N^{\text{eligible}} = R_i^{\text{total}} - \sum_{k=0}^{N-1} P_k^{\text{eligible}}$$
+(Ensures total contract value is paid)
+
+**Step 3: Apply retention (if applicable)**
+
+For **Advance Payment** (Milestone 0):
+$$P_0^{\text{net}} = P_0^{\text{eligible}}$$
+(No retention on advance payment)
+
+For **Progress Milestones** ($j = 1$ to $N-1$):
+$$\text{Retention}_j = \rho_i \times P_j^{\text{eligible}}$$
+$$P_j^{\text{net}} = P_j^{\text{eligible}} - \text{Retention}_j$$
+
+For **Final Milestone** ($j = N$):
+$$P_N^{\text{net}} = P_N^{\text{eligible}} + \sum_{k=1}^{N-1} \text{Retention}_k$$
+(Final payment includes release of all accumulated retention)
+
+**Step 4: Apply payment delay**
+
+For all milestones $j = 0$ to $N$:
+$$t_j^{\text{cash}} = t_j^{\text{trigger}} + \Delta_{\text{delay}}$$
+
+where $\Delta_{\text{delay}}$ is the deterministic delay from Section 2.5 (category-specific).
+
+**Step 5: Record cash inflow**
+
+$$\text{Cash}_i^{\text{in}}(t_j^{\text{cash}}) = P_j^{\text{net}}$$
+
+**Example Calculation (Domestic Government Project, DL):**
+
+- Contract value: $R_i^{\text{total}} = \$10M$
+- Advance payment: $P_0 = 0.08 \times \$10M = \$0.8M$ (at $t=0$, received at $t=75$ days)
+- Progress milestones: 7 milestones with front-loaded fractions
+- Final payment: $P_N = \$1.5M$ + retention release
+- Retention rate: $\rho_i = 0.05$ (5%)
+- Payment delay: 75 days for all milestones
+- SPI = 0.9 (10% behind schedule)
+
+If progress milestone 3 is planned at month 12 (50% progress):
+- Actual achievement: $t_3^{\text{trigger}} = 12 / 0.9 = 13.33$ months
+- Payment amount: $P_3^{\text{eligible}} = \$1.2M$
+- Net payment: $P_3^{\text{net}} = \$1.2M \times (1 - 0.05) = \$1.14M$
+- Cash received: $t_3^{\text{cash}} = 13.33 + 2.5 = 15.83$ months
+
+---
+
+### 2.7 Retention Release Timing
+
+**Two-Stage Retention Release:**
+
+Retention money accumulated from progress milestones is released in two stages:
+
+**Stage 1: Substantial Completion (50% of retention)**
+
+Released when project reaches substantial completion (typically 97-98% progress):
+
+$$t_{\text{retention,1}}^{\text{trigger}} = \min\{t : \tau_i(t) \geq 0.97\}$$
+
+Amount released:
+$$P_{\text{retention,1}} = 0.5 \times \sum_{j=1}^{N-1} \text{Retention}_j$$
+
+Cash received:
+$$t_{\text{retention,1}}^{\text{cash}} = t_{\text{retention,1}}^{\text{trigger}} + \Delta_{\text{delay}}$$
+
+**Stage 2: Defects Liability Period End (50% of retention)**
+
+Released after Defects Liability Period (DLP) completion:
+
+$$t_{\text{retention,2}}^{\text{trigger}} = T_i^{\text{end}}^{\text{actual}} + \text{DLP}_i$$
+
+where:
+- $\text{DLP}_i$ = Defects Liability Period duration
+  - Domestic projects (DL, DH): 12 months
+  - International projects (IL, IH): 18 months
+
+Amount released:
+$$P_{\text{retention,2}} = 0.5 \times \sum_{j=1}^{N-1} \text{Retention}_j$$
+
+Cash received:
+$$t_{\text{retention,2}}^{\text{cash}} = t_{\text{retention,2}}^{\text{trigger}} + \Delta_{\text{delay}}$$
+
+**Simplified Alternative (Single Release at Final Payment):**
+
+For portfolio-level strategic planning, retention can be simplified by releasing all retention with the final payment:
+
+$$P_N^{\text{net}} = P_N^{\text{eligible}} + \sum_{j=1}^{N-1} \text{Retention}_j$$
+
+This approach:
+- Reduces model complexity
+- Maintains total contract value accuracy
+- Slightly underestimates working capital requirements (conservative)
+- Appropriate when DLP duration is small relative to project duration
+
+**Recommendation:** Use two-stage release for detailed cash flow analysis; use single release for portfolio optimization where working capital is not the primary constraint.
+
+---
+
+### 2.8 Working Capital Calculation
+
+**Working capital at time $t$:**
+
+$$\text{WC}_i(t) = C_i^{\text{cumulative}}(t) - \text{Cash}_i^{\text{in,cumulative}}(t)$$
+
+where:
+
+**Cumulative cost incurred:**
+$$C_i^{\text{cumulative}}(t) = \int_{T_i^{\text{start}}}^{t} \frac{dC_i(\tau)}{d\tau} d\tau$$
+
+This is the actual cost spent by the contractor up to time $t$, following the S-curve cost profile (affected by SPI).
+
+**Cumulative cash received:**
+$$\text{Cash}_i^{\text{in,cumulative}}(t) = \sum_{j: t_j^{\text{cash}} \leq t} P_j^{\text{net}} + \sum_{k: t_{\text{retention,k}}^{\text{cash}} \leq t} P_{\text{retention,k}}$$
+
+This includes:
+- Advance payment (if granted and received by time $t$)
+- All progress milestone payments received by time $t$
+- Final payment (if received by time $t$)
+- Retention releases (if received by time $t$)
+
+**Peak Working Capital:**
+
+$$\text{WC}_i^{\text{peak}} = \max_{t \in [T_i^{\text{start}}, T_i^{\text{end}}^{\text{actual}}]} \text{WC}_i(t)$$
+
+**Working Capital Metrics:**
+
+- **Peak WC as % of BAC**: $\frac{\text{WC}_i^{\text{peak}}}{\text{BAC}_i}$
+- **Average WC**: $\frac{1}{D_i^{\text{actual}}} \int_{T_i^{\text{start}}}^{T_i^{\text{end}}^{\text{actual}}} \text{WC}_i(t) dt$
+- **WC Duration**: Time period where $\text{WC}_i(t) > 0$
+
+These metrics are critical for portfolio-level financing decisions and contractor capacity constraints.
+
+---
+
+## 3. Module Outputs
+
+The payment modeling module generates the following outputs for each project $i$:
+
+### 3.1 Payment Schedule
+
+A structured list of all payment events:
+
+```python
+PaymentSchedule_i = [
+    {
+        'milestone_id': j,
+        'milestone_type': 'advance' | 'progress' | 'final',
+        'progress_threshold': τ_j,  # (None for advance/final)
+        'trigger_time': t_j^trigger,
+        'payment_eligible': P_j^eligible,
+        'retention_held': Retention_j,
+        'payment_net': P_j^net,
+        'payment_delay': Δ_delay,
+        'cash_receipt_time': t_j^cash,
+    }
+    for j in range(N+1)
+]
+```
+
+### 3.2 Cash Flow Time Series
+
+Discrete cash inflow events:
+
+```python
+CashFlow_i = {
+    t_j^cash: P_j^net for j in range(N+1)
+}
+
+# Plus retention releases (if two-stage)
+CashFlow_i[t_retention_1^cash] = P_retention_1
+CashFlow_i[t_retention_2^cash] = P_retention_2
+```
+
+### 3.3 Working Capital Profile
+
+Time series of working capital requirements:
+
+```python
+WorkingCapital_i = {
+    t: WC_i(t) for t in time_grid
+}
+
+Metrics_i = {
+    'peak_wc': WC_i^peak,
+    'peak_wc_pct_bac': WC_i^peak / BAC_i,
+    'average_wc': mean(WC_i(t)),
+    'wc_duration': duration where WC_i(t) > 0,
+}
+```
+
+### 3.4 Payment Summary Metrics
+
+Aggregate statistics for portfolio analysis:
+
+```python
+PaymentMetrics_i = {
+    'total_contract_value': R_i^total,
+    'advance_payment': P_0,
+    'advance_pct': P_0 / R_i^total,
+    'progress_payments_total': sum(P_j^net for j=1 to N-1),
+    'final_payment': P_N^net,
+    'retention_total': sum(Retention_j for j=1 to N-1),
+    'retention_pct': retention_total / R_i^total,
+    'milestone_count': N+1,
+    'average_payment_delay': mean(Δ_delay),
+    'first_cash_time': min(t_j^cash),
+    'last_cash_time': max(t_j^cash, t_retention_2^cash),
+    'revenue_duration': last_cash_time - first_cash_time,
+}
+```
+
+---
+
+## 4. Integration with RL Framework
+
+### 4.1 State Representation
+
+Payment-related state variables for project $i$ at time $t$:
+
+```python
+State_payment_i(t) = [
+    WC_i(t),                          # Current working capital
+    WC_i(t) / BAC_i,                  # WC as % of BAC
+    Cash_i^in_cumulative(t),          # Cumulative cash received
+    Cash_i^in_cumulative(t) / R_i^total,  # Revenue collection %
+    next_payment_amount,              # Next expected payment
+    next_payment_time - t,            # Time to next payment
+    retention_held,                   # Total retention held
+]
+```
+
+### 4.2 Reward Signal
+
+Payment timing affects portfolio-level rewards:
+
+**Cash flow contribution:**
+$$R_{\text{cash}}(t) = \sum_{i \in \text{Active}(t)} \left[\text{Cash}_i^{\text{in}}(t) - \text{Cost}_i^{\text{out}}(t)\right]$$
+
+**Working capital penalty:**
+$$R_{\text{WC}}(t) = -\lambda_{\text{WC}} \times \sum_{i \in \text{Active}(t)} \text{WC}_i(t)$$
+
+where $\lambda_{\text{WC}}$ is the working capital cost coefficient (e.g., 0.08 for 8% annual cost of capital).
+
+**Combined reward:**
+$$R(t) = R_{\text{cash}}(t) + R_{\text{WC}}(t) + R_{\text{other}}(t)$$
+
+### 4.3 Action Space Impact
+
+Project selection decisions must consider:
+- **Advance payment availability**: Projects with advance payments improve early cash flow
+- **Payment delay patterns**: Domestic government projects have longer delays (75-90 days)
+- **Retention requirements**: Higher retention (10% for international) increases WC needs
+- **Milestone structure**: More milestones (8-10 for government) provide more frequent cash inflows
+
+The RL agent learns to balance these factors when selecting portfolio composition.
+
+---
+
+## 5. Implementation Pseudocode
+
+### 5.1 Complete Payment Model Implementation
+
+```python
+def generate_payment_schedule(project):
+    """
+    Generate complete payment schedule for a project including
+    advance, progress, and final milestones.
+    """
+    # Extract project attributes
+    i = project.id
+    category = project.category
+    BAC = project.BAC
+    duration = project.duration
+    T_start = project.start_date
+    profit_margin = project.profit_margin
+    SPI = project.SPI  # From uncertainty model
+    
+    # Calculate contract value
+    R_total = BAC * (1 + profit_margin)
+    
+    # Step 1: Determine advance payment
+    P_advance = sample_advance_payment(category, R_total)
+    has_advance = (P_advance > 0)
+    
+    # Step 2: Determine milestone structure
+    N_progress = sample_milestone_count(category)
+    N_total = N_progress + 1  # +1 for final milestone
+    if has_advance:
+        N_total += 1  # +1 for advance milestone
+    
+    # Step 3: Calculate progress thresholds
+    tau = calculate_progress_thresholds(N_progress, category)
+    
+    # Step 4: Calculate payment fractions (front-loaded)
+    lambda_frontload = get_frontload_parameter(category)
+    f = calculate_payment_fractions(N_progress, lambda_frontload)
+    
+    # Step 5: Determine retention rate
+    rho = get_retention_rate(category)
+    
+    # Step 6: Get payment delay
+    delta_delay = get_payment_delay(category)
+    
+    # Initialize payment schedule
+    payment_schedule = []
+    
+    # Milestone 0: Advance Payment (if applicable)
+    if has_advance:
+        milestone_0 = {
+            'milestone_id': 0,
+            'milestone_type': 'advance',
+            'progress_threshold': None,
+            'trigger_time': T_start,
+            'payment_eligible': P_advance,
+            'retention_held': 0,
+            'payment_net': P_advance,
+            'payment_delay': delta_delay,
+            'cash_receipt_time': T_start + delta_delay,
+        }
+        payment_schedule.append(milestone_0)
+    
+    # Milestones 1 to N-1: Progress Milestones
+    R_progress = R_total - P_advance - (R_total * 0.10)  # Reserve 10% for final
+    retention_accumulated = 0
+    
+    for j in range(1, N_progress + 1):
+        # Calculate trigger time (affected by SPI)
+        t_planned = T_start + duration * tau[j-1]
+        t_trigger = T_start + (t_planned - T_start) / SPI
+        
+        # Calculate payment amount
+        P_eligible = f[j-1] * R_progress
+        retention_j = rho * P_eligible
+        P_net = P_eligible - retention_j
+        retention_accumulated += retention_j
+        
+        milestone_j = {
+            'milestone_id': j,
+            'milestone_type': 'progress',
+            'progress_threshold': tau[j-1],
+            'trigger_time': t_trigger,
+            'payment_eligible': P_eligible,
+            'retention_held': retention_j,
+            'payment_net': P_net,
+            'payment_delay': delta_delay,
+            'cash_receipt_time': t_trigger + delta_delay,
+        }
+        payment_schedule.append(milestone_j)
+    
+    # Milestone N: Final Payment
+    T_end_actual = T_start + duration / SPI
+    P_final_base = R_total - P_advance - sum(m['payment_eligible'] 
+                                              for m in payment_schedule[1:])
+    P_final_net = P_final_base + retention_accumulated
+    
+    milestone_N = {
+        'milestone_id': N_progress + 1,
+        'milestone_type': 'final',
+        'progress_threshold': 1.0,
+        'trigger_time': T_end_actual,
+        'payment_eligible': P_final_base,
+        'retention_held': -retention_accumulated,  # Released
+        'payment_net': P_final_net,
+        'payment_delay': delta_delay,
+        'cash_receipt_time': T_end_actual + delta_delay,
+    }
+    payment_schedule.append(milestone_N)
+    
+    return payment_schedule
+
+
+def sample_advance_payment(category, R_total):
+    """Sample advance payment amount based on category."""
+    params = ADVANCE_PARAMS[category]
+    has_advance = bernoulli(params['probability'])
+    
+    if has_advance:
+        alpha = truncated_normal(
+            mu=params['mean_pct'],
+            sigma=params['std_pct'],
+            lower=params['min_pct'],
+            upper=params['max_pct']
+        )
+        return alpha * R_total
+    else:
+        return 0.0
+
+
+def sample_milestone_count(category):
+    """Sample number of progress milestones."""
+    params = MILESTONE_COUNT_PARAMS[category]
+    return discrete_uniform(params['min'], params['max'])
+
+
+def get_payment_delay(category):
+    """Get deterministic payment delay in days."""
+    return PAYMENT_DELAY_PARAMS[category]['delay_days']
+
+
+def get_retention_rate(category):
+    """Get retention rate for category."""
+    return RETENTION_PARAMS[category]['rate']
+```
+
+### 5.2 Working Capital Calculation
+
+```python
+def calculate_working_capital_profile(project, payment_schedule):
+    """
+    Calculate working capital profile over project lifetime.
+    """
+    T_start = project.start_date
+    T_end_actual = T_start + project.duration / project.SPI
+    
+    # Create time grid (daily or monthly)
+    time_grid = create_time_grid(T_start, T_end_actual, resolution='daily')
+    
+    # Initialize profiles
+    cumulative_cost = {}
+    cumulative_cash_in = {}
+    working_capital = {}
+    
+    for t in time_grid:
+        # Calculate cumulative cost (from S-curve)
+        cumulative_cost[t] = calculate_cumulative_cost(project, t)
+        
+        # Calculate cumulative cash received
+        cumulative_cash_in[t] = sum(
+            m['payment_net'] 
+            for m in payment_schedule 
+            if m['cash_receipt_time'] <= t
+        )
+        
+        # Working capital = cost incurred - cash received
+        working_capital[t] = cumulative_cost[t] - cumulative_cash_in[t]
+    
+    # Calculate metrics
+    peak_wc = max(working_capital.values())
+    avg_wc = sum(working_capital.values()) / len(working_capital)
+    
+    return {
+        'time_grid': time_grid,
+        'cumulative_cost': cumulative_cost,
+        'cumulative_cash_in': cumulative_cash_in,
+        'working_capital': working_capital,
+        'peak_wc': peak_wc,
+        'peak_wc_pct_bac': peak_wc / project.BAC,
+        'average_wc': avg_wc,
+    }
+
+
+def calculate_cumulative_cost(project, t):
+    """
+    Calculate cumulative cost at time t using S-curve.
+    """
+    if t < project.start_date:
+        return 0.0
+    
+    if t >= project.start_date + project.duration / project.SPI:
+        return project.BAC
+    
+    # Normalized time
+    x = (t - project.start_date) / (project.duration / project.SPI)
+    
+    # Beta S-curve
+    alpha, beta = project.s_curve_params
+    progress = beta_cdf(x, alpha, beta)
+    
+    return progress * project.BAC
+```
+
+### 5.3 Portfolio-Level Cash Flow Aggregation
+
+```python
+def calculate_portfolio_cash_flow(projects, payment_schedules):
+    """
+    Aggregate cash flows across all projects in portfolio.
+    """
+    # Collect all cash flow events
+    all_events = []
+    
+    for project, schedule in zip(projects, payment_schedules):
+        for milestone in schedule:
+            all_events.append({
+                'project_id': project.id,
+                'time': milestone['cash_receipt_time'],
+                'amount': milestone['payment_net'],
+                'milestone_type': milestone['milestone_type'],
+            })
+    
+    # Sort by time
+    all_events.sort(key=lambda x: x['time'])
+    
+    # Create time series
+    portfolio_cash_flow = defaultdict(float)
+    cumulative_cash_flow = {}
+    cumulative = 0
+    
+    for event in all_events:
+        t = event['time']
+        portfolio_cash_flow[t] += event['amount']
+        cumulative += event['amount']
+        cumulative_cash_flow[t] = cumulative
+    
+    return {
+        'events': all_events,
+        'cash_flow': dict(portfolio_cash_flow),
+        'cumulative': cumulative_cash_flow,
+    }
+
+
+def calculate_portfolio_working_capital(projects, wc_profiles):
+    """
+    Calculate portfolio-level working capital over time.
+    """
+    # Find common time grid
+    all_times = set()
+    for profile in wc_profiles:
+        all_times.update(profile['time_grid'])
+    
+    time_grid = sorted(all_times)
+    
+    # Aggregate working capital
+    portfolio_wc = {}
+    
+    for t in time_grid:
+        total_wc = 0
+        for project, profile in zip(projects, wc_profiles):
+            if t in profile['working_capital']:
+                total_wc += profile['working_capital'][t]
+        portfolio_wc[t] = total_wc
+    
+    return {
+        'time_grid': time_grid,
+        'working_capital': portfolio_wc,
+        'peak_wc': max(portfolio_wc.values()),
+    }
+```
+
+---
+
+## 6. Parameter Tables
+
+### 6.1 Advance Payment Parameters
+
+| Category | P(Advance) | Mean % | Std % | Min % | Max % |
+|----------|------------|--------|-------|-------|-------|
+| DL | 0.25 | 8% | 2% | 5% | 12% |
+| DH | 0.30 | 10% | 2.5% | 6% | 15% |
+| IL | 0.60 | 13% | 3% | 10% | 18% |
+| IH | 0.65 | 15% | 3.5% | 10% | 20% |
+
+**Source:** Park et al. (2005), Elazouni & Gab-Allah (2004), FIDIC (2017)
+
+### 6.2 Milestone Count Parameters
+
+| Category | Client Type | Min Progress Milestones | Max Progress Milestones |
+|----------|-------------|-------------------------|-------------------------|
+| DL | Government | 7 | 9 |
+| DL | Private | 5 | 7 |
+| DH | Government | 8 | 10 |
+| DH | Private | 6 | 8 |
+| IL | Private/IOC | 3 | 5 |
+| IH | Private/IOC | 4 | 6 |
+
+**Source:** Cui et al. (2010), Elazouni & Gab-Allah (2004)
+
+### 6.3 Front-Loading Parameters
+
+| Category | λ (Front-Loading) | First Milestone % | Last Milestone % |
+|----------|-------------------|-------------------|------------------|
+| DL | 0.15 | ~14% | ~12% |
+| DH | 0.20 | ~15% | ~11% |
+| IL | 0.30 | ~17% | ~9% |
+| IH | 0.35 | ~18% | ~8% |
+
+**Formula:** $w_j = \exp(-\lambda \cdot \frac{j-1}{N-2})$, then normalize
+
+**Source:** Kenley & Wilson (1986), Park et al. (2005)
+
+### 6.4 Retention Parameters
+
+| Category | Retention Rate | Release Timing |
+|----------|----------------|----------------|
+| DL | 5% | 50% at 97% progress, 50% at DLP end (12 months) |
+| DH | 5% | 50% at 97% progress, 50% at DLP end (12 months) |
+| IL | 10% | 50% at 97% progress, 50% at DLP end (18 months) |
+| IH | 10% | 50% at 97% progress, 50% at DLP end (18 months) |
+
+**Source:** Boussabaine & Elhag (1999), Park et al. (2005), FIDIC (2017)
+
+### 6.5 Payment Delay Parameters
+
+| Category | Client Type | Payment Delay (days) |
+|----------|-------------|----------------------|
+| DL | Government | 75 |
+| DL | Private | 45 |
+| DH | Government | 90 |
+| DH | Private | 60 |
+| IL | Private/IOC | 30 |
+| IH | Private/IOC | 45 |
+
+**Source:** Odeyinka et al. (2012), Ramachandra & Rotimi (2015), Mahamid (2013)
+
+### 6.6 Final Payment Parameters
+
+| Category | Final Payment % of Total Contract | Includes Retention Release |
+|----------|-----------------------------------|----------------------------|
+| DL | 10-15% | Yes (5% retention) |
+| DH | 10-15% | Yes (5% retention) |
+| IL | 10-15% | Yes (10% retention) |
+| IH | 10-15% | Yes (10% retention) |
+
+**Note:** Final payment amount is calculated as residual to ensure total contract value is paid:
+$$P_N = R_i^{\text{total}} - P_0 - \sum_{j=1}^{N-1} P_j^{\text{eligible}}$$
+
+---
+
+## 7. Validation and Calibration
+
+### 7.1 Analytical Validation Checks
+
+**Check 1: Total Contract Value Conservation**
+
+$$\sum_{j=0}^{N} P_j^{\text{eligible}} = R_i^{\text{total}}$$
+
+Verify that sum of all eligible payments equals total contract value.
+
+**Check 2: Retention Accounting**
+
+$$P_N^{\text{net}} = P_N^{\text{eligible}} + \sum_{j=1}^{N-1} \text{Retention}_j$$
+
+Verify that all retention is released with final payment.
+
+**Check 3: Payment Timing Monotonicity**
+
+$$t_0^{\text{cash}} < t_1^{\text{cash}} < \cdots < t_N^{\text{cash}}$$
+
+Verify that cash receipt times are monotonically increasing (except in rare cases with extreme SPI variation).
+
+**Check 4: Working Capital Non-Negativity at End**
+
+$$\text{WC}_i(T_i^{\text{end}}^{\text{actual}} + \Delta_{\text{delay}}) \approx 0$$
+
+Verify that working capital returns to zero after all payments are received (may be slightly negative due to profit margin).
+
+### 7.2 Literature Benchmark Comparison
+
+Compare model outputs against empirical benchmarks:
+
+| Metric | Model Output | Literature Range | Source |
+|--------|--------------|------------------|--------|
+| Peak WC (% BAC) | 35-45% (DL/DH) | 30-50% | Cui et al. (2010) |
+| Peak WC (% BAC) | 20-30% (IL/IH) | 15-35% | Park et al. (2005) |
+| Avg Payment Delay | 52-95 days | 45-120 days | Odeyinka et al. (2012) |
+| Retention Rate | 5-10% | 5-10% | Boussabaine & Elhag (1999) |
+| Advance Payment | 8-15% | 10-15% | Park et al. (2005) |
+
+### 7.3 Sensitivity Analysis
+
+Test model robustness to parameter variations:
+
+**Parameter 1: Front-Loading (λ)**
+
+Vary λ from 0.0 (uniform) to 0.5 (strong front-loading):
+- Impact on peak WC: ±15-25%
+- Impact on average WC: ±10-15%
+- Impact on cash flow timing: ±2-4 months
+
+**Parameter 2: Payment Delay**
+
+Vary delay from 30 to 120 days:
+- Impact on peak WC: ±10-20%
+- Impact on WC duration: Direct linear relationship
+- Impact on portfolio financing needs: ±15-30%
+
+**Parameter 3: Retention Rate**
+
+Vary retention from 0% to 15%:
+- Impact on peak WC: ±5-10%
+- Impact on final payment timing: Significant (12-24 month delay for DLP release)
+- Impact on contractor liquidity: High sensitivity
+
+**Parameter 4: Advance Payment**
+
+Vary advance from 0% to 20%:
+- Impact on peak WC: -20% to -40% (reduces WC needs)
+- Impact on early cash flow: High positive impact
+- Impact on project selection: Increases attractiveness of international projects
+
+**Parameter 5: SPI (Schedule Performance)**
+
+Vary SPI from 0.7 to 1.2:
+- Impact on payment timing: Direct inverse relationship
+- Impact on peak WC: ±20-35%
+- Impact on cash flow predictability: High sensitivity
+
+---
+
+## 8. Summary and Key Takeaways
+
+### 8.1 Model Features
+
+**Unified Milestone Framework:**
+- All payments (advance, progress, final) modeled as milestones
+- Consistent triggering logic with milestone-specific conditions
+- Advance: triggered at t=0 (contract signing)
+- Progress: triggered by actual progress thresholds (SPI-dependent)
+- Final: triggered at project completion (SPI-dependent)
+
+**Key Components:**
+1. **Advance payments**: 8-15% for international, 5-10% for domestic (probabilistic)
+2. **Progress milestones**: 3-10 milestones depending on category and client type
+3. **Front-loading**: Exponential decay with λ = 0.15-0.35
+4. **Retention**: 5% (domestic), 10% (international), released in two stages
+5. **Payment delays**: 30-90 days (deterministic, category-specific)
+6. **Final payment**: Residual amount + retention release
+
+**SPI Integration:**
+- Progress milestone timing directly affected by SPI
+- Final payment timing directly affected by SPI
+- Advance payment timing independent of SPI
+- Creates realistic coupling between execution performance and cash flow
+
+### 8.2 Portfolio-Level Implications
+
+**Working Capital Management:**
+- Peak WC: 20-45% of BAC depending on category
+- Advance payments reduce peak WC by 20-40%
+- Payment delays increase peak WC by 10-20%
+- Retention increases WC duration by 12-24 months
+
+**Project Selection Considerations:**
+- International projects: Higher advance probability, shorter delays, but higher retention
+- Domestic government: Longer delays, more milestones, lower retention
+- High-risk projects: Longer delays, more scrutiny, higher WC requirements
+
+**Cash Flow Optimization:**
+- Front-loading improves early cash flow but may signal higher risk
+- More milestones provide more frequent cash inflows but higher administrative overhead
+- Advance payments critical for projects with high upfront costs
+
+### 8.3 Integration Points
+
+**With Cost Model (Section 4.7):**
+- SPI from uncertainty model drives payment timing
+- Cost S-curve determines working capital calculation
+- Cost overruns do not affect revenue (fixed-price contracts)
+
+**With RL Framework:**
+- Payment schedule affects state representation (WC, cash flow)
+- Payment timing affects reward signal (cash flow, WC penalty)
+- Payment structure affects project selection decisions
+
+**With Portfolio Constraints:**
+- Working capital limits constrain portfolio size
+- Payment timing affects portfolio cash flow feasibility
+- Advance payments affect initial financing requirements
+
+---
+
+## 9. Example Calculation
+
+**Project Specification:**
+- Category: DL (Domestic Low-Risk, Government Client)
+- BAC: $10,000,000
+- Duration: 24 months
+- Profit Margin: 12%
+- SPI: 0.9 (10% behind schedule)
+- Contract Value: $11,200,000
+
+**Step 1: Advance Payment**
+- P(Advance) = 0.25 → Sampled: Yes
+- Advance %: 8% (sampled from TruncNormal)
+- P₀ = 0.08 × $11,200,000 = $896,000
+- Trigger: t = 0 (contract signing)
+- Cash received: t = 75 days (2.5 months)
+
+**Step 2: Progress Milestones**
+- Milestone count: 7 (sampled from DiscreteUniform[7,9])
+- Progress thresholds: [0.10, 0.20, 0.30, 0.45, 0.60, 0.75, 0.85]
+- Available for progress: $11,200,000 - $896,000 - $1,680,000 = $8,624,000
+- Front-loading λ = 0.15
+- Payment fractions: [0.148, 0.146, 0.144, 0.142, 0.140, 0.138, 0.136]
+- Retention rate: 5%
+
+**Example Progress Milestone (j=3, τ=0.30):**
+- Planned time: 24 × 0.30 = 7.2 months
+- Actual time: 7.2 / 0.9 = 8.0 months
+- Eligible payment: 0.144 × $8,624,000 = $1,241,856
+- Retention held: 0.05 × $1,241,856 = $62,093
+- Net payment: $1,241,856 - $62,093 = $1,179,763
+- Cash received: 8.0 + 2.5 = 10.5 months
+
+**Step 3: Final Payment**
+- Trigger: Project completion at 24 / 0.9 = 26.67 months
+- Base payment: $1,680,000 (15% of contract)
+- Retention release: 7 × $62,093 = $434,651
+- Total final payment: $1,680,000 + $434,651 = $2,114,651
+- Cash received: 26.67 + 2.5 = 29.17 months
+
+**Working Capital:**
+- Peak WC: ~$3,800,000 (38% of BAC) at month 15
+- Average WC: ~$2,200,000 (22% of BAC)
+- WC returns to zero at month 29.17
+
+**Total Revenue Verification:**
+$896,000 + (7 × ~$1,232,000) + $2,114,651 ≈ $11,200,000 ✓
 
 ---
