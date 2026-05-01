@@ -101,6 +101,7 @@ The following elements are **explicitly excluded** from the current model scope,
 
 *Reference:* FIDIC. (2017). *Conditions of Contract for Construction (Red Book)*, Clause 14.9: Retention Money.
 
+
 ---
 
 **2. Progress-Based Retention (Partial Withholding):**
