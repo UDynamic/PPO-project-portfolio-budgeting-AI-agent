@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Generate illustrative charts for the RL Portfolio Budgeting paper.
 Run from project root: python article/figures/generate_charts.py
 """
 
 import os
+import sys
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend
 import matplotlib.pyplot as plt
 from scipy.stats import beta, lognorm, truncnorm
 import seaborn as sns
+
+# Fix Windows console encoding
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # Change to figures directory
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -239,9 +245,10 @@ def generate_milestone_payment_structure():
                 f'{payment}%', ha='center', va='bottom', fontsize=11, fontweight='bold')
     
     # Cumulative payment curve
+    progress_with_start = [0] + progress
     cumulative = np.cumsum([0] + payments)
-    ax2.plot(progress, cumulative, 'o-', color='darkgreen', linewidth=3, markersize=10)
-    ax2.fill_between(progress, cumulative, alpha=0.3, color='green')
+    ax2.plot(progress_with_start, cumulative, 'o-', color='darkgreen', linewidth=3, markersize=10)
+    ax2.fill_between(progress_with_start, cumulative, alpha=0.3, color='green')
     ax2.set_xlabel('Project Progress (%)', fontsize=12)
     ax2.set_ylabel('Cumulative Revenue (%)', fontsize=12)
     ax2.set_title('Cumulative Revenue Collection', fontsize=13, fontweight='bold')
