@@ -1,0 +1,78 @@
+\subsection{Overview}
+
+\textit{[This section will be completed in future work. Placeholder content provided below.]}
+
+The experimental design evaluates the RL agent against classical OR baselines across multiple dimensions:
+
+\begin{enumerate}
+    \item \textbf{Solution Quality:} Expected portfolio NPV, budget utilization, risk metrics
+    \item \textbf{Computational Performance:} Solve time, scalability, inference latency
+    \item \textbf{Robustness:} Performance under varying uncertainty levels
+    \item \textbf{Generalization:} Transfer to unseen portfolio configurations
+\end{enumerate}
+
+\subsection{Baseline Methods}
+
+\textit{[To be completed: Baseline implementations, including:]}
+
+\textbf{Greedy Heuristic:} Allocate budget proportional to planned cashflow demand.
+
+\textbf{Deterministic MIP:} Solve deterministic optimization assuming mean SPI/CPI values.
+
+\textbf{Stochastic Programming:} Two-stage SP with scenario tree (5--10 scenarios).
+
+\textbf{Perfect Information MIP:} Upper bound assuming known future performance (oracle).
+
+\subsection{Evaluation Metrics}
+
+\textit{[To be completed: Metric definitions, including:]}
+
+\begin{itemize}
+    \item \textbf{Expected NPV:} $\E[\sum_{t=0}^{T-1} (r_t - c_t)(1+\gamma)^{-t}]$
+    \item \textbf{Budget Utilization:} Fraction of available budget allocated
+    \item \textbf{Risk Metrics:} Variance of NPV, probability of budget overrun
+    \item \textbf{Solve Time:} Wall-clock time per portfolio instance
+    \item \textbf{Optimality Gap:} Distance from perfect-information upper bound
+\end{itemize}
+
+\subsection{Experimental Scenarios}
+
+\textit{[To be completed: Scenario design, including:]}
+
+\textbf{Scenario 1: Baseline Performance}
+\begin{itemize}
+    \item Portfolio size: $N = 10$ projects
+    \item Uncertainty level: Medium (mean SPI = 0.85, CPI = 0.87)
+    \item Budget constraint: 100\% of planned total cashflow
+\end{itemize}
+
+\textbf{Scenario 2: Scalability Analysis}
+\begin{itemize}
+    \item Portfolio sizes: $N \in \{10, 15, 20, 30, 50\}$
+    \item Measure solve time growth for MIP vs. RL inference time
+\end{itemize}
+
+\textbf{Scenario 3: Uncertainty Sensitivity}
+\begin{itemize}
+    \item Low uncertainty: SPI $\sim$ Beta(4.0, 3.0) on [0.7, 1.2]
+    \item Medium uncertainty: SPI $\sim$ Beta(2.8, 2.2) on [0.3, 1.3]
+    \item High uncertainty: SPI $\sim$ Beta(2.0, 2.0) on [0.2, 1.4]
+\end{itemize}
+
+\textbf{Scenario 4: Budget Constraint Tightness}
+\begin{itemize}
+    \item Tight: 80\% of planned cashflow
+    \item Moderate: 100\% of planned cashflow
+    \item Loose: 120\% of planned cashflow
+\end{itemize}
+
+\subsection{Statistical Analysis}
+
+\textit{[To be completed: Statistical methodology, including:]}
+
+\begin{itemize}
+    \item Sample size: 1,000 portfolio instances per scenario
+    \item Confidence intervals: 95\% bootstrap CIs for all metrics
+    \item Hypothesis tests: Paired t-tests for RL vs. baselines
+    \item Multiple comparison correction: Bonferroni adjustment
+\end{itemize}

@@ -1,0 +1,86 @@
+\subsection{Motivation and Context}
+
+Project portfolio budgeting represents a critical decision problem for Engineering, Procurement, and Construction (EPC) contractors managing multiple concurrent capital projects. In the oil and gas sector, contractors typically oversee portfolios of 8--18 major projects simultaneously, each with budgets ranging from \$50M to \$5B+ and durations spanning 12--60 months \citep{merrow2011industrial}. The fundamental challenge lies in allocating limited financial resources across competing projects under pervasive uncertainty in contractor performance, where schedule delays and cost overruns are the norm rather than the exception.
+
+Empirical evidence from 318 industrial megaprojects reveals systematic performance degradation: the mean Schedule Performance Index (SPI) at completion is 0.81 (19\% behind schedule), and the mean Cost Performance Index (CPI) is 0.87 (15\% over budget) \citep{merrow2011industrial}. This uncertainty creates a sequential decision-making problem where budget allocation decisions at time $t$ must account for unknown future project states at $t+1, t+2, \ldots, t+H$, where $H$ represents the planning horizon (typically 12 months for annual budget cycles).
+
+Traditional Operations Research (OR) methods---Mixed Integer Programming (MIP) and Stochastic Programming (SP)---face three fundamental barriers in this domain:
+
+\begin{enumerate}
+    \item \textbf{Computational Intractability:} MIP solvers require 15--45 minutes per portfolio instance for problems with 10--20 projects and 12-period horizons. Real-time decision support and large-scale scenario analysis (e.g., evaluating 1,000 budget scenarios) become infeasible.
+    
+    \item \textbf{Partial Observability:} Contractor performance uncertainty creates unknown state transition probabilities $P(s_{t+1}|s_t, a_t)$. Classical methods require explicit probability distributions, which are unavailable due to the complexity of project execution dynamics.
+    
+    \item \textbf{Scalability Failure:} MIP solve time grows exponentially with portfolio size and planning horizon. Re-optimization after budget changes requires complete re-solving, preventing adaptive decision-making.
+\end{enumerate}
+
+\subsection{Research Gap and Opportunity}
+
+Reinforcement Learning (RL) offers a fundamentally different paradigm: instead of requiring known transition probabilities, RL agents learn optimal policies through interaction with a simulated environment. Once trained, an RL agent produces allocation decisions in milliseconds (100--200ms), enabling use cases that classical OR cannot support:
+
+\begin{itemize}
+    \item \textbf{Real-time scenario analysis:} Evaluating 1,000 budget scenarios in under 2 minutes (vs. 250+ hours for MIP)
+    \item \textbf{Adaptive re-planning:} Instant response to budget changes or project performance updates
+    \item \textbf{Monte Carlo simulation:} Large-scale uncertainty quantification over stochastic project trajectories
+\end{itemize}
+
+However, applying RL to project portfolio budgeting faces a critical data challenge: real-world project cashflow data is highly confidential and unavailable for research purposes. Companies refuse to share period-by-period budget allocations, actual expenditures, and performance metrics due to competitive sensitivity and contractual obligations. This barrier has prevented the development of RL methods in this domain.
+
+\subsection{Contributions}
+
+This paper establishes the foundational methodology for RL-based project portfolio budgeting through four primary contributions:
+
+\textbf{Contribution 1: Literature-Calibrated Synthetic Data Generation.} We develop a comprehensive synthetic data generation framework that creates realistic project portfolios with empirically-grounded uncertainty distributions. Our methodology addresses the confidentiality barrier by calibrating all distributional parameters from published empirical studies rather than proprietary data. Key components include:
+
+\begin{itemize}
+    \item Portfolio composition model (60\% domestic / 40\% international projects) based on optimal risk-adjusted returns \citep{khanzadi2018integrating}
+    \item Profit margin distributions calibrated to Iranian EPC market structure with regulatory constraints
+    \item Beta-distributed S-curve cashflow models with project-specific shape parameters derived from 318 megaprojects \citep{merrow2011industrial}
+    \item Stochastic contractor performance (SPI/CPI) with left-skewed distributions matching empirical failure patterns \citep{flyvbjerg2003underestimating}
+    \item Milestone-based payment structures reflecting dominant EPC contracting practices (87\% of contracts) \citep{cui2010systems}
+\end{itemize}
+
+\textbf{Contribution 2: Rolling Horizon Control Architecture.} We propose a rolling horizon framework that maintains fixed 12-period episodes while handling variable-duration portfolios (12--60 months) through sequential re-planning. At each timestep $t$, the agent:
+\begin{enumerate}
+    \item Observes current portfolio state (active projects, budget status, performance trends)
+    \item Plans budget allocation for the next $H=12$ periods
+    \item Executes only the allocation for period $t$
+    \item Advances to $t+1$ and re-plans with updated information
+\end{enumerate}
+
+This architecture prevents state-space explosion for long-duration portfolios while mimicking real-world planning behavior (annual budgets with periodic updates). The fixed episode length enables tractable RL training and fair comparison with OR baselines.
+
+\textbf{Contribution 3: Formal Problem Formulation and Modeling Framework.} We provide the first rigorous mathematical formulation of portfolio budgeting as a Partially Observable Markov Decision Process (POMDP) under cashflow uncertainty. Our modeling framework includes:
+
+\begin{itemize}
+    \item State space representation capturing project progress, budget status, and performance indicators
+    \item Action space for budget allocation decisions with feasibility constraints
+    \item Reward function balancing portfolio NPV, budget utilization, and risk penalties
+    \item Transition dynamics incorporating stochastic contractor performance and milestone-based payments
+\end{itemize}
+
+All modeling assumptions are explicitly stated with literature justification, and exclusions are documented as future work extensions.
+
+\textbf{Contribution 4: Open-Source Reproducible Framework.} We will release the complete modeling framework, instance generator, and validation tools as open-source software. This enables:
+
+\begin{itemize}
+    \item Reproducible research in RL-based portfolio optimization
+    \item Benchmarking of alternative RL architectures and baselines
+    \item Extension to related domains (construction, infrastructure, R\&D portfolios)
+    \item Fine-tuning protocols for company-specific deployment using historical data
+\end{itemize}
+
+\subsection{Scope and Limitations}
+
+This paper focuses on establishing the \textit{foundational methodology} for RL-based portfolio budgeting. We deliberately adopt the \textit{Simplest Model Principle}: each modeling choice represents the minimal complexity required for scientific validity, with extensions explicitly documented as future work. Key scope boundaries include:
+
+\begin{itemize}
+    \item \textbf{In Scope:} Synthetic data generation, portfolio modeling, problem formulation, rolling horizon architecture, validation framework
+    \item \textbf{Future Work:} RL agent architecture selection (PPO vs. SAC vs. Transformer-based), experimental results, baseline comparisons, sensitivity analysis, fine-tuning protocols
+\end{itemize}
+
+This scoping reflects the reality that this is a \textit{brand new field} in the literature. The Q1 paper establishes proof-of-concept; subsequent work will address computational performance, solution quality, and practical deployment.
+
+\subsection{Paper Organization}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:literature} reviews related work in project portfolio management, uncertainty modeling, and RL applications in operations research. Section~\ref{sec:problem} provides the formal problem formulation as a POMDP with rolling horizon control. Section~\ref{sec:methodology} presents the synthetic data generation methodology with literature calibration. Section~\ref{sec:portfolio-modeling} details the portfolio modeling framework including composition, cashflows, and uncertainty. Section~\ref{sec:rl-architecture} outlines the rolling horizon RL architecture (to be completed). Section~\ref{sec:experiments} describes the experimental design (to be completed). Section~\ref{sec:results} presents results and discussion (to be completed). Section~\ref{sec:conclusion} concludes with future work directions.

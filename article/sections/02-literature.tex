@@ -1,0 +1,63 @@
+\subsection{Project Portfolio Management Under Uncertainty}
+
+Project portfolio management (PPM) has been extensively studied in operations research and management science. Early work by \citet{archer1999integrated} established frameworks for project selection and prioritization, while \citet{cooper2001portfolio} developed stage-gate processes for new product development portfolios. However, these approaches primarily address the \textit{selection} problem (which projects to pursue) rather than the \textit{execution} problem (how to allocate resources dynamically).
+
+\citet{gutjahr2008project} formulated multi-objective portfolio optimization models balancing expected return, risk, and strategic alignment. \citet{doerner2006pareto} applied Pareto ant colony optimization to generate efficient frontiers for portfolio selection. These methods assume deterministic project execution once selected, ignoring the sequential decision-making required under performance uncertainty.
+
+Stochastic programming approaches have been proposed to handle uncertainty. \citet{golenko1997stochastic} modeled resource-constrained project scheduling with stochastic activity durations. \citet{klerides2019stochastic} developed two-stage stochastic programs for portfolio selection under demand uncertainty. However, these methods require explicit scenario trees and known probability distributions, which are unavailable for contractor performance dynamics.
+
+\subsection{Project Performance Uncertainty and Empirical Evidence}
+
+A substantial body of empirical research documents systematic cost and schedule overruns in capital projects. \citet{flyvbjerg2002underestimating} analyzed 258 transportation infrastructure projects, finding mean cost overruns of 28\% and schedule delays of 27\%. \citet{flyvbjerg2003underestimating} extended this analysis to 258 projects across multiple sectors, confirming left-skewed performance distributions with long tails toward poor outcomes.
+
+\citet{merrow2011industrial} provided the most comprehensive analysis of EPC project performance, examining 318 industrial megaprojects in oil \& gas, chemicals, and mining. Key findings include: (1) mean SPI at completion of 0.81 (19\% behind schedule), (2) mean CPI of 0.87 (15\% over budget), (3) positive correlation between schedule and cost performance ($\rho \approx 0.68$), and (4) systematic variation in performance by project size, complexity, and contractor experience.
+
+\citet{love2013probability} fitted probability distributions to schedule overrun data from 276 construction projects, validating Beta and lognormal distributions as appropriate models. \citet{love2016relationship} analyzed the relationship between SPI and CPI, confirming that schedule delays typically precede cost overruns due to extended overhead and acceleration costs.
+
+\subsection{Cashflow Modeling and S-Curves}
+
+Project cashflow modeling has a rich history in construction management. \citet{kenley1986construction} introduced the idiographic approach to cashflow forecasting, recognizing that each project exhibits unique spending patterns. \citet{kaka1993towards} developed neural network models for cashflow prediction based on historical project data.
+
+The S-curve model, representing cumulative spending as a sigmoid function of project duration, has become the standard representation. \citet{cioffi2005tool} provided analytical parameterization of S-curves using Beta distributions, enabling closed-form expressions for cashflow velocity and peak spending timing. \citet{barraza2007probabilistic} extended this to probabilistic S-curves incorporating uncertainty in project duration and spending patterns.
+
+\citet{cui2010systems} analyzed milestone-based payment structures in construction contracts, finding that 87\% of contracts use progress-based payments rather than time-based schedules. This finding motivates our modeling choice to link payment timing to actual progress (SPI) rather than calendar dates.
+
+\subsection{Reinforcement Learning in Operations Research}
+
+RL has emerged as a powerful tool for sequential decision-making under uncertainty. \citet{sutton2018reinforcement} provide the foundational textbook covering Markov Decision Processes (MDPs), temporal difference learning, and policy gradient methods. Recent advances in deep RL, particularly Proximal Policy Optimization (PPO) \citep{schulman2017proximal} and Soft Actor-Critic (SAC) \citep{haarnoja2018soft}, have enabled application to high-dimensional continuous control problems.
+
+Applications of RL to operations research problems have grown rapidly. \citet{hubbs2020deep} applied deep RL to chemical production scheduling, achieving near-optimal solutions with 1000× speedup over MIP. \citet{bengio2021machine} surveyed machine learning for combinatorial optimization, highlighting RL's ability to learn heuristics that generalize across problem instances.
+
+In project management, RL applications remain limited. \citet{wauters2016learning} used RL for resource-constrained project scheduling with deterministic durations. \citet{chen2018reinforcement} applied RL to construction project scheduling under resource uncertainty. However, no prior work addresses portfolio-level budgeting under cashflow uncertainty with stochastic contractor performance.
+
+\subsection{Rolling Horizon Control}
+
+Rolling horizon control (also called receding horizon control or model predictive control) is a well-established technique in control theory and operations research. \citet{sethi1991survey} surveyed rolling horizon procedures for production planning, demonstrating their effectiveness in handling long planning horizons with bounded computational effort.
+
+\citet{chand2002rolling} analyzed the theoretical properties of rolling horizon heuristics, proving asymptotic optimality under certain conditions. \citet{sahin2013rolling} applied rolling horizon frameworks to inventory management under demand uncertainty, showing that fixed-horizon re-planning can approximate infinite-horizon optimal policies.
+
+In project management, \citet{lambrechts2008proactive} used rolling horizon scheduling for resource-constrained projects under activity duration uncertainty. \citet{ballesteros2015resource} applied rolling horizon methods to multi-project resource allocation. However, these approaches use deterministic optimization at each re-planning step, rather than learning adaptive policies through RL.
+
+\subsection{Synthetic Data Generation for OR/ML Research}
+
+The use of synthetic data in operations research has a long tradition. \citet{kolisch1997psplib} created the Project Scheduling Problem Library (PSPLIB), a benchmark dataset of synthetic instances that became the standard for algorithm comparison. \citet{vanhoucke2008experimental} generated synthetic project networks to study schedule risk analysis methods.
+
+In machine learning, synthetic data generation has become essential for domains with data scarcity or privacy constraints. \citet{jordon2022synthetic} surveyed synthetic data generation methods, emphasizing the importance of preserving statistical properties of real data. \citet{xu2019modeling} developed generative models for tabular data that maintain correlations and distributional characteristics.
+
+For project management, \citet{vanhoucke2012integrated} generated synthetic project data with controlled complexity levels to benchmark scheduling algorithms. \citet{elshaer2014genetic} created synthetic portfolios with varying risk profiles to test portfolio optimization methods. Our work extends this tradition by developing a comprehensive synthetic data generator calibrated to empirical distributions from multiple literature sources, ensuring realism while maintaining reproducibility.
+
+\subsection{Research Gaps}
+
+Despite extensive research in project portfolio management, performance uncertainty, and RL applications, critical gaps remain:
+
+\begin{enumerate}
+    \item \textbf{No RL framework for portfolio budgeting:} Existing RL applications to project management focus on single-project scheduling, not portfolio-level resource allocation under cashflow uncertainty.
+    
+    \item \textbf{Lack of realistic synthetic environments:} Prior synthetic data generators for project management do not model stochastic contractor performance, milestone-based payments, or portfolio-level cashflow dynamics.
+    
+    \item \textbf{Absence of rolling horizon RL architectures:} Rolling horizon control has not been integrated with RL for portfolio management, despite its natural fit for handling variable-duration portfolios.
+    
+    \item \textbf{No methodology for literature-calibrated data generation:} Existing approaches either use proprietary data (unavailable for research) or arbitrary synthetic distributions (lacking empirical grounding).
+\end{enumerate}
+
+This paper addresses these gaps by developing the first RL framework for portfolio budgeting with a literature-calibrated synthetic environment and rolling horizon architecture.
