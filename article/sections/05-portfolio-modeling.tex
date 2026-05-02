@@ -27,6 +27,13 @@ This composition balances:
     \item \textbf{International projects:} Higher profit margins (12--16\%), higher variance, market-driven pricing
 \end{itemize}
 
+\begin{figure}[h]
+\centering
+\resizebox{0.7\columnwidth}{!}{\input{figures/portfolio_composition.tex}}
+\caption{Optimal portfolio composition based on risk-adjusted return maximization.}
+\label{fig:portfolio_composition}
+\end{figure}
+
 \textbf{Rationale:} Assuming optimal composition allows focus on operational dynamics (cashflow management, resource allocation) without solving the combinatorial project selection problem. This separation of concerns is standard in portfolio management literature \citep{archer1999integrated, cooper2001portfolio}.
 
 \subsubsection{Profit Margin Distributions}
@@ -51,9 +58,10 @@ Higher mean and variance reflect market-driven competitive bidding without regul
 
 \begin{table}[h]
 \centering
+\small
 \caption{Profit Margin Distributions by Category}
 \label{tab:profit_margins}
-\begin{tabular}{lcc}
+\begin{tabular}{@{}lcc@{}}
 \toprule
 Percentile & Domestic & International \\
 \midrule
@@ -108,6 +116,13 @@ This yields:
     \item Mid-size: \$200M -- \$1B (30\% of projects)
     \item Mega: $>$\$1B (10\% of projects)
 \end{itemize}
+
+\begin{figure}[h]
+\centering
+\resizebox{0.9\columnwidth}{!}{\input{figures/bac_distribution_concept.tex}}
+\caption{Lognormal distribution of project BAC showing right-skewed pattern with median at \$150M and mean at \$280M.}
+\label{fig:bac_distribution}
+\end{figure}
 
 \subsection{S-Curve Cashflow Model}
 
@@ -173,9 +188,10 @@ Parameters clipped to empirically validated bounds: $\alpha_i \in [1.2, 5.0]$, $
 
 \begin{table}[h]
 \centering
+\small
 \caption{S-Curve Parameters by Project Category}
 \label{tab:scurve_params}
-\begin{tabular}{llccc}
+\begin{tabular}{@{}llccc@{}}
 \toprule
 Category & Risk & $\alpha$ & $\beta$ & Peak $\tau^*$ \\
 \midrule
@@ -194,6 +210,13 @@ International & High & 2.00 & 2.59 & 0.435 \\
     \item International low-risk: Later peak, extended close-out
     \item International high-risk: Mid-peak, heavy tail (commissioning uncertainty)
 \end{itemize}
+
+\begin{figure}[h]
+\centering
+\resizebox{\columnwidth}{!}{\input{figures/scurve_concept.tex}}
+\caption{S-curve cashflow profiles showing different spending patterns across project categories.}
+\label{fig:scurve_profiles}
+\end{figure}
 
 \subsubsection{Project Duration Model}
 
@@ -227,9 +250,10 @@ Revenue is released upon achievement of contractual milestones. Standard milesto
 
 \begin{table}[h]
 \centering
+\small
 \caption{Standard Milestone Payment Structure}
 \label{tab:milestones}
-\begin{tabular}{lcc}
+\begin{tabular}{@{}lcc@{}}
 \toprule
 Milestone & Progress Threshold & Payment Weight \\
 \midrule
@@ -241,6 +265,13 @@ Final & 100\% (completion) & 10\% \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[h]
+\centering
+\resizebox{0.9\columnwidth}{!}{\input{figures/milestone_structure.tex}}
+\caption{Milestone-based payment structure showing payment weights at each progress threshold.}
+\label{fig:milestone_structure}
+\end{figure}
 
 \subsubsection{Payment Timing Linked to Actual Progress}
 
@@ -301,9 +332,10 @@ Our parameterization yields mean SPI = 0.86 (slightly higher to account for acti
 
 \begin{table}[h]
 \centering
+\small
 \caption{SPI Distribution Percentiles}
 \label{tab:spi_dist}
-\begin{tabular}{lcc}
+\begin{tabular}{@{}lcc@{}}
 \toprule
 Percentile & SPI Value & Schedule Overrun \\
 \midrule
@@ -315,6 +347,13 @@ P90 & 1.12 & -11\% (ahead) \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[h]
+\centering
+\resizebox{\columnwidth}{!}{\input{figures/spi_cpi_concept.tex}}
+\caption{SPI and CPI distributions showing left-skewed patterns with most projects behind schedule and over budget.}
+\label{fig:spi_cpi_distributions}
+\end{figure}
 
 \subsubsection{Cost Performance Index (CPI) Distribution}
 

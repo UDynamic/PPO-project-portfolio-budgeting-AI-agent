@@ -1,0 +1,27 @@
+=== Instructions to Generate Charts ===
+
+Since you're on Windows with the .venv at the project root, run this command from PowerShell:
+
+1. Open PowerShell
+2. Navigate to your project directory:
+   cd "F:\Career\00. Univesity\Masters\05. Master's thesis\PPO-project-portfolio-budgeting-AI-agent"
+
+3. Activate the virtual environment:
+   .\.venv\Scripts\Activate.ps1
+
+4. Run the chart generation script:
+   python article\figures\generate_charts.py
+
+This will generate 7 charts in the article/figures/ directory:
+- scurve_comparison.pdf/.png
+- profit_margins.pdf/.png
+- bac_distribution.pdf/.png
+- spi_cpi_distributions.pdf/.png
+- rolling_horizon.pdf/.png
+- milestone_payments.pdf/.png
+- portfolio_composition.pdf/.png
+
+The PDF versions are vector graphics (best for LaTeX).
+The PNG versions are raster graphics (for preview/presentations).
+
+Note: The script uses matplotlib's 'Agg' backend (non-interactive) to avoid display issues in WSL.

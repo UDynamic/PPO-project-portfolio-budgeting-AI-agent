@@ -33,6 +33,13 @@ This framework offers three key advantages:
 
 \textbf{(3) Real-world alignment:} The 12-month horizon matches industry practice (annual budget cycles with quarterly/monthly reviews).
 
+\begin{figure}[h]
+\centering
+\resizebox{0.9\columnwidth}{!}{\input{figures/rolling_horizon_diagram.tex}}
+\caption{Rolling Horizon Architecture: Fixed 12-month planning window slides forward, executing only the first-period action at each step.}
+\label{fig:rolling_horizon}
+\end{figure}
+
 \subsection{State Space}
 
 The state at time $t$ captures all information relevant for budget allocation decisions. For each active project $i \in \mathcal{P}_t^{\text{active}}$, we track:

@@ -1,0 +1,39 @@
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    block/.style={rectangle, draw, fill=blue!20, text width=3cm, text centered, rounded corners, minimum height=1cm},
+    env/.style={rectangle, draw, fill=green!20, text width=3cm, text centered, rounded corners, minimum height=1cm},
+    arrow/.style={thick,->,>=stealth}
+]
+    % Environment
+    \node[env] (env) {Portfolio Environment\\(Synthetic Data)};
+    
+    % State
+    \node[block, below of=env] (state) {State $s_t$\\Project progress, SPI, CPI\\Budget, Milestones};
+    
+    % Agent
+    \node[block, right=3cm of state] (agent) {RL Agent\\(PPO/DQN)};
+    
+    % Action
+    \node[block, below of=agent] (action) {Action $a_t$\\Budget allocation\\per project};
+    
+    % Reward
+    \node[block, left=3cm of action] (reward) {Reward $r_t$\\NPV, penalties\\completion bonus};
+    
+    % Next state
+    \node[block, below of=state] (next_state) {Next State $s_{t+1}$\\Updated progress\\New milestones};
+    
+    % Arrows
+    \draw[arrow] (env) -- (state) node[midway, right, font=\tiny] {observe};
+    \draw[arrow] (state) -- (agent) node[midway, above, font=\tiny] {$s_t$};
+    \draw[arrow] (agent) -- (action) node[midway, right, font=\tiny] {policy $\pi$};
+    \draw[arrow] (action) -- (reward) node[midway, above, font=\tiny] {execute};
+    \draw[arrow] (reward) -- (next_state) node[midway, right, font=\tiny] {transition};
+    \draw[arrow] (next_state) -- (env) node[midway, left, font=\tiny] {update};
+    \draw[arrow] (reward) -- (agent) node[midway, below, font=\tiny] {$r_t$};
+    
+    % Rolling horizon indicator
+    \node[draw, dashed, fit={(state) (agent) (action) (reward)}, inner sep=0.3cm, label=above:{\small Rolling Horizon Window (H=12)}] {};
+    
+    % Title
+    \node[above=0.5cm of env, font=\small\bfseries] {RL Framework for Portfolio Budgeting};
+\end{tikzpicture}
