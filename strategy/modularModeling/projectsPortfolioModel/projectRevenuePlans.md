@@ -870,7 +870,7 @@ where $R_{\text{available}} = R_{\text{total}} - P_0 - P_N$ (total minus advance
 
 For a given λ, the percentage of total value in first 30% of progress is:
 
-$$\text{Front-30%} = \frac{\sum_{j: \tau_j \leq 0.30} w_j}{\sum_{j=1}^{N-1} w_j}$$
+$$\text{Front-30\%} = \frac{\sum_{j: \tau_j \leq 0.30} w_j}{\sum_{j=1}^{N-1} w_j}$$
 
 We calibrate λ to match Park et al. (2005) empirical observations:
 
@@ -1050,15 +1050,6 @@ $$P_N = \beta \times R_{\text{total}}$$
 
 where $\beta$ is the final payment percentage.
 
-**Category-Specific Calibration**:
-
-| Category | Final Payment % (β) | Literature Source | Rationale |
-|----------|---------------------|-------------------|-----------|
-| DL | 15% | Park et al. (2005): 12.8% mean, Cui et al. (2010): 10-15% | Upper end for government |
-| DH | 15% | Park et al. (2005): 12.8% mean, Cui et al. (2010): 10-15% | Same as DL (standard) |
-| IL | 12% | Park et al. (2005): 12% Asia mean | IOC standard |
-| IH | 15% | Park et al. (2005): 15% Middle East mean | Higher for risk coverage |
-
 **Domestic Low-Risk (DL): β = 0.15 (15%)**
 
 **Literature calibration**:
@@ -1089,6 +1080,16 @@ where $\beta$ is the final payment percentage.
 - Park et al. (2005): Middle East mean 15%
 - Higher final payment for complex projects
 - Covers extended commissioning and testing
+
+**Category-Specific Calibration**:
+
+| Category | Final Payment % (β) | Literature Source | Rationale |
+|----------|---------------------|-------------------|-----------|
+| DL | 15% | Park et al. (2005): 12.8% mean, Cui et al. (2010): 10-15% | Upper end for government |
+| DH | 15% | Park et al. (2005): 12.8% mean, Cui et al. (2010): 10-15% | Same as DL (standard) |
+| IL | 12% | Park et al. (2005): 12% Asia mean | IOC standard |
+| IH | 15% | Park et al. (2005): 15% Middle East mean | Higher for risk coverage |
+
 
 #### 2.4.3 Alternative: Stochastic Final Payment
 
