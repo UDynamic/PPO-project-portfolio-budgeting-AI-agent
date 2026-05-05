@@ -1248,7 +1248,7 @@ def calculate_final_payment_timing(T_start, D_i, SPI):
 
 **Retention Money (Excluded)**
 
-Retention money—typically 5-10% of progress payments withheld by the client as security for defects correction during the Defects Liability Period—is **excluded from the primary model**.
+Retention money—typically 5-10% of progress payments withheld by the client as security for defects correction during the Defects Liability Period—is **excluded from the primary model** due to high dependence to the DLP retention release model which is excluded too.
 
 
 **decomposition into future works:**
