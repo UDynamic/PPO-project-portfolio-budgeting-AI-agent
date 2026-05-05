@@ -1438,29 +1438,6 @@ For $\Delta t \sim \text{LogNormal}(\mu, \sigma)$:
 - Private: 90% of payments received within 85 days (2.8 months)
 - Government delays ~67% longer than private on average
 
-#### 2.6.7 Advance Payment Delay (Special Case)
-
-**Advance payment delay is typically shorter**:
-
-$$\Delta t_0 \sim \text{LogNormal}(\mu_c - 0.5, \sigma_c)$$
-
-**Rationale**:
-- Advance payment has higher priority (mobilization urgency)
-- Less documentation required (no progress verification)
-- Typically 30-40 days vs. 45-75 days for progress payments
-
-**Literature support**:
-- Park et al. (2005): Advance payments processed faster
-- FIDIC (2017): Advance payment within 28 days of guarantee submission
-
-**Category-specific advance delay**:
-
-| Category | Mean Delay (days) | μ (log) | σ (log) |
-|----------|-------------------|---------|---------|
-| DL | 45 | 3.81 | 0.40 |
-| DH | 45 | 3.81 | 0.40 |
-| IL | 30 | 3.40 | 0.45 |
-| IH | 30 | 3.40 | 0.45 |
 
 #### 2.6.8 Implementation Algorithm
 
