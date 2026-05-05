@@ -658,7 +658,7 @@ with $\alpha_{i}$, $\beta_{i}$ (per project s-curve shape).
 
 #### 2.2.5 Milestone Definition
 
-- **Trigger**: Contract signing / mobilization (t = 0)
+- **Trigger**: Contract signing / mobilization (t = 0)`
 - **Amount**: $P_0 = \alpha_i \times R_i^{\text{total}}$ where $\alpha_i \sim \text{TruncNormal}(\mu_c, \sigma_c, a_c, b_c)$
 - **Timing**: $t_0 = T_i^{\text{start}}$ (independent of SPI)
 - **SPI Dependency**: None (payment occurs before work starts)
