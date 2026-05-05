@@ -1334,6 +1334,9 @@ $$\Delta t \sim \text{LogNormal}(\mu_c, \sigma_c)$$
 
 where parameters vary by category (client type).
 
+**Note:**
+*Advance payment won't be delayed. It will be payed just as the project starts*
+
 #### 2.6.3 Category-Specific Calibration
 
 **Domestic Low-Risk (DL) - Government Clients**
@@ -1445,7 +1448,7 @@ For $\Delta t \sim \text{LogNormal}(\mu, \sigma)$:
 import numpy as np
 from scipy.stats import lognorm
 
-def sample_payment_delay(category, is_advance=False):
+def sample_payment_delay(category):
     """
     Sample payment delay for a milestone.
     
@@ -1467,9 +1470,6 @@ def sample_payment_delay(category, is_advance=False):
         mu = 3.81
         sigma = 0.45
     
-    # Adjust for advance payment (faster processing)
-    if is_advance:
-        mu = mu - 0.5
     
     # Sample from log-normal distribution
     delay_days = lognorm.rvs(s=sigma, scale=np.exp(mu))
@@ -2178,7 +2178,9 @@ Navon, R. (1996). Company-level cash-flow management. *Journal of Construction E
 Odeyinka, H. A., Lowe, J., & Kaka, A. P. (2012). An evaluation of risk factors impacting construction cash flow forecast. *Journal of Financial Management of Property and Construction*, 17(1), 5–28.
 
 Suprapto, M., Bakker, H., Mooi, H., & Hertogh, M. (2016). How do contract types and incentives matter to project performance? *International Journal of Project Management*, 34(6), 1071–1087.
-- **Future Work**: Incorporate retention as a **state variable** in the RL environment, where the agent must account for delayed cash inflows from retention release when planning future commitments
+---
+
+**Future Work**: Incorporate retention as a **state variable** in the RL environment, where the agent must account for delayed cash inflows from retention release when planning future commitments
 - **Reference**: FIDIC. (2017). *Conditions of Contract for Construction (Red Book)*, Clause 14.9: Retention Money.
 
 ---
