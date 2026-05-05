@@ -1479,20 +1479,19 @@ def sample_payment_delay(category):
     
     return delay_days, delay_months
 
-def calculate_cash_receipt_time(t_milestone_actual, category, is_advance=False):
+def calculate_cash_receipt_time(t_milestone_actual, category):
     """
     Calculate cash receipt time for a milestone payment.
     
     Parameters:
     - t_milestone_actual: float, actual milestone achievement time (months)
     - category: str, one of ['DL', 'DH', 'IL', 'IH']
-    - is_advance: bool, whether this is advance payment (default: False)
     
     Returns:
     - t_cash: float, cash receipt time (months)
     - delay_months: float, payment delay (months)
     """
-    delay_days, delay_months = sample_payment_delay(category, is_advance)
+    delay_days, delay_months = sample_payment_delay(category)
     t_cash = t_milestone_actual + delay_months
     
     return t_cash, delay_months
@@ -1502,7 +1501,7 @@ def calculate_cash_receipt_time(t_milestone_actual, category, is_advance=False):
 
 **Payment delay increases working capital**:
 
-$$\text{WC}_i(t) = \text{Cost}_i^{\text{cumulative}}(t) - \text{Cash}_i^{\text{in,cumulative}}(t)$$
+$$\text{WC}_i(t) = \text{Cost}_i^{\text{cumulative}}(t) - \text{Revenue}_i^{\text{cumulative}}(t)$$
 
 **Delay effect**:
 - Longer delays → Higher peak working capital
@@ -1556,33 +1555,16 @@ This section consolidates all payment structure parameters calibrated from liter
 
 **Table 2.7.3: Final Payment Parameters**
 
-| Category | Client Type | Final Payment % | Includes Retention | Timing | Literature Source |
-|----------|-------------|-----------------|-------------------|--------|-------------------|
-| DL | Government | 15% | Yes | Completion (100% progress) | Park et al. (2005), Cui et al. (2010) |
-| DH | Government | 15% | Yes | Completion (100% progress) | Park et al. (2005), Cui et al. (2010) |
-| IL | Private/IOC | 12% | Yes | Completion (100% progress) | Park et al. (2005) |
-| IH | Private/IOC | 15% | Yes | Completion (100% progress) | Park et al. (2005) |
+| Category | Client Type | Final Payment % | Timing | Literature Source |
+|----------|-------------|-----------------|--------|-------------------|
+| DL | Government | 15% | Completion (100% progress) | Park et al. (2005), Cui et al. (2010) |
+| DH | Government | 15% | Completion (100% progress) | Park et al. (2005), Cui et al. (2010) |
+| IL | Private/IOC | 12% | Completion (100% progress) | Park et al. (2005) |
+| IH | Private/IOC | 15% | Completion (100% progress) | Park et al. (2005) |
 
 **Key insights**:
 - Final payment does not vary significantly with risk level (except IL)
 - IOC low-risk projects have smaller final payment (12% vs. 15%)
-- All retention released at completion (simplified model)
-
----
-
-**Table 2.7.4: Retention Parameters**
-
-| Category | Client Type | Retention Rate | Applied To | Release Timing | Literature Source |
-|----------|-------------|----------------|-----------|----------------|-------------------|
-| DL | Government | 5.0% | Progress payments | Completion | Boussabaine & Elhag (1999), Park et al. (2005) |
-| DH | Government | 5.0% | Progress payments | Completion | Boussabaine & Elhag (1999), Park et al. (2005) |
-| IL | Private/IOC | 5.0% | Progress payments | Completion | Boussabaine & Elhag (1999), Park et al. (2005) |
-| IH | Private/IOC | 5.0% | Progress payments | Completion | Boussabaine & Elhag (1999), Park et al. (2005) |
-
-**Key insights**:
-- Uniform 5% retention rate across all categories (primary model)
-- Alternative model with category-specific rates available (4.5-5.5%)
-- Retention increases peak working capital by ~10%
 
 ---
 
@@ -1613,9 +1595,7 @@ This section consolidates all payment structure parameters calibrated from liter
 - **Progress milestones**: 8 milestones (mean), 35% front-loaded
   - Available for progress: $10M × 1.12 × (1 - 0.08 - 0.15) = $8.624M
   - Milestone payments: $1.24M, $1.22M, $1.20M, $1.18M, $1.16M, $1.14M, $1.12M, $1.10M
-  - Retention deducted: 5% per milestone
-  - Net payments: $1.18M, $1.16M, $1.14M, $1.12M, $1.10M, $1.08M, $1.06M, $1.05M
-- **Final payment**: 15% + retention release = $1.68M + $0.43M = $2.11M
+- **Final payment**: $1.68M
 - **Payment delays**: Mean 75 days (2.5 months) per milestone
 - **Total revenue**: $11.2M (BAC × 1.12 profit margin)
 
@@ -1635,7 +1615,7 @@ This section consolidates all payment structure parameters calibrated from liter
 - **Progress milestones**: 9 milestones (mean), 37% front-loaded
   - Available for progress: $15M × 1.15 × (1 - 0.10 - 0.15) = $12.94M
   - More front-loaded than DL (λ=0.20 vs. 0.15)
-- **Final payment**: 15% + retention = $2.59M + $0.65M = $3.24M
+- **Final payment**: 15% * 17.25  = $2.59M
 - **Payment delays**: Mean 75 days (same as DL)
 - **Total revenue**: $17.25M (BAC × 1.15 profit margin)
 
@@ -1656,7 +1636,7 @@ This section consolidates all payment structure parameters calibrated from liter
   - Available for progress: $20M × 1.18 × (1 - 0.13 - 0.12) = $17.70M
   - Fewer milestones but larger payments
   - Strong front-loading (λ=0.30)
-- **Final payment**: 12% + retention = $2.83M + $0.89M = $3.72M
+- **Final payment**: 12% = $2.83M 
 - **Payment delays**: Mean 45 days (1.5 months) - faster than government
 - **Total revenue**: $23.6M (BAC × 1.18 profit margin)
 
@@ -1677,7 +1657,7 @@ This section consolidates all payment structure parameters calibrated from liter
 - **Progress milestones**: 5 milestones (mean), 42% front-loaded
   - Available for progress: $30M × 1.22 × (1 - 0.15 - 0.15) = $25.62M
   - Very strong front-loading (λ=0.35)
-- **Final payment**: 15% + retention = $5.49M + $1.28M = $6.77M
+- **Final payment**: 15% = $5.49M 
 - **Payment delays**: Mean 45 days (same as IL)
 - **Total revenue**: $36.6M (BAC × 1.22 profit margin)
 
