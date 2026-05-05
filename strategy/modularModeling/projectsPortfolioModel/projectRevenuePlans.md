@@ -56,7 +56,6 @@ This assumes **fixed-price EPC contracts** (lump-sum or unit-price with quantity
 
 **Third Assumption — Payment Timing Linked to Planned Progress:**
 
-**Third Assumption — Payment Timing Linked to Actual Progress:**
 
 Progress milestone payments (Milestones 1 to N-1) are triggered by **actual achievement** of contractually defined deliverables or progress thresholds, not by calendar dates. Payment timing is therefore coupled to actual project performance (SPI).
 
