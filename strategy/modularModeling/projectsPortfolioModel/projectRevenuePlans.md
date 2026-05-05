@@ -1735,28 +1735,29 @@ This section consolidates all payment structure parameters calibrated from liter
 
 ---
 
-
 ## 3. Working Capital Calculation
 
 **Working capital at time $t$:**
 
-$$\text{WC}_i(t) = C_i^{\text{cumulative}}(t) - \text{Cash}_i^{\text{in,cumulative}}(t)$$
+$$\text{WC}_i(t) = C_i^{\text{cumulative}}(t) - \text{Revenue}_i^{\text{cumulative}}(t)$$
 
 where:
 
 **Cumulative cost incurred:**
-$$C_i^{\text{cumulative}}(t) = \int_{T_i^{\text{start}}}^{t} \frac{dC_i(\tau)}{d\tau} d\tau$$
+$$C_i^{\text{cumulative}}(t) = \int_{T_i^{\text{start}}}^{t} \frac{dC_i(\tau)}{d\tau} \, d\tau$$
 
 **Cumulative cash received:**
-$$\text{Cash}_i^{\text{in,cumulative}}(t) = A_i \cdot \mathbb{1}_{t \geq T_i^{\text{start}}} + \sum_{k: t_{i,k}^{\text{cash}} \leq t} P_{i,k}^{\text{actual}} + \text{Retention\_Released}(t)$$
+$$\text{Revenue}_i^{\text{cumulative}}(t) = A_i \cdot \mathbb{1}_{t \geq T_i^{\text{start}}} + \sum_{k: t_{i,k}^{\text{cash}} \leq t} P_{i,k}^{\text{actual}}$$
 
 **Components:**
-1. **Advance payment** (if granted): $A_i$ at $t = T_i^{\text{start}}$
-2. **Milestone payments**: $P_{i,k}^{\text{actual}}$ at $t = t_{i,k}^{\text{cash}}$
-3. **Retention releases**: Two payments at $t_{\text{retention}_1}^{\text{cash}}$ and $t_{\text{retention}_2}^{\text{cash}}$
+1. **Advance payment** (if granted): $A_i$ received at $t = T_i^{\text{start}}$
+2. **Milestone payments**: $P_{i,k}^{\text{actual}}$ received at $t = t_{i,k}^{\text{cash}}$
+3. **Final payment**: Delivered at project completion $t = T_i^{\text{end}}$
+
+**Model boundary**: Projects are deactivated at completion ($t = T_i^{\text{end}}$). Post-completion cashflows (DLP, retention release) are excluded.
 
 **Peak working capital:**
-$$\text{Peak WC}_i = \max_{t \in [T_i^{\text{start}}, T_i^{\text{end}} + \text{DLP}_i]} \text{WC}_i(t)$$
+$$\text{Peak WC}_i = \max_{t \in [T_i^{\text{start}}, T_i^{\text{end}}]} \text{WC}_i(t)$$
 
 **Typical peak timing:** 60-70% project completion
 
