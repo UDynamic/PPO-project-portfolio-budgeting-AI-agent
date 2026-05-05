@@ -1138,11 +1138,18 @@ where:
 
 #### 2.4.5 Final Payment Components
 
+**Final payment**:
+
+$$P_N = \beta \times R_{\text{total}}$$
+
+---
+
+#### 2.4.6 Exclusion: Retention release at final payment
 **Base final payment**:
 
 $$P_N^{\text{base}} = \beta \times R_{\text{total}}$$
 
-**Retention release** (alternative extra):
+**Retention release** (if aplicable):
 
 $$P_N^{\text{retention}} = \sum_{j=1}^{N-1} \text{Retention}_j$$
 
@@ -1155,7 +1162,7 @@ $$P_N^{\text{total}} = P_N^{\text{base}} + P_N^{\text{retention}}$$
 - FIDIC (2017) Clause 14.9: Retention released with final payment
 - Odeyinka et al. (2012): Retention release significantly affects final cash inflow
 
-#### 2.4.6 Exclusion: Defects Liability Period (DLP) Retention
+#### 2.4.7 Exclusion: Defects Liability Period (DLP) Retention
 
 **Standard practice** (FIDIC Clause 14.9): 
 - Withhold 5-10% until DLP completion (12-24 months post-completion)
@@ -1180,12 +1187,12 @@ where $\delta$ = DLP retention fraction (typically 0.15-0.30).
 
 #### 2.4.7 Summary Table: Final Payment Parameters
 
-| Category | Final Payment % (β) | Timing | Includes Retention | Literature Source |
-|----------|---------------------|--------|-------------------|-------------------|
-| DL | 15% | Completion (100% progress) | Yes | Park et al. (2005), Cui et al. (2010) |
-| DH | 15% | Completion (100% progress) | Yes | Park et al. (2005), Cui et al. (2010) |
-| IL | 12% | Completion (100% progress) | Yes | Park et al. (2005) |
-| IH | 15% | Completion (100% progress) | Yes | Park et al. (2005) |
+| Category | Final Payment % (β) | Timing | Literature Source |
+|----------|---------------------|--------|-------------------|
+| DL | 15% | Completion (100% progress) | Park et al. (2005), Cui et al. (2010) |
+| DH | 15% | Completion (100% progress) | Park et al. (2005), Cui et al. (2010) |
+| IL | 12% | Completion (100% progress) | Park et al. (2005) |
+| IH | 15% | Completion (100% progress) | Park et al. (2005) |
 
 **Validation**:
 - Model mean: 14.25% (weighted by portfolio mix)
@@ -1195,19 +1202,16 @@ where $\delta$ = DLP retention fraction (typically 0.15-0.30).
 #### 2.4.8 Implementation Algorithm
 
 ```python
-def calculate_final_payment(category, R_total, retention_held):
+def calculate_final_payment(category, R_total):
     """
     Calculate final payment for a project.
     
     Parameters:
     - category: str, one of ['DL', 'DH', 'IL', 'IH']
     - R_total: float, total contract revenue
-    - retention_held: float, total retention held from progress payments
     
     Returns:
-    - P_N_base: float, base final payment
-    - P_N_retention: float, retention release
-    - P_N_total: float, total final payment
+    - P_N: float, final payment
     """
     # Category-specific final payment percentage
     beta = {
@@ -1217,16 +1221,10 @@ def calculate_final_payment(category, R_total, retention_held):
         'IH': 0.15
     }
     
-    # Base final payment
-    P_N_base = beta[category] * R_total
+    # final payment
+    P_N = beta[category] * R_total
     
-    # Retention release
-    P_N_retention = retention_held
-    
-    # Total final payment
-    P_N_total = P_N_base + P_N_retention
-    
-    return P_N_base, P_N_retention, P_N_total
+    return P_N
 
 def calculate_final_payment_timing(T_start, D_i, SPI):
     """
@@ -1246,284 +1244,39 @@ def calculate_final_payment_timing(T_start, D_i, SPI):
 
 ---
 
-
-### 2.5 Retention Money
-
-#### 2.5.1 Literature Foundation and Empirical Evidence
-
-**Boussabaine & Elhag (1999)** - *Construction Management and Economics*
-- **Sample**: 95 UK construction contracts
-- **Retention rate**: Mean 5.2%, SD 1.8%, Range 3-10%
-- **Distribution**: Approximately normal (Shapiro-Wilk test, p=0.31)
-- **Release timing**: 85% at practical completion, 15% after DLP
-- **Application**: Primary source for retention rate calibration
-
-**FIDIC (2017)** - *Conditions of Contract for Construction (Red Book)*
-- **Clause 14.9**: Retention Money provisions
-- **Standard rate**: 5-10% of contract value
-- **Purpose**: Security for defects correction during DLP
-- **Release**: At completion or after DLP (12-24 months)
-- **Alternative**: Retention bond in lieu of cash withholding
-- **Application**: Provides contractual basis and bounds
-
-**Odeyinka et al. (2012)** - *Journal of Financial Management of Property and Construction*
-- **Sample**: 67 construction projects in Nigeria
-- **Retention impact on WC**: Increases peak WC by 15-25%
-- **Release pattern**: 90% at completion, 10% after DLP
-- **Cash flow effect**: Significant impact on contractor liquidity
-- **Application**: Validates retention's working capital impact
-
-**Park et al. (2005)** - *Journal of Management in Engineering*
-- **Sample**: 156 international EPC projects
-- **Retention practice**: 78% of projects use retention
-- **Rate by region**: Middle East 5.5%, Asia 4.8%
-- **Rate by client**: Government 5.8%, Private 4.5%
-- **Application**: Calibrates regional and client-type variations
-
-**Ramachandra & Rotimi (2015)** - *Construction Economics and Building*
-- **Sample**: 112 construction projects in New Zealand
-- **Retention disputes**: 12% of projects have retention release disputes
-- **Delay in release**: Mean 45 days beyond contractual date
-- **Application**: Informs retention release timing uncertainty
-
-#### 2.5.2 Retention Rate Calibration
-
-**Primary Model: Fixed Retention Rate**
-
-$$\rho = 0.05 \text{ (5% for all categories)}$$
-
-**Literature justification**:
-- Boussabaine & Elhag (1999): Mean 5.2% ≈ 5%
-- FIDIC (2017): Standard 5% (lower end of 5-10% range)
-- Park et al. (2005): Mean 5.15% across all projects
-- **Simplification**: Single rate reduces complexity without loss of accuracy
-
-**Category-Specific Calibration (Alternative Model)**:
-
-| Category | Retention Rate (ρ) | Literature Source | Rationale |
-|----------|-------------------|-------------------|-----------|
-| DL | 5.0% | Park et al. (2005): Government 5.8%, lower for low-risk | Standard government rate |
-| DH | 5.5% | Park et al. (2005): Government 5.8% | Higher for risk coverage |
-| IL | 4.5% | Park et al. (2005): Private 4.5% | IOC standard (lower) |
-| IH | 5.0% | Park et al. (2005): Private 4.5%, higher for risk | Balanced for high-risk |
-
-**Domestic Low-Risk (DL): ρ = 0.05 (5%)**
-
-**Literature calibration**:
-- Park et al. (2005): Government mean 5.8%
-- Calibrated to 5.0% (slightly lower) for low-risk projects
-- FIDIC standard minimum
-- Boussabaine & Elhag (1999): Mean 5.2%
-
-**Domestic High-Risk (DH): ρ = 0.055 (5.5%)**
-
-**Literature calibration**:
-- Park et al. (2005): Government mean 5.8%
-- Calibrated to 5.5% (close to government mean)
-- Higher retention for defects risk coverage
-
-**International Low-Risk (IL): ρ = 0.045 (4.5%)**
-
-**Literature calibration**:
-- Park et al. (2005): Private mean 4.5%
-- IOCs typically use lower retention rates
-- Reflects lower perceived defects risk
-
-**International High-Risk (IH): ρ = 0.05 (5%)**
-
-**Literature calibration**:
-- Park et al. (2005): Private mean 4.5%, adjusted upward for risk
-- Balanced between IOC preference (lower) and risk management (higher)
-- FIDIC standard minimum
-
-#### 2.5.3 Distribution Selection: Why Fixed vs. Stochastic?
-
-**Primary model uses fixed rate (ρ = 0.05)** for simplicity.
-
-**Stochastic alternative** (for sensitivity analysis):
-
-$$\rho \sim \text{TruncNormal}(\mu, \sigma, a, b)$$
-
-**Parameters**:
-- μ = 0.05 (mean, from Boussabaine & Elhag 1999)
-- σ = 0.018 (SD, from Boussabaine & Elhag 1999)
-- a = 0.03 (lower bound, FIDIC minimum)
-- b = 0.10 (upper bound, FIDIC maximum)
-
-**Literature support**:
-- Boussabaine & Elhag (1999): Normal distribution fit (Shapiro-Wilk, p=0.31)
-- Truncation necessary for contractual bounds
-
-**Why fixed rate preferred**:
-1. **Low variability**: SD 1.8% is small relative to mean 5.2%
-2. **Contractual standard**: Most contracts use standard 5%
-3. **Simplification**: Reduces stochastic complexity
-4. **Portfolio level**: Variation averages out across portfolio
-
-#### 2.5.4 Retention Application and Calculation
-
-**Retention deducted from each progress payment**:
-
-$$\text{Retention}_j = \rho \times P_j^{\text{eligible}}$$
-
-**Net payment after retention**:
-
-$$P_j^{\text{net}} = P_j^{\text{eligible}} - \text{Retention}_j = (1 - \rho) \times P_j^{\text{eligible}}$$
-
-**Cumulative retention held**:
-
-$$\text{Retention}^{\text{held}}(t) = \sum_{j=1}^{N-1} \text{Retention}_j$$
-
-**Literature support**:
-- FIDIC (2017) Clause 14.9: Retention deducted from each interim payment
-- Park et al. (2005): Standard practice across all regions
-- Boussabaine & Elhag (1999): Applied to progress payments, not advance or final
-
-#### 2.5.5 Retention Release Timing
-
-**Primary Model: Release at Completion**
-
-$$t^{\text{retention release}} = t_N^{\text{actual}} = T_i^{\text{start}} + \frac{D_i}{\text{SPI}_i}$$
-
-**Literature justification**:
-- Boussabaine & Elhag (1999): 85% released at practical completion
-- Odeyinka et al. (2012): 90% released at completion
-- **Simplification**: Portfolio-level analysis does not extend to DLP period
-
-**Alternative Model: DLP Release**
-
-For project-level analysis, split retention release:
-
-$$\text{Retention}^{\text{completion}} = (1 - \delta) \times \text{Retention}^{\text{held}}$$
-
-$$\text{Retention}^{\text{DLP}} = \delta \times \text{Retention}^{\text{held}}$$
-
-where:
-- δ = DLP retention fraction (typically 0.15-0.30)
-- DLP duration = 12-24 months post-completion
-
-**Literature support**:
-- FIDIC (2017): DLP typically 12 months for mechanical, 24 months for civil
-- Boussabaine & Elhag (1999): 15% retained until DLP end
-- Ramachandra & Rotimi (2015): DLP release often delayed by 45 days
-
-**Not used in primary model** due to portfolio-level focus.
-
-#### 2.5.6 Retention Impact on Working Capital
-
-**Working capital increase due to retention**:
-
-$$\Delta \text{WC}^{\text{retention}} = \text{Retention}^{\text{held}}(t)$$
-
-**Peak working capital effect**:
-
-$$\text{WC}^{\text{peak}} = \text{WC}^{\text{base}} + \text{Retention}^{\text{held}}^{\text{max}}$$
-
-**Literature validation**:
-- Odeyinka et al. (2012): Retention increases peak WC by 15-25%
-- Model prediction: Retention = 5% × (R_total - P_0 - P_N) ≈ 3.5-4% of R_total
-- For typical project: 4% retention on 85% of contract = 3.4% of total
-- Impact on WC: 3.4% / 32% (baseline peak WC) = 10.6% increase
-- **Model is conservative** compared to Odeyinka et al. (15-25%)
-
 #### 2.5.7 Exclusions and Simplifications
 
-**Excluded from primary model**:
+**Retention Money (Excluded)**
 
-1. **Retention bond**: Alternative to cash retention (FIDIC Clause 14.9)
-   - **Reason**: Less common in practice; adds complexity
-   - **Literature**: Park et al. (2005) reports <10% use retention bonds
+Retention money—typically 5-10% of progress payments withheld by the client as security for defects correction during the Defects Liability Period—is **excluded from the primary model**.
 
-2. **Partial retention release**: Progressive release during DLP
-   - **Reason**: Rare in practice; most release at completion or DLP end
-   - **Literature**: Boussabaine & Elhag (1999) shows binary pattern (85% vs. 15%)
+
+**decomposition into future works:**
+
+1. **Retention mechanism (entire component)**
+   - **Reason**: Limited portfolio-level impact; model scope ends at completion
+   - **Literature**: Boussabaine & Elhag (1999) report mean 5.2% retention (SD 1.8%) across 95 contracts; Park et al. (2005) find 5.15% across 156 EPC projects. Narrow distribution (CV ~35%) suggests standardized parameter with marginal strategic value.
+   - **Future work**: Project-level or working capital models can incorporate retention tracking
+
+2. **DLP retention release**: 10-15% held until DLP end (12-24 months post-completion)
+   - **Reason**: Occurs outside model scope boundary (post-completion)
+   - **Literature**: Odeyinka et al. (2012) documents split release: 85-90% at completion, 10-15% at DLP end
+   - **Future work**: Can be modeled as stochastic release timing
 
 3. **Retention disputes**: Delays in retention release
    - **Reason**: Portfolio-level model; disputes are project-specific
-   - **Literature**: Ramachandra & Rotimi (2015) reports 12% dispute rate
-   - **Future work**: Can be added as stochastic delay
+   - **Literature**: Ramachandra & Rotimi (2015) reports 12% dispute rate with 45-day mean delay
+   - **Future work**: Can be added as stochastic delay component
 
-#### 2.5.8 Summary Table: Retention Parameters
+4. **Retention bonds**: Alternative to cash withholding (FIDIC Clause 14.9)
+   - **Reason**: Less common in practice; adds guarantee fee complexity
+   - **Literature**: Park et al. (2005) reports <10% use retention bonds
+   - **Future work**: Can be modeled with associated guarantee costs
 
-| Category | Retention Rate (ρ) | Applied To | Release Timing | Literature Source |
-|----------|-------------------|-----------|----------------|-------------------|
-| DL | 5.0% | Progress payments | Completion | Boussabaine & Elhag (1999), Park et al. (2005) |
-| DH | 5.0% | Progress payments | Completion | Boussabaine & Elhag (1999), Park et al. (2005) |
-| IL | 5.0% | Progress payments | Completion | Boussabaine & Elhag (1999), Park et al. (2005) |
-| IH | 5.0% | Progress payments | Completion | Boussabaine & Elhag (1999), Park et al. (2005) |
-
-**Note**: Primary model uses uniform 5% rate. Alternative model with category-specific rates available for sensitivity analysis.
-
-**Validation**:
-- Model rate: 5.0%
-- Literature benchmark: Boussabaine & Elhag (1999) 5.2% ± 1.8%
-- Model within 0.1 SD of empirical mean ✓
-
-#### 2.5.9 Implementation Algorithm
-
-```python
-def calculate_retention(category, P_eligible, use_category_specific=False):
-    """
-    Calculate retention deduction from a progress payment.
-    
-    Parameters:
-    - category: str, one of ['DL', 'DH', 'IL', 'IH']
-    - P_eligible: float, eligible payment amount before retention
-    - use_category_specific: bool, use category-specific rates (default: False)
-    
-    Returns:
-    - retention: float, retention amount deducted
-    - P_net: float, net payment after retention
-    """
-    if use_category_specific:
-        # Category-specific retention rates
-        rho = {
-            'DL': 0.050,
-            'DH': 0.055,
-            'IL': 0.045,
-            'IH': 0.050
-        }
-    else:
-        # Uniform retention rate (primary model)
-        rho = {
-            'DL': 0.05,
-            'DH': 0.05,
-            'IL': 0.05,
-            'IH': 0.05
-        }
-    
-    # Calculate retention
-    retention = rho[category] * P_eligible
-    
-    # Net payment after retention
-    P_net = P_eligible - retention
-    
-    return retention, P_net
-
-def calculate_retention_release(retention_held, use_DLP_split=False, delta=0.15):
-    """
-    Calculate retention release.
-    
-    Parameters:
-    - retention_held: float, total retention held from progress payments
-    - use_DLP_split: bool, split release between completion and DLP (default: False)
-    - delta: float, fraction retained until DLP (default: 0.15)
-    
-    Returns:
-    - retention_at_completion: float, retention released at completion
-    - retention_at_DLP: float, retention released after DLP (0 if use_DLP_split=False)
-    """
-    if use_DLP_split:
-        retention_at_completion = (1 - delta) * retention_held
-        retention_at_DLP = delta * retention_held
-    else:
-        # Primary model: all retention released at completion
-        retention_at_completion = retention_held
-        retention_at_DLP = 0.0
-    
-    return retention_at_completion, retention_at_DLP
-```
-
+5. **Category-specific retention rates**: Government vs. private clients; regional variations
+   - **Reason**: Low empirical variability reduces modeling value
+   - **Literature**: Park et al. (2005) finds government (5.8%) vs. private (4.5%); Middle East (5.5%) vs. Asia (4.8%)
+   - **Future work**: Can be incorporated as categorical parameters
 ---
 
 
