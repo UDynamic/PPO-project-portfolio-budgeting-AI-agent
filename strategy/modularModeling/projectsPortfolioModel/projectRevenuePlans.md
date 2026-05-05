@@ -91,7 +91,6 @@ where SPI is the Schedule Performance Index from the uncertainty model (Section 
 
 The following elements are **explicitly excluded** from the current model scope, representing natural extensions for future research:
 
-**1. Advance (Mobilization) Payments:**
 **1. Retention Money and Defects Liability Period (DLP):**
 - **Excluded**: Withholding of final payment (typically 5-10%) until completion of Defects Liability Period (12-24 months after substantial completion)
 - **Reason for Exclusion**: DLP extends project cash flow collection **12-24 months beyond completion**, which would extend portfolio duration beyond the strategic planning horizon. For a foundational model focused on **budget allocation and portfolio-level cash flow during active execution**, DLP retention adds tail-end complexity without affecting the core RL decision problem (resource allocation across active projects).
