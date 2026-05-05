@@ -514,7 +514,6 @@ with $\alpha_{i}$, $\beta_{i}$ (per project s-curve shape).
 **FIDIC (2017)** - *Conditions of Contract for Construction (Red Book)*
 - **Clause 14.2**: Advance Payment provisions
 - **Standard range**: 10-20% of contract value for mobilization
-- **Repayment**: Proportional recovery from progress payments
 - **Security**: Advance payment guarantee required
 - **Application**: Provides contractual basis and upper bounds
 
@@ -707,25 +706,6 @@ def sample_advance_payment(category, R_total):
     return P_0, alpha
 ```
 
-#### 2.2.7 Advance Recovery (Simplified Model)
-
-**Standard practice** (FIDIC Clause 14.2): Advance payment is recovered proportionally from progress payments.
-
-**Model simplification**: For portfolio-level cash flow analysis, we treat advance as **net upfront inflow** without explicit recovery tracking.
-
-**Justification**:
-1. Recovery is proportional to progress payments → effectively reduces their net amounts
-2. Total contract value $R_i^{\text{total}}$ remains unchanged
-3. Portfolio analysis focuses on **net timing effects**, not internal adjustments
-4. Simplification reduces computational complexity without affecting portfolio-level metrics
-
-**If detailed recovery needed** (project-level analysis):
-
-$$\text{Net Payment}_j = P_j - \left(\frac{P_0}{R_i^{\text{total}} - P_0 - P_N}\right) \times P_j$$
-
-for progress milestones $j = 1$ to $N-1$, where recovery is spread over progress payments only (not final payment).
-
----
 
 
 ### 2.3 Milestones 1 to N-1: Progress Milestones
@@ -2088,8 +2068,6 @@ For each project $i$, the payment modeling module generates:
 ### 4.5 Advance Payment Metrics (if applicable)
 - **Advance amount**: $A_i$
 - **Advance percentage**: $\alpha_i = A_i / R_i^{\text{total}}$
-- **Recovery completion time**: $t_i^{\text{recovery complete}}$
-- **Recovery completion progress**: $\tau_i(t_i^{\text{recovery complete}})$
 
 ---
 
@@ -2104,7 +2082,6 @@ The payment model enriches the RL state with:
 - **Payments received flags**: $\{p_{i,k}\}_{k=1}^{K_i}$ where $p_{i,k} = \mathbb{1}_{t \geq t_{i,k}^{\text{cash}}}$
 - **Current working capital**: $\text{WC}_i(t)$
 - **Remaining contract value**: $R_i^{\text{remaining}}(t) = R_i^{\text{total}} - \text{Cash}_i^{\text{in,cumulative}}(t)$
-- **Advance recovery status**: $A_i^{\text{remaining}}(t)$
 - **Retention held**: $\text{Retention}_i^{\text{held}}(t)$
 
 **Portfolio-level state features:**
