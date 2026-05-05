@@ -1142,7 +1142,7 @@ where:
 
 $$P_N^{\text{base}} = \beta \times R_{\text{total}}$$
 
-**Retention release** (if applicable):
+**Retention release** (alternative extra):
 
 $$P_N^{\text{retention}} = \sum_{j=1}^{N-1} \text{Retention}_j$$
 
