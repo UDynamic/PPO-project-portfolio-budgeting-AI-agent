@@ -1773,7 +1773,6 @@ $$\text{Peak WC}_i = \max_{t \in [T_i^{\text{start}}, T_i^{\text{end}}]} \text{W
 ---
 
 ## 4. Module Outputs
-
 For each project $i$, the payment modeling module generates:
 
 ### 4.1 Payment Schedule
