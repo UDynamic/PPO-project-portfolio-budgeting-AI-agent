@@ -1778,10 +1778,9 @@ For each project $i$, the payment modeling module generates:
 ### 4.1 Payment Schedule
 - **Advance payment**: $(t_{\text{advance}_i}, A_i)$ if granted
 - **Milestone payments**: $\{(t_{i,k}^{\text{cash}}, P_{i,k}^{\text{actual}})\}_{k=1}^{K_i}$
-- **Retention releases**: $(t_{\text{retention}_1}^{\text{cash}}, \text{Amount}_1)$, $(t_{\text{retention}_2}^{\text{cash}}, \text{Amount}_2)$
 
 ### 4.2 Cash Flow Time Series
-- **Cash inflow function**: $\text{Cash}_i^{\text{in}}(t)$ for $t \in [T_i^{\text{start}}, T_i^{\text{end}} + \text{DLP}_i + \max(\Delta_3)]$
+- **Cash inflow function**: $\text{Cash}_i^{\text{in}}(t)$ for $t \in [T_i^{\text{start}}, T_i^{\text{end}}]$
 - **Cumulative cash inflow**: $\text{Cash}_i^{\text{in,cumulative}}(t)$
 
 ### 4.3 Working Capital Profile
@@ -1791,10 +1790,8 @@ For each project $i$, the payment modeling module generates:
 
 ### 4.4 Payment Metrics
 - **Total contract value**: $R_i^{\text{total}}$
-- **Total cash received**: $\sum_k P_{i,k}^{\text{actual}} + \text{Retention}_i^{\text{total}}$
-- **Payment loss** (due to defaults): $R_i^{\text{total}} - \text{Total cash received}$
+- **Total cash received**: $\sum_k P_{i,k}^{\text{actual}}$
 - **Average payment delay**: $\frac{1}{K_i} \sum_k (t_{i,k}^{\text{cash}} - t_{i,k})$
-- **Number of disputed payments**: $\sum_k \mathbb{1}_{\text{is\_disputed}_{i,k}}$
 
 ### 4.5 Advance Payment Metrics (if applicable)
 - **Advance amount**: $A_i$
