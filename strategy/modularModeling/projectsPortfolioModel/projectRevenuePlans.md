@@ -2344,7 +2344,7 @@ return False, 0.0
 - **No credit market dynamics**: Interest rates and credit availability are fixed
 - **Future extensions**: Dynamic credit limits, credit market integration, multi-bank credit facilities
 ---
-
+  
 ## 4. Module Outputs
 For each project $i$, the payment modeling module generates:
 
