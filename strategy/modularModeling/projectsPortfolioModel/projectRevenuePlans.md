@@ -1143,6 +1143,7 @@ where:
 $$P_N = \beta \times R_{\text{total}}$$
 
 ---
+> ⚠️must include retention
 
 #### 2.4.6 Exclusion: Retention release at final payment
 **Base final payment**:
