@@ -1,5 +1,6 @@
 ## 4.8 Project Revenue Payment Plans Model
 
+
 ## 1. Literature Review and Calibration Foundation
 
 ### 1.1 Payment Structure in EPC Contracts: Empirical Evidence
