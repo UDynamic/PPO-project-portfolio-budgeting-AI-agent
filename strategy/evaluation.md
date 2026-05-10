@@ -1,3 +1,33 @@
+# New Notes
+
+## Normal patterns recognition and conquer
+
+common industrial or even simple patterns in the environment as the policy Optimality proof relative to simple training environments, some game like tipical room types in horror games. 
+
+there are only some major types to creep element, to creep someone out or anything. 
+there is jumscare for another element.
+
+these are all well known and history repeats itself. 
+if not for the new scenarios, for all the previous scenario repetitions Acing through all those,
+if they would happen again.
+
+## Ai automation proof with document domonstration high technical Implementation  
+this is Ai and digital intelligence level upgrade to the project portfolio management.
+making a foundational contribution and pavement and visioning the future.
+giving heads up on all of them and showing the road map and target.
+
+of course it uses Artificial intelligence Labor as the most performant generation tool.
+at the most rigouros detailed literature calibration study.
+it made me a better scientict certainly.
+this is the begining of an app which would allocate budgets on instant and make deals and let the projects come in.
+the framework to output max performance on money management with budget allocation strategies, rolling window planning a head according to at least previous scenarios (custom scenarios will be configerable) throgh Fine-tunning protocol.
+
+> It's an all time answer to the project management at portfolio level.
+> The model to choose wich contractor love more.
+> **To invest on the winner and builder, not just classy and expensive.**
+
+
+---
 # Perfect Foresight Baseline Evaluation for RL Portfolio Optimization
 
 ## 1. Introduction
