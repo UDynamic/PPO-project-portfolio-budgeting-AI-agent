@@ -11,7 +11,8 @@ these are all well known and history repeats itself.
 if not for the new scenarios, for all the previous scenario repetitions Acing through all those,
 if they would happen again.
 
-## Ai automation proof with document domonstration high technical Implementation  
+## Ai Labor Strategy 
+**Ai automation proof with documental domonstration of high technical Implementation capabilities** 
 this is Ai and digital intelligence level upgrade to the project portfolio management.
 making a foundational contribution and pavement and visioning the future.
 giving heads up on all of them and showing the road map and target.
