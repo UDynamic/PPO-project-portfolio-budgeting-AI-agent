@@ -1,12 +1,12 @@
 # CHUNK 11
 ## Coverage
-Section 7: Sensitivity Analysis (Final Chunk)
+Section 7: Sensitivity Analysis (7.1 Scenario-Based Analysis + 7.2 Tornado Diagram)
 
 ## Dependency Notes
-Applies parameter ranges from Chunk 09. Tests model robustness.
+Uses retention rate ρ, decay rate λ, and effectiveness η from Chunks 04-06. Applies post-action dynamics from Chunk 06.
 
 ## Overlap Notes
-None (final chunk)
+References parameter distributions from Chunk 09 (Master Parameter Table).
 
 ## Content
 
@@ -16,181 +16,127 @@ None (final chunk)
 
 ### 7.1 Scenario-Based Analysis
 
-This section evaluates model behavior under alternative parameter configurations to assess robustness and identify key drivers of portfolio outcomes.
+**Scenario 1: Strong Organizational Capability (P90)**
+- $\rho = 0.50$ (high retention, 90th percentile)
+- $\lambda_{\text{decay}} = 0.10$ per month (slow decay, 10th percentile)
+- $\eta = 0.68$ (strong action plan effectiveness, 90th percentile)
 
-#### 7.1.1 Baseline Scenario
+**Results:**
+- **Permanent gain:** 50% of peak improvement persists
+- **Half-life of transient gains:** $t_{1/2} = \frac{\ln(2)}{0.10} = 6.93$ months
+- **Stabilization time:** ~10-12 months
+- **Interpretation:** Projects with mature PMOs, formal change management, and strong governance structures
 
-**Parameters**:
-- Portfolio size: $N = 16$ projects
-- S-curve: $\alpha = 2.0, \beta = 2.5$
-- Duration: $\gamma = 2.5, \delta = 0.35, \sigma_{\ln} = 0.40$
-- Action plan: $\eta = 0.18, \rho = 0.45, \kappa = 0.05$
+**Example trajectory:**
+- $\text{SPI}_{\text{baseline}} = 0.70$
+- $\text{SPI}_{\text{peak}} = 0.70 + 0.68 \times (1 - 0.70) = 0.904$
+- $\Delta_{\text{peak}} = 0.204$
+- $\text{SPI}_{\text{equilibrium}} = 0.70 + 0.50 \times 0.204 = 0.802$
 
-**Expected outcomes** (Monte Carlo, 10,000 iterations):
-- Mean portfolio cashflow volatility: $\sigma_{\text{CF}} = 12\%$ of mean
-- Probability of portfolio SPI < 0.85: 15%
-- Mean action plan BCR: 1.8
+| Month | $t$ (post-action) | $\text{SPI}(t)$ | Retention % |
+|-------|-------------------|-----------------|-------------|
+| 3 | 0 | 0.904 | 100% |
+| 6 | 3 | 0.878 | 87% |
+| 9 | 6 | 0.853 | 75% |
+| 12 | 9 | 0.829 | 63% |
+| 15 | 12 | 0.814 | 56% |
+| 18 | 15 | 0.807 | 52% |
 
-#### 7.1.2 Optimistic Scenario
+---
 
-**Parameter adjustments**:
-- Faster execution: $\gamma = 2.0$ (20% shorter durations)
-- Higher effectiveness: $\eta = 0.25$
-- Lower cost: $\kappa = 0.03$
+**Scenario 2: Weak Organizational Capability (P10)**
+- $\rho = 0.22$ (low retention, 10th percentile)
+- $\lambda_{\text{decay}} = 0.32$ per month (fast decay, 90th percentile)
+- $\eta = 0.32$ (weak action plan effectiveness, 10th percentile)
 
-**Expected outcomes**:
-- Mean portfolio cashflow volatility: $\sigma_{\text{CF}} = 9\%$ (lower)
-- Probability of portfolio SPI < 0.85: 8% (lower risk)
-- Mean action plan BCR: 3.2 (highly favorable)
+**Results:**
+- **Permanent gain:** Only 22% of peak improvement persists
+- **Half-life of transient gains:** $t_{1/2} = \frac{\ln(2)}{0.32} = 2.17$ months
+- **Stabilization time:** ~4-6 months
+- **Interpretation:** Projects with ad-hoc governance, high personnel turnover, and weak project controls
 
-**Interpretation**: Optimistic conditions significantly improve portfolio stability and action plan ROI.
+**Example trajectory:**
+- $\text{SPI}_{\text{baseline}} = 0.70$
+- $\text{SPI}_{\text{peak}} = 0.70 + 0.32 \times (1 - 0.70) = 0.796$
+- $\Delta_{\text{peak}} = 0.096$
+- $\text{SPI}_{\text{equilibrium}} = 0.70 + 0.22 \times 0.096 = 0.721$
 
-#### 7.1.3 Pessimistic Scenario
+| Month | $t$ (post-action) | $\text{SPI}(t)$ | Retention % |
+|-------|-------------------|-----------------|-------------|
+| 3 | 0 | 0.796 | 100% |
+| 4 | 1 | 0.775 | 78% |
+| 5 | 2 | 0.755 | 57% |
+| 6 | 3 | 0.738 | 40% |
+| 9 | 6 | 0.724 | 24% |
+| 12 | 9 | 0.721 | 22% |
 
-**Parameter adjustments**:
-- Slower execution: $\gamma = 3.5$ (40% longer durations)
-- Lower effectiveness: $\eta = 0.12$
-- Higher cost: $\kappa = 0.08$
+---
 
-**Expected outcomes**:
-- Mean portfolio cashflow volatility: $\sigma_{\text{CF}} = 18\%$ (higher)
-- Probability of portfolio SPI < 0.85: 28% (higher risk)
-- Mean action plan BCR: 0.9 (not cost-effective)
+**Scenario 3: Base Case (P50 - Recommended)**
+- $\rho = 0.35$ (moderate retention, median)
+- $\lambda_{\text{decay}} = 0.18$ per month (moderate decay, median)
+- $\eta = 0.50$ (average action plan effectiveness, median)
 
-**Interpretation**: Pessimistic conditions erode action plan value; alternative risk mitigation strategies may be needed.
+**Results:**
+- **Permanent gain:** 35% of peak improvement persists
+- **Half-life of transient gains:** $t_{1/2} = \frac{\ln(2)}{0.18} = 3.85$ months
+- **Stabilization time:** ~8-9 months
+- **Interpretation:** Typical EPC project with standard project controls
+
+**Example trajectory:**
+- $\text{SPI}_{\text{baseline}} = 0.70$
+- $\text{SPI}_{\text{peak}} = 0.70 + 0.50 \times (1 - 0.70) = 0.85$
+- $\Delta_{\text{peak}} = 0.15$
+- $\text{SPI}_{\text{equilibrium}} = 0.70 + 0.35 \times 0.15 = 0.7525$
+
+| Month | $t$ (post-action) | $\text{SPI}(t)$ | Retention % |
+|-------|-------------------|-----------------|-------------|
+| 3 | 0 | 0.850 | 100% |
+| 4 | 1 | 0.834 | 89% |
+| 5 | 2 | 0.821 | 81% |
+| 6 | 3 | 0.809 | 73% |
+| 9 | 6 | 0.786 | 57% |
+| 12 | 9 | 0.772 | 48% |
+| 15 | 12 | 0.764 | 41% |
+| 18 | 15 | 0.759 | 37% |
 
 ---
 
 ### 7.2 Tornado Diagram: Parameter Sensitivity Rankings
 
-**Methodology**: One-at-a-time (OAT) sensitivity analysis. Vary each parameter ±20% from baseline, measure impact on portfolio NPV.
+To quantify the relative impact of each parameter on final project outcomes, we perform a one-at-a-time (OAT) sensitivity analysis.
 
-**Results** (ranked by impact magnitude):
+**Metric:** Final SPI at Month 18 (15 months post-action plan)
 
-| Rank | Parameter | Impact on Portfolio NPV | Interpretation |
-|------|-----------|-------------------------|----------------|
-| 1 | Duration elasticity (δ) | ±18% | **Highest impact**: Larger projects dominate portfolio risk |
-| 2 | Action plan effectiveness (η) | ±14% | **High impact**: Recovery capability critical |
-| 3 | Retention rate (ρ) | ±11% | **Moderate-high**: Long-term improvements matter |
-| 4 | Duration std dev (σ_ln) | ±9% | **Moderate**: Uncertainty in execution time |
-| 5 | Cost factor (κ) | ±6% | **Moderate-low**: Action plan costs manageable |
-| 6 | S-curve alpha (α) | ±4% | **Low**: Cashflow timing less critical than duration |
-| 7 | Decay rate (λ_decay) | ±3% | **Low**: Post-action dynamics secondary |
+**Base case inputs:**
+- $\text{SPI}_{\text{baseline}} = 0.70$
+- $\rho = 0.35$
+- $\lambda_{\text{decay}} = 0.18$ per month
+- $\eta = 0.50$
 
-**Key insights**:
-1. **Duration model parameters** (δ, σ_ln) are the **primary drivers** of portfolio risk
-2. **Action plan effectiveness** (η, ρ) is the **primary lever** for risk mitigation
-3. **S-curve shape** (α, β) has **minimal impact** on portfolio-level outcomes (timing effects wash out)
+**Base case output:**
+- $\text{SPI}(15) = 0.759$
 
----
+**Sensitivity analysis results:**
 
-### 7.3 Two-Way Sensitivity: Effectiveness vs. Cost
+| Parameter | Low Value (P10) | High Value (P90) | $\text{SPI}(15)$ at Low | $\text{SPI}(15)$ at High | Range | Rank |
+|-----------|-----------------|------------------|------------------------|-------------------------|-------|------|
+| **Action Plan Effectiveness** ($\eta$) | 0.32 | 0.68 | 0.734 | 0.789 | 0.055 | 1 |
+| **Retention Rate** ($\rho$) | 0.22 | 0.50 | 0.742 | 0.780 | 0.038 | 2 |
+| **Decay Rate** ($\lambda_{\text{decay}}$) | 0.10 | 0.32 | 0.772 | 0.748 | 0.024 | 3 |
 
-**Analysis**: Vary η and κ simultaneously, compute BCR contours.
+**Interpretation:**
+1. **Action plan effectiveness ($\eta$) is the most influential parameter** — improving organizational response capability during the intervention has the largest impact on long-term outcomes
+2. **Retention rate ($\rho$) is the second most important** — institutionalizing improvements determines how much of the gain persists
+3. **Decay rate ($\lambda_{\text{decay}}$) has moderate impact** — faster decay reduces long-term benefits, but the effect is smaller than the first two parameters
 
-**Results**:
-
-| η \ κ | 0.03 | 0.05 | 0.08 |
-|-------|------|------|------|
-| 0.12 | 1.6 | 1.2 | 0.8 |
-| 0.18 | 2.4 | **1.8** | 1.2 |
-| 0.25 | 3.3 | 2.5 | 1.7 |
-
-**Interpretation**:
-- **Green zone** (BCR > 1.5): η ≥ 0.18 and κ ≤ 0.05
-- **Yellow zone** (1.0 < BCR < 1.5): Conditional approval
-- **Red zone** (BCR < 1.0): Reject action plan
-
-**Decision rule**: Action plans are cost-effective across most realistic parameter combinations, except when effectiveness is low (η < 0.15) and costs are high (κ > 0.07).
+**Management implications:**
+- **Priority 1:** Invest in action plan execution quality (training, resources, expert support) to maximize $\eta$
+- **Priority 2:** Embed improvements into standard procedures to maximize $\rho$
+- **Priority 3:** Monitor post-intervention performance to detect rapid decay early
 
 ---
 
-### 7.4 Monte Carlo Probabilistic Sensitivity Analysis (PSA)
+**End of Chunk 11**
 
-**Methodology**: Sample all uncertain parameters from distributions (Chunk 09), run 10,000 portfolio simulations.
-
-**Parameter distributions**:
-- $\eta \sim \text{TruncatedNormal}(0.18, 0.04)$ on [0.10, 0.30]
-- $\rho \sim \text{Beta}(8.1, 9.9)$ (mean 0.45)
-- $\kappa \sim \text{Lognormal}(-2.996, 0.385)$ (median 0.05)
-- $\sigma_{\ln} \sim \text{Uniform}(0.30, 0.50)$
-
-**Output metrics**:
-1. **Portfolio NPV**: Mean = $1.2B, 5th percentile = $0.9B, 95th percentile = $1.6B
-2. **Action plan BCR**: Mean = 1.8, 5th percentile = 0.9, 95th percentile = 3.1
-3. **Probability BCR > 1.5**: 68% (high confidence in cost-effectiveness)
-
-**Risk profile**:
-- **Downside risk**: 32% chance BCR < 1.5 (marginal or negative value)
-- **Upside potential**: 25% chance BCR > 2.5 (exceptional value)
-
-**Conclusion**: Action plans are **robustly cost-effective** under realistic parameter uncertainty, with 68% probability of exceeding approval threshold.
-
----
-
-### 7.5 Key Takeaways for Model Users
-
-**1. Duration uncertainty dominates portfolio risk**
-- Focus calibration efforts on duration model (γ, δ, σ_ln)
-- Collect project-specific duration data to refine estimates
-
-**2. Action plan effectiveness is the primary control lever**
-- Invest in improving η (training, best practices, expert resources)
-- Early-phase interventions (higher η) are more cost-effective
-
-**3. S-curve shape parameters are robust**
-- Baseline α=2.0, β=2.5 is adequate for most EPC projects
-- Sensitivity to α, β is low at portfolio level
-
-**4. Cost factor (κ) is manageable**
-- Even pessimistic κ=0.08 yields positive BCR if η ≥ 0.18
-- Focus on effectiveness, not cost minimization
-
-**5. Retention rate (ρ) matters for long-term value**
-- Prioritize interventions that address root causes (higher ρ)
-- Monitor post-action performance to validate retention assumptions
-
----
-
-### 7.6 Recommended Sensitivity Scenarios for Implementation
-
-For practical application, run the following 5 scenarios:
-
-| Scenario | N | γ | δ | η | ρ | κ | Purpose |
-|----------|---|---|---|---|---|---|---------|
-| **Baseline** | 16 | 2.5 | 0.35 | 0.18 | 0.45 | 0.05 | Central estimate |
-| **Optimistic** | 20 | 2.0 | 0.30 | 0.25 | 0.55 | 0.03 | Best case |
-| **Pessimistic** | 12 | 3.5 | 0.45 | 0.12 | 0.35 | 0.08 | Worst case |
-| **High uncertainty** | 16 | 2.5 | 0.35 | 0.18 | 0.45 | 0.05 | σ_ln = 0.50 |
-| **Low effectiveness** | 16 | 2.5 | 0.35 | 0.12 | 0.35 | 0.05 | Test action plan value |
-
-**Output**: Report portfolio NPV, cashflow volatility, and action plan BCR for each scenario.
-
----
-
-## References
-
-**S-Curve modeling**:
-- Barraza, G. A. (2011). Probabilistic estimation and allocation of project time contingency. *Journal of Construction Engineering and Management*, 137(4), 259-265.
-- Cioffi, D. F. (2005). A tool for managing projects: An analytic parameterization of the S-curve. *International Journal of Project Management*, 23(3), 215-222.
-- Mubarak, S. A. (2015). *Construction Project Scheduling and Control* (3rd ed.). Wiley.
-
-**Duration modeling**:
-- Flyvbjerg, B., et al. (2018). Five things you should know about cost overrun. *Transportation Research Part A*, 118, 174-190.
-- Merrow, E. W. (2011). *Industrial Megaprojects: Concepts, Strategies, and Practices for Success*. Wiley.
-
-**Action plan effectiveness**:
-- Christensen, D. S., & Heise, S. R. (1993). Cost performance index stability. *National Contract Management Journal*, 25(1), 7-15.
-- Fleming, Q. W., & Koppelman, J. M. (2016). *Earned Value Project Management* (4th ed.). PMI.
-- Kim, E., Wells, W. G., & Duffey, M. R. (2003). A model for effective implementation of Earned Value Management methodology. *International Journal of Project Management*, 21(5), 375-382.
-- Vanhoucke, M. (2012). Measuring the efficiency of project control using fictitious and empirical project data. *International Journal of Project Management*, 30(2), 252-263.
-
-**Industry standards**:
-- AACE International (2020). *Cost Estimate Classification System*. Recommended Practice 18R-97.
-- PMI (2019). *Practice Standard for Earned Value Management* (2nd ed.). Project Management Institute.
-
----
-
-**END OF DOCUMENT**
-
-**Chunking Complete**: 11 chunks created for Project S-Curve Cashflow Model & Duration Dynamics.
+**Next Chunk Preview**: Chunk 12 covers Monte Carlo simulation results (Section 7.3) and Python implementation code (Section 8.1).

@@ -1,18 +1,14 @@
-# Project S-Curve Cashflow Model & Duration Dynamics
-## Part 14: Example Calculations and Limitations
+# CHUNK 14
+## Coverage
+Section 10: Example Calculations + Section 11: Limitations and Future Research
 
-**Document Status**: Production-Ready  
-**Last Updated**: 2025  
-**Prerequisites**: Parts 1-13 (all model components, calibration, validation)
+## Dependency Notes
+Uses all parameters from Chunks 04-09. Demonstrates complete model application.
 
----
+## Overlap Notes
+References decay dynamics from Chunk 06 and parameter distributions from Chunk 09.
 
-## Purpose and Scope
-
-This document provides:
-1. **Worked examples** with full numerical calculations
-2. **Model limitations** and mitigation strategies
-3. **Future research directions**
+## Content
 
 ---
 
@@ -48,109 +44,46 @@ $$\text{SPI}_{\text{equilibrium}} = 0.70 + 0.0525 = 0.7525$$
 | 4 | 1 | 0.835 | 0.0814 | 0.8339 |
 | 5 | 2 | 0.698 | 0.0681 | 0.8206 |
 | 6 | 3 | 0.583 | 0.0568 | 0.8093 |
-| 9 | 6 | 0.340 | 0.0331 | 0.7856 |
+| 9 | 6 | 0.340 | 0.0332 | 0.7857 |
 | 12 | 9 | 0.198 | 0.0193 | 0.7718 |
-| 18 | 15 | 0.067 | 0.0065 | 0.7590 |
+| 15 | 12 | 0.116 | 0.0113 | 0.7638 |
+| 18 | 15 | 0.068 | 0.0066 | 0.7591 |
+| 21 | 18 | 0.040 | 0.0039 | 0.7564 |
 | 24 | 21 | 0.023 | 0.0022 | 0.7547 |
-| ∞ | ∞ | 0.000 | 0.0000 | 0.7525 |
-
-**Key observations:**
-- Half-life of transient gains: $t_{1/2} = \ln(2)/0.18 = 3.85$ months
-- 90% decay by Month 15 post-action
-- Permanent improvement: 5.25 percentage points (35% of peak gain)
-
----
-
-#### 10.1.2 Duration Impact Calculation
-
-**Given:**
-- Baseline planned duration: $D_{\text{baseline}} = 30$ months
-- Pre-intervention SPI: 0.70
-- Post-intervention equilibrium SPI: 0.7525
-
-**Without action plan:**
-
-$$D_{\text{actual, no action}} = \frac{30}{0.70} = 42.86 \text{ months}$$
-
-**With action plan:**
-
-$$D_{\text{actual, with action}} = \frac{30}{0.7525} = 39.87 \text{ months}$$
-
-**Duration reduction:**
-
-$$\Delta D = 42.86 - 39.87 = 2.99 \text{ months}$$
 
 **Interpretation:**
-- Action plan reduces delay from 12.86 months to 9.87 months
-- 23% reduction in delay magnitude
-- Still 33% over baseline (not full recovery)
+- **Month 3:** SPI peaks at 0.85 (21% improvement over baseline)
+- **Month 6:** SPI = 0.81 (58% of transient gain remains)
+- **Month 9:** SPI = 0.79 (34% of transient gain remains)
+- **Month 12:** SPI = 0.77 (20% of transient gain remains)
+- **Month 15+:** SPI stabilizes at 0.75 (7.5% permanent improvement over baseline)
+
+**Final outcome:**
+- **Permanent gain:** 5.25 percentage points in SPI
+- **Peak temporary gain:** 9.75 percentage points (decays over 12 months)
+- **Total peak improvement:** 15 percentage points (Month 3)
 
 ---
 
-#### 10.1.3 Probabilistic Analysis (Monte Carlo)
+#### 10.1.2 Probabilistic Analysis (Three-Point Estimate)
 
-**Parameter distributions:**
-- $\rho \sim \text{Beta}(3.5, 6.5)$ → Mean = 0.35, SD = 0.15
-- $\lambda_{\text{decay}} \sim \text{Lognormal}(\ln(0.18), 0.25)$ → Median = 0.18, GSD = 1.28
-- $\text{SPI}_{\text{peak}} \sim \text{Beta}(5.5, 2.5) \times 0.15 + 0.70$ → Mean = 0.82, SD = 0.04
+**Scenario planning using P10, P50, P90 values:**
 
-**Monte Carlo results (10,000 simulations):**
+| Scenario | $\rho$ | $\lambda_{\text{decay}}$ | $\eta$ | $\text{SPI}_{\text{peak}}$ | $\text{SPI}_{\text{equilibrium}}$ | $\text{SPI}(15)$ |
+|----------|--------|-------------------------|--------|---------------------------|----------------------------------|-----------------|
+| **Pessimistic (P10)** | 0.22 | 0.32 | 0.32 | 0.796 | 0.721 | 0.721 |
+| **Base Case (P50)** | 0.35 | 0.18 | 0.50 | 0.850 | 0.753 | 0.759 |
+| **Optimistic (P90)** | 0.50 | 0.10 | 0.68 | 0.904 | 0.802 | 0.807 |
 
-| Metric | P10 | P50 | P90 | Mean | SD |
-|--------|-----|-----|-----|------|-----|
-| $\text{SPI}_{\text{equilibrium}}$ | 0.72 | 0.75 | 0.78 | 0.75 | 0.03 |
-| Duration with action (months) | 38.5 | 40.0 | 41.7 | 40.1 | 1.8 |
-| Duration reduction (months) | 1.2 | 2.9 | 4.8 | 3.0 | 1.5 |
-| Probability of SPI ≥ 0.80 | — | — | — | 8% | — |
-| Probability of SPI ≥ 0.85 | — | — | — | 1% | — |
+**Interpretation:**
+- **Pessimistic case:** Action plan delivers only 2.1 percentage point permanent improvement (weak organizational capability)
+- **Base case:** Action plan delivers 5.3 percentage point permanent improvement (typical EPC project)
+- **Optimistic case:** Action plan delivers 10.2 percentage point permanent improvement (strong organizational capability)
 
-**Key insights:**
-- 80% confidence interval for equilibrium SPI: [0.72, 0.78]
-- Median duration reduction: 2.9 months (consistent with deterministic case)
-- Wide uncertainty: 80% CI for reduction is [1.2, 4.8] months
-- Low probability of near-perfect recovery (SPI ≥ 0.85): only 1%
-
----
-
-### 10.2 Financial Justification Example
-
-**Given:**
-- Project BAC: $200M
-- Baseline duration: 30 months
-- Pre-intervention SPI: 0.70
-- Action plan cost: $12M (6% of BAC)
-- Delay penalty: $500K per month
-- Discount rate: 8% annual (0.64% monthly)
-
-**Scenario 1: No action plan**
-
-- Actual duration: 42.86 months
-- Delay: 12.86 months
-- Delay penalty: $12.86M × $0.5M = $6.43M
-- NPV of delay cost: $6.43M / (1.0064)^{36} = $5.15M
-
-**Scenario 2: With action plan**
-
-- Action plan cost: $12M (paid at Month 3)
-- Actual duration: 39.87 months
-- Delay: 9.87 months
-- Delay penalty: $9.87M × $0.5M = $4.94M
-- NPV of delay cost: $4.94M / (1.0064)^{36} = $3.95M
-- NPV of action plan: $12M / (1.0064)^3 = $11.77M
-
-**Net benefit:**
-
-$$\text{NPV}_{\text{benefit}} = (5.15 - 3.95) - 11.77 = -10.57M$$
-
-**Conclusion:** Action plan is **not financially justified** under these assumptions.
-
-**Break-even analysis:**
-
-For action plan to be justified, delay penalty must exceed:
-
-$$\text{Penalty}_{\text{break-even}} = \frac{12M}{2.99 \text{ months}} = 4.01M \text{ per month}$$
-
-This is 8× higher than assumed penalty, indicating action plans are only justified for projects with severe delay consequences (e.g., contractual liquidated damages, market window closure).
+**Risk assessment:**
+- **Downside risk:** 10% chance of achieving less than 2.1 percentage point improvement
+- **Upside potential:** 10% chance of achieving more than 8.0 percentage point improvement
+- **Expected value:** 5.3 percentage point improvement (base case)
 
 ---
 
@@ -204,38 +137,6 @@ This is 8× higher than assumed penalty, indicating action plans are only justif
 
 ---
 
-### 11.3 Practical Recommendations
+**End of Chunk 14**
 
-**For portfolio managers:**
-
-1. **Set realistic expectations:** Action plans deliver 5-10 percentage point permanent SPI improvement, not full recovery
-2. **Invest in institutionalization:** Embed improvements into standard procedures to maximize retention rate
-3. **Monitor post-intervention performance:** Track decay rate monthly to detect rapid reversion early
-4. **Use probabilistic planning:** Incorporate parameter uncertainty into schedule risk analysis
-5. **Assess organizational capability:** Adjust parameter values based on PMO maturity and governance strength
-
-**For optimization models:**
-
-1. **Use equilibrium SPI for duration calculations:** Don't assume peak SPI persists
-2. **Include action plan costs in budget constraints:** Typically 5-8% of project BAC
-3. **Model duration as stochastic:** Use Gamma distributions calibrated to project category
-4. **Validate financial justification:** Action plans only justified when delay penalties are severe
-
----
-
-## Cross-References
-
-- **Part 9 (Parameter Calibration)**: Distribution parameters used in examples
-- **Part 11 (Sensitivity Analysis)**: Tornado diagrams for parameter importance
-- **Part 12 (Implementation)**: Code for Monte Carlo simulation
-- **Part 13 (Validation)**: Analytical checks for example calculations
-
----
-
-**Navigation:**
-- Previous: `13_validation.md`
-- Next: `15_appendices_and_references.md`
-
----
-
-**END OF PART 14**
+**Next Chunk Preview**: Chunk 15 (final) covers appendices (Section 12) and complete references (Section 13).

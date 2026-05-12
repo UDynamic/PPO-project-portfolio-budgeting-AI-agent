@@ -1,18 +1,14 @@
-# Project S-Curve Cashflow Model & Duration Dynamics
-## Part 15: Appendices and References
+# CHUNK 15
+## Coverage
+Section 12: Appendices + Section 13: References (Complete Bibliography)
 
-**Document Status**: Production-Ready  
-**Last Updated**: 2025  
-**Prerequisites**: Parts 1-14 (complete model documentation)
+## Dependency Notes
+Final chunk. Provides distribution fitting methodology and complete reference list for all prior chunks.
 
----
+## Overlap Notes
+None. Terminal chunk.
 
-## Purpose and Scope
-
-This document provides:
-1. **Statistical methodology appendices** (distribution fitting, goodness-of-fit)
-2. **Summary of key takeaways**
-3. **Comprehensive reference list**
+## Content
 
 ---
 
@@ -127,121 +123,74 @@ Where:
 
 **Model applicability:**
 
-- **Primary use case:** EPC oil & gas projects ($100M-$5B range)
-- **Validated against:** Merrow (2011) dataset of 318 megaprojects
-- **Calibration basis:** Literature-reported SPI dynamics and duration overruns
-- **Uncertainty quantification:** Monte Carlo simulation with calibrated parameter distributions
-
-**Integration with portfolio optimization:**
-
-- S-curve profiles provide period-level cashflow constraints
-- Duration dynamics link action plan decisions to project completion times
-- Stochastic parameters enable robust optimization under uncertainty
-- Financial justification framework supports cost-benefit analysis
+- **Primary use case:** EPC oil & gas projects with baseline durations 18-60 months
+- **Calibration required for:** Other industries (construction, infrastructure, IT)
+- **Not applicable to:** Projects with <12 month duration or >$5B BAC (megaprojects)
 
 ---
 
 ## 13. References
 
-### Primary Empirical Sources
+**Primary empirical sources:**
 
-- **Abdel-Hamid, T., & Madnick, S. E. (1991).** *Software Project Dynamics: An Integrated Approach*. Prentice Hall.
+- Abdel-Hamid, T., & Madnick, S. E. (1991). *Software Project Dynamics: An Integrated Approach*. Prentice Hall.
 
-- **Flyvbjerg, B., Holm, M. S., & Buhl, S. (2003).** "How common and how large are cost overruns in transport infrastructure projects?" *Transport Reviews*, 23(1), 71-88.
+- Barraza, G. A., & Bueno, R. A. (2007). "Probabilistic control of project performance using control limit curves." *Journal of Construction Engineering and Management*, 133(12), 957-965.
 
-- **Flyvbjerg, B. (2014).** "What you should know about megaprojects and why: An overview." *Project Management Journal*, 45(2), 6-19.
+- Cioffi, D. F. (2005). "A tool for managing projects: An analytic parameterization of the S-curve." *International Journal of Project Management*, 23(3), 215-222.
 
-- **Hanna, A. S., Taylor, C. S., & Sullivan, K. T. (2005).** "Impact of extended overtime on construction labor productivity." *Journal of Construction Engineering and Management*, 131(6), 734-739.
+- Flyvbjerg, B., Holm, M. S., & Buhl, S. (2002). "Underestimating costs in public works projects: Error or lie?" *Journal of the American Planning Association*, 68(3), 279-295.
 
-- **Keil, M., Depledge, G., & Rai, A. (2000).** "Escalation: The role of problem recognition and cognitive bias." *Decision Sciences*, 31(2), 455-479.
+- Flyvbjerg, B., Holm, M. S., & Buhl, S. (2003). "How common and how large are cost overruns in transport infrastructure projects?" *Transport Reviews*, 23(1), 71-88.
 
-- **Kutsch, E., Browning, T. R., & Hall, M. (2015).** "Bridging the risk gap: The failure of risk management in information systems projects." *Research-Technology Management*, 57(2), 26-32.
+- Flyvbjerg, B. (2014). "What you should know about megaprojects and why: An overview." *Project Management Journal*, 45(2), 6-19.
 
-- **Lipke, W. (2003).** "Schedule is different." *The Measurable News*, Summer 2003, 31-34.
+- Flyvbjerg, B., Ansar, A., Budzier, A., Buhl, S., Cantarelli, C., Garbuio, M., ... & van Wee, B. (2018). "Five things you should know about cost overrun." *Transportation Research Part A: Policy and Practice*, 118, 174-190.
 
-- **Love, P. E., Edwards, D. J., & Irani, Z. (2012).** "Moving beyond optimism bias and strategic misrepresentation: An explanation for social infrastructure project cost overruns." *IEEE Transactions on Engineering Management*, 59(4), 560-571.
+- Hanna, A. S., Taylor, C. S., & Sullivan, K. T. (2005). "Impact of extended overtime on construction labor productivity." *Journal of Construction Engineering and Management*, 131(6), 734-739.
 
-- **Love, P. E., Sing, C. P., Ika, L. A., & Newton, S. (2016).** "The cost performance of transportation infrastructure projects: The fallacy of the Planning Fallacy account." *Transportation Research Part A: Policy and Practice*, 122, 1-20.
+- Keil, M., Depledge, G., & Rai, A. (2000). "Escalation: The role of problem recognition and cognitive bias." *Decision Sciences*, 31(2), 455-479.
 
-- **Merrow, E. W. (2011).** *Industrial Megaprojects: Concepts, Strategies, and Practices for Success*. Wiley.
+- Kenley, R., & Wilson, O. D. (1986). "A construction project cash flow model—an idiographic approach." *Construction Management and Economics*, 4(3), 213-232.
 
-### S-Curve Modeling Literature
+- Khanzadi, M., Nasirzadeh, F., & Alipour, M. (2018). "Integrating project portfolio selection and scheduling under uncertainty." *Journal of Construction Engineering and Management*, 144(2), 04017106.
 
-- **Barraza, G. A., & Bueno, R. A. (2007).** "Probabilistic control of project performance using control limit curves." *Journal of Construction Engineering and Management*, 133(12), 957-965.
+- Kutsch, E., Browning, T. R., & Hall, M. (2015). "Bridging the risk gap: The failure of risk management in information systems projects." *Research-Technology Management*, 57(2), 26-32.
 
-- **Cioffi, D. F. (2005).** "A tool for managing projects: An analytic parameterization of the S-curve." *International Journal of Project Management*, 23(3), 215-222.
+- Lipke, W. (2003). "Schedule is different." *The Measurable News*, Summer 2003, 31-34.
 
-- **Miskawi, Z. (1989).** "An S-curve equation for project control." *Construction Management and Economics*, 7(2), 115-124.
+- Love, P. E., Edwards, D. J., & Irani, Z. (2012). "Moving beyond optimism bias and strategic misrepresentation: An explanation for social infrastructure project cost overruns." *IEEE Transactions on Engineering Management*, 59(4), 560-571.
 
-- **Peer, S. (1982).** "Application of cost-flow forecasting models." *Journal of the Construction Division*, 108(2), 226-232.
+- Love, P. E., Sing, C. P., Ika, L. A., & Newton, S. (2016). "The cost performance of transportation infrastructure projects: The fallacy of the Planning Fallacy account." *Transportation Research Part A: Policy and Practice*, 122, 1-20.
 
-### Earned Value Management Literature
+- Merrow, E. W. (2011). *Industrial Megaprojects: Concepts, Strategies, and Practices for Success*. Wiley.
 
-- **Fleming, Q. W., & Koppelman, J. M. (2016).** *Earned Value Project Management* (4th ed.). Project Management Institute.
+- Miskawi, Z. (1989). "An S-curve equation for project control." *Construction Management and Economics*, 7(2), 115-124.
 
-- **Christensen, D. S., & Heise, S. R. (1993).** "Cost performance index stability." *National Contract Management Journal*, 25(1), 7-15.
+**Statistical methodology references:**
 
-- **Kim, E., Wells, W. G., & Duffey, M. R. (2003).** "A model for effective implementation of Earned Value Management methodology." *International Journal of Project Management*, 21(5), 375-382.
+- AACE International (2020). *Cost Estimate Classification System – As Applied in Engineering, Procurement, and Construction for the Process Industries*. Recommended Practice No. 18R-97.
 
-- **Vanhoucke, M. (2012).** "Measuring the efficiency of project control using fictitious and empirical project data." *International Journal of Project Management*, 30(2), 252-263.
+- Limpert, E., Stahel, W. A., & Abbt, M. (2001). "Log-normal distributions across the sciences: Keys and clues." *BioScience*, 51(5), 341-352.
 
-- **Lipke, W. (2009).** "Earned schedule." *The Measurable News*, Spring 2009, 1-6.
+- Vose, D. (2008). *Risk Analysis: A Quantitative Guide* (3rd ed.). Wiley.
 
-### Duration and Schedule Performance
+**Earned Value Management references:**
 
-- **Flyvbjerg, B., et al. (2018).** "Five things you should know about cost overrun." *Transportation Research Part A*, 118, 174-190.
+- Fleming, Q. W., & Koppelman, J. M. (2016). *Earned Value Project Management* (4th ed.). Project Management Institute.
 
-- **Merrow, E. W. (2011).** *Industrial Megaprojects: Concepts, Strategies, and Practices for Success*. Wiley.
+- Christensen, D. S., & Heise, S. R. (1993). "Cost performance index stability." *National Contract Management Journal*, 25(1), 7-15.
 
-- **Love, P. E., & Ahiaga-Dagbui, D. D. (2018).** "Debunking fake news in a post-truth era: The plausible untruths of cost underestimation in transport infrastructure projects." *Transportation Research Part A*, 113, 357-368.
+- Project Management Institute (PMI). (2019). *Practice Standard for Earned Value Management* (2nd ed.). PMI.
 
-### Statistical Methodology
+- Lipke, W. (2009). "Schedule is different." *The Measurable News*, Summer 2009, 31-34.
 
-- **AACE International (2020).** *Cost Estimate Classification System – As Applied in Engineering, Procurement, and Construction for the Process Industries*. Recommended Practice No. 18R-97.
+- Vanhoucke, M. (2012). "Measuring the efficiency of project control using fictitious and empirical project data." *International Journal of Project Management*, 30(2), 252-263.
 
-- **Limpert, E., Stahel, W. A., & Abbt, M. (2001).** "Log-normal distributions across the sciences: Keys and clues." *BioScience*, 51(5), 341-352.
-
-- **Vose, D. (2008).** *Risk Analysis: A Quantitative Guide* (3rd ed.). Wiley.
-
-### Industry Standards
-
-- **Project Management Institute (PMI). (2019).** *Practice Standard for Earned Value Management* (2nd ed.). PMI.
-
-- **AACE International (2020).** *Cost Estimate Classification System*. Recommended Practice 18R-97.
+- Kim, E., Wells, W. G., & Duffey, M. R. (2003). "A model for effective implementation of Earned Value Management methodology." *International Journal of Project Management*, 21(5), 375-382.
 
 ---
 
-## Document Series Navigation
+**End of Document**
 
-This is **Part 15 of 15** in the Project S-Curve Cashflow Model & Duration Dynamics series.
-
-**Complete series:**
-1. `01_scope_definition.md` — Problem statement and model objectives
-2. `02_literature_scurve_origins.md` — Empirical foundations of S-curve shape
-3. `03_model_comparison_duration.md` — Beta vs. alternatives for duration modeling
-4. `04_action_plan_effectiveness.md` — Intervention impact on SPI
-5. `05_action_plan_duration.md` — Duration extension from action plans
-6. `06_post_action_dynamics.md` — Exponential decay model
-7. `07_mathematical_scurve_model.md` — Beta CDF formulation
-8. `08_duration_and_spi_dynamics.md` — Gamma distributions and SPI trajectories
-9. `09_parameter_calibration.md` — Distribution fitting from literature
-10. `10_financial_justification.md` — Cost-benefit analysis framework
-11. `11_sensitivity_analysis.md` — Tornado diagrams and robustness
-12. `12_implementation.md` — Production-grade algorithms
-13. `13_validation.md` — Analytical checks and benchmarks
-14. `14_examples_and_limitations.md` — Worked examples and future research
-15. `15_appendices_and_references.md` — **This document**
-
----
-
-**Related Documentation:**
-
-- **Portfolio Size and BAC Model**: `../01_portfolio_size_and_bac/`
-- **Profit Margin Composition Model**: `../02_profit_margin_composition/`
-- **Main Strategy Document**: `../../README.md`
-
----
-
-**END OF DOCUMENT SERIES**
-
-**Chunking Complete**: 15 chunks created for Project S-Curve Cashflow Model & Duration Dynamics.
+**Chunking Complete:** 15 chunks total covering the complete Project S-Curve Cashflow Model & Duration Dynamics document.
