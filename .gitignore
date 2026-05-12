@@ -31,6 +31,9 @@ src/models/pretrained/*.pt
 src/models/finetuned/*.pt
 src/results/
 
+# Depricated files
+deprecated/
+
 # Literature archive
 literatureArchive/
 
