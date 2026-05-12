@@ -108,16 +108,22 @@ Determine:
   - hierarchical
   - hybrid
 
-- target chunk size
+- target chunk size: **500-800 words per chunk** (or 2-4 subsections maximum)
 - overlap size
 - chunk boundary rules
 - dependency preservation strategy
 - numbering scheme
 
+**CRITICAL RULE:**
+- **DO NOT place an entire section in one chunk**, even if it's labeled as a single section (e.g., "Section 4.7").
+- **ALWAYS split large sections into multiple chunks** based on subsection boundaries, content volume, and semantic coherence.
+- A chunk should contain **at most 2-4 subsections** or **500-800 words**, whichever provides better semantic integrity.
+
 You MUST justify:
 - why this strategy was selected
 - why the chunk size is appropriate
 - where overlap is necessary
+- **how many chunks the section will be divided into and why**
 
 ---
 
@@ -151,6 +157,12 @@ Chunk size may vary to preserve semantics.
 
 Semantic integrity is MORE important than equal chunk sizes.
 
+**BUT:**
+- **Never place an entire large section in one chunk.**
+- **Always break down sections into multiple manageable chunks** based on logical subsection boundaries.
+- If a subsection is very short (< 200 words), it may be grouped with adjacent subsections.
+- If a subsection is very long (> 800 words), it should be further subdivided semantically.
+
 ---
 
 # PHASE 4 — CHUNK REPORT
@@ -160,7 +172,7 @@ After chunking, generate a structured report.
 For each chunk include:
 
 - Chunk ID
-- Title / section coverage
+- Title / section coverage (e.g., "Section 4.7.1-4.7.2")
 - Approx token estimate
 - Dependency notes
 - Overlap notes
@@ -208,7 +220,7 @@ Use this exact structure:
 
 # CHUNK 001
 ## Coverage
-[sections covered]
+[sections covered, e.g., "Section 4.7 intro + 4.7.1"]
 
 ## Dependency Notes
 [important dependencies]
@@ -241,14 +253,15 @@ You must NOT:
 - optimize only for equal sizes
 - destroy theorem continuity
 - truncate equations
+- **place an entire large section in one chunk**
 
 If a section is too large:
-- recursively subdivide semantically.
+- **recursively subdivide semantically into multiple chunks.**
 
 If mathematical dependency is extremely strong:
-- allow larger chunk sizes.
+- allow larger chunk sizes, but still respect the **500-800 word guideline** and **never exceed 4 subsections per chunk** unless absolutely necessary for semantic integrity.
 
-Semantic correctness overrides uniformity.
+Semantic correctness overrides uniformity, **but section-level chunking is forbidden.**
 
 ---
 
@@ -257,7 +270,7 @@ Semantic correctness overrides uniformity.
 When the document is provided:
 
 1. Analyze document.
-2. Design chunking strategy.
+2. Design chunking strategy (**including how many chunks each section will be divided into**).
 3. Perform chunking.
 4. Produce chunking report.
 5. Output ONLY first chunk.
