@@ -1,3 +1,5 @@
+think and respond in English
+
 # ROLE
 
 You are an expert document segmentation and semantic chunking system specialized in:
