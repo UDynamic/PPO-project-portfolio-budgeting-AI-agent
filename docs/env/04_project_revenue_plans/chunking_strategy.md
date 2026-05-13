@@ -549,3 +549,46 @@ For each chunk, verify:
 
 **Status**: Strategy complete, ready for execution  
 **Last Updated**: 2025-05-13
+
+---
+
+## UPDATED CHUNK NAMING CONVENTION
+
+Following the convention from `docs/env/03_project_scurves/`, all chunks now use descriptive filenames:
+
+### Completed Chunks:
+1. **01_milestone_payment_dominance.md** - Section 1.1.1-1.1.4 (Milestone dominance + Regional variations + Contract types + Retention practices)
+2. **02_payment_delays_and_retention.md** - Section 1.1.5-1.1.6 + 1.6.1-1.6.3 (Payment delays + Working capital + Retention framework part 1)
+
+### Remaining Chunks (Planned):
+3. **03_category_calibration_domestic.md** - Section 1.2.1-1.2.2 (Domestic Low-Risk + Domestic High-Risk calibration)
+4. **04_category_calibration_international.md** - Section 1.2.3-1.2.4 (International Low-Risk + International High-Risk calibration)
+5. **05_distribution_selection.md** - Section 1.3 (Distribution selection justification for all 5 parameters)
+6. **06_validation_and_references.md** - Section 1.4-1.5 (Model validation + Sensitivity analysis + References)
+7. **07_retention_framework_part1.md** - Section 1.6.4-1.6.7 (Category-specific retention calibration + Application mechanism)
+8. **08_retention_framework_part2.md** - Section 1.6.8-1.6.10 (Retention summary table + Validation + Implementation notes)
+9. **09_advance_payment_model.md** - Section 2.2 (Advance payment: literature + calibration + algorithm)
+10. **10_progress_milestones_model.md** - Section 2.3 (Progress milestones: count + thresholds + payment fractions + algorithm)
+11. **11_final_payment_model.md** - Section 2.4 (Final payment: literature + components + retention release + algorithm)
+12. **12_payment_delays_model.md** - Section 2.6 (Payment delays: model + calibration + algorithm + WC impact)
+13. **13_comprehensive_parameter_summary.md** - Section 2.7 (Complete parameter summary by category + Cross-category comparison)
+14. **14_credit_modeling_literature.md** - Section 3.1-3.2 (Credit constraints literature + Per-project credit limit framework)
+15. **15_working_capital_dynamics.md** - Section 3.3 (Working capital components + Evolution + Numerical example)
+16. **16_rl_integration_credit.md** - Section 3.4 (Valley of Death problem + Soft penalty mechanism + Multi-objective reward)
+17. **17_credit_validation.md** - Section 3.5-3.6 (Test cases + Sensitivity analysis + Implementation notes)
+18. **18_credit_summary.md** - Section 3.7 (Credit framework summary + Key takeaways + Limitations)
+19. **19_module_outputs.md** - Section 4 (Payment schedule + Cash flow time series + Working capital profile + Metrics)
+20. **20_implementation_pseudocode.md** - Section 7 (Python implementation code blocks)
+21. **21_integration_notes.md** - Section 8 (Integration with other modules + Data flow + Dependencies)
+22. **22_appendices_and_references.md** - Section 9 (Complete bibliography + Appendices)
+
+**Naming Convention Rules**:
+- Two-digit prefix (01-22) for sequential ordering
+- Descriptive snake_case name reflecting content
+- `.md` extension
+- Matches pattern from `docs/env/03_project_scurves/`
+
+---
+
+**Status**: Chunks 01-02 completed with new naming convention. Ready to continue with chunk 03.
+**Last Updated**: 2025-05-13
