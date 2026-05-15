@@ -6,12 +6,16 @@
 
 ### **Metadata**
 - **Chunk ID:** `4.7_chunk_01`  
-
-⚠️ These chunk IDs are **mapings to the previous deprecated files**:
-$ \boxed{\text{Id pattern \quad : `pps\_01`}}$
-
 - **Sections Covered:** 4.7.1 → 4.7.3.1
+
+<!-- ⚠️ These chunk IDs are **mapings to the previous deprecated files**:
+$ \boxed{\text{Id pattern \quad : `pps\_01`}}$ -->
+
 - **Primary Focus:** Introduction + Portfolio Size Model
+
+<!-- ⚠️ each chunk focuses on one or two small introduction or summaries. -->
+
+<!-- Previous, next links  -->
 - **Dependencies:** None (entry point)
 - **Forward References:** BAC distribution (4.7.4+), correlation modeling (4.7.6+)
 
