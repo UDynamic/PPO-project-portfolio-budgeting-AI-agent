@@ -53,6 +53,18 @@ The modeling approach follows a consistent structure:
 Subsequent sections (4.7.4–4.7.6) extend this framework to model the joint distribution of BAC and project margin, incorporating correlation structures observed in EPC contractor portfolios.
 
 ---
+<!-- ⚠️ Literature review must be out of the content for **study** section.
+content subsections:
+scope,
+model and formulation(with citation to the literature) 
+
+⚠️ Literature and model formualtion must be focused on.
+the literature must be extracted to another unified study section of the paper.
+but we don't want to lose these literature.
+
+so get a copy of the literature review to be added to the study section.
+then put the citations of this entire literature review inside the model and formulation with 100% ingestion of the literature review.
+-->
 
 ### 4.7.2 Portfolio Size: Literature Review
 
@@ -122,6 +134,3 @@ $$P(N = k) = \frac{1}{N_{\max} - N_{\min} + 1}, \quad k \in \{N_{\min}, N_{\min}
 **Next Chunk Preview**: Chunk 2 introduces the BAC distribution model, reviewing literature on project size distributions and formulating the base truncated lognormal model for individual project contract values.
 
 ---
-
-**Status**: ✅ Chunk 1 extracted  
-**Proceed to Chunk 2?**
