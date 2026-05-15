@@ -13,7 +13,15 @@ $ \boxed{\text{Id pattern \quad : `pps\_01`}}$ -->
 
 - **Primary Focus:** Introduction + Portfolio Size Model
 
-<!-- ⚠️ each chunk focuses on one or two small introduction or summaries. -->
+
+<!-- ⚠️ chunks must be at least of two types 2: 
+    * introduction, summary, abstract
+    * content 
+    
+    ⚠️ each chunk focuses on one.
+    other than main content other two smaller type chunks chould be in one chunk
+    
+    so for each content there is no less than 2 document. -->
 
 <!-- Previous, next links  -->
 - **Dependencies:** None (entry point)
