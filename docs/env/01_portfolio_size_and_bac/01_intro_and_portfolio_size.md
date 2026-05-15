@@ -1,4 +1,4 @@
-# Phase 3 — Semantic Chunk Construction
+# Semantic Chunk Constructs
 
 ---
 
