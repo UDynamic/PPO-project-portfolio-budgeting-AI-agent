@@ -5,7 +5,11 @@
 ## **CHUNK 1 of 6**
 
 ### **Metadata**
-- **Chunk ID:** `4.7_chunk_01`  $ \boxed{\text{⚠️ Id pattern \quad : `pps\_01`}}$
+- **Chunk ID:** `4.7_chunk_01`  
+
+⚠️ These chunk IDs are **mapings to the previous deprecated files**:
+$ \boxed{\text{Id pattern \quad : `pps\_01`}}$
+
 - **Sections Covered:** 4.7.1 → 4.7.3.1
 - **Primary Focus:** Introduction + Portfolio Size Model
 - **Dependencies:** None (entry point)
