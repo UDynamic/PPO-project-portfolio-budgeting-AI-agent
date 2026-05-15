@@ -64,6 +64,21 @@ but we don't want to lose these literature.
 
 so get a copy of the literature review to be added to the study section.
 then put the citations of this entire literature review inside the model and formulation with 100% ingestion of the literature review.
+
+⚠️ The attempt above failed.
+let's put the literature review in the calibration section.
+but elegently place the content inside it.
+
+⚠️ Instructions:
+I want you to update this document with these instructions:
+
+first make a copy of the literature review section.
+then move it from the literature review section into the parameter calibration section.
+
+these literature are mentioned for furthur application in the model.
+I want them to be cited at the point of mentioning and reference in the calibration.
+
+naturally I don't want to have the literature review as a separate section. the section will be gone but the content remains.
 -->
 
 ### 4.7.2 Portfolio Size: Literature Review
