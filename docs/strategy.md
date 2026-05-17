@@ -1,3 +1,8 @@
+<!-- Had ameeting to day with Dr.
+1. gave progress report
+2. negotiated for +2 recommendations
+3. gave the draft of data retreival letter -->
+
 # RL-Based Portfolio Budgeting: Complete Paper Strategy & Architecture
 
 ---
