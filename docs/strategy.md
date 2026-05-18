@@ -1,7 +1,12 @@
 <!-- Had ameeting to day with Dr.
 1. gave progress report
 2. negotiated for +2 recommendations
-3. gave the draft of data retreival letter -->
+3. gave the draft of data retreival letter 
+
+* commited to deliver 2 60%-70% files by 2 weeks
+these files are:
+  * section 3 (Project portfolio management problem definition) of the paper in persian (obviously in English first)
+  * section 4 (solution) of the paper according to scenario 2 of the meeting -->
 
 # RL-Based Portfolio Budgeting: Complete Paper Strategy & Architecture
 
