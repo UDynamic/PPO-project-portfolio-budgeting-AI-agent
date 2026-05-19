@@ -1,4 +1,6 @@
-<!-- ⚠️ how would I implement this management problem definition and solution into these chunk structures -->
+<!-- **⚠️ chunk structure**
+
+>how would I implement this management problem definition and solution into these chunk structures -->
 
 # Semantic Chunk Constructs
 
