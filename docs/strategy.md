@@ -33,24 +33,41 @@ use cases that classical OR simply cannot support at scale.
 
 ## 2. Core Contributions (Ordered by Priority)
 
-### Contribution 1 — Computational Speedup (Primary, Must-Have)
-> "Our RL agent achieves a 10,000× speedup over classical MIP solvers (100ms vs.
-> 15–45 min/instance), enabling real-time decision support and large-scale scenario
-> analysis previously infeasible with traditional OR methods."
+### Contribution 1 — Sequential Budgeting Agent (Primary, Must-Have)
+> "We develop a **sequential budgeting agent** that allocates budget to projects at each period based on the current portfolio state. The agent does not produce an explicit multi-period plan; instead, it learns a policy $\pi_\theta(s_t)$ that maps the current state to an allocation decision. The policy is trained using PPO to maximize long-term portfolio value, implicitly accounting for future periods through the learned value function."
 
 **Why this matters:**
-- Portfolio manager evaluating 1,000 scenarios → MIP: ~250 hours, RL: ~2 minutes
-- Urgent budget reallocation → MIP: wait 30 min, RL: instant response
-- Monte Carlo simulation over uncertainty → MIP: infeasible, RL: trivial
+- Sequential decision-making with RL is a standard and well-validated approach
+- The value function $V_\theta(s_t) = \mathbb{E}[\sum_{k=0}^{\infty} \gamma^k r_{t+k} | s_t]$ implicitly captures long-term consequences
+- No need for explicit multi-period planning or commitment
+- Aligns with the proposal's focus on "budgeting agent" rather than "planning agent"
 
 **How you prove it:**
-- Table: solve time vs. portfolio size (N = 10, 20, 50, 100, 200 projects)
-- Show MIP time grows exponentially; RL inference stays flat (~100ms)
-- Highlight practical scenario: "1,000 budget scenarios evaluated in under 2 minutes"
+- Demonstrate that the learned policy makes effective sequential allocation decisions
+- Show that the value function successfully captures long-term project completion goals
+- Compare against myopic baselines that ignore future consequences
+- Validate that the agent balances immediate rewards (project progress) with future outcomes (completion)
 
 ---
 
-### Contribution 2 — Solution Quality Under Uncertainty (Primary, Must-Have)
+### Contribution 2 — Novel Reward Function for Stochastic Portfolio Budgeting (Primary, Must-Have)
+> "We design a reward function for stochastic project portfolio budgeting that balances project completion, risk, and efficiency under uncertainty (stochastic SPI and payment delays)."
+
+**Why this matters:**
+- First reward formulation specifically designed for EVM-based portfolio budgeting with stochastic contractor performance
+- Integrates risk-sensitive objectives (CVaR, variance) to encourage robust decisions
+- Handles terminal value for incomplete projects based on earned value
+- Balances multiple competing objectives: completion rate, NPV, budget utilization, risk
+
+**How you prove it:**
+- Ablation study showing impact of each reward component
+- Comparison of different reward formulations (completion-only vs. NPV-only vs. combined)
+- Demonstrate that risk-sensitive terms improve robustness under high uncertainty
+- Show that terminal value incentivizes long-term project completion
+
+---
+
+### Contribution 3 — Solution Quality Under Uncertainty (Primary, Must-Have)
 > "The RL agent outperforms deterministic MIP by ~18% in expected portfolio return
 > and matches stochastic programming performance — without requiring explicit scenario
 > enumeration — achieving ~92% of the perfect-information upper bound."
@@ -133,7 +150,152 @@ use cases that classical OR simply cannot support at scale.
 
 ---
 
-## 3. What You Build
+## 3. Why Sequential Budgeting (Not Planning) is the Right Approach
+
+### 3.1 Sequential Decision-Making ≠ Planning
+
+**Sequential budgeting:** Agent allocates budget at each period based on current state
+$$a_t = \pi_\theta(s_t)$$
+
+**Planning:** Agent constructs a multi-period plan and commits to it
+$$a_t, a_{t+1}, \ldots, a_{t+H} = \text{plan}(s_t)$$
+
+**Our approach:** Standard Markov Decision Process (MDP), not Model Predictive Control (MPC)
+
+### 3.2 RL for Sequential Budgeting is Well-Established
+
+Most RL work in portfolio management follows this approach:
+- **Jiang et al. (2017):** RL for portfolio optimization, no explicit planning
+- **Mnih et al. (2015):** DQN for Atari, no explicit planning
+- **Schulman et al. (2017):** PPO for robotics, no explicit planning
+
+The agent makes sequential decisions, but the **value function provides implicit planning**:
+$$V_\theta(s_t) = \mathbb{E} \left[ \sum_{k=0}^{\infty} \gamma^k r_{t+k} \mid s_t \right]$$
+
+This means the agent **implicitly** considers future consequences without constructing explicit plans.
+
+### 3.3 Justification in the Paper
+
+**Method Section:**
+> "We formulate the project portfolio budgeting problem as a **Markov Decision Process (MDP)**, where the agent sequentially allocates budget to projects at each period. The agent does not produce an explicit multi-period plan; instead, it learns a policy $\pi_\theta: \mathcal{S} \to \mathcal{A}$ that maps the current portfolio state $s_t$ to a budget allocation $a_t$.
+>
+> The policy is trained using **Proximal Policy Optimization (PPO)** to maximize the expected cumulative reward:
+>
+> $$J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^{T} \gamma^t r_t \right]$$
+>
+> where $r_t$ is the reward at period $t$, and $\gamma$ is the discount factor. The value function $V_\theta(s_t)$ learned by the agent implicitly accounts for the long-term consequences of budgeting decisions, enabling the agent to balance immediate rewards (e.g., project progress) with future outcomes (e.g., project completion)."
+
+**Contributions Section:**
+> "Our contributions include:
+> 1. **A novel reward function** for stochastic project portfolio budgeting that balances project completion, risk, and efficiency.
+> 2. **A sequential budgeting agent** trained with PPO that learns to allocate budget under uncertainty (stochastic SPI and payments).
+> 3. **Risk-sensitive objectives** (CVaR, variance) integrated into the reward function to encourage robust budgeting decisions.
+> 4. **Empirical validation** showing that the RL agent outperforms heuristic baselines in completion rate, NPV, and risk-adjusted performance."
+
+---
+
+## 4. Future Work: Extensions to Planning and Hierarchical Approaches
+
+### 4.1 Rolling Horizon Budgeting with Explicit Lookahead
+
+**Motivation:**  
+Our current agent makes sequential allocation decisions based on the learned value function, which implicitly captures long-term consequences. However, an explicit lookahead mechanism could improve decision quality in highly uncertain environments where the value function approximation may be imprecise.
+
+**Proposed Approach:**  
+Extend the agent to use a **rolling horizon framework** where, at each period $t$, the agent evaluates potential allocation sequences over a finite lookahead window $h$ (e.g., $h = 3$ periods):
+
+$$a_t^* = \arg\max_{a_t} \mathbb{E} \left[ \sum_{k=0}^{h-1} \gamma^k r_{t+k} + \gamma^h V_\theta(s_{t+h}) \mid s_t, a_t \right]$$
+
+The agent would simulate multiple allocation trajectories using the learned dynamics model $\hat{P}(s_{t+1} \mid s_t, a_t)$ and select the action that maximizes the expected return over the lookahead horizon, bootstrapping with the value function for periods beyond the horizon.
+
+**Implementation Considerations:**
+- **Model Learning:** Train a forward dynamics model $\hat{P}_\phi(s_{t+1} \mid s_t, a_t)$ alongside the policy
+- **Monte Carlo Tree Search (MCTS):** Use MCTS or similar planning algorithms to efficiently search the action space
+- **Computational Cost:** Lookahead planning increases computational requirements at inference time
+
+**Why Out of Scope:**  
+Implementing rolling horizon planning requires (1) learning an accurate forward dynamics model for the stochastic environment, (2) developing efficient search algorithms for the combinatorial action space, and (3) extensive hyperparameter tuning for the lookahead horizon and search budget. These additions would significantly increase implementation complexity and are better suited as a dedicated follow-up study once the baseline sequential agent is established.
+
+---
+
+### 4.2 Model Predictive Control for Multi-Period Budget Commitment
+
+**Motivation:**  
+In some organizational contexts, budget allocations cannot be revised frequently due to administrative overhead or contractual commitments. A Model Predictive Control (MPC) approach could generate multi-period budget plans that are executed over several periods before re-planning.
+
+**Proposed Approach:**  
+Formulate the budgeting problem as an **MPC optimization** where, at each planning cycle (e.g., every 3 periods), the agent solves:
+
+$$\begin{aligned}
+\max_{a_t, \ldots, a_{t+H-1}} \quad & \mathbb{E} \left[ \sum_{k=0}^{H-1} \gamma^k r_{t+k} + \gamma^H V_\theta(s_{t+H}) \mid s_t \right] \\
+\text{subject to} \quad & s_{t+k+1} \sim \hat{P}(s_{t+k}, a_{t+k}), \quad k = 0, \ldots, H-1 \\
+& a_{t+k} \in \mathcal{A}(s_{t+k}), \quad k = 0, \ldots, H-1
+\end{aligned}$$
+
+where $H$ is the planning horizon (e.g., $H = 12$ periods). The agent commits to the first $m$ actions and re-plans at period $t+m$.
+
+**Implementation Considerations:**
+- **Optimization Method:** Use gradient-based optimization (e.g., CEM, iLQG) or sampling-based methods (e.g., MPPI)
+- **Constraint Handling:** Incorporate budget constraints, project dependencies, and resource limits directly
+- **Receding Horizon:** Balance planning horizon $H$ and commitment period $m$
+
+**Why Out of Scope:**  
+MPC requires solving a high-dimensional constrained optimization problem at each planning cycle, which is computationally expensive for large portfolios. Additionally, MPC assumes the learned dynamics model $\hat{P}$ is sufficiently accurate over the planning horizon $H$, which may not hold in highly stochastic environments. Validating model accuracy and developing efficient MPC solvers for this domain constitute a substantial research effort beyond the scope of establishing the baseline RL framework.
+
+---
+
+### 4.3 Hierarchical Planning with Strategic and Tactical Agents
+
+**Motivation:**  
+Real-world portfolio management often involves two decision levels: (1) **strategic planning** that determines high-level resource allocation across project categories, and (2) **tactical budgeting** that allocates resources to individual projects within each category.
+
+**Proposed Approach:**  
+Develop a **two-level hierarchical RL architecture**:
+
+1. **Strategic Agent (High-Level):**  
+   - Operates at a coarser timescale (e.g., quarterly)
+   - Allocates budget across project categories or strategic goals
+   - State: Aggregated portfolio metrics
+   - Action: Budget allocation to categories $a_t^{\text{high}} = (b_1, \ldots, b_K)$
+
+2. **Tactical Agent (Low-Level):**  
+   - Operates at a finer timescale (e.g., monthly)
+   - Allocates budget to individual projects within each category
+   - State: Detailed project states within the assigned category
+   - Action: Project-level budget allocation subject to $\sum_{i} x_i \leq b_k$
+
+**Implementation Considerations:**
+- **Hierarchical RL Algorithms:** Use options framework, feudal RL, or HAM
+- **Reward Shaping:** Design intrinsic rewards for the tactical agent that align with strategic objectives
+- **Scalability:** Hierarchical decomposition can handle larger portfolios by reducing action space at each level
+
+**Why Out of Scope:**  
+Hierarchical RL introduces additional architectural complexity, including the design of appropriate state abstractions for the strategic level, reward shaping for the tactical level, and coordination mechanisms between levels. This extension is better pursued once the single-level agent is thoroughly validated.
+
+---
+
+### 4.4 Integration with Human Decision-Makers
+
+**Motivation:**  
+Portfolio managers may wish to incorporate domain expertise, organizational constraints, or stakeholder preferences that are difficult to encode in the reward function.
+
+**Proposed Approach:**  
+Develop an **interactive budgeting system** where:
+- The agent proposes budget allocations $a_t = \pi_\theta(s_t)$
+- The human decision-maker reviews and can modify based on domain knowledge
+- The agent learns from human feedback using imitation learning or preference learning
+
+**Implementation Considerations:**
+- **Explainability:** Provide interpretable explanations for allocation decisions
+- **Feedback Efficiency:** Minimize human feedback required through active learning
+- **Trust Calibration:** Design interfaces that help humans understand when to trust the agent
+
+**Why Out of Scope:**  
+Human-in-the-loop systems require extensive user interface design, user studies, and evaluation with real portfolio managers. These considerations are orthogonal to the core RL algorithm development and are better addressed in a dedicated human-computer interaction study.
+
+---
+
+## 5. What You Build
 
 ### 3.1 Synthetic Environment (Your Data Foundation)
 - Generate 10,000 portfolio instances

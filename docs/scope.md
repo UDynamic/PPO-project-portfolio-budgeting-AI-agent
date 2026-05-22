@@ -1,5 +1,5 @@
 # Scope of Work: Q1 Research Paper
-## Reinforcement Learning for Dynamic Project Portfolio Budgeting under Cashflow Uncertainty: A Rolling Horizon Approach
+## Reinforcement Learning for Sequential Project Portfolio Budgeting under Stochastic Contractor Performance
 
 ---
 
@@ -46,42 +46,45 @@ RL provides:
 - Scalable to real-time decision-making
 
 ### 2.1 Methodology
-Train a Reinforcement Learning (RL) agent using **Rolling Horizon Control** with:
+Train a Reinforcement Learning (RL) agent using **Sequential Budgeting** approach:
 1. **Pre-training**: Literature and industry-wide project data
 2. **Fine-tuning**: Company-specific historical performance data
-3. **Rolling Horizon Framework**: Fixed lookahead window (H=12 periods) with receding control
+3. **Sequential Decision-Making**: Agent learns policy $\pi_\theta(s_t)$ that maps current state to budget allocation
 
-### 2.2 Rolling Horizon Architecture
+### 2.2 Sequential Budgeting Architecture
 
 #### Core Concept
-At each timestep $t$, the system:
-1. Observes current portfolio state (active projects, budget status, performance trends)
-2. Plans budget allocation for next $H=12$ periods
-3. Executes only the allocation for period $t$
-4. Advances to $t+1$ and re-plans with updated information
+The agent formulates portfolio budgeting as a **Markov Decision Process (MDP)**:
+- At each period $t$, the agent observes the current portfolio state $s_t$
+- The agent selects a budget allocation action $a_t = \pi_\theta(s_t)$
+- The environment transitions to the next state $s_{t+1}$ based on stochastic project performance
+- The agent receives a reward $r_t$ based on project progress, completion, and efficiency
+- The agent does **not** produce an explicit multi-period plan
 
 #### Key Properties
-- **Fixed Episode Length**: RL trains on 12-period episodes regardless of total portfolio duration
-- **Variable Portfolio Horizons**: Naturally handles portfolios spanning 12, 24, 36+ periods through sequential re-planning
-- **Dynamic Project Management**: Accommodates projects starting/finishing at different times through masking and padding mechanisms
-- **Computational Tractability**: Maintains feasible state-space size for both RL and OR baselines
+- **Sequential Decision-Making**: Agent makes one allocation decision per period based on current state
+- **Implicit Planning**: Value function $V_\theta(s_t) = \mathbb{E}[\sum_{k=0}^{\infty} \gamma^k r_{t+k} | s_t]$ captures long-term consequences
+- **No Explicit Planning**: Agent does not construct multi-period plans or commit to future allocations
+- **Standard MDP Formulation**: Well-established approach in RL literature (Jiang et al. 2017, Mnih et al. 2015, Schulman et al. 2017)
 
-#### Handling Variable Project Lifecycles
-The rolling horizon framework uses **masking and padding** to handle:
-- Projects that start after the current timestep (masked until start date)
-- Projects that complete before the horizon end (masked after completion)
-- Projects with partial completion at portfolio initialization
-- Variable project durations and staggered entry/exit times
+#### Policy Learning
+The policy is trained using **Proximal Policy Optimization (PPO)** to maximize expected cumulative reward:
 
-This mechanism allows the model to handle arbitrary project configurations without requiring all projects to be new at $t=0$.
+$$J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^{T} \gamma^t r_t \right]$$
+
+where:
+- $\pi_\theta$ is the policy network parameterized by $\theta$
+- $\tau$ is a trajectory (sequence of states, actions, rewards)
+- $\gamma$ is the discount factor
+- $T$ is the episode length
 
 ### 2.3 Key Advantages of RL Approach
 - **Adaptability**: Learns from sequential interactions rather than requiring complete upfront knowledge
 - **Partial Observability**: Handles uncertainty without needing full probability distributions
-- **Dynamic Optimization**: Adjusts decisions as new information emerges through rolling re-planning
+- **Dynamic Optimization**: Adjusts decisions as new information emerges at each timestep
 - **Transferability**: Pre-trained model can be specialized for specific organizational contexts
-- **Scalability**: Rolling horizon prevents state-space explosion for long-duration portfolios
-- **Real-World Alignment**: Mimics actual planning behavior (annual budgets with periodic updates)
+- **Implicit Long-Term Planning**: Value function captures future consequences without explicit planning
+- **Simplicity**: Standard MDP formulation, well-validated in RL literature
 
 ---
 
@@ -918,6 +921,123 @@ The framework is designed to handle diverse portfolio configurations through its
 ## 6. Future Work & Extensions
 
 This section outlines natural extensions of the foundational methodology established in this work. Each direction represents a scientifically rigorous path for follow-up research.
+
+### 6.1 Rolling Horizon Budgeting with Explicit Lookahead
+
+**Motivation:**  
+Our current agent makes sequential allocation decisions based on the learned value function, which implicitly captures long-term consequences. However, an explicit lookahead mechanism could improve decision quality in highly uncertain environments where the value function approximation may be imprecise.
+
+**Proposed Approach:**  
+Extend the agent to use a **rolling horizon framework** where, at each period $t$, the agent evaluates potential allocation sequences over a finite lookahead window $h$ (e.g., $h = 3$ periods):
+
+$$a_t^* = \arg\max_{a_t} \mathbb{E} \left[ \sum_{k=0}^{h-1} \gamma^k r_{t+k} + \gamma^h V_\theta(s_{t+h}) \mid s_t, a_t \right]$$
+
+The agent would simulate multiple allocation trajectories using the learned dynamics model $\hat{P}(s_{t+1} \mid s_t, a_t)$ and select the action that maximizes the expected return over the lookahead horizon, bootstrapping with the value function for periods beyond the horizon.
+
+**Implementation Considerations:**
+- **Model Learning:** Train a forward dynamics model $\hat{P}_\phi(s_{t+1} \mid s_t, a_t)$ alongside the policy, using supervised learning on collected transitions
+- **Monte Carlo Tree Search (MCTS):** Use MCTS or similar planning algorithms to efficiently search the action space over the lookahead horizon
+- **Computational Cost:** Lookahead planning increases computational requirements at inference time; investigate trade-offs between planning depth and decision quality
+
+**Why Out of Scope:**  
+Implementing rolling horizon planning requires (1) learning an accurate forward dynamics model for the stochastic environment, (2) developing efficient search algorithms for the combinatorial action space, and (3) extensive hyperparameter tuning for the lookahead horizon and search budget. These additions would significantly increase implementation complexity and are better suited as a dedicated follow-up study once the baseline sequential agent is established.
+
+---
+
+### 6.2 Model Predictive Control for Multi-Period Budget Commitment
+
+**Motivation:**  
+In some organizational contexts, budget allocations cannot be revised frequently due to administrative overhead or contractual commitments. A Model Predictive Control (MPC) approach could generate multi-period budget plans that are executed over several periods before re-planning.
+
+**Proposed Approach:**  
+Formulate the budgeting problem as an **MPC optimization** where, at each planning cycle (e.g., every 3 periods), the agent solves:
+
+$$\begin{aligned}
+\max_{a_t, \ldots, a_{t+H-1}} \quad & \mathbb{E} \left[ \sum_{k=0}^{H-1} \gamma^k r_{t+k} + \gamma^H V_\theta(s_{t+H}) \mid s_t \right] \\
+\text{subject to} \quad & s_{t+k+1} \sim \hat{P}(s_{t+k}, a_{t+k}), \quad k = 0, \ldots, H-1 \\
+& a_{t+k} \in \mathcal{A}(s_{t+k}), \quad k = 0, \ldots, H-1
+\end{aligned}$$
+
+where $H$ is the planning horizon (e.g., $H = 12$ periods). The agent commits to the first $m$ actions $(a_t, \ldots, a_{t+m-1})$ and re-plans at period $t+m$.
+
+**Implementation Considerations:**
+- **Optimization Method:** Use gradient-based optimization (e.g., CEM, iLQG) or sampling-based methods (e.g., MPPI) to solve the MPC problem
+- **Constraint Handling:** Incorporate budget constraints, project dependencies, and resource limits directly into the optimization
+- **Receding Horizon:** Balance planning horizon $H$ and commitment period $m$ to trade off between plan quality and adaptability
+
+**Why Out of Scope:**  
+MPC requires solving a high-dimensional constrained optimization problem at each planning cycle, which is computationally expensive for large portfolios. Additionally, MPC assumes the learned dynamics model $\hat{P}$ is sufficiently accurate over the planning horizon $H$, which may not hold in highly stochastic environments. Validating model accuracy and developing efficient MPC solvers for this domain constitute a substantial research effort beyond the scope of establishing the baseline RL framework.
+
+---
+
+### 6.3 Hierarchical Planning with Strategic and Tactical Agents
+
+**Motivation:**  
+Real-world portfolio management often involves two decision levels: (1) **strategic planning** that determines high-level resource allocation across project categories or phases, and (2) **tactical budgeting** that allocates resources to individual projects within each category. A hierarchical approach could decompose the problem and improve scalability.
+
+**Proposed Approach:**  
+Develop a **two-level hierarchical RL architecture**:
+
+1. **Strategic Agent (High-Level):**  
+   - Operates at a coarser timescale (e.g., quarterly)
+   - Allocates budget across project categories or strategic goals
+   - State: Aggregated portfolio metrics (total completion rate, category-level progress)
+   - Action: Budget allocation to categories $a_t^{\text{high}} = (b_1, \ldots, b_K)$ where $K$ is the number of categories
+
+2. **Tactical Agent (Low-Level):**  
+   - Operates at a finer timescale (e.g., monthly)
+   - Allocates budget to individual projects within each category, conditioned on the strategic allocation
+   - State: Detailed project states within the assigned category
+   - Action: Project-level budget allocation $a_t^{\text{low}} = (x_1, \ldots, x_n)$ subject to $\sum_{i} x_i \leq b_k$
+
+The strategic agent learns a policy $\pi_{\theta_{\text{high}}}(s_t^{\text{high}})$ that maximizes long-term portfolio value, while the tactical agent learns a policy $\pi_{\theta_{\text{low}}}(s_t^{\text{low}}, b_k)$ that optimizes project completion within the allocated budget.
+
+**Implementation Considerations:**
+- **Hierarchical RL Algorithms:** Use options framework, feudal RL, or HAM to coordinate the two levels
+- **Reward Shaping:** Design intrinsic rewards for the tactical agent that align with the strategic agent's objectives
+- **Scalability:** Hierarchical decomposition can handle larger portfolios by reducing the action space at each level
+
+**Why Out of Scope:**  
+Hierarchical RL introduces additional architectural complexity, including the design of appropriate state abstractions for the strategic level, reward shaping for the tactical level, and coordination mechanisms between levels. Furthermore, validating the hierarchical approach requires datasets with clear categorical structure and strategic decision points, which may not be available in all portfolio management contexts. This extension is better pursued once the single-level agent is thoroughly validated and the need for hierarchical decomposition is empirically established.
+
+---
+
+### 6.4 Integration with Human Decision-Makers
+
+**Motivation:**  
+In practice, portfolio managers may wish to incorporate domain expertise, organizational constraints, or stakeholder preferences that are difficult to encode in the reward function. A human-in-the-loop approach could combine the agent's learned policy with human oversight.
+
+**Proposed Approach:**  
+Develop an **interactive budgeting system** where:
+- The agent proposes budget allocations $a_t = \pi_\theta(s_t)$
+- The human decision-maker reviews the proposal and can modify it based on domain knowledge
+- The agent learns from human feedback using techniques such as:
+  - **Imitation Learning:** Update the policy to mimic human-modified allocations
+  - **Preference Learning:** Learn a reward function from human preferences over allocation pairs
+  - **Active Learning:** Query the human for feedback on uncertain or high-stakes decisions
+
+**Implementation Considerations:**
+- **Explainability:** Provide interpretable explanations for the agent's allocation decisions (e.g., attention weights, counterfactual analysis)
+- **Feedback Efficiency:** Minimize the amount of human feedback required through active learning or uncertainty-based querying
+- **Trust Calibration:** Design interfaces that help humans understand when to trust the agent's recommendations
+
+**Why Out of Scope:**  
+Human-in-the-loop systems require extensive user interface design, user studies, and evaluation with real portfolio managers. Additionally, learning from human feedback introduces challenges such as feedback noise, inconsistency, and sample efficiency. These considerations are orthogonal to the core RL algorithm development and are better addressed in a dedicated human-computer interaction study once the autonomous agent is validated.
+
+---
+
+### 6.5 Summary of Future Directions
+
+| Extension | Key Benefit | Main Challenge | Estimated Effort |
+|-----------|-------------|----------------|------------------|
+| **Rolling Horizon Budgeting** | Explicit lookahead for better short-term decisions | Learning accurate dynamics model | Medium |
+| **Model Predictive Control** | Multi-period commitment plans | High computational cost, model accuracy | High |
+| **Hierarchical Planning** | Scalability to large portfolios | Architectural complexity, reward shaping | High |
+| **Human-in-the-Loop** | Incorporate domain expertise | Interface design, feedback efficiency | Medium-High |
+
+These extensions represent natural progressions from our sequential budgeting agent and offer promising avenues for enhancing decision quality, scalability, and practical deployment in real-world portfolio management systems.
+
+---
 
 ### 6.1 Portfolio Composition Specialization: Local vs. International Projects
 
