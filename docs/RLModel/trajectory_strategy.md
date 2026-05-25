@@ -127,6 +127,8 @@ traj = simulate_forward(env, policy, s_t, steps=horizon)
 trajectories.append(traj)
 return aggregate(trajectories)  # mean, std, percentiles
 
+```
+
 - `horizon=12` → 12-month planning window
 - `n_rollouts=50` → 50 stochastic samples for variance reduction
 
