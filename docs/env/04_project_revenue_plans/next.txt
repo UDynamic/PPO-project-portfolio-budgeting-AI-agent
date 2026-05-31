@@ -1,0 +1,21 @@
+ok we were doing this but we were cut off, we got to the chunk 03_* and were about to create the 9th one.
+
+  here's the original instructions:
+
+  in the docs/env/04_... there is two files.
+  one is the context of the probmle.
+  one is the chunking strategy of the deprecated file at deprecated/modularModeling/projectsPortfolioModel/
+  projectRevenuePlans.md
+
+  there is another file with explicit chunking instructions at deprecated/modularModeling/chunkingPrompt.md
+
+  I want you to read them all.
+  start chunking the deprecated file into the docs/env/04_.. folder
+  ---
+
+  don't do everything at once.
+  plan ahead and do everything step by step.
+  it's very important that you make continuous progress report and show me what you are doing at each moment.
+
+  don't do all the chunkings at once.
+  start with the 9th chunk and tell me when you're finished to prompt you to create the next chunk.

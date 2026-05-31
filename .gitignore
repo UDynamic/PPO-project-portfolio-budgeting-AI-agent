@@ -6,21 +6,59 @@ venv/Lib/
 
 .vscode/
 vscode/
+
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
 *.egg-info/
+.pytest_cache/
 
 .env
-
 .envrc
 
 # Jupyter
 .ipynb_checkpoints/
+
 # Data / artifacts
 data/**/*
 !data/.gitkeep
 outputs/**/*
-# OS
+
+# Large files (use Git LFS instead)
+src/data/synthetic/instances/
+src/models/pretrained/*.pt
+src/models/finetuned/*.pt
+src/results/
+
+# Depricated files
+deprecated/
+
+# Literature archive
+literatureArchive/
+
+# LaTeX
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+
+# Next.js
+src/frontend/web/node_modules/
+src/frontend/web/.next/
+src/frontend/web/out/
+src/frontend/web/.env*.local
+
+# PyQt build
+src/frontend/desktop/build/
+src/frontend/desktop/dist/
+
+# IDE / OS
+.idea/
 .DS_Store
 Thumbs.db

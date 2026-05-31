@@ -1,0 +1,57 @@
+\begin{tikzpicture}[scale=0.9]
+    % SPI axis
+    \draw[thick, ->] (0,0) -- (6,0) node[right] {SPI};
+    \draw[thick, ->] (0,0) -- (0,4) node[above] {Frequency};
+    
+    % Distribution curve (simplified bell curve skewed left)
+    \draw[thick, blue!70, fill=blue!20] 
+        (0.5,0) .. controls (1,0.5) and (1.5,1.5) .. (2,2.5)
+        .. controls (2.5,3) and (3,3.2) .. (3.5,3)
+        .. controls (4,2.5) and (4.5,1.5) .. (5,0.5)
+        .. controls (5.2,0.2) .. (5.5,0) -- cycle;
+    
+    % Mean line
+    \draw[thick, red, dashed] (3.5,0) -- (3.5,3.2) node[above] {\small Mean: 0.86};
+    
+    % On-schedule line
+    \draw[thick, green!60!black, dotted] (4.2,0) -- (4.2,2.5) node[above] {\small 1.0};
+    
+    % X-axis labels
+    \node[below] at (0.5,-0.2) {\tiny 0.3};
+    \node[below] at (3.5,-0.2) {\tiny 0.86};
+    \node[below] at (4.2,-0.2) {\tiny 1.0};
+    \node[below] at (5.5,-0.2) {\tiny 1.3};
+    
+    % Title
+    \node[above, font=\small\bfseries] at (3,4.5) {Schedule Performance Index (SPI)};
+    \node[below, font=\footnotesize] at (3,-0.8) {Most projects behind schedule (SPI < 1.0)};
+\end{tikzpicture}
+\hspace{1cm}
+\begin{tikzpicture}[scale=0.9]
+    % CPI axis
+    \draw[thick, ->] (0,0) -- (6,0) node[right] {CPI};
+    \draw[thick, ->] (0,0) -- (0,4) node[above] {Frequency};
+    
+    % Distribution curve (simplified bell curve skewed left)
+    \draw[thick, orange!70, fill=orange!20] 
+        (0.5,0) .. controls (1,0.5) and (1.5,1.5) .. (2,2.5)
+        .. controls (2.5,3.2) and (3,3.5) .. (3.5,3.3)
+        .. controls (4,2.8) and (4.5,1.8) .. (5,0.8)
+        .. controls (5.2,0.3) .. (5.5,0) -- cycle;
+    
+    % Mean line
+    \draw[thick, red, dashed] (3.5,0) -- (3.5,3.5) node[above] {\small Mean: 0.87};
+    
+    % On-budget line
+    \draw[thick, green!60!black, dotted] (4.5,0) -- (4.5,1.8) node[above] {\small 1.0};
+    
+    % X-axis labels
+    \node[below] at (0.5,-0.2) {\tiny 0.5};
+    \node[below] at (3.5,-0.2) {\tiny 0.87};
+    \node[below] at (4.5,-0.2) {\tiny 1.0};
+    \node[below] at (5.5,-0.2) {\tiny 1.2};
+    
+    % Title
+    \node[above, font=\small\bfseries] at (3,4.5) {Cost Performance Index (CPI)};
+    \node[below, font=\footnotesize] at (3,-0.8) {Most projects over budget (CPI < 1.0)};
+\end{tikzpicture}

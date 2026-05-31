@@ -1,0 +1,144 @@
+\documentclass[twocolumn,10pt]{article}
+
+% Essential packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{natbib}
+\usepackage{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{shapes,arrows,positioning,patterns}
+
+% Page geometry for two-column format
+\geometry{
+    letterpaper,
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2cm,
+    right=2cm,
+    columnsep=0.6cm
+}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+% Custom commands
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\text{Var}}
+\newcommand{\Cov}{\text{Cov}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\argmax}{\operatorname{argmax}}
+\newcommand{\argmin}{\operatorname{argmin}}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+% Title and authors
+\title{\textbf{Reinforcement Learning for Project Portfolio Budgeting under Cashflow Uncertainty}}
+
+\author{
+    Author Name\thanks{Corresponding author. Email: author@university.edu} \\
+    \textit{Department of Industrial Engineering} \\
+    \textit{University Name} \\
+    \textit{City, Country}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\begin{abstract}
+Project portfolio budgeting under cashflow uncertainty presents a critical challenge for Engineering, Procurement, and Construction (EPC) contractors in capital-intensive industries. Traditional optimization methods (Mixed Integer Programming, Stochastic Programming) fail to handle the sequential decision-making nature of budget allocation under partial observability, where contractor performance uncertainty creates unknown state transition probabilities. We propose a Reinforcement Learning (RL) framework with rolling horizon control that learns adaptive budget allocation policies from simulated experience. Our approach addresses three fundamental barriers: (1) computational intractability of classical methods for real-time decisions, (2) scalability failure as portfolio size increases, and (3) data limitations due to confidentiality constraints. We develop a literature-calibrated synthetic data generation methodology that creates realistic project portfolios with empirically-grounded uncertainty distributions for Schedule Performance Index (SPI) and Cost Performance Index (CPI). The synthetic environment models milestone-based payment structures, Beta-distributed S-curve cashflows, and stochastic contractor performance based on 318 industrial megaprojects analyzed in prior literature. Our rolling horizon architecture maintains fixed 12-period episodes while handling variable-duration portfolios through sequential re-planning, preventing state-space explosion. This work establishes the foundational methodology for RL-based portfolio budgeting, with future work addressing agent architecture, baseline comparisons, and fine-tuning protocols for company-specific deployment. The complete modeling framework and instance generator will be released as open-source software to enable reproducible research in this emerging domain.
+
+\textbf{Keywords:} Project Portfolio Management, Reinforcement Learning, Cashflow Uncertainty, Rolling Horizon Control, Synthetic Data Generation, EPC Contractors
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:introduction}
+\input{sections/01-introduction}
+
+\section{Literature Review}
+\label{sec:literature}
+\input{sections/02-literature}
+
+\section{Problem Formulation}
+\label{sec:problem}
+\input{sections/03-problem-formulation}
+
+\section{Synthetic Data Generation Methodology}
+\label{sec:methodology}
+\input{sections/04-methodology}
+
+\section{Portfolio Modeling Framework}
+\label{sec:portfolio-modeling}
+\input{sections/05-portfolio-modeling}
+
+\section{Rolling Horizon RL Architecture}
+\label{sec:rl-architecture}
+\input{sections/06-rl-architecture}
+
+\section{Experimental Design}
+\label{sec:experiments}
+\input{sections/07-experiments}
+
+\section{Results and Discussion}
+\label{sec:results}
+\input{sections/08-results}
+
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+\input{sections/09-conclusion}
+
+\section*{Acknowledgments}
+This research was supported by [Funding Agency]. The authors thank [Names] for valuable discussions and feedback.
+
+\bibliographystyle{apalike}
+\bibliography{references}
+
+\appendix
+\section{Mathematical Proofs}
+\label{app:proofs}
+\input{sections/appendix-proofs}
+
+\section{Parameter Calibration Details}
+\label{app:calibration}
+\input{sections/appendix-calibration}
+
+\section{Instance Generator Algorithm}
+\label{app:algorithm}
+\input{sections/appendix-algorithm}
+
+\end{document}

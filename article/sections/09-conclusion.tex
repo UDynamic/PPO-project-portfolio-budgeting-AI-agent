@@ -1,0 +1,98 @@
+\subsection{Summary of Contributions}
+
+This paper establishes the foundational methodology for Reinforcement Learning-based project portfolio budgeting under cashflow uncertainty. Our work addresses a critical gap in operations research: the inability of classical optimization methods to handle sequential decision-making under partial observability in portfolio management.
+
+We make four primary contributions:
+
+\textbf{(1) Literature-Calibrated Synthetic Data Generation:} We developed a comprehensive framework for generating realistic project portfolios with empirically-grounded uncertainty distributions. All parameters are calibrated from published studies (318 megaprojects, multiple empirical analyses), ensuring scientific validity while addressing confidentiality constraints.
+
+\textbf{(2) Rolling Horizon Control Architecture:} We proposed a rolling horizon framework that maintains fixed 12-period episodes while handling variable-duration portfolios through sequential re-planning, preventing state-space explosion and enabling tractable RL training.
+
+\textbf{(3) Formal Problem Formulation:} We provided the first rigorous mathematical formulation of portfolio budgeting as a POMDP with explicit state space, action space, transition dynamics, and reward function, all grounded in empirical project management literature.
+
+\textbf{(4) Complete Modeling Framework:} We documented a modular portfolio modeling system covering composition, cashflows, uncertainty, and revenue plans, with all assumptions explicitly stated and future extensions identified.
+
+\subsection{Implications for Research and Practice}
+
+\textbf{For Operations Research:} This work demonstrates that RL can address problems where classical OR methods fail due to unknown transition probabilities and computational intractability. The rolling horizon architecture provides a template for applying RL to other long-horizon sequential decision problems.
+
+\textbf{For Project Management:} The literature-calibrated synthetic data methodology enables reproducible research in domains with confidentiality constraints. Our framework can be extended to construction, infrastructure, R\&D, and other project-intensive industries.
+
+\textbf{For Machine Learning:} This application showcases RL's potential in operations research domains, complementing recent successes in robotics, game playing, and control. The integration of domain knowledge (S-curves, milestone payments, SPI/CPI dynamics) with data-driven learning exemplifies hybrid AI approaches.
+
+\subsection{Limitations and Scope Boundaries}
+
+We deliberately adopted the \textit{Simplest Model Principle} to establish a foundational framework. Key limitations include:
+
+\begin{itemize}
+    \item \textbf{Aggregated cashflow modeling:} No resource-level detail (labor, materials, equipment)
+    \item \textbf{Fixed portfolio composition:} 60/40 domestic/international mix assumed optimal
+    \item \textbf{Milestone-based payments only:} Alternative structures (time-based, cost-plus) excluded
+    \item \textbf{No project interdependencies:} Shared resources and technology spillovers not modeled
+    \item \textbf{Synthetic data only:} Real-world validation pending company partnerships
+\end{itemize}
+
+Each limitation represents a natural extension for future work, documented with clear research directions.
+
+\subsection{Future Work}
+
+\textbf{Immediate Next Steps (Current Research):}
+\begin{enumerate}
+    \item \textbf{RL Agent Implementation:} Select and train policy network (PPO, SAC, or Transformer-based)
+    \item \textbf{Baseline Comparison:} Implement MIP, stochastic programming, and greedy heuristics
+    \item \textbf{Experimental Evaluation:} Conduct comprehensive experiments across scenarios
+    \item \textbf{Sensitivity Analysis:} Analyze robustness to parameter variations
+\end{enumerate}
+
+\textbf{Medium-Term Extensions (6--12 Months):}
+\begin{enumerate}
+    \item \textbf{Fine-Tuning Protocol:} Develop methodology for adapting pretrained models to company-specific data
+    \item \textbf{Interpretability Analysis:} Apply attention mechanisms or SHAP values to explain allocation decisions
+    \item \textbf{Multi-Objective Optimization:} Extend to Pareto-optimal policies balancing NPV, risk, and strategic alignment
+    \item \textbf{Real-World Validation:} Partner with EPC contractors for pilot deployment
+\end{enumerate}
+
+\textbf{Long-Term Research Directions (1--3 Years):}
+\begin{enumerate}
+    \item \textbf{Resource-Level Modeling:} Disaggregate cashflows into labor, materials, equipment with detailed scheduling
+    \item \textbf{Dynamic Portfolio Selection:} Integrate project selection with execution optimization
+    \item \textbf{Multi-Agent RL:} Model interactions between contractor, client, and subcontractors
+    \item \textbf{Transfer Learning:} Investigate cross-domain transfer (oil \& gas $\to$ construction $\to$ infrastructure)
+    \item \textbf{Hierarchical RL:} Develop two-level policies (strategic portfolio allocation + tactical project control)
+\end{enumerate}
+
+\subsection{Broader Impact}
+
+This research has potential impact beyond project portfolio management:
+
+\textbf{Methodological Contributions:}
+\begin{itemize}
+    \item Template for applying RL to OR problems with unknown transition dynamics
+    \item Framework for literature-calibrated synthetic data generation
+    \item Rolling horizon architecture for long-horizon sequential decision problems
+\end{itemize}
+
+\textbf{Practical Applications:}
+\begin{itemize}
+    \item Real-time decision support for portfolio managers
+    \item Scenario analysis for strategic planning
+    \item Risk assessment through Monte Carlo simulation
+    \item Training tool for project management education
+\end{itemize}
+
+\textbf{Open Science:}
+\begin{itemize}
+    \item Complete codebase and datasets released as open source
+    \item Reproducible research enabling community validation and extension
+    \item Benchmark problem for RL algorithm development
+\end{itemize}
+
+\subsection{Concluding Remarks}
+
+Project portfolio budgeting under uncertainty represents a critical challenge for capital-intensive industries. Traditional optimization methods fail due to computational intractability and unknown state transition probabilities. This paper establishes the foundational methodology for addressing this challenge through Reinforcement Learning with rolling horizon control.
+
+By developing a literature-calibrated synthetic data generation framework, we overcome the confidentiality barrier that has prevented progress in this domain. Our formal problem formulation and complete modeling framework provide a rigorous foundation for future research.
+
+The path forward is clear: implement and evaluate RL agents, compare against classical baselines, and develop fine-tuning protocols for company-specific deployment. We invite the research community to build upon this foundation, extending the methodology to related domains and advancing the state of the art in RL-based operations research.
+
+The complete modeling framework, instance generator, and documentation will be released as open-source software upon publication, enabling reproducible research and practical deployment in this emerging field.
