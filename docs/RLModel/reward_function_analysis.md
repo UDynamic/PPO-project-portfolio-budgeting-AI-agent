@@ -1,6 +1,7 @@
 # Reward Function Analysis for Portfolio Budgeting RL Agent
 
 ## Your Objectives (Priority Order)
+
 1. **Primary**: Project completion (learn to budget for completion)
 2. **Secondary**: Efficiency in allocations and working with money
 
@@ -17,22 +18,27 @@ where:
 ## Problem Analysis
 
 ### Issue 1: Cash Flow ≠ Project Completion
+
 **Current reward focuses on cash flow**, not completion:
+
 - Agent gets rewarded for cash inflows (payments received)
 - Agent gets penalized for costs (spending)
 - **Missing**: Direct reward for completing projects
 
 **Consequence**: Agent might learn to:
+
 - Prefer projects with high advance payments (quick cash)
 - Avoid spending on projects near completion (cost without immediate cash)
 - Abandon low-margin projects even if nearly complete
 
 ### Issue 2: No Terminal Value for Incomplete Projects
+
 - Episode ends after H=12 periods
 - Projects may still be in progress
 - No reward for partial completion → agent has no incentive to start long-duration projects
 
 ### Issue 3: Sparse Reward Signal
+
 - Cash inflows only occur at milestones (discrete events)
 - Long periods with no positive reward
 - Makes learning difficult (credit assignment problem)
@@ -40,6 +46,7 @@ where:
 ## Literature Review: RL Reward Design Principles
 
 ### 1. Reward Shaping (Ng et al., 1999)
+
 **Principle**: Add potential-based shaping to guide learning without changing optimal policy
 
 ```
@@ -49,6 +56,7 @@ F(s, s') = γ * Φ(s') - Φ(s)
 where Φ(s) is a potential function (e.g., total project progress)
 
 ### 2. Multi-Objective RL (Roijers et al., 2013)
+
 **Principle**: Decompose reward into multiple objectives with weights
 
 ```
@@ -56,13 +64,17 @@ r_t = w1*r_completion + w2*r_efficiency + w3*r_constraints
 ```
 
 ### 3. Sparse Reward Solutions (Andrychowicz et al., 2017)
+
 **Approaches**:
+
 - Hindsight Experience Replay (HER)
 - Curriculum learning (start with easy portfolios)
 - Dense intermediate rewards (progress-based)
 
 ### 4. Portfolio Optimization RL (Jiang et al., 2017)
+
 **Financial portfolio management lessons**:
+
 - Reward based on portfolio value change (not individual assets)
 - Risk-adjusted returns (Sharpe ratio)
 - Transaction costs as penalties
@@ -96,12 +108,14 @@ r_constraints = -μ * max(0, allocation_t - budget_t)^2
 ```
 
 **Pros**:
+
 - Direct reward for completion (primary objective)
 - Dense progress signal (helps learning)
 - Efficiency captured in secondary terms
 - Clear priority hierarchy
 
 **Cons**:
+
 - Multiple hyperparameters to tune (λ_wc, λ_delay, μ)
 - May need careful weight balancing
 
@@ -123,11 +137,13 @@ r_wc_penalty = -λ * WC_portfolio(t)
 ```
 
 **Pros**:
+
 - Economically grounded (NPV maximization)
 - Completion bonus ensures projects finish
 - Simpler (fewer hyperparameters)
 
 **Cons**:
+
 - Sparse completion signal (only at project end)
 - May struggle with long-duration projects
 
@@ -153,11 +169,13 @@ r_efficiency = -λ_wc * WC_portfolio(t) - λ_spi * Σ_i max(0, 0.85 - SPI_i(t))
 ```
 
 **Pros**:
+
 - Milestone rewards provide intermediate signals
 - Potential-based shaping is theoretically sound
 - Encourages steady progress
 
 **Cons**:
+
 - More complex implementation
 - Requires careful milestone definition
 
@@ -190,59 +208,71 @@ where:
 ```
 
 **Pros**:
+
 - Clear priority: completion first, efficiency second
 - Dense signal from progress and milestones
 - Hard constraints enforced via large penalties
 - Tunable trade-off via α parameter
 
 **Cons**:
+
 - Requires defining milestone bonuses
 - Need to calibrate α for desired behavior
 
 ## Recommended Approach
 
 ### Phase 1: Start Simple (Baseline)
+
 ```python
 r_t = Σ_i [ΔEV_i(t) * (1 + margin_i)] - λ * WC_portfolio(t)
 ```
+
 - Reward progress weighted by profitability
 - Penalize working capital
 - **Test if this learns completion behavior**
 
 ### Phase 2: Add Completion Bonus (If needed)
+
 ```python
 r_t = Σ_i [ΔEV_i(t) * (1 + margin_i)] + 
       β * Σ_i [completed_i(t) * BAC_i * margin_i] - 
       λ * WC_portfolio(t)
 ```
+
 - Add large completion bonus (β=2 or 3)
 - **Test if completion rate improves**
 
 ### Phase 3: Add Efficiency Terms (Fine-tuning)
+
 ```python
 r_t = Σ_i [ΔEV_i(t) * (1 + margin_i)] + 
       β * Σ_i [completed_i(t) * BAC_i * margin_i] - 
       λ_wc * WC_portfolio(t) - 
       λ_delay * Σ_i max(0, 1.0 - SPI_i(t))
 ```
+
 - Add schedule delay penalty
 - **Test if efficiency improves without hurting completion**
 
 ## Key Design Decisions
 
 ### 1. Should we reward cash flow or project progress?
+
 **Recommendation**: **Project progress (EV)**, not cash flow
+
 - Cash flow timing is stochastic (payment delays)
 - EV reflects actual work completed
 - Aligns with your primary objective (completion)
 
 ### 2. How to handle incomplete projects at episode end?
+
 **Options**:
 A. **Terminal value**: Estimate remaining value of incomplete projects
 B. **Continuation value**: Use value function V(s_terminal) as terminal reward
 C. **Ignore**: Only reward completed projects (may bias against long projects)
 
 **Recommendation**: **Option A (Terminal value)**
+
 ```python
 terminal_reward = Σ_i [
     completed_i * BAC_i * (1 + margin_i) +  # Full value if complete
@@ -251,21 +281,26 @@ terminal_reward = Σ_i [
 ```
 
 ### 3. How to balance completion vs efficiency?
+
 **Recommendation**: **Weighted sum with tunable α**
+
 ```python
 r_t = r_completion + α * r_efficiency
 ```
+
 - Start with α=0.1 (90% completion, 10% efficiency)
 - Increase α gradually if completion rate is satisfactory
 - Use sensitivity analysis to find optimal α
 
 ### 4. How to handle budget constraints?
+
 **Options**:
 A. **Soft penalty**: -μ * max(0, violation)^2
 B. **Hard constraint**: Reject invalid actions (action masking)
 C. **Hybrid**: Mask + small penalty for near-violations
 
 **Recommendation**: **Option C (Hybrid)**
+
 - Use action masking to prevent violations
 - Add small penalty for allocations near budget limit
 - Encourages conservative budgeting
@@ -273,6 +308,7 @@ C. **Hybrid**: Mask + small penalty for near-violations
 ## Implementation Roadmap
 
 ### Step 1: Implement baseline reward
+
 ```python
 def compute_reward(state, action, next_state):
     # Progress reward
@@ -286,6 +322,7 @@ def compute_reward(state, action, next_state):
 ```
 
 ### Step 2: Add completion tracking
+
 ```python
 def compute_reward(state, action, next_state):
     # Progress reward
@@ -307,6 +344,7 @@ def compute_reward(state, action, next_state):
 ```
 
 ### Step 3: Add terminal value
+
 ```python
 def compute_terminal_reward(state):
     terminal_value = 0
@@ -353,6 +391,7 @@ Track these metrics to validate reward design:
 6. **Schedule performance**: Mean SPI across portfolio
 
 **Target**: 
+
 - Completion rate > 85%
 - Portfolio NPV > 90% of perfect foresight
 - Peak WC < 35% of portfolio value
