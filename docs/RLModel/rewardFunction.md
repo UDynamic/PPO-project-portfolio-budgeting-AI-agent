@@ -1,4 +1,5 @@
-<!-- studying the options -->
+<!-- studying the options 
+Integrating studies-->
 
 # Reward Function Model
 
