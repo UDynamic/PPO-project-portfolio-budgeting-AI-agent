@@ -1,5 +1,6 @@
 <!-- studying the options 
-Integrating studies-->
+Integrating studies
+MAKING unified reward function-->
 
 # Reward Function Model
 
