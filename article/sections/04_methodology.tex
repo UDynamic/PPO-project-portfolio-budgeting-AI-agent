@@ -1,176 +1,46 @@
-\subsection{Motivation and Justification}
+\section{Methodology}
+\label{sec:methodology}
 
-The use of synthetic data in this research is not a limitation but a deliberate methodological choice driven by three fundamental constraints:
+\subsection{Overview of the Proposed Solution Framework}
+\label{subsec:solution_framework}
+% Explain synthetic generator + simulation environment + PPO agent.
 
-\textbf{(1) Confidentiality Barrier:} Project-level cashflow data represents highly sensitive commercial information. Despite systematic outreach to multiple EPC firms, no organization was willing to share period-by-period budget allocations, actual expenditures, and performance metrics under any confidentiality arrangement. This barrier is structural to the domain, not specific to this study.
+\subsection{Literature-Calibrated Synthetic Portfolio Generation}
+\label{subsec:synthetic_portfolio_generation}
+% Explain how portfolio/project attributes are sampled and calibrated.
 
-\textbf{(2) Regional Economic Distortions:} Using Iranian project data for international publication creates validity problems. Iranian projects exhibit 30--50\% annual inflation and sanctions-induced supply chain disruptions, confounding real project management performance with monetary and geopolitical phenomena. Separating these effects requires complex deflation methodologies outside this paper's scope.
+\subsection{Environment Initialization}
+\label{subsec:environment_initialization}
+% Explain reset, initial liquidity, active projects, generated portfolio.
 
-\textbf{(3) Scientific Reproducibility:} Proprietary data cannot be shared with the research community, preventing independent verification and extension of results. Synthetic data with published generation algorithms enables full reproducibility.
+\subsection{MDP Specification}
+\label{subsec:mdp_specification}
+% Define S, A, P, R, gamma, T.
 
-\textbf{Methodological Principle:} Our contribution is the \textit{methodology} (RL framework, rolling horizon architecture), not the description of a specific company's operations. Therefore, the environment must satisfy:
+\subsection{State Representation}
+\label{subsec:state_representation}
+% Exact state variables and normalization.
 
-\begin{itemize}
-    \item \textbf{Theoretical fidelity:} Each stochastic element has a formal probabilistic model
-    \item \textbf{Empirical grounding:} All parameters calibrated from peer-reviewed literature
-    \item \textbf{Controlled complexity:} Parameters span designed experimental ranges
-    \item \textbf{Falsifiability:} Claims bounded to the defined environment
-\end{itemize}
+\subsection{Action Space and Feasibility Handling}
+\label{subsec:action_space}
+% Exact allocation action, scaling, clipping, constraints.
 
-This approach has strong precedent in operations research: \citet{kolisch1997psplib} created PSPLIB, the standard benchmark for project scheduling algorithms, using entirely synthetic instances. Our work extends this tradition to portfolio budgeting under uncertainty.
+\subsection{Transition Dynamics}
+\label{subsec:transition_dynamics}
+% Progress, SPI/CPI, milestone, cash-flow, liquidity update.
 
-\subsection{Literature Calibration Framework}
+\subsection{Reward Function}
+\label{subsec:reward_function}
+% Reward components and weights.
 
-All distributional parameters are calibrated from published empirical studies rather than arbitrary choices. Our calibration methodology follows a systematic process:
+\subsection{PPO Training Procedure}
+\label{subsec:ppo_training}
+% PPO objective, architecture, hyperparameters, training setup.
 
-\textbf{Step 1: Literature Survey.} Identify peer-reviewed studies reporting distributional statistics (mean, standard deviation, percentiles) for relevant variables (project size, duration, profit margins, SPI, CPI, etc.).
+\subsection{Benchmark Policies and Evaluation Metrics}
+\label{subsec:benchmark_evaluation}
+% Baselines and metrics.
 
-\textbf{Step 2: Parameter Extraction.} Extract reported statistics and convert to distributional parameters. For example, if a study reports mean SPI = 0.81 and SD = 0.19 over range [0.3, 1.3], we fit a Beta distribution to match these moments.
-
-\textbf{Step 3: Cross-Study Validation.} Compare parameters across multiple studies to ensure consistency. If studies report conflicting values, we use the most recent or largest-sample study, documenting the choice.
-
-\textbf{Step 4: Sensitivity Ranges.} Define low/medium/high scenarios for each parameter based on reported ranges, enabling sensitivity analysis.
-
-\textbf{Step 5: Documentation.} Every parameter includes a literature citation and justification in the modeling documentation.
-
-\subsection{Key Literature Sources}
-
-Our calibration draws primarily from four major empirical studies:
-
-\textbf{Merrow (2011) — IPA Megaproject Database:} Analysis of 318 industrial megaprojects (oil \& gas, chemicals, mining) providing:
-\begin{itemize}
-    \item SPI distribution: mean 0.81, SD 0.19, range [0.35, 1.25]
-    \item CPI distribution: mean 0.87, SD 0.14, range [0.52, 1.18]
-    \item SPI-CPI correlation: $\rho \approx 0.68$
-    \item Project size distribution: median \$150M, mean \$280M (lognormal)
-\end{itemize}
-
-\textbf{Flyvbjerg et al. (2003) — Oxford Global Megaprojects:} Analysis of 258 transportation infrastructure projects:
-\begin{itemize}
-    \item Cost overrun: mean 28\%, median 22\%, 90th percentile 60\%
-    \item Schedule overrun: mean 27\%, median 22\%
-    \item Left-skewed distributions (more underperformers than overperformers)
-\end{itemize}
-
-\textbf{Khanzadi et al. (2018) — Iranian EPC Market:} Analysis of 127 Iranian EPC projects (2010--2016):
-\begin{itemize}
-    \item Optimal portfolio composition: 60\% domestic / 40\% international
-    \item Profit margins: domestic 8--12\%, international 12--16\%
-    \item Portfolio size: 8--15 projects for Tier 1 contractors
-\end{itemize}
-
-\textbf{Cui et al. (2010) — Payment Structures:} Survey of construction contracts:
-\begin{itemize}
-    \item 87\% use milestone-based payments
-    \item Typical milestones: 10\% advance, 20\% at 25\% progress, 30\% at 50\%, 30\% at 75\%, 10\% at completion
-\end{itemize}
-
-\subsection{Validation Framework}
-
-To ensure synthetic data realism, we implement a multi-level validation framework:
-
-\textbf{Level 1: Distributional Validation.} For each generated variable, verify that sample statistics (mean, SD, percentiles) match target literature values within acceptable tolerance ($\pm 5\%$ for means, $\pm 10\%$ for SDs).
-
-\textbf{Level 2: Correlation Validation.} Verify that pairwise correlations (e.g., SPI-CPI, project size-duration) match empirical values. For SPI-CPI, target $\rho = 0.68 \pm 0.05$.
-
-\textbf{Level 3: Portfolio-Level Validation.} Check aggregate properties:
-\begin{itemize}
-    \item Total portfolio BAC distribution matches empirical ranges
-    \item Composition ratios (60/40 domestic/international) maintained
-    \item Temporal cashflow profiles exhibit realistic S-curve shapes
-\end{itemize}
-
-\textbf{Level 4: Sanity Checks.} Verify logical consistency:
-\begin{itemize}
-    \item No negative cashflows or budgets
-    \item Project durations consistent with BAC (larger projects take longer)
-    \item Milestone payments sum to total contract revenue
-    \item SPI/CPI values remain in physically plausible ranges
-\end{itemize}
-
-\textbf{Level 5: Expert Review.} Present generated instances to industry practitioners for face validity assessment. Key questions:
-\begin{itemize}
-    \item Do cashflow profiles resemble real projects?
-    \item Are performance degradation patterns realistic?
-    \item Do portfolio compositions reflect actual practice?
-\end{itemize}
-
-\subsection{Instance Generator Architecture}
-
-The instance generator follows a modular architecture with five sequential stages:
-
-\textbf{Stage 1: Portfolio Composition.} Generate portfolio size $N \sim \text{Uniform}(8, 18)$ and assign project categories (domestic/international) to achieve 60/40 composition by total BAC.
-
-\textbf{Stage 2: Project Characteristics.} For each project $i$:
-\begin{itemize}
-    \item Sample BAC from lognormal distribution: $\log(\text{BAC}_i) \sim \mathcal{N}(\mu_{\text{BAC}}, \sigma_{\text{BAC}})$
-    \item Sample profit margin from truncated normal: $\pi_i \sim \text{TN}(\mu_\pi, \sigma_\pi, a_\pi, b_\pi)$
-    \item Compute revenue: $R_i = \text{BAC}_i \times (1 + \pi_i)$
-    \item Sample duration: $D_i \sim f_D(\text{BAC}_i)$ (duration increases with project size)
-\end{itemize}
-
-\textbf{Stage 3: Cashflow Profiles.} Generate S-curve parameters $(\alpha_i, \beta_i)$ based on project category and size. Compute planned cashflow:
-\begin{equation}
-C_i(t) = \text{BAC}_i \times \text{Beta}(t/D_i; \alpha_i, \beta_i)
-\end{equation}
-
-\textbf{Stage 4: Performance Uncertainty.} Sample final SPI and CPI from correlated Beta distributions:
-\begin{align}
-\text{SPI}_i^{\text{final}} &\sim \text{Beta}(\alpha_{\text{SPI}}, \beta_{\text{SPI}}) \text{ on } [0.3, 1.3] \\
-\text{CPI}_i^{\text{final}} &\sim \text{Beta}(\alpha_{\text{CPI}}, \beta_{\text{CPI}}) \text{ on } [0.5, 1.2]
-\end{align}
-with correlation $\rho = 0.68$ enforced via Gaussian copula.
-
-\textbf{Stage 5: Revenue Plans.} Generate milestone structure and payment timing based on planned progress thresholds. Link payment triggers to actual progress (SPI-adjusted).
-
-\subsection{Reproducibility and Open Source Release}
-
-To ensure full reproducibility, we will release:
-
-\begin{itemize}
-    \item \textbf{Instance generator code:} Python implementation with documented parameters
-    \item \textbf{Generated datasets:} 10,000 portfolio instances in standardized format
-    \item \textbf{Validation scripts:} Automated checks for distributional properties
-    \item \textbf{Documentation:} Complete parameter tables with literature citations
-    \item \textbf{Visualization tools:} Scripts to plot cashflow profiles, performance distributions, etc.
-\end{itemize}
-
-The repository will include a \texttt{README} with:
-\begin{itemize}
-    \item Installation instructions
-    \item Usage examples
-    \item Parameter customization guide
-    \item Citation information
-\end{itemize}
-
-This enables other researchers to:
-\begin{itemize}
-    \item Reproduce our exact experimental setup
-    \item Generate new instances with different parameters
-    \item Extend the generator for related domains (construction, R\&D, etc.)
-    \item Benchmark alternative RL architectures on the same data
-\end{itemize}
-
-\subsection{Limitations and Future Extensions}
-
-Our synthetic data generation methodology has deliberate scope boundaries:
-
-\textbf{Current Scope:}
-\begin{itemize}
-    \item Aggregated cashflow-based budgeting (no resource-level detail)
-    \item Fixed portfolio composition (60/40 domestic/international)
-    \item Milestone-based payment structures (dominant in EPC)
-    \item Beta-distributed S-curves (standard in literature)
-    \item Correlated SPI/CPI uncertainty (empirically validated)
-\end{itemize}
-
-\textbf{Future Extensions:}
-\begin{itemize}
-    \item Resource-level modeling (labor, materials, equipment)
-    \item Dynamic portfolio composition optimization
-    \item Alternative payment structures (time-based, cost-plus)
-    \item Project interdependencies (shared resources, technology spillovers)
-    \item Time-varying parameters (market cycles, learning effects)
-\end{itemize}
-
-Each extension represents a natural follow-on research direction, building on the foundational framework established here.
+\subsection{Forward Policy Rollout}
+\label{subsec:forward_policy_rollout}
+% 12-step simulated trajectory demonstration.

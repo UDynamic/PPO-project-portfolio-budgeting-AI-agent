@@ -1,211 +1,151 @@
-\subsection{Problem Statement}
+\section{Problem Formulation}
+\label{sec:problem_formulation}
 
-Consider an EPC contractor managing a portfolio $\mathcal{P} = \{1, 2, \ldots, N\}$ of $N$ projects over a planning horizon $T$. Each project $i \in \mathcal{P}$ is characterized by:
+\subsection{Management Problem and Portfolio Setting}
+\label{subsec:setting}
 
-\begin{itemize}
-    \item Budget at Completion (BAC): $\text{BAC}_i \in \R^+$
-    \item Planned duration: $D_i \in \N^+$ periods
-    \item Start time: $t_i^{\text{start}} \in \{0, 1, \ldots, T\}$
-    \item Profit margin: $\pi_i \in [0, 1]$
-    \item Total contract revenue: $R_i = \text{BAC}_i \times (1 + \pi_i)$
-\end{itemize}
+We consider a finite-horizon, discrete-time budget management problem for a committed portfolio of projects under schedule, cost, and funding uncertainty. The decision maker does not select which projects to undertake; instead, the task is to allocate a constrained budget over periods $t = 1,\dots,H$ among an existing set of projects $P$, while monitoring progress and deciding when to activate corrective interventions. Each project consumes resources gradually, generates revenue through milestone payments, and may suffer delays or cost overruns. The objective is to minimize a composite loss function that penalises schedule delays, unmet funding, intervention costs, and credit violations.
 
-At each decision epoch $t \in \{0, 1, \ldots, T-1\}$, the contractor must allocate budget across active projects subject to a total budget constraint $B_t$. The allocation decision affects project progress, which in turn determines future cashflow requirements and revenue collection through milestone-based payments.
+A project $i\in P$ is defined by its planned start $s_i$, planned finish $f_i$, planned duration $D_i = f_i - s_i + 1$, and budget at completion $\mathrm{BAC}_i$. It is active only within its execution window $\mathcal{A}_i = \{t : s_i \leq t \leq f_i\}$, and the set of active projects at time $t$ is $P_t = \{i \in P : t \in \mathcal{A}_i\}$.
 
-The fundamental challenge arises from \textit{contractor performance uncertainty}: the actual spending rate and progress of each project deviate stochastically from planned values due to execution risks (labor productivity, material delays, design changes, weather, etc.). This uncertainty creates unknown state transition probabilities, making classical optimization methods inadequate.
+\subsection{Project State, Expenditure, and Cash Flows}
+\label{subsec:state_cash}
 
-\subsection{Rolling Horizon Framework}
-
-To handle variable-duration portfolios (12--60 months) while maintaining computational tractability, we adopt a \textit{rolling horizon} architecture with fixed planning window $H = 12$ periods (months). At each timestep $t$, the decision-maker:
-
-\begin{enumerate}
-    \item Observes current portfolio state $s_t$
-    \item Solves a finite-horizon problem over $[t, t+H-1]$
-    \item Executes only the first-period action $a_t$
-    \item Advances to $t+1$, observes new state $s_{t+1}$, and re-plans
-\end{enumerate}
-
-This framework offers three key advantages:
-
-\textbf{(1) Bounded state space:} The RL agent trains on fixed $H$-period episodes, preventing state-space explosion for long portfolios.
-
-\textbf{(2) Adaptive re-planning:} New information (performance updates, budget changes) is incorporated at each re-planning step, enabling dynamic adjustment.
-
-\textbf{(3) Real-world alignment:} The 12-month horizon matches industry practice (annual budget cycles with quarterly/monthly reviews).
-
-\begin{figure}[h]
+The condition of project $i$ at time $t$ is fully captured by a state vector
+\begin{equation}
+\Omega_{i,t} = \bigl( p_{i,t},\ \mathrm{SPI}_{i,t},\ \mathrm{CPI}_{i,t},\ RD_{i,t},\ h_{i,t},\ \rho_{i,t} \bigr),
+\end{equation}
+where the meaning of each component is given in \autoref{tab:state_vars}.
+\begin{table}[htbp]
 \centering
-\resizebox{0.9\columnwidth}{!}{\input{figures/rolling_horizon_diagram.tex}}
-\caption{Rolling Horizon Architecture: Fixed 12-month planning window slides forward, executing only the first-period action at each step.}
-\label{fig:rolling_horizon}
-\end{figure}
+\caption{Project state variables}
+\label{tab:state_vars}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Symbol & Description & Range \\
+\midrule
+$p_{i,t}$       & Physical progress (fraction completed) & $[0,1]$ \\
+$\mathrm{SPI}_{i,t}$ & Schedule performance index (earned/planned) & $\mathbb{R}_{>0}$ \\
+$\mathrm{CPI}_{i,t}$ & Cost performance index (earned/actual) & $\mathbb{R}_{>0}$ \\
+$RD_{i,t}$      & Remaining planned duration (periods) & $\mathbb{Z}_{\ge 0}$ \\
+$h_{i,t}$       & Intervention-persistence state & $\{0,1\}$ or ordinal \\
+$\rho_{i,t}$    & Replanning indicator & $\{0,1\}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection{State Space}
-
-The state at time $t$ captures all information relevant for budget allocation decisions. For each active project $i \in \mathcal{P}_t^{\text{active}}$, we track:
-
-\begin{align}
-s_t^i = \{&\text{progress}_t^i, \text{budget\_spent}_t^i, \text{SPI}_t^i, \text{CPI}_t^i, \nonumber \\
-&\text{remaining\_duration}_t^i, \text{next\_milestone}_t^i, \nonumber \\
-&\text{planned\_cashflow}_{t:t+H-1}^i, \text{revenue\_plan}_{t:t+H-1}^i\}
-\end{align}
-
-Portfolio-level state includes:
-
+Planned expenditure follows an S-curve modelled by the regularised incomplete Beta function:
 \begin{equation}
-s_t^{\text{portfolio}} = \{\text{available\_budget}_t, \text{total\_NPV}_t, \text{active\_projects}_t\}
+F_i(\tau) = I_{\tau}(\alpha_i,\beta_i),\quad \tau = (t - s_i)/D_i \in [0,1],
+\end{equation}
+with $\alpha_i,\beta_i > 0$ controlling the front-loading of costs. The planned cumulative and period expenditures are $\bar{E}_{i,t} = \mathrm{BAC}_i\,F_i(\tau_{i,t})$ and $\bar{e}_{i,t} = \bar{E}_{i,t} - \bar{E}_{i,t-1}$.
+
+Actual expenditure $e_{i,t}$ may deviate from the plan due to performance variations or management actions. The aggregate planned outflow is $\bar{E}^{P}_{t} = \sum_{i\in P_t} \bar{e}_{i,t}$.
+
+\subsubsection{Milestone-Based Revenue}
+
+Each project $i$ generates a deterministic contract revenue $R_i = \mathrm{BAC}_i(1+\pi_i)$ through a set of payment milestones $K_i = \{0,1,\dots,N_i\}$. Milestone $k$ has a payment fraction $q_{i,k} \ge 0$ ($\sum_k q_{i,k}=1$) and a gross payment $P_{i,k}^{\mathrm{gross}} = q_{i,k}R_i$.
+
+Payment timing is progress-driven: a milestone $k$ is planned at progress threshold $\chi_{i,k}$ and is actually achieved at
+\begin{equation}
+t_{i,k}^{\mathrm{act}} = s_i + \frac{\chi_{i,k} D_i}{\overline{\mathrm{SPI}}_{i,k}},
+\end{equation}
+where $\overline{\mathrm{SPI}}_{i,k}$ is an effective schedule performance measure. A client-side processing delay $\delta_{i,k} \ge 0$ shifts the cash receipt to $t_{i,k}^{\mathrm{rec}} = t_{i,k}^{\mathrm{act}} + \delta_{i,k}$. Advance payments ($k=0$) are assumed to have $\delta_{i,0}=0$.
+
+A retention rate $r_i \in [0,1]$ is withheld from each payment as security. For non-final milestones, net receipt is $P_{i,k}^{\mathrm{net}} = (1-r_i)P_{i,k}^{\mathrm{gross}}$. Accumulated retention is released at project completion (milestone $N_i$), so the final net payment includes all past withheld amounts:
+\begin{equation}
+P_{i,N_i}^{\mathrm{net}} = (1-r_i)P_{i,N_i}^{\mathrm{gross}} + \sum_{j=0}^{N_i-1} r_i P_{i,j}^{\mathrm{gross}}.
+\end{equation}
+Total lifecycle receipts satisfy $\sum_k P_{i,k}^{\mathrm{net}} = R_i$.
+
+Period revenue inflow from project $i$ is
+\begin{equation}
+Y_{i,t} = \sum_{k\in K_i} P_{i,k}^{\mathrm{net}} \,\mathbf{1}\{t_{i,k}^{\mathrm{rec}} = t\},
+\end{equation}
+and aggregate portfolio revenue is $Y_t^P = \sum_{i\in P} Y_{i,t}$.
+
+\subsubsection{Working Capital and Credit Limits}
+
+Each project maintains a working capital account that evolves as
+\begin{equation}
+W_{i,t} = W_{i,t-1} + Y_{i,t} - e_{i,t} - c_{i,t}^{\mathrm{credit}},
+\end{equation}
+where $c_{i,t}^{\mathrm{credit}}$ represents penalty costs from credit violations. A project-specific credit limit $\mathrm{CL}_i$ is set, proportional to $\mathrm{BAC}_i$, and may be reduced by advance payments:
+\begin{equation}
+\mathrm{CL}_i = \beta_i \, \mathrm{BAC}_i \, \bigl(1 - \gamma_i A_i \bigr),
+\end{equation}
+with $A_i = q_{i,0}$ and parameters $\beta_i, \gamma_i$ reflecting contractual and financial risk. A violation occurs when negative working capital exceeds the limit,
+\begin{equation}
+V_{i,t} = \max\{0,\, -W_{i,t} - \mathrm{CL}_i\},
+\end{equation}
+and generates a penalty cost $c_{i,t}^{\mathrm{credit}} = \rho_i V_{i,t}$ (or another convex function). The portfolio credit penalty cost is $C_t^{\mathrm{credit}} = \sum_{i\in P_t} c_{i,t}^{\mathrm{credit}}$.
+
+\subsubsection{Funding Balance}
+
+The total budget available in period $t$ combines exogenous funds $B^0_t$, revenue inflows, and any external financing $L_t$:
+\begin{equation}
+B_t = B^0_t + Y_t^P + L_t.
+\end{equation}
+If required expenditure and intervention costs exceed $B_t$, unmet funding $U_t = \max\{0,\ \sum_{i\in P_t} e_{i,t} + C_t^{\mathrm{act}} - B_t\}$ arises, triggering delays, re‑baselining, or additional costs.
+
+\subsection{Intervention Management}
+\label{subsec:interventions}
+
+Management can activate corrective interventions to recover schedule performance. Let $u_{i,t} \in \{0,1\}$ indicate whether an intervention is applied to project $i$ at time $t$. The cost of activating an intervention is proportional to the schedule gap $G_{i,t} = \max\{0,\,1 - \mathrm{SPI}_{i,t}\}$ and project size:
+\begin{equation}
+C_{i,t}^{\mathrm{act}} = \kappa_i \, \mathrm{BAC}_i \, G_{i,t}, \quad \kappa_i \ge 0.
 \end{equation}
 
-The complete state is $s_t = (s_t^1, \ldots, s_t^N, s_t^{\text{portfolio}})$. Projects not yet started or already completed are masked (zero vectors).
+During an intervention, the effective schedule performance improves to
+\begin{equation}
+\mathrm{SPI}_{i,t}^{\mathrm{eff}} = \mathrm{SPI}_{i,t} + \eta_{i,t}^{\mathrm{SPI}} (1 - \mathrm{SPI}_{i,t}),
+\end{equation}
+and a similar enhancement $\mathrm{CPI}_{i,t}^{\mathrm{eff}} = \mathrm{CPI}_{i,t} (1 + \eta_{i,t}^{\mathrm{CPI}})$ may apply to cost performance. After the intervention ends, the improvement decays smoothly towards a long‑run equilibrium:
+\begin{equation}
+\mathrm{SPI}_{i,t^{\mathrm{end}}_i+s} = \mathrm{SPI}_{i}^{\mathrm{eq}} + (1-\rho_i) \Delta^{\mathrm{peak}}_{i} \exp(-\lambda_i^{\mathrm{decay}} s),
+\end{equation}
+with parameters governing peak improvement $\Delta^{\mathrm{peak}}_{i}$, retention $\rho_i$, and decay rate $\lambda_i^{\mathrm{decay}}$.
 
-\textbf{Key state variables:}
+The expected benefit of an intervention is composed of delay avoidance, cost overrun avoidance, and opportunity gains:
+\begin{align}
+B_{i,t}^{\mathrm{LD}}   &= \lambda_i \, \mathrm{BAC}_i \, \mathbb{E}\bigl[ \Delta D^{\mathrm{avoided}}_{i,t} \bigr], \label{eq:benefit_delay} \\
+B_{i,t}^{\mathrm{cost}}  &= \mathrm{BAC}_i \, \mathbb{E}\!\left[ \frac{1}{\mathrm{CPI}_{i,t}} - \frac{1}{\mathrm{CPI}_{i,t}^{\mathrm{eff}}} \right], \\
+B_{i,t}^{\mathrm{opp}}   &= r_i V_i \, \mathbb{E}\bigl[ \Delta D^{\mathrm{avoided}}_{i,t} \bigr], \notag
+\end{align}
+with $\lambda_i$ a delay penalty, $V_i$ the project value rate, and $\Delta D^{\mathrm{avoided}}_{i,t}$ the reduction in expected duration. Total expected intervention benefit is $\mathbb{E}[B_{i,t}^{\mathrm{tot}}] = B_{i,t}^{\mathrm{LD}} + B_{i,t}^{\mathrm{cost}} + B_{i,t}^{\mathrm{opp}}$.
+
+At the portfolio level, intervention expenditure $C_t^{\mathrm{act}} = \sum_{i\in P_t} u_{i,t} C_{i,t}^{\mathrm{act}}$ must respect an intervention budget $B_t^{\mathrm{act}}$. A benefit–cost ratio $\mathrm{BCR}_t^P$ (computed when $C_t^{\mathrm{act}} > 0$) provides a diagnostic measure.
+
+\subsection{Duration and Performance Uncertainty}
+\label{subsec:uncertainty}
+
+Project duration is inherently uncertain. Baseline duration $D_i^{\mathrm{baseline}}$ is drawn from a distribution $\mathcal{D}_i$; the realised duration can be expressed as $D_i = D_i^{\mathrm{baseline}} M_i$, where $M_i \ge 0$ captures disruptive or recovery effects. Performance indices $\mathrm{SPI}_{i,t}$ and $\mathrm{CPI}_{i,t}$ evolve stochastically, influenced by the project state and external shocks. No specific parametric form is imposed; the formulation remains distributionally abstract.
+
+\subsection{Sequential Decision Problem and Objective}
+\label{subsec:decision_objective}
+
+At each period $t$, the decision maker observes the portfolio state $\mathbf{\Omega}_t = (\Omega_{i,t})_{i\in P_t}$, the available budget $B_t$, and the intervention budget $B_t^{\mathrm{act}}$, then chooses
+\begin{equation}
+a_t = \bigl( \{e_{i,t}\}_{i\in P_t},\ \{u_{i,t}\}_{i\in P_t} \bigr),
+\end{equation}
+subject to the funding constraint $\sum_{i\in P_t} e_{i,t} + C_t^{\mathrm{act}} \le B_t$, the intervention budget constraint $\sum_{i\in P_t} u_{i,t} C_{i,t}^{\mathrm{act}} \le B_t^{\mathrm{act}}$, and any project-specific operational limits. The chosen actions influence the evolution of project states, working capital, and future budgets.
+
+The management objective is to find a policy $\pi$ that minimises the expected total management loss over the horizon:
+\begin{equation}
+\min_{\pi} \; \mathbb{E}_{\pi}\!\left[ \sum_{t=1}^{H} \Bigl( c_U U_t + c_D D_t + C_t^{\mathrm{act}} + C_t^{\mathrm{credit}} - V_t \Bigr) \right],
+\label{eq:objective}
+\end{equation}
+where $U_t$ is unmet funding, $D_t$ aggregate delay exposure, $C_t^{\mathrm{act}}$ total intervention cost, $C_t^{\mathrm{credit}}$ credit-violation costs, and $V_t$ realised project value or benefit. The positive coefficients $c_U, c_D$ reflect the relative weight of funding shortages and delays.
+
+\subsection{Assumptions, Scope, and Limitations}
+\label{subsec:assumptions}
 
 \begin{itemize}
-    \item $\text{progress}_t^i \in [0, 1]$: Cumulative progress (0 = not started, 1 = complete)
-    \item $\text{SPI}_t^i \in \R^+$: Schedule Performance Index (actual progress / planned progress)
-    \item $\text{CPI}_t^i \in \R^+$: Cost Performance Index (earned value / actual cost)
-    \item $\text{budget\_spent}_t^i \in \R^+$: Cumulative budget allocated to project $i$ up to time $t$
-    \item $\text{available\_budget}_t \in \R^+$: Remaining unallocated budget at time $t$
+    \item The project portfolio is fixed; admission and selection decisions are outside the scope.
+    \item Expenditure profiles are represented conceptually by S‑curves; exact shapes may vary by project.
+    \item Duration, cost, and performance uncertainties are kept distributionally abstract.
+    \item Intervention effects follow a smooth post‑intervention decay; in reality, performance may jump due to external shocks.
+    \item Retention is released in full at project completion; a separate defects liability period is not modelled, as it extends beyond the active planning horizon.
+    \item Credit limits are soft: violations incur penalty costs rather than forcing project termination.
+    \item The formulation is solution‑agnostic and can be addressed by various sequential decision‑making methods.
 \end{itemize}
-
-\subsection{Action Space}
-
-The action at time $t$ is a budget allocation vector:
-
-\begin{equation}
-a_t = (a_t^1, a_t^2, \ldots, a_t^N) \in \R^N
-\end{equation}
-
-where $a_t^i \geq 0$ represents the budget allocated to project $i$ in period $t$.
-
-\textbf{Feasibility constraints:}
-
-\begin{align}
-\sum_{i=1}^N a_t^i &\leq B_t \quad \text{(budget constraint)} \label{eq:budget_constraint} \\
-a_t^i &= 0 \quad \forall i \notin \mathcal{P}_t^{\text{active}} \quad \text{(inactive projects)} \label{eq:inactive_constraint} \\
-a_t^i &\leq \text{demand}_t^i \quad \forall i \in \mathcal{P}_t^{\text{active}} \quad \text{(demand limit)} \label{eq:demand_constraint}
-\end{align}
-
-where $\text{demand}_t^i$ is the planned spending for project $i$ in period $t$ based on its S-curve cashflow profile.
-
-\subsection{Transition Dynamics}
-
-The state transition $s_{t+1} = f(s_t, a_t, \omega_t)$ is governed by stochastic contractor performance, where $\omega_t$ represents random disturbances (SPI/CPI realizations).
-
-\textbf{Progress update:}
-
-\begin{equation}
-\text{progress}_{t+1}^i = \text{progress}_t^i + \frac{a_t^i}{\text{BAC}_i} \times \text{SPI}_t^i
-\end{equation}
-
-The actual progress increment depends on both the allocated budget and the schedule performance. If $\text{SPI}_t^i < 1$ (behind schedule), the same budget produces less progress.
-
-\textbf{Performance index evolution:}
-
-SPI and CPI evolve stochastically based on empirically-calibrated distributions (Section~\ref{sec:portfolio-modeling}). We model:
-
-\begin{align}
-\text{SPI}_{t+1}^i &\sim f_{\text{SPI}}(\text{SPI}_t^i, \text{progress}_t^i, a_t^i) \\
-\text{CPI}_{t+1}^i &\sim f_{\text{CPI}}(\text{CPI}_t^i, \text{progress}_t^i, a_t^i)
-\end{align}
-
-where the distributions are left-skewed Beta distributions calibrated to \citet{merrow2011industrial}, with correlation $\rho(\text{SPI}, \text{CPI}) \approx 0.68$.
-
-\textbf{Milestone-based revenue collection:}
-
-Revenue is collected when projects achieve contractual milestones. For milestone $m$ at planned progress $p_m$, payment is triggered when:
-
-\begin{equation}
-\text{progress}_t^i \geq p_m \quad \text{and} \quad \text{progress}_{t-1}^i < p_m
-\end{equation}
-
-The payment amount is $R_i^m = R_i \times w_m$, where $w_m$ is the milestone weight (e.g., 10\% at 25\% progress, 20\% at 50\% progress, etc.).
-
-\subsection{Reward Function}
-
-The reward at time $t$ balances multiple objectives:
-
-\begin{equation}
-r_t = \alpha_1 \cdot r_t^{\text{NPV}} + \alpha_2 \cdot r_t^{\text{utilization}} - \alpha_3 \cdot r_t^{\text{penalty}}
-\end{equation}
-
-\textbf{NPV component:} Discounted cashflow from revenue collection minus costs:
-
-\begin{equation}
-r_t^{\text{NPV}} = \sum_{i=1}^N \left[\text{revenue}_t^i \cdot (1+\gamma)^{-t} - a_t^i \cdot (1+\gamma)^{-t}\right]
-\end{equation}
-
-where $\gamma$ is the discount rate (typically 8--12\% annually, or 0.6--1.0\% monthly).
-
-\textbf{Budget utilization component:} Encourages efficient use of available budget:
-
-\begin{equation}
-r_t^{\text{utilization}} = \frac{\sum_{i=1}^N a_t^i}{B_t}
-\end{equation}
-
-\textbf{Penalty component:} Discourages undesirable behaviors:
-
-\begin{equation}
-r_t^{\text{penalty}} = \sum_{i=1}^N \mathbb{1}[\text{SPI}_t^i < 0.7] + \sum_{i=1}^N \mathbb{1}[\text{CPI}_t^i < 0.7]
-\end{equation}
-
-This penalizes severely underperforming projects (SPI or CPI below 0.7), incentivizing corrective action plans.
-
-\textbf{Weight calibration:} The weights $(\alpha_1, \alpha_2, \alpha_3)$ are tuned to balance objectives. Typical values: $\alpha_1 = 1.0$, $\alpha_2 = 0.1$, $\alpha_3 = 0.5$.
-
-\subsection{Objective}
-
-The goal is to learn a policy $\pi: \mathcal{S} \to \mathcal{A}$ that maximizes expected cumulative reward over the rolling horizon:
-
-\begin{equation}
-\pi^* = \argmax_\pi \E_{\tau \sim \pi} \left[\sum_{t=0}^{H-1} r_t \mid s_0\right]
-\end{equation}
-
-where $\tau = (s_0, a_0, r_0, s_1, a_1, r_1, \ldots, s_{H-1}, a_{H-1}, r_{H-1})$ is a trajectory.
-
-At deployment, the learned policy is applied in a rolling manner: at each real-world timestep $t$, execute $a_t = \pi(s_t)$, observe $s_{t+1}$, and repeat.
-
-\subsection{Partially Observable Markov Decision Process Formulation}
-
-Formally, the problem is a Partially Observable Markov Decision Process (POMDP):
-
-\begin{equation}
-\langle \mathcal{S}, \mathcal{A}, \mathcal{T}, \mathcal{R}, \mathcal{O}, \Omega, \gamma, H \rangle
-\end{equation}
-
-where:
-\begin{itemize}
-    \item $\mathcal{S}$: State space (project progress, performance indices, budget status)
-    \item $\mathcal{A}$: Action space (budget allocation vectors)
-    \item $\mathcal{T}: \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to [0,1]$: Transition probability (unknown due to stochastic performance)
-    \item $\mathcal{R}: \mathcal{S} \times \mathcal{A} \to \R$: Reward function
-    \item $\mathcal{O}$: Observation space (subset of state, e.g., reported progress may differ from actual)
-    \item $\Omega: \mathcal{S} \times \mathcal{O} \to [0,1]$: Observation probability
-    \item $\gamma$: Discount factor
-    \item $H$: Rolling horizon length (12 periods)
-\end{itemize}
-
-The key challenge is that $\mathcal{T}$ is unknown: we cannot analytically specify $P(s_{t+1} | s_t, a_t)$ because contractor performance dynamics are too complex. RL addresses this by learning from simulated experience rather than requiring explicit transition probabilities.
-
-\subsection{Comparison with Classical OR Formulations}
-
-\textbf{MIP formulation:} A deterministic MIP would assume known cashflows and solve:
-
-\begin{align}
-\max \quad & \sum_{t=0}^{T-1} \sum_{i=1}^N (r_t^i - c_t^i) (1+\gamma)^{-t} \\
-\text{s.t.} \quad & \sum_{i=1}^N a_t^i \leq B_t \quad \forall t \\
-& \text{progress constraints, precedence, etc.}
-\end{align}
-
-This fails under uncertainty because $r_t^i$ and $c_t^i$ are stochastic.
-
-\textbf{Stochastic programming:} A two-stage SP would model scenarios:
-
-\begin{align}
-\max \quad & \E_{\omega \in \Omega} \left[\sum_{t=0}^{T-1} \sum_{i=1}^N (r_t^i(\omega) - c_t^i(\omega)) (1+\gamma)^{-t}\right] \\
-\text{s.t.} \quad & \text{constraints for each scenario } \omega
-\end{align}
-
-This requires explicit scenario enumeration and known probabilities $P(\omega)$, which are unavailable. For $N=10$ projects and $T=12$ periods, the scenario tree becomes intractable.
-
-\textbf{RL advantage:} RL learns a policy $\pi(s_t)$ directly from simulated trajectories, without requiring $P(s_{t+1}|s_t, a_t)$ or scenario enumeration. The rolling horizon framework further reduces complexity by maintaining fixed episode length $H=12$ regardless of total portfolio duration.
