@@ -1,4 +1,4 @@
-\documentclass[twocolumn,10pt]{article}
+\documentclass[11pt,a4paper]{article}
 
 % Essential packages
 \usepackage[utf8]{inputenc}
@@ -22,14 +22,13 @@
 \pgfplotsset{compat=1.18}
 \usetikzlibrary{shapes,arrows,positioning,patterns}
 
-% Page geometry for two-column format
+% Page geometry for single-column format
 \geometry{
-    letterpaper,
-    top=2.5cm,
-    bottom=2.5cm,
-    left=2cm,
-    right=2cm,
-    columnsep=0.6cm
+    a4paper,
+    top=3cm,
+    bottom=3cm,
+    left=3cm,
+    right=3cm
 }
 
 % Theorem environments
@@ -82,9 +81,9 @@
 \begin{abstract}
 Project portfolio budgeting under cashflow uncertainty presents a critical challenge for Engineering, Procurement, and Construction (EPC) contractors in capital-intensive industries. Traditional optimization methods (Mixed Integer Programming, Stochastic Programming) fail to handle the sequential decision-making nature of budget allocation under partial observability, where contractor performance uncertainty creates unknown state transition probabilities. We propose a Reinforcement Learning (RL) framework with rolling horizon control that learns adaptive budget allocation policies from simulated experience. Our approach addresses three fundamental barriers: (1) computational intractability of classical methods for real-time decisions, (2) scalability failure as portfolio size increases, and (3) data limitations due to confidentiality constraints. We develop a literature-calibrated synthetic data generation methodology that creates realistic project portfolios with empirically-grounded uncertainty distributions for Schedule Performance Index (SPI) and Cost Performance Index (CPI). The synthetic environment models milestone-based payment structures, Beta-distributed S-curve cashflows, and stochastic contractor performance based on 318 industrial megaprojects analyzed in prior literature. Our rolling horizon architecture maintains fixed 12-period episodes while handling variable-duration portfolios through sequential re-planning, preventing state-space explosion. This work establishes the foundational methodology for RL-based portfolio budgeting, with future work addressing agent architecture, baseline comparisons, and fine-tuning protocols for company-specific deployment. The complete modeling framework and instance generator will be released as open-source software to enable reproducible research in this emerging domain.
 
+\vspace{0.5cm}
 \textbf{Keywords:} Project Portfolio Management, Reinforcement Learning, Cashflow Uncertainty, Rolling Horizon Control, Synthetic Data Generation, EPC Contractors
 \end{abstract}
-
 
 \section{Introduction}
 \label{sec:introduction}
