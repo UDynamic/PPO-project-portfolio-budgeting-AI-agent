@@ -4,7 +4,7 @@
 \subsection{Management Problem and Portfolio Setting}
 \label{subsec:setting}
 
-We consider a finite-horizon, discrete-time budget management problem for a committed portfolio of projects under schedule, cost, and funding uncertainty. The decision maker does not select which projects to undertake; the portfolio composition is fixed. Instead, the task is to allocate a constrained budget over periods \(t = 1,\dots,H\) among an existing set of projects \(P\), while monitoring progress and deciding when to activate corrective interventions. Each project consumes resources gradually, generates revenue through milestone payments, and may suffer delays or cost overruns. The management objective is to maximise a flexible composite measure of portfolio value that reflects the organisation's strategic priorities—rewarding profitable completion, penalising excessive risk, and discouraging the wasteful continuation of underperforming projects.
+We consider a finite-horizon, discrete-time budget management problem for a committed portfolio of projects under schedule, cost, and funding uncertainty. The decision maker does not select which projects to undertake; the portfolio composition is fixed. Instead, the task is to allocate a constrained budget over periods \(t = 1,\dots,H\) among an existing set of projects \(P\), while monitoring progress and deciding when to activate corrective interventions. Each project consumes resources gradually, generates revenue through milestone payments, and may suffer delays or cost overruns. The management objective is to maximise a flexible composite measure of portfolio value that reflects the organisation's strategic priorities---rewarding profitable completion, penalising excessive risk, and discouraging the wasteful continuation of underperforming projects.
 
 \subsection{Portfolio and Project Definition}
 \label{subsec:portfolio}
@@ -95,7 +95,7 @@ Management can activate corrective interventions to recover schedule performance
 C_{i,t}^{\mathrm{act}} = \kappa_i \, \mathrm{BAC}_i \, G_{i,t}, \quad \kappa_i \ge 0.
 \end{equation}
 
-During an intervention, schedule performance improves to \(\mathrm{SPI}_{i,t}^{\mathrm{eff}} = \mathrm{SPI}_{i,t} + \eta_{i,t}^{\mathrm{SPI}} (1 - \mathrm{SPI}_{i,t})\); a similar enhancement \(\mathrm{CPI}_{i,t}^{\mathrm{eff}}\) may apply to cost performance. After the intervention ends, improvement decays smoothly towards a long‑run equilibrium:
+During an intervention, schedule performance improves to \(\mathrm{SPI}_{i,t}^{\mathrm{eff}} = \mathrm{SPI}_{i,t} + \eta_{i,t}^{\mathrm{SPI}} (1 - \mathrm{SPI}_{i,t})\); a similar enhancement \(\mathrm{CPI}_{i,t}^{\mathrm{eff}}\) may apply to cost performance. After the intervention ends, improvement decays smoothly towards a long-run equilibrium:
 \[
 \mathrm{SPI}_{i,t^{\mathrm{end}}_i+s} = \mathrm{SPI}_{i}^{\mathrm{eq}} + (1-\rho_i) \Delta^{\mathrm{peak}}_{i} \exp(-\lambda_i^{\mathrm{decay}} s),
 \]
@@ -109,7 +109,7 @@ B_{i,t}^{\mathrm{opp}}   &= r_i V_i \, \mathbb{E}\!\bigl[ \Delta D^{\mathrm{avoi
 \end{align}
 where \(\lambda_i\) is a delay penalty, \(V_i\) the project value rate, and \(\Delta D^{\mathrm{avoided}}_{i,t}\) the reduction in expected duration. Total expected benefit is \(\mathbb{E}[B_{i,t}^{\mathrm{tot}}] = B_{i,t}^{\mathrm{LD}} + B_{i,t}^{\mathrm{cost}} + B_{i,t}^{\mathrm{opp}}\).
 
-Portfolio-level intervention expenditure \(C_t^{\mathrm{act}} = \sum_{i\in P_t} u_{i,t} C_{i,t}^{\mathrm{act}}\) must respect an intervention budget \(B_t^{\mathrm{act}}\). A benefit–cost ratio \(\mathrm{BCR}_t^P\) provides a diagnostic when \(C_t^{\mathrm{act}} > 0\).
+Portfolio-level intervention expenditure \(C_t^{\mathrm{act}} = \sum_{i\in P_t} u_{i,t} C_{i,t}^{\mathrm{act}}\) must respect an intervention budget \(B_t^{\mathrm{act}}\). A benefit--cost ratio \(\mathrm{BCR}_t^P\) provides a diagnostic when \(C_t^{\mathrm{act}} > 0\).
 
 \subsection{Duration and Performance Uncertainty}
 \label{subsec:uncertainty}
@@ -125,7 +125,7 @@ a_t = \bigl( \{e_{i,t}\}_{i\in P_t},\ \{u_{i,t}\}_{i\in P_t} \bigr),
 \]
 subject to the funding constraint \(\sum_{i\in P_t} e_{i,t} + C_t^{\mathrm{act}} \le B_t\), the intervention budget constraint \(\sum_{i\in P_t} u_{i,t} C_{i,t}^{\mathrm{act}} \le B_t^{\mathrm{act}}\), and any project-specific operational limits.
 
-The management goal is to find a policy \(\pi\) that maximises, in expectation, a composite portfolio performance measure reflecting the organisation's strategic posture. A generic representation that accommodates a spectrum from completion‑dominant to profit‑disciplined to capital‑preservation strategies is
+The management goal is to find a policy \(\pi\) that maximises, in expectation, a composite portfolio performance measure reflecting the organisation's strategic posture. A generic representation that accommodates a spectrum from completion-dominant to profit-disciplined to capital-preservation strategies is
 \[
 \max_{\pi}\; \mathbb{E}_{\pi}\!\left[ \sum_{t=1}^{H} \Bigl( \phi_V V_t - \phi_U U_t - \phi_D D_t - \phi_{\!C} C_t^{\mathrm{act}} - \phi_{\!Cr} C_t^{\mathrm{credit}} - \phi_{\!B} \sum_{i\in P_t} \frac{e_{i,t}}{\bar{e}} \,\mathbf{1}\{\hat{\mu}_{i,t} < \underline{\mu}_i\} \Bigr) \right],
 \label{eq:objective}
@@ -135,23 +135,23 @@ where
 \item \(V_t\) is realised project value or benefit in period \(t\),
 \item \(U_t\) is unmet funding,
 \item \(D_t\) is aggregate delay exposure,
-\item \(C_t^{\mathrm{act}}\) and \(C_t^{\mathrm{credit}}\) are intervention and credit‑violation costs,
-\item \(\hat{\mu}_{i,t}\) is an estimate of project \(i\)’s remaining profitability (e.g., expected continuation margin),
-\item \(\underline{\mu}_i\) is a management‑defined threshold below which further allocation is deemed uneconomical,
-\item and the non‑negative coefficients \(\phi_{(\cdot)}\) encode the relative importance of each component.
+\item \(C_t^{\mathrm{act}}\) and \(C_t^{\mathrm{credit}}\) are intervention and credit-violation costs,
+\item \(\hat{\mu}_{i,t}\) is an estimate of project \(i\)'s remaining profitability (e.g., expected continuation margin),
+\item \(\underline{\mu}_i\) is a management-defined threshold below which further allocation is deemed uneconomical,
+\item and the non-negative coefficients \(\phi_{(\cdot)}\) encode the relative importance of each component.
 \end{itemize}
 
-The final term explicitly penalises the allocation of budget to projects whose expected continuation value has fallen below a critical threshold, thereby inducing the rational suspension of economically non‑viable work. The exact choice of the performance components, the functional form of the penalty for poor‑prospect projects, and the relative weights \(\phi_{(\cdot)}\) are exogenous parameters set by management to reflect its risk appetite, financial strategy, and contractual environment. The formulation is therefore not tied to a single objective but provides a flexible template that can be calibrated to different organisational contexts.
+The final term explicitly penalises the allocation of budget to projects whose expected continuation value has fallen below a critical threshold, thereby inducing the rational suspension of economically non-viable work. The exact choice of the performance components, the functional form of the penalty for poor-prospect projects, and the relative weights \(\phi_{(\cdot)}\) are exogenous parameters set by management to reflect its risk appetite, financial strategy, and contractual environment. The formulation is therefore not tied to a single objective but provides a flexible template that can be calibrated to different organisational contexts.
 
 \subsection{Assumptions, Scope, and Limitations}
 \label{subsec:assumptions}
 
 \begin{itemize}
     \item The project portfolio is fixed; admission and selection decisions are outside the scope.
-    \item Expenditure profiles are represented conceptually by S‑curves; exact shapes may vary by project.
+    \item Expenditure profiles are represented conceptually by S-curves; exact shapes may vary by project.
     \item Duration, cost, and performance uncertainties are kept distributionally abstract.
-    \item Intervention effects follow a smooth post‑intervention decay; in practice, performance may jump due to external shocks.
+    \item Intervention effects follow a smooth post-intervention decay; in practice, performance may jump due to external shocks.
     \item Retention is released in full at project completion; a separate defects liability period is not modelled, as it extends beyond the active planning horizon.
-    \item Credit limits are soft: violations incur penalty costs rather than forcing immediate project termination, and the organisation is assumed to be a rational, profit‑conscious contractor that may suspend projects whose expected net contribution becomes negative.
-    \item The formulation is solution‑agnostic and can be addressed by various sequential decision‑making methods.
+    \item Credit limits are soft: violations incur penalty costs rather than forcing immediate project termination, and the organisation is assumed to be a rational, profit-conscious contractor that may suspend projects whose expected net contribution becomes negative.
+    \item The formulation is solution-agnostic and can be addressed by various sequential decision-making methods.
 \end{itemize}
