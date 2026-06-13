@@ -75,15 +75,23 @@
 
 \maketitle
 
-\tableofcontents
-\newpage
+% \tableofcontents
+% \newpage
 
 \begin{abstract}
-Project portfolio budgeting under cashflow uncertainty presents a critical challenge for Engineering, Procurement, and Construction (EPC) contractors in capital-intensive industries. Traditional optimization methods (Mixed Integer Programming, Stochastic Programming) fail to handle the sequential decision-making nature of budget allocation under partial observability, where contractor performance uncertainty creates unknown state transition probabilities. We propose a Reinforcement Learning (RL) framework with rolling horizon control that learns adaptive budget allocation policies from simulated experience. Our approach addresses three fundamental barriers: (1) computational intractability of classical methods for real-time decisions, (2) scalability failure as portfolio size increases, and (3) data limitations due to confidentiality constraints. We develop a literature-calibrated synthetic data generation methodology that creates realistic project portfolios with empirically-grounded uncertainty distributions for Schedule Performance Index (SPI) and Cost Performance Index (CPI). The synthetic environment models milestone-based payment structures, Beta-distributed S-curve cashflows, and stochastic contractor performance based on 318 industrial megaprojects analyzed in prior literature. Our rolling horizon architecture maintains fixed 12-period episodes while handling variable-duration portfolios through sequential re-planning, preventing state-space explosion. This work establishes the foundational methodology for RL-based portfolio budgeting, with future work addressing agent architecture, baseline comparisons, and fine-tuning protocols for company-specific deployment. The complete modeling framework and instance generator will be released as open-source software to enable reproducible research in this emerging domain.
+Project portfolio budget allocation for EPC contractors in the oil and gas sector is a sequential decision-making problem under uncertain cash inflows, cash outflows, and project performance. Each portfolio consists of multiple projects with heterogeneous attributes, including budget at completion, start and finish dates, contractual S-curves, fixed profit margins, milestone-based payment structures, and uncertain contractor performance represented through Earned Value Management metrics such as cumulative SPI and CPI. The model also captures delayed and uncertain milestone payments, working-capital shortages, credit usage during negative-cashflow periods, and management intervention actions that affect cashflow and performance trajectories.
+
+Despite its practical importance, rigorous mathematical modeling of project portfolio budgeting under joint cashflow and performance uncertainty remains largely absent in recent literature, while most AI/ML-related studies discuss the topic qualitatively. This paper proposes a custom stochastic reinforcement learning environment for learning adaptive budget allocation policies under unknown future uncertainty. A PPO-based agent is trained with a multi-objective reward function to allocate constrained budgets efficiently, prioritize economically viable projects, avoid loss-making allocations, and learn optimal allocation timing. The framework provides a foundational RL model for EPC oil and gas portfolio budgeting, supports future fine-tuning with anonymized industry data, and enables immediate next-period allocation recommendations as well as rolling 12-period trajectory simulation.
+
+% Placeholder for future experimental results.
+% Placeholder for anonymized case-study validation details.
+% Placeholder for open-source/reproducibility statement.
 
 \vspace{0.5cm}
-\textbf{Keywords:} Project Portfolio Management, Reinforcement Learning, Cashflow Uncertainty, Rolling Horizon Control, Synthetic Data Generation, EPC Contractors
+\textbf{Keywords:} Project Portfolio Budgeting, Reinforcement Learning, EPC Contractors, Oil and Gas Projects, Cashflow Uncertainty, Earned Value Management, PPO, Rolling Horizon Control
 \end{abstract}
+    
+    
 
 \section{Introduction}
 \label{sec:introduction}
