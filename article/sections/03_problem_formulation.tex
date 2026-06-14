@@ -10,9 +10,11 @@ P=\{1,2,\ldots,n\},
 \]
 where each project \(i\in P\) represents a contractual undertaking with its own budget, planned schedule, expenditure profile, payment structure, and performance state. The portfolio is not a decision variable in the sense of project selection. Instead, it is the set of ongoing and committed projects whose execution must be managed jointly under limited financial and operational resources.
 
-The planning horizon is indexed by discrete periods \(t=1,\ldots,H\). At each period, management observes the current portfolio condition, allocates financial resources across active projects, and may apply corrective interventions to improve schedule or cost performance. Projects consume resources over time, generate cash inflows through milestone-based payments, and may deviate from their contractual plans because of schedule delays, cost overruns, funding shortages, payment delays, or operational disruptions.
+The planning horizon is indexed by discrete periods \(t=1,\ldots,H\). At each period, management observes the current portfolio condition, allocates financial resources across active projects, and may apply corrective interventions to improve schedule or cost performance. Projects consume resources over time, generate cash inflows through milestone-based payments, and may deviate from their contractual plans because of schedule delays, cost overruns, funding shortages, payment delays, contractor performance uncertainty, or operational disruptions.
 
 The central management problem is to determine a sequential policy for budget allocation and intervention decisions that balances multiple objectives: completing projects close to their planned finish dates, preserving profitability, avoiding excessive borrowing, reducing delay penalties, limiting wasteful expenditure on economically unattractive projects, and maintaining acceptable portfolio-level financial health. Different organizations may prioritize these goals differently. For example, some may prefer on-time delivery even at high cost, while others may prioritize profitability and reduce funding to projects whose expected continuation value becomes weak.
+
+A key feature of the problem is that budget allocation and intervention decisions do not produce known deterministic performance outcomes. After management allocates resources and applies an intervention decision in period \(t\), the contractor's realized response is uncertain and is only observed at the next reporting epoch through project-control information such as realized progress, earned value, schedule performance, cost performance, and updated remaining-duration estimates. This makes the problem naturally sequential and feedback-driven.
 
 \subsection{Contractual Project Attributes}
 \label{subsec:contractual_attributes}
@@ -107,6 +109,8 @@ T^{P,\mathrm{comp}}
 \max_{i\in P}T_i^{\mathrm{comp}}.
 \]
 
+If project \(i\) is not completed within the modeled horizon \(H\), its completion time may be treated as censored. In that case, terminal delay, residual value, and remaining exposure may be evaluated using the latest remaining-duration estimate \(RD_{i,H}\), an empirical terminal-value approximation, or the terminal convention adopted in the implementation.
+
 The planned finish period \(f_i\) is therefore a contractual benchmark, not a stopping rule. If
 \[
 t>f_i
@@ -129,6 +133,14 @@ G^p_{i,t}
 \]
 Thus, \(G^p_{i,t}>0\) indicates that the project is behind its planned progress curve.
 
+The earned value of project \(i\) at time \(t\) may be represented as
+\[
+\mathrm{EV}_{i,t}
+=
+\mathrm{BAC}_i p_{i,t},
+\]
+or, more generally, by the earned-value measure reported by the organization's project-control system.
+
 The schedule performance index may be defined as
 \[
 \mathrm{SPI}_{i,t}
@@ -137,7 +149,13 @@ The schedule performance index may be defined as
 \]
 where \(\epsilon>0\) avoids division by zero in early periods. Values below one indicate schedule underperformance relative to the contractual S-curve.
 
-Similarly, the cost performance index \(\mathrm{CPI}_{i,t}\) measures cost efficiency relative to earned progress. The precise empirical definition of CPI may depend on the available project accounting system. In general, it summarizes whether the realized cost of earned work is above or below the planned cost basis.
+Similarly, the cost performance index \(\mathrm{CPI}_{i,t}\) measures cost efficiency relative to earned progress. If earned-value accounting data are available, one possible definition is
+\[
+\mathrm{CPI}_{i,t}
+=
+\frac{\mathrm{EV}_{i,t}}{\max\{\epsilon,\mathrm{AC}_{i,t}\}},
+\]
+where \(\mathrm{AC}_{i,t}\) is the actual cost accumulated up to period \(t\). The precise empirical definition of CPI may depend on the available project accounting system. In general, it summarizes whether the realized cost of earned work is above or below the planned cost basis.
 
 The condition of project \(i\) at time \(t\) is represented by
 \[
@@ -145,6 +163,7 @@ The condition of project \(i\) at time \(t\) is represented by
 =
 \bigl(
 p_{i,t},
+\mathrm{EV}_{i,t},
 \mathrm{SPI}_{i,t},
 \mathrm{CPI}_{i,t},
 RD_{i,t},
@@ -163,16 +182,19 @@ where the variables are defined in \autoref{tab:state_vars}.
 Symbol & Description & Range \\
 \midrule
 \(p_{i,t}\) & Realized physical progress & \([0,1]\) \\
+\(\mathrm{EV}_{i,t}\) & Earned value or reported earned-work measure & \(\mathbb{R}_{\geq 0}\) \\
 \(\mathrm{SPI}_{i,t}\) & Schedule performance index & \(\mathbb{R}_{>0}\) \\
 \(\mathrm{CPI}_{i,t}\) & Cost performance index & \(\mathbb{R}_{>0}\) \\
-\(RD_{i,t}\) & Remaining duration estimate & \(\mathbb{Z}_{\geq 0}\) \\
+\(RD_{i,t}\) & Reported or estimated remaining duration based on project-control data & \(\mathbb{Z}_{\geq 0}\) \\
 \(h_{i,t}\) & Intervention-persistence state & discrete or continuous \\
 \(z^{\mathrm{rep}}_{i,t}\) & Replanning indicator & \(\{0,1\}\) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Actual expenditure in period \(t\) is denoted by \(e_{i,t}\). This expenditure may differ from the planned value \(\bar{e}_{i,t}\) because of resource constraints, inefficiencies, acceleration, rework, disruption, or management intervention.
+The variable \(RD_{i,t}\) is not assumed to be generated by a deterministic duration-transition model. It represents a reported, forecasted, or management-estimated remaining duration based on the latest project-control information available at decision epoch \(t\).
+
+The expenditure allocated to project \(i\) in period \(t\) is denoted by \(e_{i,t}\). This expenditure may differ from the planned value \(\bar{e}_{i,t}\) because of resource constraints, inefficiencies, acceleration, rework, disruption, or management intervention. The allocation \(e_{i,t}\) is a management action. Its effect on future project performance is uncertain and is mediated by the contractor's realized response, which becomes observable only in subsequent project reports.
 
 The model does not impose a deterministic structural transition law for actual progress. Instead, realized progress \(p_{i,t}\) is treated as an observed execution state at each decision epoch. This distinction is important: the contractual S-curve defines the planned benchmark, while actual project progress is determined by real execution and reported through project-control data. The management model uses the observed state to allocate resources and evaluate performance; it does not require an artificial law forcing the project to move along the baseline schedule.
 
@@ -198,12 +220,26 @@ P^{\mathrm{gross}}_{i,k}
 q_{i,k}CR_i.
 \]
 
-Milestone payments are triggered by realized progress. Let \(\chi_{i,k}\in[0,1]\) denote the progress threshold required for milestone \(k\). The planned milestone achievement time is
+Milestone payments are triggered by realized progress. Let \(\chi_{i,k}\in[0,1]\) denote the progress threshold required for milestone \(k\). Under the period-end S-curve convention, the planned milestone achievement time is
 \[
 t^{\mathrm{plan}}_{i,k}
 =
-s_i+\chi_{i,k}D_i^{\mathrm{plan}}.
+s_i+\chi_{i,k}D_i^{\mathrm{plan}}-1.
 \]
+This follows from the normalized period-end relation
+\[
+\tau_{i,t}
+=
+\frac{t-s_i+1}{D_i^{\mathrm{plan}}},
+\]
+so that the planned period corresponding to progress threshold \(\chi_{i,k}\) satisfies
+\[
+\chi_{i,k}
+=
+\frac{t^{\mathrm{plan}}_{i,k}-s_i+1}{D_i^{\mathrm{plan}}}.
+\]
+The value \(t^{\mathrm{plan}}_{i,k}\) may be fractional and is interpreted as a continuous planned benchmark time. When a discrete planned period is required, the mapping \(\mathcal{T}(\cdot)\) is used.
+
 The actual achievement time is the first period in which realized progress reaches the required threshold:
 \[
 t^{\mathrm{act}}_{i,k}
@@ -233,19 +269,27 @@ Thus, if a milestone is achieved between two periods, the receipt is recognized 
 \subsection{Retention Mechanism}
 \label{subsec:retention}
 
-Retention is modeled as a contractual withholding mechanism applied to non-final milestone payments. Let \(r_i\in[0,1]\) denote the retention rate for project \(i\).
+Retention is modeled as a contractual withholding mechanism applied to interim progress payments. Let \(r_i\in[0,1]\) denote the retention rate for project \(i\). The advance payment, if present, is treated separately from retention withholding.
 
-For non-final milestones \(k=0,\ldots,N_i-1\), the net receipt is
+For the advance milestone \(k=0\), the net receipt is
+\[
+P^{\mathrm{net}}_{i,0}
+=
+P^{\mathrm{gross}}_{i,0}.
+\]
+
+For interim non-final progress milestones \(k=1,\ldots,N_i-1\), the net receipt is
 \[
 P^{\mathrm{net}}_{i,k}
 =
 (1-r_i)P^{\mathrm{gross}}_{i,k}.
 \]
+
 The accumulated retention prior to final completion is
 \[
 R^{\mathrm{ret}}_i
 =
-\sum_{j=0}^{N_i-1}
+\sum_{j=1}^{N_i-1}
 r_iP^{\mathrm{gross}}_{i,j}.
 \]
 
@@ -257,6 +301,7 @@ P^{\mathrm{gross}}_{i,N_i}
 +
 R^{\mathrm{ret}}_i.
 \]
+
 Therefore, total lifecycle cash receipts equal the contract revenue:
 \[
 \sum_{k=0}^{N_i}
@@ -466,13 +511,9 @@ Similarly, the effective cost performance may be represented as
 \]
 where \(\eta^{\mathrm{CPI}}_{i,t}\geq0\) captures potential cost-efficiency improvement.
 
-Intervention effects may persist beyond the activation period and decay over time. This persistence can be summarized through the state variable \(h_{i,t}\), which records the remaining influence of past interventions. A generic decay representation is
-\[
-h_{i,t+1}
-=
-\mathcal{H}_i(h_{i,t},u_{i,t},\zeta_{i,t}),
-\]
-where \(\zeta_{i,t}\) denotes uncertainty in intervention effectiveness. The exact form of \(\mathcal{H}_i(\cdot)\) can be selected according to data availability and implementation needs.
+The realized effect of an intervention is uncertain. The values \(\eta^{\mathrm{SPI}}_{i,t}\) and \(\eta^{\mathrm{CPI}}_{i,t}\) are therefore not assumed to be known deterministic constants at the time of decision. They represent uncertain intervention effectiveness, which may be estimated from historical data, calibrated in simulation, sampled from scenarios, or learned through interaction with the project-control environment.
+
+Intervention effects may persist beyond the activation period and decay over time. This persistence can be summarized through the state variable \(h_{i,t}\), which records the remaining influence of past interventions. The formulation does not require a fixed deterministic persistence law. Instead, \(h_{i,t}\) is treated as part of the observed or estimated project-control state and may be updated through the implementation-specific state-generation mechanism.
 
 The expected benefits of intervention may include avoided delay penalties, avoided cost overruns, and opportunity gains. These benefits are not necessarily added as separate reward terms unless management assigns direct value to them. In the base formulation, intervention benefits are realized indirectly through improved project condition, reduced delay exposure, lower financing needs, lower credit stress, and higher realized portfolio value. If desired, diagnostic intervention benefits can be computed as
 \begin{align}
@@ -507,16 +548,32 @@ where \(\Delta D^{\mathrm{avoided}}_{i,t}\) is the expected reduction in delay, 
 \subsection{Duration and Performance Uncertainty}
 \label{subsec:uncertainty}
 
-Project duration, cost efficiency, schedule performance, payment timing, and intervention effectiveness are uncertain. The formulation does not require a specific probability distribution for these uncertainties. Instead, realized completion emerges from observed progress:
+Project duration, cost efficiency, schedule performance, payment timing, contractor productivity, and intervention effectiveness are uncertain. The formulation does not require a specific probability distribution for these uncertainties. Instead, realized completion emerges from observed progress:
 \[
 T_i^{\mathrm{comp}}
 =
 \min\{t:p_{i,t}\geq1\}.
 \]
 
-Performance variables such as \(\mathrm{SPI}_{i,t}\), \(\mathrm{CPI}_{i,t}\), \(RD_{i,t}\), and \(h_{i,t}\) are updated from project-control information, funding history, intervention history, and realized shocks. The model is therefore distribution-free and can be implemented with historical calibration, expert scenarios, simulation, stochastic programming, approximate dynamic programming, or reinforcement learning.
+Performance variables such as \(p_{i,t}\), \(\mathrm{EV}_{i,t}\), \(\mathrm{SPI}_{i,t}\), \(\mathrm{CPI}_{i,t}\), \(RD_{i,t}\), and \(h_{i,t}\) are updated from project-control information, funding history, intervention history, and realized shocks. The key operational timing is as follows: management selects budget allocation and intervention decisions during period \(t\), the contractor responds through actual execution during that period, and the realized performance consequences are observed at the next reporting epoch.
 
-The important modeling assumption is not that a specific formula physically determines future progress. Rather, the model assumes that actual progress and performance indicators are observed over time and used by management to make sequential resource-allocation decisions.
+Thus, given the current state and action, the next state may be conceptually represented as
+\[
+\Omega_{i,t+1}
+\sim
+\mathcal{M}_i(\cdot \mid \Omega_{i,t},e_{i,t},u_{i,t}),
+\]
+or, at the portfolio level,
+\[
+\mathbf{\Omega}_{t+1}
+\sim
+\mathcal{M}(\cdot \mid \mathbf{\Omega}_{t},a_t),
+\]
+where \(\mathcal{M}\) denotes the real project-control environment, empirical state-generation process, simulator, or scenario mechanism. Importantly, \(\mathcal{M}\) is not assumed to be known in closed form at the formulation stage.
+
+This distinction is central to the modeling approach. Traditional deterministic or distribution-explicit optimization models often require the decision maker to specify future transition equations or probability distributions in advance. In contrast, the present formulation only specifies the sequential information and decision structure. The uncertainty model can be calibrated later in the methodology using historical data, expert scenarios, Monte Carlo simulation, or learned from interaction in a reinforcement-learning environment.
+
+The important modeling assumption is not that a specific formula physically determines future progress. Rather, the model assumes that actual progress and performance indicators are observed over time and used by management to make sequential resource-allocation decisions. Allocation and intervention decisions influence the uncertain contractor response, but the realized effect is revealed only after the subsequent progress report.
 
 \subsection{Sequential Decision Problem}
 \label{subsec:sequential_problem}
@@ -573,13 +630,38 @@ B_t^{\mathrm{avail}}
 \]
 Thus, budget shortfalls remain feasible but costly. This structure reflects a contractor that can borrow, draw credit, or absorb liquidity risk, but must account for the financial consequences of doing so.
 
-The decision process is non-anticipative: decisions at time \(t\) may depend only on information available up to and including period \(t\). The goal is to find a sequential policy
+The decision process is non-anticipative: decisions at time \(t\) may depend only on information available up to and including period \(t\). After the action \(a_t\) is implemented, the resulting contractor performance is not known immediately. The next-period state is revealed after one reporting interval through updated progress and performance reports:
+\[
+\mathbf{\Omega}_{t+1}
+=
+\left\{
+\bigl(
+p_{i,t+1},
+\mathrm{EV}_{i,t+1},
+\mathrm{SPI}_{i,t+1},
+\mathrm{CPI}_{i,t+1},
+RD_{i,t+1},
+h_{i,t+1},
+z^{\mathrm{rep}}_{i,t+1}
+\bigr)
+:i\in P_{t+1}
+\right\}.
+\]
+Therefore, the action \(a_t\) affects the future state through an uncertain contractor response, but the realized outcome is observed only ex post. This is the core feedback structure of the sequential control problem.
+
+The goal is to find a sequential policy
 \[
 \pi
 =
 \{a_t\}_{t=1}^{H}
 \]
-that balances schedule, cost, liquidity, profitability, and risk outcomes over the portfolio horizon.
+that balances schedule, cost, liquidity, profitability, and risk outcomes over the portfolio horizon. More generally, the policy can be written as a state-feedback mapping,
+\[
+a_t=\pi(\mathbf{\Omega}_t,B_t^{\mathrm{avail}},Y_t^P,\ldots),
+\]
+where decisions are adapted to the information available at the current decision epoch.
+
+The formulation specifies the information structure, decision variables, accounting mechanisms, and performance objective of the sequential control problem. It does not impose a closed-form transition law for physical project progress and does not require the future transition distribution to be known in advance. Instead, next-period states are obtained from observed project-control data, empirical forecasting systems, simulation environments, or scenario-generation mechanisms. Therefore, the model should be interpreted as a sequential decision framework under observed state evolution. If a simulator, empirical transition model, or reinforcement-learning environment is supplied, the same formulation can be implemented using simulation-based optimization, approximate dynamic programming, or reinforcement learning.
 
 \subsection{Objective Function}
 \label{subsec:objective}
@@ -599,29 +681,44 @@ The desired portfolio outcomes include:
 
 These objectives may conflict. For example, aggressive acceleration can improve schedule performance but reduce profitability, while strict profitability control may lead to reduced funding for delayed projects. Therefore, the objective is expressed as a weighted multi-objective performance function whose weights reflect management preferences.
 
-Let \(V_t\) denote the realized portfolio operating value in period \(t\). A general definition is
+Let \(V_t\) denote the realized portfolio operating value in period \(t\), before explicit intervention, financing, credit, and delay-penalty terms are applied. A clean accounting definition is
 \[
 V_t
 =
-\sum_{i\in P}
-\left(
-Y_{i,t}
+Y_t^P
 -
-e_{i,t}
--
-C^{\mathrm{act}}_{i,t}
-\right),
+\sum_{i\in P_t} e_{i,t}.
 \]
-although alternative definitions may include strategic value, client-relationship value, or expected future continuation value.
+Equivalently,
+\[
+V_t
+=
+\sum_{i\in P}Y_{i,t}
+-
+\sum_{i\in P_t}e_{i,t}.
+\]
+This definition allows revenue from any project to be recognized in period \(t\), including delayed receipts from completed projects, while expenditure is incurred only for projects that remain active. Intervention costs, financing costs, credit-violation costs, delay exposure, and terminal liquidated damages are kept as explicit penalty terms in the objective. This avoids double-counting and preserves accounting clarity.
 
-A general objective is
+The estimated continuation margin \(\hat{\mu}_{i,t}\) summarizes the economic attractiveness of continuing project \(i\) at time \(t\). For example, it may be defined as
+\[
+\hat{\mu}_{i,t}
+=
+\frac{
+\widehat{CR}^{\mathrm{rem}}_{i,t}
+-
+\widehat{C}^{\mathrm{rem}}_{i,t}
+-
+\widehat{C}^{\mathrm{delay}}_{i,t}
+}{
+\max\{\epsilon,\widehat{C}^{\mathrm{rem}}_{i,t}\}
+},
+\]
+where \(\widehat{CR}^{\mathrm{rem}}_{i,t}\) is expected remaining revenue, \(\widehat{C}^{\mathrm{rem}}_{i,t}\) is expected remaining execution cost, and \(\widehat{C}^{\mathrm{delay}}_{i,t}\) is expected delay-related cost, based on the latest project-control information.
+
+Define the period-level portfolio reward as
 \begin{equation}
-\max_{\pi}
-\ 
-\mathbb{E}
-\left[
-\sum_{t=1}^{H}
-\left(
+R_t
+=
 \phi_V V_t
 -
 \phi_D D_t
@@ -638,17 +735,28 @@ A general objective is
 \mathbf{1}
 \{
 \hat{\mu}_{i,t}<\underline{\mu}_i
-\}
-\right)
+\}.
+\label{eq:period_reward}
+\end{equation}
+
+The sequential portfolio-control objective is then
+\begin{equation}
+\max_{\pi}
+\ 
+\mathbb{E}_{\pi,\mathcal{M}}
+\left[
+\sum_{t=1}^{H}R_t
 -
 \phi_{\mathrm{LD}}
 \sum_{i\in P}C_i^{\mathrm{LD}}
 \right],
 \label{eq:objective}
 \end{equation}
-subject to the project-state observations, revenue timing, retention mechanism, credit mechanism, intervention mechanism, and information constraints defined above.
+subject to the project-state observations, revenue timing, retention mechanism, credit mechanism, intervention mechanism, operational feasibility bounds, and information constraints defined above.
 
-In \eqref{eq:objective}, \(V_t\) is realized portfolio operating value, \(D_t\) is aggregate period-level delay exposure, \(C_t^{\mathrm{act}}\) is intervention cost, \(C_t^{\mathrm{fin}}\) is financing cost, \(C_t^{\mathrm{credit}}\) is credit-limit violation cost, and \(C_i^{\mathrm{LD}}\) is terminal liquidated damage cost for project \(i\). The term \(\hat{\mu}_{i,t}\) denotes the estimated continuation margin of project \(i\), and \(\underline{\mu}_i\) is the minimum acceptable continuation margin. The final period-level penalty discourages expenditure on projects whose expected continuation margin has fallen below the management-defined threshold.
+The expectation in \eqref{eq:objective} is taken over the trajectory distribution induced by the policy \(\pi\) and the underlying project-control environment \(\mathcal{M}\). The formulation does not require \(\mathcal{M}\) to be known analytically in advance. In a reinforcement-learning implementation, this expectation is approximated through sampled trajectories generated by interaction with a simulator, historical data environment, or calibrated stochastic project-control model.
+
+In \eqref{eq:period_reward} and \eqref{eq:objective}, \(V_t\) is realized portfolio operating value, \(D_t\) is aggregate period-level delay exposure, \(C_t^{\mathrm{act}}\) is intervention cost, \(C_t^{\mathrm{fin}}\) is financing cost, \(C_t^{\mathrm{credit}}\) is credit-limit violation cost, and \(C_i^{\mathrm{LD}}\) is the terminal liquidated damage cost for project \(i\). The term \(\hat{\mu}_{i,t}\) denotes the estimated continuation margin of project \(i\), and \(\underline{\mu}_i\) is the minimum acceptable continuation margin. The final period-level penalty discourages expenditure on projects whose expected continuation margin has fallen below the management-defined threshold.
 
 The coefficients
 \[
@@ -668,14 +776,18 @@ The formulation is based on the following assumptions:
     \item Contractual project attributes such as planned schedule, BAC, S-curve profile, milestone structure, and payment fractions are known inputs.
     \item The contractual S-curve is a baseline benchmark for planned expenditure and planned progress, not a deterministic law of actual project execution.
     \item Actual project progress is observed at each decision epoch and may deviate from the contractual plan.
+    \item Earned value, SPI, CPI, remaining-duration estimates, intervention-persistence states, and progress observations are treated as project-control information available at each decision epoch.
+    \item Budget allocation and intervention decisions affect future project performance through uncertain contractor response, but the realized effect is only observed at the next reporting epoch.
+    \item Remaining-duration estimates, performance indices, and progress observations are treated as project-control information rather than outputs of a fixed deterministic production law.
     \item Planned project finish dates are fixed contractually, but actual project completion times are endogenous outcomes.
     \item A project remains active until realized physical progress reaches the completion threshold.
-    \item Duration, cost, payment, and performance uncertainties are kept distribution-free.
+    \item Duration, cost, payment, contractor-performance, and intervention-effectiveness uncertainties are kept distribution-free at the formulation level.
+    \item The formulation does not require known transition probabilities or known future uncertainty distributions in advance.
     \item Milestone payments are triggered by realized progress and recognized in discrete periods using a ceiling-based period mapping.
-    \item Retention is withheld from non-final milestone payments and fully released with the final milestone at project completion.
+    \item Retention is withheld from interim progress payments and fully released with the final milestone at project completion.
     \item A separate defects liability period is not modeled because it lies beyond the active execution-focused planning horizon.
     \item Funding shortages are feasible through credit or external financing, but they generate financing costs and possible credit-limit penalties.
     \item Credit limits are soft constraints; violations are allowed but penalized through credit-cost functions.
     \item Corrective interventions may improve observed performance indicators, but their benefits are primarily captured through improved project outcomes rather than added as separate reward terms.
-    \item The formulation is compatible with simulation, stochastic optimization, approximate dynamic programming, or reinforcement learning, depending on how uncertainty and policy search are implemented.
+    \item The formulation defines the decision, accounting, and performance-evaluation structure. Implementation through simulation, stochastic optimization, approximate dynamic programming, or reinforcement learning requires an empirical, scenario-based, simulator-driven, or learned mechanism for generating next-period project states.
 \end{itemize}
