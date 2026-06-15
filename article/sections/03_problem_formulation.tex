@@ -4,28 +4,28 @@
 \subsection{Management Problem and Portfolio Definition}
 \label{subsec:management_problem}
 
-We consider a multi-period budget allocation and operational control problem for a fixed portfolio of contracted projects \cite{martinsuo2013project}. The portfolio is defined as the aggregation of a finite set of projects,
+We consider a stochastic, multi-period budget allocation problem for a fixed portfolio of contracted projects \cite{martinsuo2013project}. The portfolio is defined as the aggregation of a finite set of projects,
 \[
-P=\{1,2,\ldots,n\},
+\mathcal{P}=\{1,2,\ldots,n\},
 \]
-where each project \(i\in P\) represents a contractual undertaking with its own budget, planned schedule, expenditure profile, payment structure, and performance state. The portfolio is not a decision variable in the sense of project selection \cite{archer1999integrated,cooper2001portfolio}. Instead, it is the set of ongoing and committed projects whose execution must be managed jointly under limited financial and operational resources.
+where each project \(i\in \mathcal{P}\) represents a contractual undertaking with its own budget, planned schedule, expenditure profile, payment structure, and performance state. The portfolio is not a decision variable in the sense of project selection \cite{archer1999integrated,cooper2001portfolio}. Instead, it is the set of ongoing and committed projects whose execution must be managed jointly under limited financial and operational resources.
 
-The planning horizon is indexed by discrete periods \(t=1,\ldots,H\). At each period, management observes the current portfolio condition, allocates financial resources across active projects, and may apply corrective interventions to improve schedule or cost performance \cite{lambrechts2008proactive,vanhoucke2012integrated}. Projects consume resources over time, generate cash inflows through milestone-based payments, and may deviate from their contractual plans because of schedule delays, cost overruns, funding shortages, payment delays, contractor performance uncertainty, or operational disruptions \cite{flyvbjerg2003underestimating,merrow2011industrial}.
+The planning horizon is indexed by discrete periods \(t\in\mathcal{T}=\{1,\ldots,H\}\). At each period, the decision-maker observes the current portfolio condition and allocates financial resources across active projects \cite{lambrechts2008proactive,vanhoucke2012integrated}. Projects consume resources over time, generate cash inflows through milestone-based payments, and may deviate from their contractual plans because of schedule delays, cost overruns, funding shortages, payment delays, contractor performance uncertainty, or operational disruptions \cite{flyvbjerg2003underestimating,merrow2011industrial}.
 
-The central management problem is to determine a sequential policy for budget allocation and intervention decisions that balances multiple objectives: completing projects close to their planned finish dates, preserving profitability, avoiding excessive borrowing, reducing delay penalties, limiting wasteful expenditure on economically unattractive projects, and maintaining acceptable portfolio-level financial health \cite{liesio2007portfolio}. Different organizations may prioritize these goals differently.
+The central management problem is to determine a sequential allocation policy that balances multiple objectives: completing projects close to their planned finish dates, preserving profitability, avoiding excessive borrowing, reducing delay penalties, limiting wasteful expenditure on economically unattractive projects, and maintaining acceptable portfolio-level financial health \cite{liesio2007portfolio}. Different organizations may prioritize these goals differently.
 
-A key feature of the problem is that budget allocation and intervention decisions do not produce known deterministic performance outcomes. After management allocates resources and applies an intervention decision in period \(t\), the contractor's realized response is uncertain and is only observed at the next reporting epoch through project-control information such as realized progress, earned value, schedule performance, cost performance, and updated remaining-duration estimates \cite{anbari2003earned,fleming2016earned}. This makes the problem naturally sequential and feedback-driven \cite{puterman1994markov}.
+A key feature of the problem is that budget allocation decisions do not produce known deterministic performance outcomes. After resources are allocated in period \(t\), the contractor's realized response is uncertain and is only observed at the next reporting epoch through project-control information such as realized progress, earned value, schedule performance, cost performance, and updated remaining-duration estimates \cite{anbari2003earned,Fleming2016earned}. This makes the problem naturally sequential and feedback-driven under uncertainty.
 
 \subsection{Contractual Project Attributes}
 \label{subsec:contractual_attributes}
 
-Each project \(i\in P\) is described by contractual and planned attributes known at the beginning of the planning process. Let \(s_i\) and \(f_i\) denote the planned start and planned finish periods, respectively. The planned duration is
+Each project \(i\in \mathcal{P}\) is described by contractual and planned attributes known at the beginning of the planning process. Let \(s_i\) and \(f_i\) denote the planned start and planned finish periods, respectively. The planned duration is
 \[
 D_i^{\mathrm{plan}} = f_i-s_i+1,
 \]
 and the contractual planned execution window is \(\mathcal{A}_i^{\mathrm{plan}}=\{t:s_i\leq t\leq f_i\}\).
 
-The budget at completion of project \(i\) is denoted by \(\mathrm{BAC}_i\). This value represents the planned cost basis of the project and is used to define planned expenditure, contract revenue, intervention cost scaling, and credit exposure. The contract revenue is \(CR_i=\mathrm{BAC}_i(1+\pi_i)\), where \(\pi_i\) is the contractual profit margin.
+The budget at completion of project \(i\) is denoted by \(\mathrm{BAC}_i\). This value represents the planned cost basis of the project and is used to define planned expenditure, contract revenue, and credit exposure. The contract revenue is \(CR_i=\mathrm{BAC}_i(1+\pi_i)\), where \(\pi_i\) is the contractual profit margin.
 
 \subsection{Planned Expenditure and Contractual S-Curve}
 \label{subsec:planned_expenditure}
@@ -34,92 +34,204 @@ The planned cumulative expenditure of each project follows a normalized S-curve 
 
 The planned cumulative expenditure fraction is modeled as \(F_i(\tau)=I_{\tau}(a_i,b_i)\), where \(I_{\tau}(\cdot,\cdot)\) is the regularized incomplete Beta function and \(a_i,b_i>0\) are shape parameters. The planned cumulative expenditure is \(\bar{E}_{i,t}=\mathrm{BAC}_i F_i(\tau_{i,t}^{c})\), and the planned period expenditure is \(\bar{e}_{i,t}=\bar{E}_{i,t}-\bar{E}_{i,t-1}\). This S-curve represents the contractual baseline spending trajectory used for measuring planned progress, schedule deviation, and performance indices \cite{anbari2003earned}.
 
-\subsection{State, Decisions, and Dynamics}
-\label{subsec:state_decisions}
+\subsection{Decision Variables and Constraints}
+\label{subsec:decisions_constraints}
+
+The decision-maker's choice at each period \(t\) is the allocation of budget to each active project. Let \(x_{i,t}\geq 0\) denote the budget allocated to project \(i\) at time \(t\). A project is considered active if its cumulative progress \(P_{i,t-1}^{\mathrm{actual}}<1\). The allocation decision is constrained by project-level mandatory minimum requirements and portfolio-level budget availability.
+
+\subsubsection{Mandatory Minimum Allocation Constraint}
+
+Each project \(i\) at time \(t\) has a minimum mandatory allocation \(m_{i,t}\geq 0\) reflecting contractual obligations, debt-service requirements, or minimum execution commitments \cite{AlSedairy2001role,PMI2017pmbok}. The allocation must satisfy
+\[
+x_{i,t} \geq m_{i,t}, \quad \forall i\in\mathcal{P}, \, t\in\mathcal{T}.
+\]
+This constraint ensures that projects receive at least the minimum required funding to meet operational, contractual, or financial obligations in each period. If a project uses credit or triggers corrective intervention mechanisms, future mandatory allocations may increase to reflect additional cashflow requirements.
+
+\subsubsection{Soft Budget Constraint and Credit Mechanism}
+
+The portfolio has an available internal budget \(B_t^{\mathrm{avail}}\) at each period \(t\). If the total allocation across active projects exceeds the available internal budget, the excess is financed through external credit. Let
+\[
+c_t = \max\left(0, \sum_{i\in\mathcal{P}:P_{i,t-1}^{\mathrm{actual}}<1} x_{i,t} - B_t^{\mathrm{avail}}\right)
+\]
+denote the credit used at time \(t\). Credit is allowed but creates interest-bearing debt that increases future cashflow obligations \cite{AlJibouri2002monitoring,Flyvbjerg2014megaprojects}.
+
+Outstanding debt evolves according to
+\[
+D_{t+1} = (1+r_t)D_t + c_t - q_t,
+\]
+where \(D_t\) is the debt at the start of period \(t\), \(r_t\geq 0\) is the interest rate, and \(q_t\geq 0\) is the repayment made in period \(t\). If repayment is not separately modeled, the debt accumulates as \(D_{t+1}=(1+r_t)D_t+c_t\). The credit mechanism is thus modeled as a soft budget constraint: allocations exceeding internal funds are feasible but impose financial penalties through interest charges.
+
+\subsection{Project State and Performance Dynamics}
+\label{subsec:state_dynamics}
 
 \subsubsection{Project State Variables}
-At each period \(t\), project \(i\) is described by a state vector including realized physical progress \(y_{i,t}\in[0,1]\), actual cumulative expenditure \(E_{i,t}\geq 0\), schedule performance index \(\mathrm{SPI}_{i,t}\), cost performance index \(\mathrm{CPI}_{i,t}\), and remaining-duration estimate \(RD_{i,t}\) \cite{anbari2003earned,lipke2009prediction}. A project is active if \(y_{i,t}<1\) and inactive otherwise. The portfolio state at period \(t\) is the collection of all project states, financial positions, and credit levels.
 
-\subsubsection{Decision Variables}
-Management decisions at period \(t\) consist of budget allocation \(b_{i,t}\geq 0\) and intervention decision \(a_{i,t}\in\mathcal{A}_i\) for each active project, where \(\mathcal{A}_i\) is a discrete set of corrective actions including no intervention, schedule acceleration, resource augmentation, quality improvement, and scope adjustment \cite{lambrechts2008proactive}. The portfolio-level decision is \(\mathbf{u}_t=\{(b_{i,t},a_{i,t}):i\in P,y_{i,t-1}<1\}\).
-
-\subsubsection{State Transition and Uncertainty}
-After decisions are applied in period \(t\), the environment generates next-period project states through uncertain contractor response. The transition is represented implicitly through a project-control model \(\mathcal{M}\) that captures uncertainty in contractor performance, intervention effectiveness, and operational disruptions. The model does not assume known transition probabilities; instead, state evolution is either simulated using calibrated stochastic models or learned from data using reinforcement learning techniques \cite{sutton2018reinforcement}. This differs from resource-constrained project scheduling models \cite{ballesteros2015resource,kolisch1997psplib}, where task durations follow known distributions.
-
-\subsection{Financial Accounting and Cash Flow}
-\label{subsec:financial_accounting}
-
-\subsubsection{Revenue Recognition and Milestone Payments}
-Contract revenue is recognized through milestone-based progress payments \cite{christensen1995accounting}. For each project \(i\), milestones \(\{m_1,\ldots,m_K\}\) are defined as progress thresholds with payment fractions \(\{\rho_1,\ldots,\rho_K\}\) such that \(\sum_{k=1}^K\rho_k=1\). A retention fraction \(\lambda\in(0,1)\) is withheld from interim payments and released at completion.
-
-When project \(i\) crosses milestone \(k\) in period \(t\), the recognized payment is
+At each period \(t\), project \(i\) is described by a state vector including planned cumulative progress \(P_{i,t}^{\mathrm{plan}}\in[0,1]\), actual cumulative progress \(P_{i,t}^{\mathrm{actual}}\in[0,1]\), actual cumulative expenditure \(E_{i,t}\geq 0\), schedule performance index \(\mathrm{SPI}_{i,t}\), cost performance index \(\mathrm{CPI}_{i,t}\), and remaining-duration estimate \(RD_{i,t}\) \cite{anbari2003earned,Lipke2008prediction}. The performance gap is defined as
 \[
-P_{i,t}^k
-=
+\Delta_{i,t} = P_{i,t}^{\mathrm{plan}} - P_{i,t}^{\mathrm{actual}}.
+\]
+
+\subsubsection{Performance-Triggered Corrective Intervention Mechanism}
+
+Following earned-value management practice \cite{Fleming2016earned,PMI2017pmbok}, each project is continuously monitored by the owner's representative or project management consultant (PMC). When the performance gap exceeds a contractually defined threshold \(\tau_i\), a corrective intervention is automatically initiated \cite{AlSedairy2001role,Ijaola2013recovery}. The intervention indicator is defined as
+\[
+I_{i,t} =
 \begin{cases}
-\rho_k CR_i(1-\lambda), & k<K,\\
-\rho_K CR_i + \lambda CR_i, & k=K.
+1, & \Delta_{i,t} > \tau_i, \\
+0, & \Delta_{i,t} \leq \tau_i.
 \end{cases}
 \]
 
-\subsubsection{Operating Value and Portfolio Cash Flow}
-The period operating value for project \(i\) is \(V_{i,t}=P_{i,t}-e_{i,t}\), where \(P_{i,t}=\sum_{k=1}^K P_{i,t}^k\) is the total recognized payment and \(e_{i,t}\) is actual period expenditure. Portfolio operating value is \(V_t=\sum_{i\in P}V_{i,t}\). Net cash flow after intervention costs is \(\Phi_t=V_t-C_t^{\mathrm{act}}\), where \(C_t^{\mathrm{act}}=\sum_{i\in P}c_i(a_{i,t})\).
+The intervention is not a decision variable. It is an endogenous, state-dependent corrective mechanism representing contractual and governance-driven responses such as recovery planning, escalation, closer monitoring, or contractor corrective action \cite{Hallgren2009deviations,Love2011praxis}. The intervention can be activated only if sufficient budget has been allocated to cover the associated management effort and potential acceleration costs. If \(x_{i,t}\) falls below the threshold necessary to support intervention activities, the intervention may fail to activate even when \(\Delta_{i,t}>\tau_i\).
 
-\subsubsection{Credit Dynamics and Financing}
-When net cash flow is negative, the portfolio requires external financing. Outstanding credit evolves as \(L_t=\max\{0,L_{t-1}-\Phi_t\}\). A credit limit \(\bar{L}\) is imposed as a soft constraint, with violations penalized through \(C_t^{\mathrm{credit}}=\phi(L_t-\bar{L})\), where \(\phi(\cdot)\) is convex increasing with \(\phi(x)=0\) for \(x\leq 0\). Financing cost is \(C_t^{\mathrm{fin}}=r L_t\), where \(r\) is the period interest rate.
+\subsubsection{Effect of Intervention on Future Performance}
 
-\subsection{Performance Metrics and Penalties}
-\label{subsec:performance_metrics}
-
-\subsubsection{Delay Exposure}
-For project \(i\), delay in period \(t\) is \(d_{i,t}=\max\{0,t-f_i\}\) if \(y_{i,t}<1\), representing periods the project has overrun its planned finish while incomplete. Aggregate delay exposure is \(D_t=\sum_{i\in P}w_i d_{i,t}\), where \(w_i\) reflects project importance.
-
-\subsubsection{Liquidated Damages}
-Upon completion, if project \(i\) finishes at period \(T_i>f_i\), liquidated damages are \(C_i^{\mathrm{LD}}=\psi_i(T_i-f_i)\), where \(\psi_i(\cdot)\) is a project-specific penalty function, typically linear or convex increasing in delay.
-
-\subsubsection{Continuation Margin}
-The estimated continuation margin \(\hat{\mu}_{i,t}\) represents expected profitability of continuing project \(i\), computed as the ratio of expected remaining revenue to expected remaining cost. Projects with \(\hat{\mu}_{i,t}<\underline{\mu}_i\) (a management-defined minimum acceptable margin) are considered economically unattractive and incur a penalty discouraging further investment.
-
-\subsection{Optimization Objective}
-\label{subsec:optimization_objective}
-
-The objective is to find a policy \(\pi:\mathcal{S}\rightarrow\mathcal{U}\) mapping portfolio state \(\mathbf{s}_t\in\mathcal{S}\) to decisions \(\mathbf{u}_t\in\mathcal{U}\), maximizing expected cumulative reward \cite{puterman1994markov,sutton2018reinforcement}:
+When intervention is triggered, it affects future project performance through two channels: increased near-term cashflow requirements and improved budget-to-progress conversion efficiency \cite{Williams2009essential}. Let \(\alpha_{i,t}\geq 0\) denote the baseline efficiency with which allocated budget translates into progress. The intervention-adjusted efficiency is
 \[
-\max_{\pi}\mathbb{E}_{\pi}\left[\sum_{t=1}^H\gamma^{t-1}R_t\right],
+\tilde{\alpha}_{i,t+1} = \alpha_{i,t+1}(1+\kappa_{i,t}I_{i,t}),
 \]
-where \(\gamma\in(0,1]\) is a discount factor, and the period reward is:
-\begin{align}
-R_t &= V_t - \alpha_D D_t - C_t^{\mathrm{act}} - C_t^{\mathrm{fin}} - C_t^{\mathrm{credit}} \nonumber\\
-&\quad - \sum_{i\in P:y_{i,t}=1}\left[C_i^{\mathrm{LD}} + \beta\max\{0,\underline{\mu}_i-\hat{\mu}_{i,t}\}\right].
-\label{eq:period_reward}
-\end{align}
+where \(\kappa_{i,t}\geq 0\) is the intervention effectiveness parameter. This parameter may be deterministic or stochastic, reflecting the uncertain success of recovery plans observed in practice \cite{Ijaola2013recovery,Love2011praxis}.
 
-Here, \(\alpha_D\geq 0\) is the delay penalty weight and \(\beta\geq 0\) controls the penalty for investing in projects with weak continuation margins. The expectation is taken over the trajectory distribution induced by policy \(\pi\) and the project-control environment \(\mathcal{M}\). In a reinforcement-learning implementation, this expectation is approximated through sampled trajectories \cite{sutton2018reinforcement}.
+The actual progress at \(t+1\) evolves as
+\[
+P_{i,t+1}^{\mathrm{actual}} = P_{i,t}^{\mathrm{actual}} + \tilde{\alpha}_{i,t} x_{i,t} + \varepsilon_{i,t},
+\]
+where \(\varepsilon_{i,t}\) is a stochastic disturbance capturing contractor performance uncertainty.
 
-\subsection{Constraints and Feasibility}
-\label{subsec:constraints}
+The intervention also increases the mandatory minimum allocation for subsequent periods to reflect additional cashflow obligations:
+\[
+m_{i,t+1} = m_{i,t+1}^{0} + \chi_i I_{i,t},
+\]
+where \(m_{i,t+1}^{0}\) is the baseline mandatory allocation and \(\chi_i\geq 0\) captures the additional required funding induced by the intervention.
 
-Total allocated budget in each period must satisfy \(\sum_{i\in P:y_{i,t-1}<1}b_{i,t}\leq B_t+L_t\), where \(B_t\) is available internal funds and \(L_t\) is accessible credit. Certain interventions may be restricted by project phase, contractual terms, or resource availability, encoded in the action space \(\mathcal{A}_i\) and enforced through action masking. A project completes when \(y_{i,t}\geq 1\), after which no further budget allocation or intervention is permitted.
+The allocation decision \(x_{i,t}\) influences intervention only indirectly: by affecting actual progress \(P_{i,t}^{\mathrm{actual}}\), it influences the performance gap \(\Delta_{i,t}\), which in turn determines whether the intervention threshold is breached. The decision-maker can thus learn to allocate budget strategically to either avoid intervention costs or deliberately trigger interventions when the expected performance gain justifies the expenditure.
 
-\subsection{Modeling Assumptions and Scope}
-\label{subsec:assumptions}
+\subsection{Revenue Recognition and Milestone-Based Payments}
+\label{subsec:revenue}
 
-The formulation embeds several structural assumptions that define its scope and distinguish it from related models:
+Revenue is recognized through contractual milestone payments tied to verified physical progress \cite{barraza2004probabilistic}. Each project \(i\) has a set of milestones \(\mathcal{M}_i=\{1,\ldots,M_i\}\). Milestone \(j\in\mathcal{M}_i\) is associated with a progress threshold \(\theta_{i,j}\in(0,1]\) and a payment fraction \(\phi_{i,j}>0\) such that \(\sum_{j\in\mathcal{M}_i}\phi_{i,j}=1\). When actual progress reaches \(\theta_{i,j}\), the milestone payment
+\[
+R_{i,j} = \phi_{i,j}CR_i(1-\rho_i)
+\]
+is received, where \(\rho_i\in[0,1)\) is the retention fraction. Retention is released upon project completion. Let \(V_t\) denote the total milestone-based revenue received in period \(t\).
+
+\subsection{Objective Function}
+\label{subsec:objective}
+
+The objective is to maximize the expected cumulative discounted performance across the planning horizon. Let \(\gamma\in(0,1]\) denote the discount factor. The period performance metric aggregates milestone-based revenue, delay penalties, credit costs, and other portfolio-level costs:
+\[
+R_t = V_t - \alpha_D D_t - C_t^{\mathrm{credit}} - C_t^{\mathrm{delay}} - C_t^{\mathrm{other}},
+\]
+where \(\alpha_D\geq 0\) weights the portfolio delay (total periods all projects are behind schedule), \(C_t^{\mathrm{credit}}\) represents interest and financing costs, \(C_t^{\mathrm{delay}}\) captures contractual liquidated damages, and \(C_t^{\mathrm{other}}\) includes other penalties or costs.
+
+The total objective is
+\[
+\max \mathbb{E}\left[\sum_{t=1}^{H}\gamma^{t-1}R_t\right],
+\]
+where the expectation is taken over the stochastic evolution of project states, contractor responses, and intervention outcomes. The allocation policy must respect the mandatory minimum allocation constraints and the soft budget constraint with endogenous credit dynamics.
+
+\subsection{Notation and Parameters}
+\label{subsec:notation}
+
+Table~\ref{tab:notation} provides a comprehensive list of notation and parameters used in the problem formulation.
+
+\begin{table}[htbp]
+\centering
+\caption{Notation and Parameters}
+\label{tab:notation}
+\small
+\begin{tabular}{ll}
+\hline
+\textbf{Symbol} & \textbf{Definition} \\
+\hline
+\multicolumn{2}{l}{\textit{Sets and Indices}} \\
+\(\mathcal{P}\) & Set of projects, \(\{1,\ldots,n\}\) \\
+\(\mathcal{T}\) & Set of time periods, \(\{1,\ldots,H\}\) \\
+\(i\) & Project index, \(i\in\mathcal{P}\) \\
+\(t\) & Time period index, \(t\in\mathcal{T}\) \\
+\hline
+\multicolumn{2}{l}{\textit{Decision Variable}} \\
+\(x_{i,t}\) & Budget allocated to project \(i\) at time \(t\) \\
+\hline
+\multicolumn{2}{l}{\textit{Contractual Attributes}} \\
+\(s_i, f_i\) & Planned start and finish periods for project \(i\) \\
+\(D_i^{\mathrm{plan}}\) & Planned duration, \(f_i-s_i+1\) \\
+\(\mathrm{BAC}_i\) & Budget at completion for project \(i\) \\
+\(\pi_i\) & Contractual profit margin for project \(i\) \\
+\(CR_i\) & Contract revenue, \(\mathrm{BAC}_i(1+\pi_i)\) \\
+\(\rho_i\) & Retention fraction for project \(i\) \\
+\hline
+\multicolumn{2}{l}{\textit{Planned Expenditure (S-Curve)}} \\
+\(\tau_{i,t}\) & Normalized planned time for project \(i\) at \(t\) \\
+\(a_i,b_i\) & Beta distribution shape parameters for project \(i\) \\
+\(F_i(\tau)\) & Cumulative expenditure fraction function \\
+\(\bar{E}_{i,t}\) & Planned cumulative expenditure at \(t\) \\
+\(\bar{e}_{i,t}\) & Planned period expenditure at \(t\) \\
+\hline
+\multicolumn{2}{l}{\textit{Budget and Credit}} \\
+\(B_t^{\mathrm{avail}}\) & Available internal portfolio budget at \(t\) \\
+\(c_t\) & Credit used at time \(t\) \\
+\(D_t\) & Outstanding debt at start of period \(t\) \\
+\(r_t\) & Credit interest rate at \(t\) \\
+\(q_t\) & Debt repayment at \(t\) \\
+\hline
+\multicolumn{2}{l}{\textit{Mandatory Allocation}} \\
+\(m_{i,t}\) & Minimum mandatory allocation for project \(i\) at \(t\) \\
+\(m_{i,t}^{0}\) & Baseline mandatory allocation (before intervention) \\
+\hline
+\multicolumn{2}{l}{\textit{Project Progress and State}} \\
+\(P_{i,t}^{\mathrm{plan}}\) & Planned cumulative progress for project \(i\) at \(t\) \\
+\(P_{i,t}^{\mathrm{actual}}\) & Actual cumulative progress for project \(i\) at \(t\) \\
+\(\Delta_{i,t}\) & Performance gap, \(P_{i,t}^{\mathrm{plan}} - P_{i,t}^{\mathrm{actual}}\) \\
+\(E_{i,t}\) & Actual cumulative expenditure for project \(i\) at \(t\) \\
+\(\mathrm{SPI}_{i,t}\) & Schedule performance index for project \(i\) at \(t\) \\
+\(\mathrm{CPI}_{i,t}\) & Cost performance index for project \(i\) at \(t\) \\
+\(RD_{i,t}\) & Remaining duration estimate for project \(i\) at \(t\) \\
+\hline
+\multicolumn{2}{l}{\textit{Intervention Mechanism}} \\
+\(\tau_i\) & Intervention activation threshold for project \(i\) \\
+\(I_{i,t}\) & Endogenous intervention indicator (\(0\) or \(1\)) \\
+\(\kappa_{i,t}\) & Intervention effectiveness parameter for project \(i\) \\
+\(\chi_i\) & Additional mandatory allocation induced by intervention \\
+\hline
+\multicolumn{2}{l}{\textit{Performance Dynamics}} \\
+\(\alpha_{i,t}\) & Baseline budget-to-progress conversion efficiency \\
+\(\tilde{\alpha}_{i,t}\) & Intervention-adjusted efficiency \\
+\(\varepsilon_{i,t}\) & Stochastic performance disturbance \\
+\hline
+\multicolumn{2}{l}{\textit{Revenue and Milestones}} \\
+\(\mathcal{M}_i\) & Set of milestones for project \(i\) \\
+\(\theta_{i,j}\) & Progress threshold for milestone \(j\) of project \(i\) \\
+\(\phi_{i,j}\) & Payment fraction for milestone \(j\) of project \(i\) \\
+\(R_{i,j}\) & Payment amount for milestone \(j\) of project \(i\) \\
+\(V_t\) & Total milestone-based revenue received at \(t\) \\
+\hline
+\multicolumn{2}{l}{\textit{Objective-Related}} \\
+\(R_t\) & Period performance metric at \(t\) \\
+\(\gamma\) & Discount factor, \(\gamma\in(0,1]\) \\
+\(\alpha_D\) & Delay penalty weight \\
+\(C_t^{\mathrm{credit}}\) & Credit financing cost at \(t\) \\
+\(C_t^{\mathrm{delay}}\) & Liquidated damages and delay penalties at \(t\) \\
+\(C_t^{\mathrm{other}}\) & Other portfolio-level costs at \(t\) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Scope and Modeling Assumptions}
+\label{subsec:scope}
+
+The formulation is subject to the following scope definitions and modeling assumptions:
 \begin{itemize}
-    \item The portfolio is fixed; project selection is not modeled \cite{archer1999integrated,cooper2001portfolio,liesio2007portfolio}.
-    \item Projects are modeled as independent execution units; technical dependencies and resource sharing are not explicitly represented \cite{ballesteros2015resource}.
-    \item Budget allocation and interventions influence contractor performance through uncertain mechanisms, with realized effects observed only at the next reporting epoch \cite{lambrechts2008proactive}.
-    \item Performance indices, progress observations, and remaining-duration estimates are treated as project-control information rather than outputs of a fixed deterministic production law \cite{anbari2003earned,fleming2016earned}.
-    \item Planned project finish dates are fixed contractually, but actual project completion times are endogenous outcomes determined by contractor performance and managerial decisions \cite{flyvbjerg2003underestimating}.
-    \item Duration, cost, payment, contractor-performance, and intervention-effectiveness uncertainties are kept distribution-free at the formulation level.
-    \item The formulation does not require known transition probabilities or known future uncertainty distributions in advance; dynamics are learned or simulated \cite{sutton2018reinforcement}.
-    \item Milestone payments are triggered by realized progress and recognized in discrete periods \cite{christensen1995accounting}.
+    \item The portfolio composition is fixed. Project selection and termination decisions are not modeled.
+    \item All projects are assumed to have been properly contracted with defined scopes, budgets, schedules, and payment structures before the planning horizon begins.
+    \item The formulation is solution-agnostic. It can be embedded within a stochastic optimization framework, approximate dynamic programming, or a sequential decision-making environment for solution via reinforcement learning or other methods.
+    \item Progress is measured as cumulative physical completion and is normalized to \([0,1]\). Earned value is computed as the product of progress and budget at completion.
     \item Retention is withheld from interim progress payments and fully released with the final milestone at project completion.
     \item A separate defects liability period is not modeled because it lies beyond the active execution-focused planning horizon.
-    \item Funding shortages are feasible through credit or external financing, but they generate financing costs and possible credit-limit penalties.
-    \item Credit limits are soft constraints; violations are allowed but penalized through credit-cost functions.
-    \item Corrective interventions may improve observed performance indicators, but their benefits are primarily captured through improved project outcomes rather than added as separate reward terms \cite{lambrechts2008proactive,vanhoucke2012integrated}.
-    \item The formulation defines the decision, accounting, and performance-evaluation structure. Implementation through simulation, stochastic optimization, approximate dynamic programming, or reinforcement learning requires an empirical, scenario-based, simulator-driven, or learned mechanism for generating next-period project states \cite{sutton2018reinforcement}.
+    \item Credit use is induced by allocation decisions exceeding available internal budget. Credit limits may be enforced through penalty terms in the objective function.
+    \item Corrective interventions are automatically triggered by performance gaps exceeding contractually defined thresholds. The intervention's effectiveness is uncertain and may be represented through stochastic parameters or disturbance terms.
+    \item Intervention-related costs are reflected through increased mandatory minimum allocations in subsequent periods and through the credit mechanism if additional budget must be borrowed.
+    \item The formulation defines the decision structure, constraints, state dynamics, and performance evaluation. Numerical solution requires specification of the stochastic processes governing contractor response, intervention effectiveness, and project state evolution.
 \end{itemize}
 
-This formulation provides a novel integration of portfolio-level budget allocation, project-level earned-value dynamics, milestone-based revenue recognition, credit-constrained financing, and sequential decision-making under uncertainty. Unlike traditional project portfolio selection models \cite{archer1999integrated,liesio2007portfolio,gutjahr2013project}, the focus is on operational control of committed projects rather than ex-ante selection. The formulation extends earned-value management frameworks \cite{anbari2003earned,fleming2016earned,lipke2009prediction} by embedding them within a sequential decision framework with financial accounting, credit dynamics, and multi-objective performance evaluation, while avoiding the strong distributional assumptions typical in resource-constrained project scheduling \cite{ballesteros2015resource,golenko1997stochastic}.
+This formulation provides a novel representation of project portfolio budget allocation that integrates mandatory minimum funding requirements, soft budget constraints with endogenous credit dynamics, performance-triggered corrective interventions, and milestone-based revenue recognition within a unified stochastic, multi-period optimization framework. Unlike traditional project portfolio selection models \cite{archer1999integrated,liesio2007portfolio,gutjahr2013project}, the focus is on operational control of committed projects rather than ex-ante selection. The formulation extends earned-value management frameworks \cite{anbari2003earned,Fleming2016earned,Lipke2008prediction} by embedding them within a sequential decision framework with explicit financial accounting, soft budget constraints, endogenous intervention mechanisms, and multi-objective performance evaluation, while remaining solution-agnostic and compatible with diverse solution methodologies including reinforcement learning, approximate dynamic programming, or scenario-based stochastic optimization.
