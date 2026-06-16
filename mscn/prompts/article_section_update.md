@@ -1,12 +1,13 @@
-#
+
 
 ## section 3 : problem formulation
 
-``` text
+```text
 **GUIDELINES:**
 - the problem formulation must be defined as close as possible to the classic OR problem definition. with mechanisms and events coded as mathematical constraints and binary variables etc.
 - the problem formulation is a major contribution. so the Citations must amplify and provide evidence on the presented model. both at the conceptual model design from project management literature and both novelty of the mathematical model.
 - the section must be 4 pages with 2 added pages. one for the parameter table, another for the pseudo code algorithm of the problem
+- model stays purely parametric and distribution free. we calibrate the model and fit distributions in the Methodology section.
 
 ---
 
@@ -49,3 +50,4 @@ the action is focused on the operational budget allocation.
 
 you think we could that cleanly?
 ```
+
