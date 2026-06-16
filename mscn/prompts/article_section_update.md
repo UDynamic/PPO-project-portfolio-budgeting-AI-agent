@@ -51,3 +51,6 @@ the action is focused on the operational budget allocation.
 you think we could that cleanly?
 ```
 
+<!-- ⚠️ review on the last two conversations. 
+calibrating the updates and
+learning about APG conditions -->
