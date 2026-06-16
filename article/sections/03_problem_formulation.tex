@@ -1,5 +1,5 @@
-\section{Problem Formulation}
-\label{sec:problem_formulation}
+
+This formulation provides a novel representation of project portfolio budget allocation that integrates mandatory minimum funding requirements, soft budget constraints with endogenous credit dynamics, performance-triggered corrective interventions, and milestone-based revenue recognition within a unified stochastic, multi-period optimization framework. Unlike traditional project portfolio selection models \cite{archer1999integrated,liesio2007portfolio,gutjahr2013project}, the focus is on operational control of committed projects rather than ex-ante selection. The formulation extends earned-value management frameworks \cite{anbari2003earned,fleming2016earned,lipke2008prediction} by embedding them within a sequential decision framework with explicit financial accounting, soft budget constraints, endogenous intervention mechanisms, and multi-objective performance evaluation, while remaining solution-agnostic and compatible with diverse solution methodologies including reinforcement learning, approximate dynamic programming, or scenario-based stochastic optimization.
 
 \subsection{Management Problem and Portfolio Definition}
 \label{subsec:management_problem}
@@ -139,83 +139,99 @@ Table~\ref{tab:notation} provides a comprehensive list of notation and parameter
 \centering
 \caption{Notation and Parameters}
 \label{tab:notation}
-\small
-\begin{tabular}{ll}
+\scriptsize
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lll}
 \hline
-\textbf{Symbol} & \textbf{Definition} \\
+\textbf{Name} & \textbf{Description} & \textbf{Mathematical Formulation} \\
 \hline
-\multicolumn{2}{l}{\textit{Sets and Indices}} \\
-\(\mathcal{P}\) & Set of projects, \(\{1,\ldots,n\}\) \\
-\(\mathcal{T}\) & Set of time periods, \(\{1,\ldots,H\}\) \\
-\(i\) & Project index, \(i\in\mathcal{P}\) \\
-\(t\) & Time period index, \(t\in\mathcal{T}\) \\
+
+\multicolumn{3}{l}{\textit{Sets and Indices}} \\
+Project set & Set of projects & \(\mathcal{P}=\{1,\ldots,n\}\) \\
+Time-period set & Set of time periods & \(\mathcal{T}=\{1,\ldots,H\}\) \\
+Project index & Index of a project & \(i\in\mathcal{P}\) \\
+Time-period index & Index of a time period & \(t\in\mathcal{T}\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Decision Variable}} \\
-\(x_{i,t}\) & Budget allocated to project \(i\) at time \(t\) \\
+\multicolumn{3}{l}{\textit{Decision Variable}} \\
+Budget allocation & Budget allocated to project \(i\) at time \(t\) & \(x_{i,t}\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Contractual Attributes}} \\
-\(s_i, f_i\) & Planned start and finish periods for project \(i\) \\
-\(D_i^{\mathrm{plan}}\) & Planned duration, \(f_i-s_i+1\) \\
-\(\mathrm{BAC}_i\) & Budget at completion for project \(i\) \\
-\(\pi_i\) & Contractual profit margin for project \(i\) \\
-\(CR_i\) & Contract revenue, \(\mathrm{BAC}_i(1+\pi_i)\) \\
-\(\rho_i\) & Retention fraction for project \(i\) \\
+\multicolumn{3}{l}{\textit{Contractual Attributes}} \\
+Planned start and finish & Planned start and finish periods for project \(i\) & \(s_i,\ f_i\) \\
+Planned duration & Planned duration of project \(i\) & \(D_i^{\mathrm{plan}}=f_i-s_i+1\) \\
+Budget at completion & Total planned project budget & \(\mathrm{BAC}_i\) \\
+Profit margin & Contractual profit margin for project \(i\) & \(\pi_i\) \\
+Contract revenue & Total contract revenue for project \(i\) & \(CR_i=\mathrm{BAC}_i(1+\pi_i)\) \\
+Retention fraction & Retained fraction of project revenue & \(\rho_i\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Planned Expenditure (S-Curve)}} \\
-\(\tau_{i,t}\) & Normalized planned time for project \(i\) at \(t\) \\
-\(a_i,b_i\) & Beta distribution shape parameters for project \(i\) \\
-\(F_i(\tau)\) & Cumulative expenditure fraction function \\
-\(\bar{E}_{i,t}\) & Planned cumulative expenditure at \(t\) \\
-\(\bar{e}_{i,t}\) & Planned period expenditure at \(t\) \\
+\multicolumn{3}{l}{\textit{Planned Expenditure (S-Curve)}} \\
+Normalized planned time & Normalized planned time for project \(i\) at \(t\) & \(\tau_{i,t}=\frac{t-s_i+1}{D_i^{\mathrm{plan}}}\) \\
+Truncated normalized time & Normalized time restricted to \([0,1]\) & \(\tau^c_{i,t}=\min\{1,\max\{0,\tau_{i,t}\}\}\) \\
+Beta shape parameters & Shape parameters of the Beta S-curve & \(a_i,b_i>0\) \\
+Cumulative expenditure fraction & Planned cumulative expenditure fraction & \(F_i(\tau)=I_{\tau}(a_i,b_i)\) \\
+Planned cumulative expenditure & Planned cumulative expenditure at time \(t\) & \(\bar{E}_{i,t}=\mathrm{BAC}_iF_i(\tau^c_{i,t})\) \\
+Planned period expenditure & Planned expenditure during period \(t\) & \(\bar{e}_{i,t}=\bar{E}_{i,t}-\bar{E}_{i,t-1}\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Budget and Credit}} \\
-\(B_t^{\mathrm{avail}}\) & Available internal portfolio budget at \(t\) \\
-\(c_t\) & Credit used at time \(t\) \\
-\(D_t\) & Outstanding debt at start of period \(t\) \\
-\(r_t\) & Credit interest rate at \(t\) \\
-\(q_t\) & Debt repayment at \(t\) \\
+\multicolumn{3}{l}{\textit{Budget and Credit}} \\
+Available budget & Available internal portfolio budget at \(t\) & \(B_t^{\mathrm{avail}}\) \\
+Credit used & Credit used at time \(t\) & \(c_t\) \\
+Outstanding debt & Outstanding debt at start of period \(t\) & \(D_t\) \\
+Credit interest rate & Credit interest rate at \(t\) & \(r_t\) \\
+Debt repayment & Debt repayment at \(t\) & \(q_t\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Mandatory Allocation}} \\
-\(m_{i,t}\) & Minimum mandatory allocation for project \(i\) at \(t\) \\
-\(m_{i,t}^{0}\) & Baseline mandatory allocation (before intervention) \\
+\multicolumn{3}{l}{\textit{Mandatory Allocation}} \\
+Mandatory allocation & Minimum mandatory allocation for project \(i\) at \(t\) & \(m_{i,t}\) \\
+Baseline mandatory allocation & Mandatory allocation before intervention & \(m_{i,t}^{0}\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Project Progress and State}} \\
-\(P_{i,t}^{\mathrm{plan}}\) & Planned cumulative progress for project \(i\) at \(t\) \\
-\(P_{i,t}^{\mathrm{actual}}\) & Actual cumulative progress for project \(i\) at \(t\) \\
-\(\Delta_{i,t}\) & Performance gap, \(P_{i,t}^{\mathrm{plan}} - P_{i,t}^{\mathrm{actual}}\) \\
-\(E_{i,t}\) & Actual cumulative expenditure for project \(i\) at \(t\) \\
-\(\mathrm{SPI}_{i,t}\) & Schedule performance index for project \(i\) at \(t\) \\
-\(\mathrm{CPI}_{i,t}\) & Cost performance index for project \(i\) at \(t\) \\
-\(RD_{i,t}\) & Remaining duration estimate for project \(i\) at \(t\) \\
+\multicolumn{3}{l}{\textit{Project Progress and State}} \\
+Planned progress & Planned cumulative progress for project \(i\) at \(t\) & \(P_{i,t}^{\mathrm{plan}}\) \\
+Actual progress & Actual cumulative progress for project \(i\) at \(t\) & \(P_{i,t}^{\mathrm{actual}}\) \\
+Performance gap & Difference between planned and actual progress & \(\Delta_{i,t}=P_{i,t}^{\mathrm{plan}}-P_{i,t}^{\mathrm{actual}}\) \\
+Actual cumulative expenditure & Actual cumulative expenditure for project \(i\) at \(t\) & \(E_{i,t}\) \\
+Schedule performance index & Schedule performance index & \(\mathrm{SPI}_{i,t}\) \\
+Cost performance index & Cost performance index & \(\mathrm{CPI}_{i,t}\) \\
+Remaining duration & Remaining duration estimate & \(RD_{i,t}\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Intervention Mechanism}} \\
-\(\tau_i\) & Intervention activation threshold for project \(i\) \\
-\(I_{i,t}\) & Endogenous intervention indicator (\(0\) or \(1\)) \\
-\(\kappa_{i,t}\) & Intervention effectiveness parameter for project \(i\) \\
-\(\chi_i\) & Additional mandatory allocation induced by intervention \\
+\multicolumn{3}{l}{\textit{Intervention Mechanism}} \\
+Intervention threshold & Intervention activation threshold & \(\tau_i\) \\
+Intervention indicator & Endogenous intervention indicator & \(I_{i,t}\in\{0,1\}\) \\
+Intervention effectiveness & Intervention effectiveness parameter & \(\kappa_{i,t}\) \\
+Intervention allocation increase & Additional allocation induced by intervention & \(\chi_i\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Performance Dynamics}} \\
-\(\alpha_{i,t}\) & Baseline budget-to-progress conversion efficiency \\
-\(\tilde{\alpha}_{i,t}\) & Intervention-adjusted efficiency \\
-\(\varepsilon_{i,t}\) & Stochastic performance disturbance \\
+\multicolumn{3}{l}{\textit{Performance Dynamics}} \\
+Baseline efficiency & Budget-to-progress conversion efficiency & \(\alpha_{i,t}\) \\
+Adjusted efficiency & Intervention-adjusted efficiency & \(\tilde{\alpha}_{i,t}\) \\
+Performance disturbance & Stochastic disturbance & \(\varepsilon_{i,t}\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Revenue and Milestones}} \\
-\(\mathcal{M}_i\) & Set of milestones for project \(i\) \\
-\(\theta_{i,j}\) & Progress threshold for milestone \(j\) of project \(i\) \\
-\(\phi_{i,j}\) & Payment fraction for milestone \(j\) of project \(i\) \\
-\(R_{i,j}\) & Payment amount for milestone \(j\) of project \(i\) \\
-\(V_t\) & Total milestone-based revenue received at \(t\) \\
+\multicolumn{3}{l}{\textit{Revenue and Milestones}} \\
+Milestone set & Set of milestones for project \(i\) & \(\mathcal{M}_i\) \\
+Milestone threshold & Progress threshold for milestone \(j\) & \(\theta_{i,j}\) \\
+Payment fraction & Payment fraction for milestone \(j\) & \(\phi_{i,j}\) \\
+Payment amount & Payment amount for milestone \(j\) & \(R_{i,j}\) \\
+Milestone revenue & Total milestone revenue at \(t\) & \(V_t\) \\
+
 \hline
-\multicolumn{2}{l}{\textit{Objective-Related}} \\
-\(R_t\) & Period performance metric at \(t\) \\
-\(\gamma\) & Discount factor, \(\gamma\in(0,1]\) \\
-\(\alpha_D\) & Delay penalty weight \\
-\(C_t^{\mathrm{credit}}\) & Credit financing cost at \(t\) \\
-\(C_t^{\mathrm{delay}}\) & Liquidated damages and delay penalties at \(t\) \\
-\(C_t^{\mathrm{other}}\) & Other portfolio-level costs at \(t\) \\
+\multicolumn{3}{l}{\textit{Objective-Related}} \\
+Period performance metric & Period performance metric & \(R_t\) \\
+Discount factor & Discount factor & \(\gamma\in(0,1]\) \\
+Delay penalty weight & Weight assigned to delay penalties & \(\alpha_D\) \\
+Credit financing cost & Credit financing cost & \(C_t^{\mathrm{credit}}\) \\
+Delay penalty cost & Liquidated damages and delay penalties & \(C_t^{\mathrm{delay}}\) \\
+Other portfolio costs & Other portfolio costs & \(C_t^{\mathrm{other}}\) \\
+
 \hline
 \end{tabular}
+}
 \end{table}
+    
 
 \subsection{Scope and Modeling Assumptions}
 \label{subsec:scope}
@@ -233,5 +249,3 @@ The formulation is subject to the following scope definitions and modeling assum
     \item Intervention-related costs are reflected through increased mandatory minimum allocations in subsequent periods and through the credit mechanism if additional budget must be borrowed.
     \item The formulation defines the decision structure, constraints, state dynamics, and performance evaluation. Numerical solution requires specification of the stochastic processes governing contractor response, intervention effectiveness, and project state evolution.
 \end{itemize}
-
-This formulation provides a novel representation of project portfolio budget allocation that integrates mandatory minimum funding requirements, soft budget constraints with endogenous credit dynamics, performance-triggered corrective interventions, and milestone-based revenue recognition within a unified stochastic, multi-period optimization framework. Unlike traditional project portfolio selection models \cite{archer1999integrated,liesio2007portfolio,gutjahr2013project}, the focus is on operational control of committed projects rather than ex-ante selection. The formulation extends earned-value management frameworks \cite{anbari2003earned,fleming2016earned,lipke2008prediction} by embedding them within a sequential decision framework with explicit financial accounting, soft budget constraints, endogenous intervention mechanisms, and multi-objective performance evaluation, while remaining solution-agnostic and compatible with diverse solution methodologies including reinforcement learning, approximate dynamic programming, or scenario-based stochastic optimization.

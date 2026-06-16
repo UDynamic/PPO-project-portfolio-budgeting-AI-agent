@@ -30,14 +30,6 @@ Applications of RL to operations research problems have grown rapidly. \citet{hu
 
 In project management, RL applications remain limited. \citet{wauters2016learning} used RL for resource-constrained project scheduling with deterministic durations. \citet{chen2018reinforcement} applied RL to construction project scheduling under resource uncertainty. However, no prior work addresses portfolio-level budgeting under cashflow uncertainty with stochastic contractor performance.
 
-\subsection{Rolling Horizon Control}
-
-Rolling horizon control (also called receding horizon control or model predictive control) is a well-established technique in control theory and operations research. \citet{sethi1991survey} surveyed rolling horizon procedures for production planning, demonstrating their effectiveness in handling long planning horizons with bounded computational effort.
-
-\citet{chand2002rolling} analyzed the theoretical properties of rolling horizon heuristics, proving asymptotic optimality under certain conditions. \citet{sahin2013rolling} applied rolling horizon frameworks to inventory management under demand uncertainty, showing that fixed-horizon re-planning can approximate infinite-horizon optimal policies.
-
-In project management, \citet{lambrechts2008proactive} used rolling horizon scheduling for resource-constrained projects under activity duration uncertainty. \citet{ballesteros2015resource} applied rolling horizon methods to multi-project resource allocation. However, these approaches use deterministic optimization at each re-planning step, rather than learning adaptive policies through RL.
-
 \subsection{Synthetic Data Generation for OR/ML Research}
 
 The use of synthetic data in operations research has a long tradition. \citet{kolisch1997psplib} created the Project Scheduling Problem Library (PSPLIB), a benchmark dataset of synthetic instances that became the standard for algorithm comparison. \citet{vanhoucke2008experimental} generated synthetic project networks to study schedule risk analysis methods.
