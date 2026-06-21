@@ -172,3 +172,8 @@ we want for the agent to learn to allocate by monitoring this parameter.
 purely local representing on-site project MC contractor's part as mediator. intervention is mentioned because management won't stay and look at the performance to plumet. they're obligated for high performance on time operational delivery. currently the only mechanism for increasing project performance is this. we must provide evidence that this is enough, and no other effort for increasing project performance is outside this intervention mechanism. for the performance to go up you need to bear the cost.
 
 6. on the credit system: 
+the whole system is to be exclude and out of scope.
+there is no enough literature to model and calibrate it.
+instead of soft budget constraint we use hard budget constraint with distress state.
+
+7. distress state:
