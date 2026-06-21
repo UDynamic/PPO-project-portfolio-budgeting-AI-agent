@@ -174,10 +174,14 @@ purely local representing on-site project MC contractor's part as mediator. inte
 6. on the credit system: 
 the whole system is to be exclude and out of scope.
 there is no enough literature to model and calibrate it.
-instead of soft budget constraint we use hard budget constraint with distress state.
+instead of soft budget constraint we use hard budget constraint.
+you can't spend the money you don't have.
 
-7. distress state:
+
+7. termination abandonment modeling of the project:
+**under a hard budget constraint, starvation is the normal operating mode whenever the optimizer must choose which projects to feed**
+because we don't assume the credit mechanism or contractor's treasury in the project financing. we will model another design backed by literture in concept.
 
 
-8. the reputation cost of terminating a project:
+8. the reputation cost of terminating a project
 because the portfolio is fixed beforehand and no project entries assumed in the model, this parameter and it's effect however qualitatively studied in the literature, for the lack of rigorous quantitative study and being out of the portfolio structure is assumed out of scope.
