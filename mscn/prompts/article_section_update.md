@@ -177,3 +177,7 @@ there is no enough literature to model and calibrate it.
 instead of soft budget constraint we use hard budget constraint with distress state.
 
 7. distress state:
+
+
+8. the reputation cost of terminating a project:
+because the portfolio is fixed beforehand and no project entries assumed in the model, this parameter and it's effect however qualitatively studied in the literature, for the lack of rigorous quantitative study and being out of the portfolio structure is assumed out of scope.
