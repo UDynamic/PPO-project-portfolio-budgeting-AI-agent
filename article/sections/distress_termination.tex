@@ -1,0 +1,116 @@
+\subsection{Literature Review: Project Distress, Termination, and Abandonment Under Cash Scarcity}
+\label{subsec:distress_literature}
+
+This subsection reviews the literature relevant to modeling project termination under sustained cash scarcity, in the absence of a credit or project-specific treasury mechanism (Sections~\ref{subsec:credit_mechanism}--\ref{subsec:credit_calibration}, excluded per the preceding design discussion). As with the credit mechanism, no single literature directly studies "an RL agent terminating a portfolio project for lack of cash"; the review below identifies the adjacent bodies of literature that, in combination, support a defensible modeling choice, tiered by evidentiary strength as established in Section~\ref{subsubsec:credit_literature_scope}.
+
+\subsubsection{Construction Contract Termination Practice}
+\label{subsubsec:lit_contract_termination}
+
+Standard-form construction contracts (AIA A201, AGC, FIDIC, CCDC) treat termination as a last-resort remedy with a defined cost-allocation structure rather than an instantaneous event. Termination for cause is preceded by a notice-and-cure period; if uncured, the owner may complete the work by other means and recover the excess of completion cost over the unpaid contract balance from the defaulting contractor, while a contractor with a positive balance (completion cost below the unpaid balance) is paid the difference. This is Tier 2 evidence: it is consistently documented across independent legal and industry-practice sources describing standard contract forms, but is practitioner/legal commentary rather than a peer-reviewed academic measurement. It is, however, useful for this thesis because it gives a concrete, literature-consistent \emph{cost structure} for termination: a completion-cost-versus-remaining-balance settlement, rather than a single ad hoc penalty constant.
+
+\subsubsection{Causes and Effects of Construction Project Abandonment}
+\label{subsubsec:lit_abandonment}
+
+Academic literature on contractor insolvency and project abandonment identifies cash-flow shortage as one of the leading causes of construction business failure and project abandonment, alongside poor financial monitoring and onerous contract terms \cite{macbarango2017abandonment}. This is Tier 1 evidence for the qualitative claim that sustained cash shortage is a recognized, studied pathway to project failure in construction specifically — directly relevant to motivating a termination mechanism keyed to cash scarcity rather than to schedule or quality failure alone. It does not, however, provide a quantitative threshold or duration rule; the "causes, effects, and remedies" framing in this literature is consistent with a graduated process (distress, attempted remedy, and only then abandonment) rather than an instantaneous failure, which is the qualitative basis for the grace-period design recommended below.
+
+\subsubsection{Real Options Theory: The Option to Abandon}
+\label{subsubsec:lit_real_options}
+
+Investment-under-uncertainty theory formalizes abandonment as an option exercised when a state variable (project value, output price, or, by direct analogy, project cash position) crosses a threshold, with explicit entry and exit trigger levels rather than a single break-even point \cite{dixitpindyck1994investment}. This is Tier 1 evidence for the \emph{threshold-crossing} structure of abandonment decisions under uncertainty — it is the foundational academic treatment of exactly this class of decision (continue vs.\ irreversibly exit a value-generating but uncertain activity) and is widely cited across capital budgeting and project-finance research. It does not, however, address multi-project portfolios, EVM-style progress states, or construction-specific cash mechanics; its contribution here is structural (the existence and shape of an abandonment trigger), not parametric.
+
+\subsubsection{Ruin Theory: Parisian Ruin as a Grace-Period Formalization}
+\label{subsubsec:lit_parisian_ruin}
+
+Actuarial ruin theory distinguishes \emph{classical ruin} (failure declared the instant a surplus process turns negative) from \emph{Parisian ruin}, in which failure is declared only if the surplus remains continuously negative for a prescribed grace period $d$, reflecting the institutional reality that a temporarily negative position is not immediately fatal \cite{dassioswu2008parisian}. This is Tier 1 evidence, directly on point for the structural question of \emph{how long} a negative cash position should be tolerated before failure is declared, and gives this thesis a named, mathematically developed construct — a grace period on sustained negative surplus — rather than an arbitrary persistence rule. The literature does not address construction projects or multi-project portfolios; its contribution is the formal grace-period mechanism, imported here by direct structural analogy from insurance surplus processes to project cash position.
+
+\subsubsection{Risk-Constrained and Failure-Aware MDPs}
+\label{subsubsec:lit_constrained_mdp}
+
+Constrained and safe-RL literature treats irrecoverable failure as an absorbing state reached via constraint violation, typically penalized through reward shaping rather than through ad hoc termination logic; bankruptcy/ruin-probability constraints have been treated directly within the constrained-MDP framework \cite{borkarjain2014riskconstrained}. This is Tier 1 evidence for how to wire a financial-failure event into an RL environment's formal structure (absorbing state, terminal reward shaping, constraint formulation) — it tells you \emph{where} project termination belongs in the MDP (an absorbing per-project state with a calibrated terminal reward, not a hard environment-level crash), without telling you what your specific threshold or penalty magnitude should be.
+
+\subsubsection{Synthesis}
+\label{subsubsec:lit_synthesis}
+
+No literature source models the specific combination this thesis requires (multi-project portfolio, EVM-driven progress and cash dynamics, contractor-side termination of a self-funded project). Combining the five strands above, however, yields a structurally defensible and individually well-evidenced design:
+
+\begin{enumerate}
+\item Termination is triggered by a \textbf{sustained}, not instantaneous, negative cash/funding position (Parisian ruin structure \cite{dassioswu2008parisian}; consistent with the graduated causes-effects-remedies framing of abandonment \cite{macbarango2017abandonment}).
+\item The triggering condition is a \textbf{threshold-crossing} of an explicit state variable, consistent with abandonment-option theory \cite{dixitpindyck1994investment}, rather than a single scalar penalty bolted onto the reward.
+\item Termination carries an explicit \textbf{cost structure} consistent with construction termination practice — a completion-cost-versus-remaining-balance settlement — rather than an arbitrary constant penalty.
+\item Within the RL environment, termination is formalized as a per-project \textbf{absorbing state} with a shaped terminal cost, consistent with constrained-MDP treatments of ruin \cite{borkarjain2014riskconstrained}.
+\end{enumerate}
+
+\subsection{Proposed Modeling Choices}
+\label{subsec:distress_modeling}
+
+\subsubsection{Distress State and Grace Period}
+\label{subsubsec:model_distress_state}
+
+Define a project-level cumulative funding shortfall,
+\[
+U_{i,t} = U_{i,t-1} + \bigl(m_{i,t} - x_{i,t}\bigr)^{+}, \qquad U_{i,0} = 0,
+\]
+where $m_{i,t}$ is the mandatory minimum allocation (Section~\ref{subsec:decisions_constraints}) and $(\cdot)^{+} = \max(\cdot, 0)$, so $U_{i,t}$ accumulates only in periods where the project is underfunded relative to its minimum requirement. Define the project as \textbf{in distress} at time $t$ if $U_{i,t} > 0$, i.e., any unresolved shortfall is outstanding.
+
+Following the Parisian-ruin grace-period structure \cite{dassioswu2008parisian}, termination is not triggered by $U_{i,t} > 0$ alone, but by distress persisting beyond a grace period $d_i$:
+\[
+\text{terminate project } i \text{ at } t \quad \text{if} \quad U_{i,\tau} > 0 \ \ \forall\, \tau \in \{t-d_i+1, \ldots, t\}.
+\]
+The grace-period length $d_i$ is a Tier 3 design parameter; the literature establishes the existence and value of such a grace period as a modeling device but provides no project-category-specific calibration for its length in oil and gas EPC settings. A lower bound on $d_i$ can be anchored, at the order-of-magnitude level, to documented construction-industry payment-cycle lengths: days-sales-outstanding (DSO) for construction firms has been independently reported in the range of 51--94 days \cite{dnb2021dso,pwc2021workingcapital}, and contractor/subcontractor payment-delay surveys report comparable cycles, with payment commonly received 30--90 days after invoicing and average delays near 53 days documented in a dedicated payment-delay survey \cite{munyaobamfo2011delayedpayment}. This evidence supports treating a single missed or delayed payment as within the range of normal industry practice rather than as distress in itself, and motivates setting $d_i$ strictly greater than one ordinary payment cycle so the mechanism does not confuse routine payment lag with genuine financial distress. It does not, however, support a precise value of $d_i$, still less a value differentiated by EPC project category (e.g., onshore vs.\ offshore, brownfield vs.\ greenfield); no source identified measures funding-shortfall duration against eventual project abandonment, as opposed to measuring payment delay as a routine operational friction. Accordingly, $d_i$ is treated here as a swept sensitivity parameter rather than a fitted value, evaluated over $d_i \in \{1, 2, 3, 5\}$ periods under a monthly period length, with $d_i = 1$ (equivalent to classical, instantaneous ruin) retained as a baseline ablation.
+This formulation is intentionally analogous, not identical, to the corrective-intervention mechanism of Section~\ref{subsubsec:credit_literature_scope} (the existing $I_{i,t}$, $\tau_i$, $\Delta_{i,t}$ machinery): $I_{i,t}$ is triggered by a \emph{progress} gap and is governed by EVM literature; $U_{i,t}$ is triggered by a \emph{funding} gap and is governed by the ruin/abandonment literature reviewed above. The two are coupled through the model dynamics — chronic underfunding depresses $P_{i,t}^{\mathrm{actual}}$, which widens $\Delta_{i,t}$, which raises the likelihood of triggering $I_{i,t}$ — but are not the same state variable and should not be collapsed into one.
+
+\subsubsection{Threshold-Crossing Structure}
+\label{subsubsec:model_threshold}
+
+Consistent with the abandonment-option structure of \cite{dixitpindyck1994investment}, the distress-to-termination transition is governed by an explicit state threshold rather than a reward-only penalty: $U_{i,t}$ is a genuine state variable (entering the agent's observation), and termination is a state-transition event, not merely a large negative reward applied at an arbitrary point. This preserves the interpretability the abandonment-option literature relies on (the agent can, in principle, observe how close a project is to its termination boundary) and avoids burying the failure condition entirely inside reward shaping, which the constrained-MDP literature treats as a secondary mechanism layered on top of an explicit constraint or absorbing-state structure \cite{borkarjain2014riskconstrained}, not a substitute for one.
+
+\subsubsection{Termination Cost Structure}
+\label{subsubsec:model_termination_cost}
+
+Consistent with standard contract termination settlement practice (Section~\ref{subsubsec:lit_contract_termination}), the termination cost/settlement for project $i$ at its termination period $t_i^{\mathrm{term}}$ is modeled as
+\[
+\Phi_i = \max\Bigl(0,\ \widehat{C}_i^{\mathrm{completion}} - \bigl(CR_i - E_{i,t_i^{\mathrm{term}}}\bigr)\Bigr) - \text{(retention forfeiture, if applicable)},
+\]
+where $\widehat{C}_i^{\mathrm{completion}}$ is an estimate of the cost a replacement arrangement would require to complete the remaining scope, and $CR_i - E_{i,t_i^{\mathrm{term}}}$ is the unpaid contract balance at termination (contract revenue net of expenditure already incurred). This mirrors the AIA/AGC/FIDIC settlement logic — excess completion cost over the remaining contract balance is a loss borne by the terminating party, while a positive remaining balance net of completion cost is recovered — rather than treating termination cost as an arbitrary constant. $\widehat{C}_i^{\mathrm{completion}}$ itself is a Tier 3 estimation choice (e.g., a multiple of remaining planned cost, calibrated against the cost-overrun evidence of Section~\ref{subsubsec:calib_performance} to reflect that replacement/recovery work is empirically more expensive than originally planned execution).
+
+\subsubsection{RL Environment Integration}
+\label{subsubsec:model_rl_integration}
+
+Consistent with the constrained-MDP treatment of absorbing failure states \cite{borkarjain2014riskconstrained}, project termination is integrated into the custom RL environment as follows:
+
+\begin{itemize}
+\item \textbf{State.} $U_{i,t}$ (cumulative shortfall) and a distress-duration counter are added to project $i$'s observation vector. A binary terminated-flag removes project $i$ from $\mathcal{P}_t^{\mathrm{active}}$ once triggered (Section~\ref{subsec:state_dynamics}).
+\item \textbf{Transition.} Termination is a state transition triggered by the rule in Section~\ref{subsubsec:model_distress_state}, evaluated deterministically given the realized state — it is not a separate decision variable, mirroring the treatment of the (now-excluded) credit-triggered repayment as state-determined rather than agent-chosen.
+\item \textbf{Reward.} The termination cost $\Phi_i$ is subtracted from the portfolio reward $R_t$ (Section~\ref{subsec:objective}) in the period termination occurs, alongside the loss of any future milestone revenue $V_t$ project $i$ would otherwise have generated. This is a one-time terminal cost rather than a per-period penalty, consistent with the lump-sum settlement structure of real contract termination.
+\item \textbf{Portfolio continuation.} Consistent with the scope assumption that the portfolio composition is otherwise fixed (Section~\ref{subsec:scope}), termination removes only the individual project from $\mathcal{P}_t^{\mathrm{active}}$; the portfolio-level optimization continues over the remaining active projects.
+\end{itemize}
+
+\subsubsection{Calibration Status and Open Parameters}
+\label{subsubsec:model_calibration_status}
+
+Table~\ref{tab:distress_calibration} summarizes the evidentiary tier of each new parameter, in the same format as Table~\ref{tab:epc_calibration}. The grace-period length $d_i$ deserves particular emphasis given its central role in the mechanism. A systematic search for literature that directly measures the duration of sustained project-level cash shortfall preceding abandonment, segmented by project category, in oil and gas EPC or in construction generally, did not return such a source. What the literature does provide is: (i) a qualitative, well-evidenced case that abandonment is a graduated process rather than an instantaneous event \cite{macbarango2017abandonment}; (ii) a formal mathematical device for representing a grace period before failure is declared, imported from actuarial ruin theory \cite{dassioswu2008parisian}; and (iii) industry-wide payment-cycle statistics that bound what counts as a routine, non-distressing payment delay versus an anomalous one \cite{dnb2021dso,pwc2021workingcapital,munyaobamfo2011delayedpayment}. These three sources jointly justify the existence and qualitative shape of $d_i$ and provide a lower-bound anchor, but none of them — individually or in combination — yields a calibrated numerical value, and none differentiates by EPC project category. Reporting a single fitted number for $d_i$ would therefore overstate the evidentiary support available; $d_i$ is instead treated as an open design parameter to be explored through sensitivity analysis, consistent with standard practice in OR and RL formulation papers when no empirical distribution for a structural parameter exists.
+
+\begin{table}[htbp]
+\centering
+\caption{Evidentiary Tiering of Distress and Termination Parameters}
+\label{tab:distress_calibration}
+\scriptsize
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lllp{0.35\textwidth}}
+\hline
+\textbf{Parameter / Choice} & \textbf{Tier} & \textbf{Source} & \textbf{Note} \\
+\hline
+Existence of a graduated distress process (vs.\ instantaneous failure) & 1 & \cite{macbarango2017abandonment} & Qualitative; construction-specific \\
+Grace-period structure before failure is declared & 1 & \cite{dassioswu2008parisian} & Formal construct; not construction-specific \\
+Lower-bound anchor for $d_i$ (one ordinary payment cycle) & 2 & \cite{dnb2021dso,pwc2021workingcapital,munyaobamfo2011delayedpayment} & General construction industry DSO/payment-delay statistics; not oil \& gas EPC-specific; not abandonment-duration evidence \\
+Grace-period length $d_i$, precise value & 3 & --- & No project-category-specific calibration identified; treated as swept sensitivity parameter, $d_i \in \{1,2,3,5\}$ periods \\
+Threshold-crossing (state-based) structure for termination & 1 & \cite{dixitpindyck1994investment} & Structural; not portfolio- or construction-specific \\
+Termination settlement as completion-cost-vs.-balance & 2 & Standard-form contract practice (AIA, AGC, FIDIC) & Practitioner/legal commentary, consistently documented \\
+Completion-cost estimate $\widehat{C}_i^{\mathrm{completion}}$ & 3 & --- & Recommend tying to Tier 1 overrun evidence of Table~\ref{tab:epc_calibration} \\
+Absorbing-state RL formalization of termination & 1 & \cite{borkarjain2014riskconstrained} & Structural MDP treatment; domain-agnostic \\
+\hline
+\end{tabular}
+}
+\end{table}
+
+As with the credit-mechanism calibration (Section~\ref{subsubsec:calib_scope}), the honest position is that the qualitative structure of this mechanism — graduated distress, threshold-based termination, settlement-style cost — rests on solid, citable, multi-disciplinary literature, while the specific numerical calibration of the grace period and completion-cost multiplier does not have a direct empirical anchor and should be reported as a design choice subject to sensitivity analysis, not as an independently validated figure. This distinction — between literature that supports a mechanism's existence and shape versus literature that supports a specific numerical value — is reported explicitly here rather than blurred, consistent with the evidentiary-tiering principle established in Section~\ref{subsubsec:credit_literature_scope}.
