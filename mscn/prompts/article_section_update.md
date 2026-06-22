@@ -185,3 +185,47 @@ because we don't assume the credit mechanism or contractor's treasury in the pro
 
 8. the reputation cost of terminating a project
 because the portfolio is fixed beforehand and no project entries assumed in the model, this parameter and it's effect however qualitatively studied in the literature, for the lack of rigorous quantitative study and being out of the portfolio structure is assumed out of scope.
+
+
+<!-- 
+Ok this all seams so pinishing as an environment. 
+
+I've decided:
+Let's drop the credit system, 
+Let's drop the treasury system, 
+let's drop the mandatory allocation (there is no academic or legal contract mentioning explicit mandatory allocation. they get the contractor's agreement on the plan, the finish date is the main goal)
+
+Let's work on Project termination:
+according to the literature there is norm in project delay, spi and cpi. 
+this norm is backed by the literature. 
+passing that norm would trigger termination settlement. 
+
+If a project finish is expected to be delayed more than the norm.
+norm for each project categorie is existing in tthe literature.
+
+so we could add another to each project as delayed finish threshold. 
+
+there is two other conditions to termination. 
+
+SPI and CPI below the norm and their threshold. 
+
+so these three threshold's if passed simultaneusly, the termination settlement is the resault. 
+
+in this case the Management intervention for performance recovery didn't work or the increased cost of it even made the not allocation policy more stronger.
+
+Note on intervention mechanism: mandated by the environment. if the spi gap is more than intervention threshold the intervention is triggered. 
+adding to the cost for specific periods in future, revocering the performance to a ratio times the uncertainty parameter of the performance. 
+boosting performance. 
+these ratio has got a decay over time.)
+
+in the settlement we studied previously to balance the project finance. 
+if contractor is behind, will get the payment and vice versa. 
+a clean financial balancing things out. 
+better settlement is for the contractor to complete the work until balanced with client's payments. 
+if the client has to pay the work is immediately stoped, and the payment will be delivered according to delayed payment model. 
+the contractor will finish the work at that timestep. (adding to the mandatory allocation of the portfolio)
+
+this is different with the general mandatory allocation interpreted from the contract plan. 
+that mandatory allocation is droped. 
+but the idea of having that mechanism is good for forcing allocation on project termination after settlement.
+-->
