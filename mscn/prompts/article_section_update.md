@@ -44,18 +44,13 @@ The project definition must be proven consistent with the contractual dynamics a
 
 **Core fix:** The formulation pivots from an EPC/oil-and-gas-specific framing to a **general resource allocation problem formulation**, applicable across industries and sectors. The EPC oil-and-gas context enters as the empirical instantiation in the Methodology section via anonymised contractor data.
 
-**Two-layer structure:**
-
-**Layer 1 — General formulation (Problem Formulation section):**
+**General formulation (Problem Formulation section):**
 S-curves, Earned Value Management (EVM), progress-to-budget conversion, schedule/cost performance indices, and abandonment thresholds are documented across construction, software, defence, and IT project management. Cite this literature correctly at the general level:
 - S-curves: Kenley & Wilson (1986), construction-general
 - EVM: Fleming & Koppelman, PMI — sector-agnostic
 - CPI stability: Christensen & Heise (1993) — defence contracts (not EPC; this is now correct usage)
 - Abandonment option theory: Dixit & Pindyck — finance-generic
 - Constrained MDPs: Borkar & Jain — domain-agnostic
-
-**Layer 2 — EPC instantiation (Methodology section):**
-Where the literature legitimately runs thin, cite Merrow/IPA for what they actually measured. For remaining calibration, use the anonymised data from the EPC contractor under NDA/data-sharing acknowledgement. This is the standard applied OR/RL approach to proprietary industry calibration — more credible than expert judgment alone.
 
 ---
 
@@ -111,7 +106,7 @@ revenue.
 
 ### 2.3 Intervention Mechanism
 
-**Conceptual scope:** Intervention represents purely local, on-site action by the main contractor (MC) as mediator. It is triggered by the environment — not chosen by the agent — when the schedule performance gap exceeds a threshold.
+**Conceptual scope:** Intervention represents management intervention to recover operational performance. It is triggered by the environment — not chosen by the agent — when the schedule performance gap exceeds a threshold.
 
 **Formal properties:**
 
@@ -142,11 +137,22 @@ A project is terminated when **three thresholds are simultaneously breached**:
 
 1. Schedule performance falls below a minimum acceptable level.
 2. Cost performance falls below a minimum acceptable level.
-3. Intervention has failed to recover performance (or the added cost of intervention further reinforced the non-allocation policy).
+3. expected finish date is over the threshold. (due to the delay penalty cap and client losing leverage)
+
+obviously the Intervention has failed to recover performance (or the added cost of intervention further reinforced the non-allocation policy).
 
 These thresholds are modelled as binary trigger conditions. When all three are satisfied jointly, the environment forces project termination and initiates the settlement mechanism.
 
+
+
 ### 3.2 Termination Settlement Mechanism
+
+expected delay is the key indicator for the termination.
+according to the literature provide evidence on that for settlement, the client payment delay is deducted from the total delay, and the remained delay is owned by client up to 50% conventionally.
+
+so the remaining delay must not cross the threshold of the delay penalty cap by the timestep count.
+termination has no completion therfore no delay penalty.
+but the delay penalty horizon specific to each project is the the max delay tolerable by the client.
 
 At termination, a financial settlement is computed to balance the project accounts between contractor and client:
 
@@ -171,6 +177,17 @@ This settlement-driven mandatory allocation is **distinct** from any general pla
 Although reputation effects of project abandonment are qualitatively documented in the literature, rigorous quantitative modelling does not exist, and reputation effects fall outside the fixed-portfolio structure assumed in this model (no project entries after initialisation). This parameter is **out of scope** and may be noted as a direction for future work.
 
 ---
+
+## part IV - project completion
+
+at the finish all the payments and retention are released to the contractor as the final payment.
+
+this final payment includes delay penalty.
+
+according to the literature provide evidence on that for settlement, the client payment delay is deducted from the total delay, and the remained delay is owned by client up to 50% conventionally.
+
+so the remaining delay will have penalty as a portion of the contract value for each timestep until a cap.
+
 
 ## Summary of Design Decisions
 
