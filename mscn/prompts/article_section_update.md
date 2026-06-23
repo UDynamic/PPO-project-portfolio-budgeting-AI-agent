@@ -132,6 +132,15 @@ this project definition and attribute setting and model formulation must be acco
 the action is focused on the operational budget allocation.
 
 
+- Pivoting the direction of paper: making a general resource allocation problem formulation in the general difinition of the project accross different industries and sectors,
+then solving it in the methodology section leveraging the letter of recieving anonymized data from a major EPC oil and gas contractor
+```
+**The core fix:** you've been trying to find oil & gas-EPC-specific literature for mechanisms that are actually *generic project-control phenomena* — S-curves, EVM, progress-to-budget conversion, schedule/cost performance indices, abandonment thresholds. That literature search kept failing not because you were searching badly, but because **the generic version of every one of these mechanisms is genuinely well-documented across construction, software, defense, and IT project management**, while the oil & gas-EPC-specific *numbers* are the part that's thin. Your pivot separates these two things instead of conflating them, which is exactly the separation a Q1 reviewer wants to see:
+
+- **Layer 1 — the general resource-allocation-under-uncertainty formulation.** S-curves (Kenley & Wilson 1986, construction generally), EVM (Fleming & Koppelman, PMI, all sector-agnostic), CPI stability (Christensen & Heise 1993 — *defense* contracts, not EPC, and that's fine now because you're not claiming it's EPC-specific), abandonment-option theory (Dixit & Pindyck — finance-generic), constrained MDPs (Borkar & Jain — domain-agnostic). All of this literature is real, well-established, and was never actually about oil & gas — you were the one stretching it there. Presented as the general case, every one of these citations is now used *correctly*, not stretched.
+- **Layer 2 — the oil & gas EPC instantiation.** Here, exactly where the literature legitimately runs out, you cite **Merrow/IPA** (genuinely oil & gas EPC-specific, the strongest thing you have) for what it actually measured, and for everything else, you have a real, citable, methodologically standard fallback: **anonymized data from a contractor, via a data-sharing or NDA-style acknowledgment.** This is not a workaround — it is exactly how applied OR/RL papers handle proprietary industry calibration. It's more credible than Tier 4 "expert judgment" alone, because it's actual data, not just your recollection of it.
+```
+
 2. **The advance payment redesign**
 the one updated design is the advanced payment and it's recovery through milestones to come. 
 the previous design may be considering the accumulation of the advanced and all other payments to be all the project payments.
@@ -187,6 +196,12 @@ because we don't assume the credit mechanism or contractor's treasury in the pro
 because the portfolio is fixed beforehand and no project entries assumed in the model, this parameter and it's effect however qualitatively studied in the literature, for the lack of rigorous quantitative study and being out of the portfolio structure is assumed out of scope.
 
 
+
+
+
+
+
+---
 <!-- 
 Ok this all seams so pinishing as an environment. 
 
