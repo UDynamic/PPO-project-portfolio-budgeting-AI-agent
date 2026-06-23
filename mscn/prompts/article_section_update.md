@@ -165,7 +165,7 @@ From a portfolio-level perspective, the advance payment mechanism creates an ear
 
 Note: advance payment and advance recovery is independant from the retention mechanism
 
-3. the mandatory allocation is at least numerical planned budget of the s-curve. (how do you expect with performance less than 1 to catch up with less than the plan.)
+
 
 4. uncertainty modeling:
 the key parameter of **budget to progress efficiency** is the key parameter modeled as the contractor's performance. 
@@ -181,6 +181,8 @@ we want for the agent to learn to allocate by monitoring this parameter.
 purely local representing on-site project MC contractor's part as mediator. intervention is mentioned because management won't stay and look at the performance to plumet. they're obligated for high performance on time operational delivery. currently the only mechanism for increasing project performance is this. we must provide evidence that this is enough, and no other effort for increasing project performance is outside this intervention mechanism. for the performance to go up you need to bear the cost.
 
 6. on the credit system: 
+Let's drop the credit system,
+Let's drop the treasury system, 
 the whole system is to be exclude and out of scope.
 there is no enough literature to model and calibrate it.
 instead of soft budget constraint we use hard budget constraint.
@@ -191,40 +193,7 @@ you can't spend the money you don't have.
 **under a hard budget constraint, starvation is the normal operating mode whenever the optimizer must choose which projects to feed**
 because we don't assume the credit mechanism or contractor's treasury in the project financing. we will model another design backed by literture in concept.
 
-
-8. the reputation cost of terminating a project
-because the portfolio is fixed beforehand and no project entries assumed in the model, this parameter and it's effect however qualitatively studied in the literature, for the lack of rigorous quantitative study and being out of the portfolio structure is assumed out of scope.
-
-
-
-
-
-
-
----
-<!-- 
-Ok this all seams so pinishing as an environment. 
-
-I've decided:
-Let's drop the credit system, 
-Let's drop the treasury system, 
-let's drop the mandatory allocation (there is no academic or legal contract mentioning explicit mandatory allocation. they get the contractor's agreement on the plan, the finish date is the main goal)
-
-Let's work on Project termination:
-according to the literature there is norm in project delay, spi and cpi. 
-this norm is backed by the literature. 
-passing that norm would trigger termination settlement. 
-
-If a project finish is expected to be delayed more than the norm.
-norm for each project categorie is existing in tthe literature.
-
-so we could add another to each project as delayed finish threshold. 
-
-there is two other conditions to termination. 
-
-SPI and CPI below the norm and their threshold. 
-
-so these three threshold's if passed simultaneusly, the termination settlement is the resault. 
+o these three threshold's if passed simultaneusly, the termination settlement is the resault. 
 
 in this case the Management intervention for performance recovery didn't work or the increased cost of it even made the not allocation policy more stronger.
 
@@ -243,4 +212,23 @@ the contractor will finish the work at that timestep. (adding to the mandatory a
 this is different with the general mandatory allocation interpreted from the contract plan. 
 that mandatory allocation is droped. 
 but the idea of having that mechanism is good for forcing allocation on project termination after settlement.
--->
+
+3. let's drop the mandatory allocation in this fashion:
+the mandatory allocation is at least numerical planned budget of the s-curve. (how do you expect with performance less than 1 to catch up with less than the plan.)
+and let's keep the design as another utility for the project termination.
+termination of a project by environment which it's completion is behind the recieved payment obligates the contractor to allocate this budget in the next timestep. it's mandatory.
+and this means if the budget available doesn't allow that, it's moved to the next period and it's priority of allocation is more than other projects.
+so the agent having at least budget avialble for termination settlement of a project, must clear this allocation first, then plan for allocation of other projects.
+so we have to keep record of a mandatory allocation for each project, in case it get's terminated to do so
+
+
+8. the reputation cost of terminating a project
+because the portfolio is fixed beforehand and no project entries assumed in the model, this parameter and it's effect however qualitatively studied in the literature, for the lack of rigorous quantitative study and being out of the portfolio structure is assumed out of scope.
+
+
+
+
+
+
+
+---
