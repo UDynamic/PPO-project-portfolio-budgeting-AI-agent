@@ -362,3 +362,222 @@ This problem structure generalizes classical project portfolio budget allocation
 
 The formulation is distribution-free and parametric: all stochastic elements (efficiency parameter distributions, intervention trigger probabilities, termination condition thresholds) are treated as parameters to be calibrated from empirical data in the Methodology section. This separation preserves the generality of the problem structure while allowing sector-specific instantiation through data-driven calibration.
 
+\subsection{Operations Research Formulation}
+\label{subsec:or_formulation}
+
+The sequential decision problem described in Sections~\ref{subsec:single_project}--\ref{subsec:portfolio_aggregation} admits a direct restatement as a constrained mathematical program. This restatement is solution-method-agnostic: it specifies sets, parameters, decision variables, an objective function, and constraints, without reference to states, actions, policies, or value functions. The program below is solvable, in principle, by stochastic programming, scenario-based optimization, approximate dynamic programming, or any other classical operations-research method; reinforcement learning, discussed elsewhere in this paper, is one possible solution approach among several and is not assumed in what follows. Every constraint and dynamic relation stated here is a direct translation of an equation already given in Sections~\ref{subsec:single_project}--\ref{subsec:portfolio_aggregation}; no new mechanisms are introduced.
+
+Several elements of the original formulation are stochastic or depend on forward-looking (expectation-based) quantities. Where a constraint cannot be written as a deterministic inequality without altering its meaning, this is flagged explicitly in Section~\ref{subsubsec:or_uncertainty_handling}, together with the standard OR treatment (scenario-based recourse, expectation operators, or chance constraints) rather than a silent deterministic substitute.
+
+\subsubsection{Sets and Indices}
+\label{subsubsec:or_sets}
+
+\begin{description}
+\item[\(\mathcal{P}=\{1,\ldots,n\}\)] set of projects in the portfolio, indexed by \(i\).
+\item[\(\mathcal{T}=\{1,\ldots,H\}\)] set of discrete planning periods, indexed by \(t\).
+\item[\(\mathcal{M}_i=\{1,\ldots,M_i\}\)] set of contractual milestones for project \(i\), indexed by \(j\).
+\item[\(\mathcal{A}_i^{\mathrm{plan}}=\{t:s_i\leq t\leq f_i\}\)] planned execution window of project \(i\).
+\item[\(\mathcal{P}_t^{\mathrm{active}}\subseteq\mathcal{P}\)] subset of projects active at period \(t\) (defined endogenously by the status recursion in Section~\ref{subsubsec:or_state_recursions}).
+\item[\(\mathcal{M}_i^{\mathrm{cert}}\subseteq\mathcal{M}_i\)] subset of milestones of project \(i\) certified up to the period under consideration.
+\item[\(\Omega\)] sample space of realizations of the stochastic primitives (efficiency parameters, client-caused delay, intervention triggers); used only in the scenario-based restatement of Section~\ref{subsubsec:or_uncertainty_handling}.
+\end{description}
+
+\subsubsection{Parameters}
+\label{subsubsec:or_parameters}
+
+All parameters below are contractually fixed or empirically calibrated, as defined in Section~\ref{subsec:single_project}; none are introduced here.
+
+\begin{description}
+\item[\(s_i,f_i\)] planned start and finish periods of project \(i\); \(D_i^{\mathrm{plan}}=f_i-s_i+1\).
+\item[\(\mathrm{BAC}_i\)] budget at completion of project \(i\).
+\item[\(\pi_i\)] contractual profit margin; \(CP_i=\mathrm{BAC}_i(1+\pi_i)\).
+\item[\(\alpha_i\)] advance payment ratio, \(\alpha_i\in[0,1]\); \(A_i=\alpha_i CP_i\).
+\item[\(\rho_i\)] retention ratio, \(\rho_i\in[0,1]\).
+\item[\(\theta_{i,j},\phi_{i,j}\)] progress threshold and payment weight of milestone \(j\) of project \(i\), with \(\theta_{i,j}\in(0,1]\) and \(\sum_{j\in\mathcal{M}_i}\phi_{i,j}=1\).
+\item[\(d_i,D_i^{\mathrm{cap}}\)] delay penalty rate per period and delay penalty cap (as a fraction of contract price) for project \(i\).
+\item[\(a_i,b_i\)] shape parameters of the planned S-curve \(F_i(\tau)=I_\tau(a_i,b_i)\).
+\item[\(\tau_i\)] project-specific schedule delay tolerance threshold triggering intervention.
+\item[\(\chi_i\)] fixed cost of a corrective intervention on project \(i\).
+\item[\(m_{i,t}^{0}\)] baseline mandatory minimum allocation to project \(i\) at period \(t\).
+\item[\(\mathrm{buffer}_i\)] allowable delay buffer beyond the planned finish date, used in the definition of \(\mathcal{P}_t^{\mathrm{active}}\).
+\item[\(\gamma\in(0,1]\)] discount factor.
+\item[\(B_1\)] initial portfolio cash balance.
+\item[\(\eta_{i,t}\)] stochastic budget-to-progress efficiency parameter (random primitive; not a decision parameter).
+\item[\(\Delta t_i^{\mathrm{client}}\)] client-caused delay attributed to project \(i\) (exogenous, contractually determined).
+\end{description}
+
+\subsubsection{Decision Variables}
+\label{subsubsec:or_decision_variables}
+
+\begin{description}
+\item[\(x_{i,t}\geq 0\)] budget allocated to project \(i\) at period \(t\), for \(i\in\mathcal{P}\), \(t\in\mathcal{T}\). This is the only class of decision variable in the program; all other quantities below are state-dependent variables determined by \(\{x_{i,t}\}\) through the recursions of Section~\ref{subsubsec:or_state_recursions}.
+\end{description}
+
+\subsubsection{Auxiliary (State-Dependent) Variables}
+\label{subsubsec:or_auxiliary_variables}
+
+The following quantities are not independently chosen; each is a deterministic or stochastic function of the allocation decisions \(\{x_{i,t}\}\) and the realized efficiency parameters \(\{\eta_{i,t}\}\), as defined by the recursions in Section~\ref{subsubsec:or_state_recursions}. They are listed here because they appear in the objective and constraints below.
+
+\begin{description}
+\item[\(P_{i,t}^{\mathrm{actual}}\in[0,1]\)] cumulative actual progress of project \(i\) at period \(t\).
+\item[\(E_{i,t}\geq 0\)] cumulative actual expenditure on project \(i\) up to period \(t\).
+\item[\(\mathrm{SPI}_{i,t},\mathrm{CPI}_{i,t}\)] schedule and cost performance indices of project \(i\) at period \(t\).
+\item[\(B_t\geq 0\)] portfolio cash balance at the beginning of period \(t\).
+\item[\(I_{i,t}\in\{0,1\}\)] intervention indicator for project \(i\) at period \(t\) (\(1\) if a corrective intervention is triggered, else \(0\)).
+\item[\(\mathrm{status}_{i,t}\in\{\text{active},\text{completed},\text{terminated}\}\)] categorical status of project \(i\) at period \(t\).
+\item[\(R_{i,j}^{\mathrm{net}}\)] net payment for milestone \(j\) of project \(i\), released in the period in which \(j\) is newly certified.
+\item[\(R_i^{\mathrm{final}}\)] net final payment for project \(i\) (released on completion).
+\item[\(R_i^{\mathrm{term}}\)] net settlement payment for project \(i\) (released on termination, possibly negative).
+\end{description}
+
+\subsubsection{Objective Function}
+\label{subsubsec:or_objective}
+
+The decision-maker chooses the allocation schedule \(\{x_{i,t}\}_{i\in\mathcal{P},t\in\mathcal{T}}\) to maximize expected discounted net portfolio cash flow:
+\[
+\max_{\{x_{i,t}\}}\ \mathbb{E}\left[\sum_{t=1}^{H}\gamma^{t-1}\left(V_t-\sum_{i\in\mathcal{P}_t^{\mathrm{active}}}x_{i,t}-C_t^{\mathrm{intervention}}-C_t^{\mathrm{delay}}\right)+\gamma^{H}\sum_{i\in\mathcal{P}}R_i^{\mathrm{final}}\right],
+\]
+where the expectation is taken over the joint distribution of the stochastic primitives \(\{\eta_{i,t}\}\) and any other random elements entering the state-dependent variables (Section~\ref{subsubsec:or_uncertainty_handling}), and:
+\[
+V_t=\sum_{i\in\mathcal{P}}\sum_{j\in\mathcal{M}_i}R_{i,j}^{\mathrm{net}}\cdot\mathbf{1}\{\text{milestone }(i,j)\text{ is newly certified at }t\},\qquad
+C_t^{\mathrm{intervention}}=\sum_{i\in\mathcal{P}}\chi_i I_{i,t},
+\]
+with \(C_t^{\mathrm{delay}}\) the portfolio-level imputed delay cost as defined following the objective in the original formulation. This objective is identical in content to the discounted cumulative performance criterion stated in the original formulation; it is restated here purely as the objective of a mathematical program, with no policy or value-function interpretation implied.
+
+\subsubsection{Decision Constraints}
+\label{subsubsec:or_decision_constraints}
+
+The allocation variables are subject to three constraints, each carried over directly from the original formulation.
+
+\paragraph{Non-negativity.}
+\[
+x_{i,t}\geq 0,\qquad\forall i\in\mathcal{P},\ t\in\mathcal{T}.
+\tag{C1}
+\]
+
+\paragraph{Mandatory minimum allocation.}
+\[
+x_{i,t}\geq m_{i,t}=m_{i,t}^{0}+\chi_i\cdot I_{i,t-1},\qquad\forall i\in\mathcal{P}_t^{\mathrm{active}},\ t\in\mathcal{T}.
+\tag{C2}
+\]
+
+\paragraph{Portfolio budget constraint.}
+\[
+\sum_{i\in\mathcal{P}_t^{\mathrm{active}}}x_{i,t}\leq B_t,\qquad\forall t\in\mathcal{T}.
+\tag{C3}
+\]
+This is a hard constraint: no borrowing or credit mechanism is available, consistent with the elimination of the soft budget constraint in the original formulation.
+
+\subsubsection{State Recursion Constraints}
+\label{subsubsec:or_state_recursions}
+
+The auxiliary variables of Section~\ref{subsubsec:or_auxiliary_variables} are linked across periods by the following equality and inequality constraints, each a direct restatement of the corresponding dynamic equation in Section~\ref{subsec:single_project}.
+
+\paragraph{Progress and expenditure recursion.}
+\[
+P_{i,t}^{\mathrm{actual}}=P_{i,t-1}^{\mathrm{actual}}+\eta_{i,t}\cdot\frac{x_{i,t}}{\mathrm{BAC}_i},\qquad
+E_{i,t}=E_{i,t-1}+x_{i,t},\qquad\forall i\in\mathcal{P},\ t\in\mathcal{T},
+\tag{C4}
+\]
+with \(P_{i,0}^{\mathrm{actual}}=0\), \(E_{i,0}=0\). The efficiency parameter \(\eta_{i,t}\) is a random primitive realized after \(x_{i,t}\) is chosen; see Section~\ref{subsubsec:or_uncertainty_handling}.
+
+\paragraph{Planned progress and EVM indices.}
+\[
+P_{i,t}^{\mathrm{plan}}=F_i(\tau_{i,t}^{c}),\qquad
+\mathrm{SPI}_{i,t}=\frac{P_{i,t}^{\mathrm{actual}}}{P_{i,t}^{\mathrm{plan}}},\qquad
+\mathrm{CPI}_{i,t}=\frac{P_{i,t}^{\mathrm{actual}}\cdot\mathrm{BAC}_i}{E_{i,t}},\qquad\forall i\in\mathcal{P},\ t\in\mathcal{A}_i^{\mathrm{plan}},
+\tag{C5}
+\]
+with \(\tau_{i,t}^c\), \(F_i(\cdot)\) as defined in Section~\ref{subsubsec:planned_expenditure}. These are deterministic algebraic definitions, not independent constraints, but are listed here as they enter the termination conditions (C9)--(C11) and the active-set definition (C13).
+
+\paragraph{Portfolio cash balance recursion.}
+\[
+B_{t+1}=B_t-\sum_{i\in\mathcal{P}_t^{\mathrm{active}}}x_{i,t}+V_t-C_t^{\mathrm{intervention}},\qquad\forall t\in\mathcal{T},
+\tag{C6}
+\]
+with \(B_1\) given. This is the same recursion as in the original formulation; \(B_t\geq 0\) is enforced jointly by (C3) and (C6).
+
+\subsubsection{Payment Mechanics Constraints}
+\label{subsubsec:or_payment_constraints}
+
+\paragraph{Milestone certification and net payment.}
+Milestone \(j\) of project \(i\) is certified at the first period \(t\) such that \(P_{i,t}^{\mathrm{actual}}\geq\theta_{i,j}\). On certification:
+\[
+R_{i,j}=\phi_{i,j}\cdot CP_i\cdot(1-\rho_i),\qquad
+\Delta A_{i,j}=\phi_{i,j}\cdot A_i,\qquad
+R_{i,j}^{\mathrm{net}}=R_{i,j}-\Delta A_{i,j},\qquad\forall i\in\mathcal{P},\ j\in\mathcal{M}_i.
+\tag{C7}
+\]
+
+\paragraph{Final payment and retention release.}
+On completion (\(P_{i,t}^{\mathrm{actual}}=1\)):
+\[
+R_i^{\mathrm{ret}}=\rho_i\cdot CP_i,\qquad
+R_i^{\mathrm{final}}=R_{i,M_i}^{\mathrm{net}}+R_i^{\mathrm{ret}}-DP_i,\qquad\forall i\in\mathcal{P},
+\tag{C8}
+\]
+with the delay penalty \(DP_i=d_i\cdot\Delta t_i^{\mathrm{contractor}}\cdot CP_i\) and \(\Delta t_i^{\mathrm{contractor}}\) defined exactly as in Section~\ref{subsubsec:project_cashflow}, including the 50\% contractor-responsibility convention and the delay penalty cap.
+
+\subsubsection{Intervention and Termination Constraints}
+\label{subsubsec:or_intervention_termination}
+
+\paragraph{Intervention trigger.}
+Let \(\Delta_{i,t}=P_{i,t}^{\mathrm{plan}}-P_{i,t-1}^{\mathrm{actual}}\). The intervention indicator is determined by:
+\[
+I_{i,t}=\mathbf{1}\{\Delta_{i,t}>\tau_i\},\qquad\forall i\in\mathcal{P},\ t\in\mathcal{T}.
+\tag{C9}
+\]
+This is a deterministic indicator constraint given \(P_{i,t}^{\mathrm{plan}}\) and \(P_{i,t-1}^{\mathrm{actual}}\); it feeds the mandatory minimum allocation (C2) in the following period.
+
+\paragraph{Termination conditions.}
+Project \(i\) is forced to terminate at the first period \(t\) at which all three of the following hold simultaneously, exactly as in the original formulation:
+\[
+\text{(i)}\ \ \mathbb{E}[\Delta t_i \mid \mathcal{F}_t]>\frac{D_i^{\mathrm{cap}}}{d_i},\qquad
+\text{(ii)}\ \ \exists\, t'<t:\ I_{i,t'}=1 \text{ and } \Delta_{i,\tilde t}>\tau_i\ \forall \tilde t\in(t',t],
+\tag{C10}
+\]
+\[
+\text{(iii)}\ \ x_{i,\tilde t}=m_{i,\tilde t}^{0}\ \ \forall\,\tilde t\in\{t-k+1,\ldots,t\}\text{ for a specified run length }k.
+\tag{C11}
+\]
+Condition (i) is a forward-looking, expectation-based condition: \(\mathbb{E}[\Delta t_i\mid\mathcal{F}_t]\) is the expected total delay at completion given information available at \(t\) (filtration \(\mathcal{F}_t\)), and is \emph{not} a deterministic function of decisions up to \(t\) alone — see the flag in Section~\ref{subsubsec:or_uncertainty_handling}. Conditions (ii) and (iii) are deterministic given the realized history of \(I_{i,\cdot}\), \(\Delta_{i,\cdot}\), and \(x_{i,\cdot}\), and are stated here as logical (state-transition) constraints governing the evolution of \(\mathrm{status}_{i,t}\), not as constraints on the decision-maker's choice of \(x_{i,t}\):
+\[
+\mathrm{status}_{i,t}=\text{terminated}\quad\Longleftrightarrow\quad\text{(i)}\wedge\text{(ii)}\wedge\text{(iii) all hold at }t.
+\tag{C12}
+\]
+
+\paragraph{Termination settlement.}
+If \(\mathrm{status}_{i,t}\) transitions to terminated at \(t_i^{\mathrm{term}}\):
+\[
+V_i^{\mathrm{term}}=P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}}\cdot CP_i,\qquad
+A_i^{\mathrm{outstanding}}=A_i-\sum_{j\in\mathcal{M}_i^{\mathrm{cert}}}\Delta A_{i,j},\qquad
+R_i^{\mathrm{term}}=V_i^{\mathrm{term}}(1-\rho_i)-A_i^{\mathrm{outstanding}}.
+\tag{C13}
+\]
+No delay penalty applies at termination, as in the original formulation. If \(R_i^{\mathrm{term}}<0\), the outstanding obligation is cleared from available portfolio cash inflows ahead of other commitments, via the same priority-queue mechanism described in Section~\ref{subsubsec:termination}; this is a settlement-ordering rule on the cash recursion (C6), not an additional decision variable.
+
+\paragraph{Active project set.}
+\[
+\mathcal{P}_t^{\mathrm{active}}=\{i\in\mathcal{P}:\mathrm{status}_{i,t}=\text{active},\ s_i\leq t\leq f_i+\mathrm{buffer}_i\},\qquad\forall t\in\mathcal{T}.
+\tag{C14}
+\]
+This set is endogenous: it depends on the realized status trajectory determined by (C9)--(C12), and in turn determines which projects are subject to (C2) and (C3) at \(t\).
+
+\subsubsection{Treatment of Stochastic and Forward-Looking Elements}
+\label{subsubsec:or_uncertainty_handling}
+
+The program (C1)--(C14) as written mixes deterministic algebraic constraints with three elements that cannot be reduced to deterministic inequalities without changing their meaning. Each is flagged here individually, with the standard OR treatment proposed rather than a silent deterministic substitution. The choice among these treatments is a methodological decision for the Methodology section and is not resolved here.
+
+\paragraph{(a) Budget-to-progress efficiency \(\eta_{i,t}\).}
+The progress recursion (C4) contains a random primitive realized only after \(x_{i,t}\) is chosen. This is the defining feature of a recourse problem: \(x_{i,t}\) is a here-and-now decision, while the resulting progress and downstream consequences (milestone certification, intervention triggers, termination) are wait-and-see quantities. The standard OR treatment is a multi-stage stochastic program with recourse, in which \(\eta_{i,t}\) is represented either by a finite scenario tree (scenario-based stochastic programming) or, where a closed-form distribution is calibrated, by the expectation operator already present in the objective of Section~\ref{subsubsec:or_objective} \cite{birge2011introduction}. Under a scenario-tree representation, the decision variables \(x_{i,t}\) would be indexed by scenario path (or by information set, to enforce non-anticipativity), and the objective becomes a probability-weighted sum over scenarios rather than a single expectation.
+
+\paragraph{(b) Forward-looking expectation in termination condition (i).}
+Condition (i) of (C10) requires \(\mathbb{E}[\Delta t_i\mid\mathcal{F}_t]\), the expected total delay at completion conditional on information at \(t\) — a quantity that itself depends on the future evolution of \(\eta_{i,\cdot}\) and is therefore not a deterministic function of the history up to \(t\). Two standard treatments are available, and the choice affects model class:
+\begin{itemize}
+\item \emph{Expectation operator with an explicit forecasting model:} retain \(\mathbb{E}[\Delta t_i\mid\mathcal{F}_t]\) as written, with the conditional expectation computed from an EVM-based remaining-duration forecast (e.g., the schedule forecasting methods already cited in Section~\ref{subsubsec:project_state}) treated as a deterministic function of the current state. This keeps (C10)(i) deterministic \emph{given} the forecasting model, at the cost of making the termination rule sensitive to forecast-model choice.
+\item \emph{Chance constraint:} replace (C10)(i) with a probabilistic threshold, \(\Pr\!\big[\Delta t_i>D_i^{\mathrm{cap}}/d_i \mid \mathcal{F}_t\big]\geq 1-\epsilon\) for a specified confidence level \(1-\epsilon\), following the chance-constrained programming framework \cite{charnes1959chance}. This is the more conservative OR-standard treatment when the forecast distribution, rather than its point estimate, is considered decision-relevant.
+\end{itemize}
+Neither treatment is imposed here; both are flagged as the two standard ways to discharge a forward-looking expectation in a constraint, consistent with the solution-agnostic character of this formulation.
+
+\paragraph{(c) Client-caused delay attribution \(\Delta t_i^{\mathrm{client}}\).}
+This quantity is treated as exogenous and contractually determined in the original formulation (Section~\ref{subsubsec:project_cashflow}) and is retained as such here; it is listed for completeness, not because it requires a stochastic treatment beyond what the original formulation already specifies.
