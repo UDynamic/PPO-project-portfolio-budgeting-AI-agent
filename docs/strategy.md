@@ -1,3 +1,9 @@
+<!-- ⚠️
+restrategizing for wrap up
+custom environment as a base market.
+agent is the extra step. -->
+
+
 <!-- Had ameeting to day with Dr.
 1. gave progress report
 2. negotiated for +2 recommendations
