@@ -1,7 +1,26 @@
 <!-- ⚠️
 restrategizing for wrap up
 custom environment as a base market.
-agent is the extra step. -->
+agent is the extra step. 
+
+reading all the RL portfolio papers.
+starting the pivot with this sentense:
+the development of RL agent for stock market portfolio is a simple implementation effort, because the market provides continuous data in all forms. 
+this simply is not the case for the portfolio of projects, whether it be an agile IT project or waterfall construction project.
+
+the project management softwares record data for the users but the data is very low quality and usually not acqurate.
+project management department and more specifically the project controle teams are less likely to maintatin rigorous acqurate records of the projects states and performances.
+
+this fact above and the confidentiality of these data makes the development of an RL agent for this section far different problem formulation rather than a simple stocks market RL agent.
+
+there is no environment modeled from the reality and literature of the project management.
+so we do that.
+and later develop an Rl agent and test it's robustness through different test and simulations.
+
+this work is the contribution.
+to create a framework for solving the project portfolio budgeting problem and delivering a benchmark to evaluate further models.
+
+we need to create the environment that generates the timeseries data for the projects.  -->
 
 
 <!-- Had ameeting to day with Dr.
