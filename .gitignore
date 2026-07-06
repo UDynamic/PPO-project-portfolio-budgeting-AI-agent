@@ -36,6 +36,8 @@ deprecated/
 
 # Literature archive
 lit_archive/
+lit_archive_failed/
+lit_archive_passed/
 
 # LaTeX
 *.aux
