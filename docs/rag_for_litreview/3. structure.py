@@ -5,6 +5,11 @@ Extracts structured knowledge from academic PDFs using Groq (FREE LLaMA3 model).
 Outputs thesis-specific JSON covering literature review, environment calibration,
 and RL agent design needs.
 
+Handles:
+  - highly_relevant/ and valuable/ folders
+  - Skips already-structured PDFs (checks by filename)
+  - Safe to re-run anytime — only processes new additions
+
 Usage:
     python paper_structurer.py
 
@@ -24,25 +29,18 @@ from dotenv import load_dotenv
 
 
 # ─────────────────────────────────────────────
-# LOAD .env FROM /docs/ (one level above this script)
+# LOAD .env
 # ─────────────────────────────────────────────
 def load_env():
     current = Path(__file__).resolve()
-
-    # expected structure:
-    # root/
-    #   docs/
-    #     .env
-    #     rag_for_litreview/
-    #       paper_structurer.py
-
-    env_path = current.parent.parent.parent / ".env"
-
-    if not env_path.exists():
-        raise FileNotFoundError(f".env not found at: {env_path}")
-
-    load_dotenv(env_path)
-
+    # walks up looking for .env — works regardless of nesting depth
+    for parent in current.parents:
+        candidate = parent / ".env"
+        if candidate.exists():
+            load_dotenv(candidate)
+            print(f"✓ Loaded .env from: {candidate}")
+            return
+    print("⚠ No .env file found — GROQ_API_KEY must be set as system env variable")
 
 load_env()
 
@@ -50,22 +48,18 @@ load_env()
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-API_KEY = os.getenv("GROQ_API_KEY")
-
+API_KEY  = os.getenv("GROQ_API_KEY")
 BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODEL    = "llama-3.3-70b-versatile"
 
-# ✅ BEST FREE MODEL ON GROQ
-MODEL = "llama-3.3-70b-versatile"
+# Both folders to process
+TARGET_FOLDERS = [
+    "./lit_archive_passed/highly_relevant",
+    "./lit_archive_passed/valuable",
+]
 
-BASE_FOLDER    = "./lit_archive_passed/highly_relevant"
-OUTPUT_FOLDER  = os.path.join(BASE_FOLDER, "structured")
-FAILED_FOLDER  = os.path.join(BASE_FOLDER, "structured_failed")
-
-MAX_CHARS      = 6000
-SLEEP_BETWEEN  = 0.3  # Groq is fast → can reduce delay slightly
-
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-os.makedirs(FAILED_FOLDER, exist_ok=True)
+MAX_CHARS     = 6000
+SLEEP_BETWEEN = 0.3
 
 
 # ─────────────────────────────────────────────
@@ -147,31 +141,32 @@ TEXT:
 
 
 # ─────────────────────────────────────────────
-# STEP 3 — API CALL (Groq)
+# STEP 3 — API Call (Groq)
 # ─────────────────────────────────────────────
-def call_api(prompt: str) -> str | None:
+def call_api(prompt: str, retry: int = 0) -> str | None:
     headers = {
         "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
+        "Content-Type":  "application/json",
     }
 
     payload = {
-        "model": MODEL,
+        "model":    MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
+            {"role": "user",   "content": prompt}
         ],
         "temperature": 0.1,
-        "max_tokens": 1200
+        "max_tokens":  1200
     }
 
     try:
         response = requests.post(BASE_URL, headers=headers, json=payload, timeout=60)
 
         if response.status_code == 429:
-            print("  ⚠ Rate limited — waiting 5 seconds...")
-            time.sleep(5)
-            return call_api(prompt)
+            wait = 30 if retry == 0 else 60
+            print(f"  ⚠ Rate limited — waiting {wait}s...")
+            time.sleep(wait)
+            return call_api(prompt, retry=retry + 1)
 
         if response.status_code != 200:
             print(f"  ✗ API error {response.status_code}: {response.text[:200]}")
@@ -185,36 +180,38 @@ def call_api(prompt: str) -> str | None:
 
 
 # ─────────────────────────────────────────────
-# STEP 4 — JSON extraction
+# STEP 4 — Robust JSON extraction
 # ─────────────────────────────────────────────
 def extract_json(raw: str) -> dict | None:
     if not raw:
         return None
 
+    # Attempt 1 — direct parse
     try:
         return json.loads(raw)
-    except:
+    except Exception:
         pass
 
+    # Attempt 2 — strip markdown fences
     cleaned = re.sub(r"```json|```", "", raw).strip()
-
     try:
         return json.loads(cleaned)
-    except:
+    except Exception:
         pass
 
+    # Attempt 3 — find outermost JSON object
     match = re.search(r"\{.*\}", cleaned, re.DOTALL)
     if match:
         try:
             return json.loads(match.group())
-        except:
+        except Exception:
             pass
 
+    # Attempt 4 — fix trailing commas
     fixed = re.sub(r",\s*([}\]])", r"\1", cleaned)
-
     try:
         return json.loads(fixed)
-    except:
+    except Exception:
         pass
 
     return None
@@ -223,97 +220,166 @@ def extract_json(raw: str) -> dict | None:
 # ─────────────────────────────────────────────
 # STEP 5 — Failure logging
 # ─────────────────────────────────────────────
-def save_failure(filename: str, reason: str, raw_response: str = ""):
-    fail_path = os.path.join(FAILED_FOLDER, filename.replace(".pdf", "_FAILED.txt"))
-
+def save_failure(failed_folder: str, filename: str, reason: str, raw: str = ""):
+    os.makedirs(failed_folder, exist_ok=True)
+    fail_path = os.path.join(failed_folder, filename.replace(".pdf", "_FAILED.txt"))
     with open(fail_path, "w", encoding="utf-8") as f:
-        f.write(f"File: {filename}\n")
-        f.write(f"Reason: {reason}\n")
+        f.write(f"File:      {filename}\n")
+        f.write(f"Reason:    {reason}\n")
         f.write(f"Timestamp: {datetime.now().isoformat()}\n\n")
-        f.write(raw_response)
-
+        f.write("Raw LLM response:\n")
+        f.write(raw)
     print(f"  → Failure logged: {fail_path}")
+
+
+# ─────────────────────────────────────────────
+# PROCESS ONE FOLDER
+# ─────────────────────────────────────────────
+def process_folder(base_folder: str) -> dict:
+    """
+    Processes all PDFs in base_folder.
+    Structured JSONs go to base_folder/structured/
+    Failed logs  go to base_folder/structured_failed/
+
+    Skip logic:
+      - If JSON already exists for this filename → skip (already done)
+      - If FAILED log exists → skip (don't retry automatically)
+        Delete the _FAILED.txt manually to force a retry.
+    """
+    output_folder = os.path.join(base_folder, "structured")
+    failed_folder = os.path.join(base_folder, "structured_failed")
+    os.makedirs(output_folder, exist_ok=True)
+    os.makedirs(failed_folder, exist_ok=True)
+
+    # Collect PDFs — exclude subfolders like structured/ itself
+    files = sorted([
+        f for f in os.listdir(base_folder)
+        if f.endswith(".pdf")
+        and os.path.isfile(os.path.join(base_folder, f))
+    ])
+
+    if not files:
+        print(f"  No PDFs found in {base_folder}")
+        return {"passed": 0, "failed": 0, "skipped": 0, "total": 0}
+
+    passed = failed = skipped = 0
+
+    for i, filename in enumerate(files, 1):
+        pdf_path   = os.path.join(base_folder, filename)
+        json_path  = os.path.join(output_folder, filename.replace(".pdf", ".json"))
+        fail_path  = os.path.join(failed_folder, filename.replace(".pdf", "_FAILED.txt"))
+
+        print(f"  [{i}/{len(files)}] {filename[:65]}")
+
+        # ── SKIP: already structured ──
+        if os.path.exists(json_path):
+            print("    → Already structured — skipping\n")
+            skipped += 1
+            continue
+
+        # ── SKIP: previously failed (delete _FAILED.txt to retry) ──
+        if os.path.exists(fail_path):
+            print("    → Previously failed — skipping (delete _FAILED.txt to retry)\n")
+            skipped += 1
+            continue
+
+        # ── EXTRACT TEXT ──
+        try:
+            text = extract_key_sections(pdf_path)
+        except Exception as e:
+            print(f"    ✗ Extraction error: {e}")
+            save_failure(failed_folder, filename, f"Extraction error: {e}")
+            failed += 1
+            continue
+
+        if len(text) < 200:
+            print("    ✗ Not enough text extracted")
+            save_failure(failed_folder, filename, "Insufficient text")
+            failed += 1
+            continue
+
+        print(f"    ✓ Extracted {len(text)} chars")
+
+        # ── CALL LLM ──
+        prompt = build_prompt(text)
+        raw    = call_api(prompt)
+
+        if not raw:
+            save_failure(failed_folder, filename, "No API response")
+            failed += 1
+            continue
+
+        # ── PARSE JSON ──
+        parsed = extract_json(raw)
+
+        if parsed is None:
+            print("    ✗ JSON parsing failed")
+            save_failure(failed_folder, filename, "JSON parse failed", raw)
+            failed += 1
+            continue
+
+        # ── SAVE ──
+        parsed["_source"] = {
+            "filename": filename,
+            "folder":   base_folder,
+            "time":     datetime.now().isoformat(),
+            "model":    MODEL
+        }
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(parsed, f, indent=2, ensure_ascii=False)
+
+        print(f"    ✓ Saved → {json_path}\n")
+        passed += 1
+
+        time.sleep(SLEEP_BETWEEN)
+
+    return {"passed": passed, "failed": failed, "skipped": skipped, "total": len(files)}
 
 
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
 def run_structuring():
-    files = sorted([
-        f for f in os.listdir(BASE_FOLDER)
-        if f.endswith(".pdf")
-    ])
-
-    if not files:
-        print("No PDFs found in:", BASE_FOLDER)
-        return
-
     print(f"\n{'='*60}")
-    print(f"Found {len(files)} PDFs")
-    print(f"Model: {MODEL}")
+    print(f"Paper Structurer")
+    print(f"Model  : {MODEL}")
+    print(f"Folders: {len(TARGET_FOLDERS)}")
     print(f"{'='*60}\n")
 
-    passed = failed = skipped = 0
+    totals = {"passed": 0, "failed": 0, "skipped": 0, "total": 0}
 
-    for i, filename in enumerate(files, 1):
-        pdf_path  = os.path.join(BASE_FOLDER, filename)
-        json_path = os.path.join(OUTPUT_FOLDER, filename.replace(".pdf", ".json"))
-
-        print(f"[{i}/{len(files)}] {filename[:70]}")
-
-        if os.path.exists(json_path):
-            print("  → Skipped\n")
-            skipped += 1
+    for folder in TARGET_FOLDERS:
+        if not os.path.exists(folder):
+            print(f"⚠ Folder not found, skipping: {folder}\n")
             continue
 
-        try:
-            text = extract_key_sections(pdf_path)
-        except Exception as e:
-            save_failure(filename, str(e))
-            failed += 1
-            continue
+        label = os.path.basename(folder).upper()
+        print(f"── {label} ──────────────────────────────────────")
 
-        if len(text) < 200:
-            save_failure(filename, "Too little text")
-            failed += 1
-            continue
+        stats = process_folder(folder)
 
-        prompt = build_prompt(text)
-        raw = call_api(prompt)
+        for k in totals:
+            totals[k] += stats[k]
 
-        if not raw:
-            save_failure(filename, "No response")
-            failed += 1
-            continue
+        print(f"  Subtotal → passed: {stats['passed']} | "
+              f"failed: {stats['failed']} | skipped: {stats['skipped']}\n")
 
-        parsed = extract_json(raw)
+    print(f"{'='*60}")
+    print(f"TOTAL SUMMARY")
+    print(f"  Structured : {totals['passed']}")
+    print(f"  Failed     : {totals['failed']}")
+    print(f"  Skipped    : {totals['skipped']}")
+    print(f"  Total PDFs : {totals['total']}")
+    print(f"{'='*60}")
 
-        if parsed is None:
-            save_failure(filename, "JSON failed", raw)
-            failed += 1
-            continue
-
-        parsed["_source"] = {
-            "file": filename,
-            "time": datetime.now().isoformat(),
-            "model": MODEL
-        }
-
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(parsed, f, indent=2, ensure_ascii=False)
-
-        print("  ✓ Done\n")
-        passed += 1
-
-        time.sleep(SLEEP_BETWEEN)
-
-    print("\nDONE")
-    print(f"Passed: {passed}, Failed: {failed}, Skipped: {skipped}")
+    if totals["failed"] > 0:
+        print("\nTo retry failed files: delete the corresponding _FAILED.txt and re-run.")
 
 
 if __name__ == "__main__":
     if not API_KEY:
-        print("ERROR: GROQ_API_KEY missing in .env")
+        print("ERROR: GROQ_API_KEY not found in .env")
         exit(1)
 
     run_structuring()
