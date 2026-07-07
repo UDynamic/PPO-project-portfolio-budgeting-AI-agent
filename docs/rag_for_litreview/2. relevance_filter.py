@@ -29,7 +29,7 @@ PASSED_FOLDER       = "./lit_archive_passed"                   # from readabilit
 HIGHLY_RELEVANT     = "./lit_archive_passed/highly_relevant"
 VALUABLE            = "./lit_archive_passed/valuable"
 IRRELEVANT          = "./lit_archive_passed/irrelevant"
-RESULTS_LOG         = "./relevance_results.json"
+RESULTS_LOG         = "./lit_archive_passed/relevance_results.json"
 
 # Thresholds — tune these after first run
 HIGHLY_RELEVANT_THRESHOLD = 0.45   # combined score above this → highly relevant
