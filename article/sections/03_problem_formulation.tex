@@ -7,34 +7,134 @@ The formulation extends earned-value management frameworks by embedding them wit
 \subsection{scope}
 The focus is to go one step beyond traditional project selection models into the less studied realm of operational control of already selected projects, taking sequential budget allocation decisions across portfolio to maximize utility of the stakeholders.  
 
+\textbf{the proposed model is a generalized model. each specific design is introduced with the most studied and known quality in the literature. this model is configurable to any specific industry or sector in the scope defined.}
+
 \subsection{fundamental designs}
-we model the temporal dimension of the problem as descrete timesteps across the portfolio, representing calendar months because the key strategic meetings are conventionaly held monthly.
+\begin{itemize}
+    \item A portfolio is a collection of projects.
+    \item Each project is described by the contractual attributes known before commitment.
+    \item there are two parties in each project: contractor and client. the contractor delivers work and the client pays for the service or product.
+    \item The resource allocation problem is modeled only by the budget allocation across project portfolio
+    \item Temporal dimension is considered discrete timesteps across the portfolio, representing calendar months because the key strategic meetings are conventionally held monthly.
+\end{itemize}
+
+% ⚠️ mc as the third party?!
+
+\pagebreak
 
 \subsection{Project definition}
 \label{subsec:single_project}
 
-We begin by defining a single project as the atomic unit of the portfolio. A project is a contractual undertaking characterized by planned attributes, state variables, cash-flow mechanics, and stochastic performance dynamics.
+For each project \(i\):
 
-Each project \(i\) is described by the following contractual and planned attributes known at the beginning of the planning process:
+\begin{table}[H]
+  \centering
+  \small  % or \footnotesize if still too big
+  \renewcommand{\arraystretch}{1.3}  % tighten row spacing slightly
+    \setlength{\tabcolsep}{8pt}
+    \begin{tabular}{>{\bfseries}p{3.6cm} p{2.0cm} p{1.4cm} p{6.8cm}}
+    \toprule
+    \normalfont\textbf{Parameter} & \textbf{Symbol} & \textbf{Domain} & \textbf{Definition} \\
+    \midrule
+    \rowcolor{RowAlt}
+    Planned start \& finish \newline \tagschedule
+      & $s_i,\, f_i$
+      & $\mathbb{Z}^{+}$
+      & Planned start and finish periods for project $i$. \\
+    
+    Planned duration \newline \tagschedule
+      & $D_i^{\mathrm{plan}}$
+      & $\mathbb{Z}^{+}$
+      & $D_i^{\mathrm{plan}} = f_i - s_i + 1$. Baseline for tracking deviation of actual progress. \\
+    
+    \rowcolor{RowAlt}
+    Planned execution window \newline \tagschedule
+      & $\mathcal{A}_i^{\mathrm{plan}}$
+      & ---
+      & Set of all contractual periods: $\mathcal{A}_i^{\mathrm{plan}} = \{t : s_i \leq t \leq f_i\}$. \\
+    
+    Budget at completion \newline \tagcost
+      & $\mathrm{BAC}_i$
+      & $\mathbb{R}^{+}$
+      & Total planned expenditure from the contractor's perspective; planned cost basis of the project. \\
+    
+    \rowcolor{RowAlt}
+    Contract price \newline \tagcontract
+      & $CP_i$
+      & $\mathbb{R}^{+}$
+      & Total payment from client: $CP_i = \mathrm{BAC}_i(1 + \pi_i)$, where $\pi_i$ is the contractual profit margin. \\
+    
+    Profit margin \newline \tagcontract
+      & $\pi_i$
+      & $\mathbb{R}^{+}$
+      & Contractual markup on $\mathrm{BAC}_i$; determines the spread between cost and contract price. \\
+    
+    \rowcolor{RowAlt}
+    Advance payment ratio \newline \tagcontract
+      & $\alpha_i$
+      & $[0,1]$
+      & Fixed percentage of $\mathrm{BAC}_i$ paid upfront before work begins. \\
+    
+    Retention ratio \newline \tagcontract
+      & $\rho_i$
+      & $[0,1]$
+      & Fixed percentage withheld from each milestone payment; released upon project completion. \\
+    
+    \rowcolor{RowAlt}
+    Milestone set \newline \tagschedule
+      & $\mathcal{M}_i$
+      & ---
+      & Finite ordered set $\{1,2,\ldots,M_i\}$ of deliverable milestones, each defined by a threshold $\theta_{i,j}$ and a payment weight $\phi_{i,j}$. \\
+    
+    Milestone threshold \newline \tagschedule
+      & $\theta_{i,j}$
+      & $(0,1]$
+      & Cumulative progress fraction required to trigger milestone $j$ of project $i$. \\
+    
+    \rowcolor{RowAlt}
+    Milestone payment weight \newline \tagcost
+      & $\phi_{i,j}$
+      & $\mathbb{R}^{+}$
+      & Fraction of contract price released at milestone $j$; weights satisfy $\sum_{j \in \mathcal{M}_i} \phi_{i,j} = 1$. \\
+    
+    Delay penalty rate \newline \tagpenalty
+      & $d_i$
+      & $\mathbb{R}^{+}_{0}$
+      & Penalty charged per unit delay per period; enforces on-time completion. \\
+    
+    \rowcolor{RowAlt}
+    Delay penalty cap \newline \tagpenalty
+      & $D_i^{\mathrm{cap}}$
+      & $\mathbb{R}^{+}_{0}$
+      & Maximum cumulative delay penalty as a fraction of contract price; prevents unbounded exposure. \\
+    \bottomrule
+    \end{tabular}
+    \caption{Project-level parameters for project $i \in \mathcal{I}$.}
+    \label{tab:project-params}
+    \end{table}
+
+
 
 \begin{itemize}
-\item \textbf{Planned schedule:} Let \(s_i\) and \(f_i\) denote the planned start and planned finish periods, respectively. The planned duration is
+\item \textbf{Planned duration:} Let \(s_i\) and \(f_i\) denote the planned start and planned finish periods, respectively. The planned duration is
 \[
 D_i^{\mathrm{plan}} = f_i-s_i+1,
 \]
-and the contractual planned execution window is \(\mathcal{A}_i^{\mathrm{plan}}=\{t:s_i\leq t\leq f_i\}\).
+and the contractual planned execution window is \(\mathcal{A}_i^{\mathrm{plan}}=\{t:s_i\leq t\leq f_i\}\). (this is specifically useful when the actual progress deviates the plan).
 
-\item \textbf{Budget at completion:} The budget at completion \(\mathrm{BAC}_i\) represents the planned cost basis of the project.
+\item \textbf{planned execution window:}
 
-\item \textbf{Contract price and profit margin:} The contract price is \(CP_i=\mathrm{BAC}_i(1+\pi_i)\), where \(\pi_i\) is the contractual profit margin.
+\item \textbf{Budget at completion:} The budget at completion as the total sum of expenditure from contractor \(\mathrm{BAC}_i\) represents the planned cost basis of the project.
+
+\item \textbf{Contract price and profit margin:} The contract price as the total sum of payment from client is \(CP_i=\mathrm{BAC}_i(1+\pi_i)\), where \(\pi_i\) is the contractual profit margin.
 
 \item \textbf{Advance payment ratio:} A contractually fixed percentage of \(\mathrm{BAC}_i\) which is advance payment ratio \(\alpha_i\in[0,1]\).
 
-\item \textbf{Retention ratio:} A contractually fixed percentage withheld from each peyment which is retention ratio \(\rho_i\in[0,1]\).
+\item \textbf{Retention ratio:} A contractually fixed percentage withheld from each payment which is retention ratio \(\rho_i\in[0,1]\).
 
 \item \textbf{Milestone structure:} A finite set of milestones \(\mathcal{M}_i=\{1,2,\ldots,M_i\}\) to be delivered by the contractor, where each milestone \(j\in\mathcal{M}_i\) is defined by a progress threshold \(\theta_{i,j}\in(0,1]\) and a payment weight \(\phi_{i,j}>0\) satisfying \(\sum_{j\in\mathcal{M}_i}\phi_{i,j}=1\).
 
-\item \textbf{Delay penalty parameters:} A delay penalty to inforce on time completion of the project as delay penalty rate \(d_i\geq 0\) (penalty per unit delay per period) and a delay penalty cap \(D_i^{\mathrm{cap}}\geq 0\) (maximum cumulative delay penalty as a fraction of contract price).
+\item \textbf{Delay penalty parameters:} A delay penalty to enforce on time completion of the project as delay penalty rate \(d_i\geq 0\) (penalty per unit delay per period) and a delay penalty cap \(D_i^{\mathrm{cap}}\geq 0\) (maximum cumulative delay penalty as a fraction of contract price).
 \end{itemize}
 
 \subsubsection{Planned Expenditure Profile}

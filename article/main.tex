@@ -1,5 +1,12 @@
 \documentclass[11pt,a4paper]{article}
 
+% --- Color-coded parameter table ---
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{float}
+
 % Essential packages
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -32,6 +39,23 @@
     left=3cm,
     right=3cm
 }
+
+% Category tag colors
+\definecolor{TagScheduleBg}{HTML}{EAF3DE}
+\definecolor{TagScheduleFg}{HTML}{3B6D11}
+\definecolor{TagContractBg}{HTML}{E6F1FB}
+\definecolor{TagContractFg}{HTML}{0C447C}
+\definecolor{TagCostBg}{HTML}{FAEEDA}
+\definecolor{TagCostFg}{HTML}{633806}
+\definecolor{TagPenaltyBg}{HTML}{FCEBEB}
+\definecolor{TagPenaltyFg}{HTML}{791F1F}
+\definecolor{RowAlt}{HTML}{F8F7F4}
+
+% Per-category tag macros
+\newcommand{\tagschedule}{\colorbox{TagScheduleBg}{\textcolor{TagScheduleFg}{\footnotesize\sffamily schedule}}}
+\newcommand{\tagcontract}{\colorbox{TagContractBg}{\textcolor{TagContractFg}{\footnotesize\sffamily contract}}}
+\newcommand{\tagcost}{\colorbox{TagCostBg}{\textcolor{TagCostFg}{\footnotesize\sffamily cost}}}
+\newcommand{\tagpenalty}{\colorbox{TagPenaltyBg}{\textcolor{TagPenaltyFg}{\footnotesize\sffamily penalty}}}
 
 % Theorem environments
 \newtheorem{theorem}{Theorem}
