@@ -1,13 +1,19 @@
 
-This formulation presents a general stochastic resource allocation problem for managing contracted project portfolios under financial constraints and operational uncertainty. The problem structure is applicable across construction \cite{kenley1986relationship}, software development, defense contracting \cite{christensen1993empirical}, and other project-intensive sectors. The formulation integrates S-curve expenditure dynamics \cite{kenley1986relationship}, Earned Value Management (EVM) performance tracking \cite{fleming2016earned}, milestone-based payment structures, performance-triggered interventions, and abandonment options \cite{dixit1994investment} within a unified sequential decision framework. Unlike traditional project portfolio selection models \cite{archer1999integrated,liesio2007portfolio,gutjahr2013project}, the focus is on operational control of committed projects rather than ex-ante selection. The formulation extends earned-value management frameworks by embedding them within a constrained Markov decision process \cite{altman1999constrained} with stochastic state transitions and multi-objective performance evaluation, while remaining solution-agnostic and compatible with diverse solution methodologies including reinforcement learning, approximate dynamic programming, or scenario-based stochastic optimization.
+\subsection{introduction}
+This formulation presents a general stochastic resource allocation problem for managing contracted project portfolios under financial constraints and operational uncertainty. The problem structure is applicable across construction \cite{kenley1986relationship}, software development, defense contracting \cite{christensen1993empirical}, and other project-intensive sectors as The proposed model is created integrating project management domain knowledge and methodologies such as S-curve expenditure dynamics \cite{kenley1986relationship}, Earned Value Management (EVM) performance tracking \cite{fleming2016earned}, milestone-based payment structures, performance recovery intended interventions, and abandonment options \cite{dixit1994investment} and project Termination.
 
-\subsection{Single Project: Attributes and Dynamics}
+The formulation extends earned-value management frameworks by embedding them within a constrained Markov decision process \cite{altman1999constrained} with stochastic state transitions and multi-objective performance evaluation, while remaining solution-agnostic and compatible with diverse solution methodologies including reinforcement learning, approximate dynamic programming, or scenario-based stochastic optimization.
+
+\subsection{scope}
+The focus is to go one step beyond traditional project selection models into the less studied realm of operational control of already selected projects, taking sequential budget allocation decisions across portfolio to maximize utility of the stakeholders.  
+
+\subsection{fundamental designs}
+we model the temporal dimension of the problem as descrete timesteps across the portfolio, representing calendar months because the key strategic meetings are conventionaly held monthly.
+
+\subsection{Project definition}
 \label{subsec:single_project}
 
 We begin by defining a single project as the atomic unit of the portfolio. A project is a contractual undertaking characterized by planned attributes, state variables, cash-flow mechanics, and stochastic performance dynamics.
-
-\subsubsection{Contractual Attributes}
-\label{subsubsec:project_attributes}
 
 Each project \(i\) is described by the following contractual and planned attributes known at the beginning of the planning process:
 
@@ -22,13 +28,13 @@ and the contractual planned execution window is \(\mathcal{A}_i^{\mathrm{plan}}=
 
 \item \textbf{Contract price and profit margin:} The contract price is \(CP_i=\mathrm{BAC}_i(1+\pi_i)\), where \(\pi_i\) is the contractual profit margin.
 
-\item \textbf{Advance payment ratio:} A contractually fixed advance payment ratio \(\alpha_i\in[0,1]\).
+\item \textbf{Advance payment ratio:} A contractually fixed percentage of \(\mathrm{BAC}_i\) which is advance payment ratio \(\alpha_i\in[0,1]\).
 
-\item \textbf{Retention ratio:} A contractually fixed retention ratio \(\rho_i\in[0,1]\).
+\item \textbf{Retention ratio:} A contractually fixed percentage withheld from each peyment which is retention ratio \(\rho_i\in[0,1]\).
 
-\item \textbf{Milestone structure:} A finite set of milestones \(\mathcal{M}_i=\{1,2,\ldots,M_i\}\), where each milestone \(j\in\mathcal{M}_i\) is defined by a progress threshold \(\theta_{i,j}\in(0,1]\) and a payment weight \(\phi_{i,j}>0\) satisfying \(\sum_{j\in\mathcal{M}_i}\phi_{i,j}=1\).
+\item \textbf{Milestone structure:} A finite set of milestones \(\mathcal{M}_i=\{1,2,\ldots,M_i\}\) to be delivered by the contractor, where each milestone \(j\in\mathcal{M}_i\) is defined by a progress threshold \(\theta_{i,j}\in(0,1]\) and a payment weight \(\phi_{i,j}>0\) satisfying \(\sum_{j\in\mathcal{M}_i}\phi_{i,j}=1\).
 
-\item \textbf{Delay penalty parameters:} A delay penalty rate \(d_i\geq 0\) (penalty per unit delay per period) and a delay penalty cap \(D_i^{\mathrm{cap}}\geq 0\) (maximum cumulative delay penalty as a fraction of contract price).
+\item \textbf{Delay penalty parameters:} A delay penalty to inforce on time completion of the project as delay penalty rate \(d_i\geq 0\) (penalty per unit delay per period) and a delay penalty cap \(D_i^{\mathrm{cap}}\geq 0\) (maximum cumulative delay penalty as a fraction of contract price).
 \end{itemize}
 
 \subsubsection{Planned Expenditure Profile}
