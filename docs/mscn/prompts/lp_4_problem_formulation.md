@@ -1,11 +1,3 @@
-Here is your carry-forward prompt. Copy it exactly into the new session.
-
----
-
-**PROMPT FOR NEW SESSION:**
-
----
-
 You are assisting a Master's student in Industrial Engineering with his thesis. Before we begin the actual work, read this entire brief carefully so you are fully context-loaded. When you are ready, ask me to paste the draft LaTeX file.
 
 ---
@@ -75,12 +67,6 @@ The following terms and symbols are used consistently across the thesis. Do not 
 - $\text{CPI}_{i,t}$ — cost performance index of project $i$ at time $t$
 - $\text{SPI}_{i,t}$ — schedule performance index of project $i$ at time $t$
 - $\text{BAC}_i$ — budget at completion for project $i$
-- $M_{i,k}$ — value of milestone $k$ for project $i$
-- $\alpha_i$ — advance payment fraction for project $i$
-- $\rho_i$ — advance payment recovery rate (fraction of each milestone payment)
-- $r_i$ — retention rate for project $i$
-- $z_{i,t}$ — binary termination decision variable: 1 if project $i$ is terminated at time $t$
-- $\delta_{i,t}$ — binary intervention decision variable: 1 if recovery intervention is triggered on project $i$ at time $t$
 - EVM, EPC, FIDIC, CPI, SPI, BAC, S-curve — standard domain terminology, always used as defined above
 
 ---
