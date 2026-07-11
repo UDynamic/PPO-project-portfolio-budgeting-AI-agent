@@ -49,13 +49,21 @@
 \definecolor{TagCostFg}{HTML}{633806}
 \definecolor{TagPenaltyBg}{HTML}{FCEBEB}
 \definecolor{TagPenaltyFg}{HTML}{791F1F}
+\definecolor{TagTermBg}{HTML}{F0EBFA}
+\definecolor{TagTermFg}{HTML}{4B1F8C}
 \definecolor{RowAlt}{HTML}{F8F7F4}
 
 % Per-category tag macros
-\newcommand{\tagschedule}{\colorbox{TagScheduleBg}{\textcolor{TagScheduleFg}{\footnotesize\sffamily schedule}}}
-\newcommand{\tagcontract}{\colorbox{TagContractBg}{\textcolor{TagContractFg}{\footnotesize\sffamily contract}}}
-\newcommand{\tagcost}{\colorbox{TagCostBg}{\textcolor{TagCostFg}{\footnotesize\sffamily cost}}}
-\newcommand{\tagpenalty}{\colorbox{TagPenaltyBg}{\textcolor{TagPenaltyFg}{\footnotesize\sffamily penalty}}}
+\newcommand{\tagschedule}{%
+  \,\colorbox{TagScheduleBg}{\textcolor{TagScheduleFg}{\scriptsize\textsf{Schedule}}}}
+\newcommand{\tagcontract}{%
+  \,\colorbox{TagContractBg}{\textcolor{TagContractFg}{\scriptsize\textsf{Contract}}}}
+\newcommand{\tagcost}{%
+  \,\colorbox{TagCostBg}{\textcolor{TagCostFg}{\scriptsize\textsf{Cost}}}}
+\newcommand{\tagpenalty}{%
+  \,\colorbox{TagPenaltyBg}{\textcolor{TagPenaltyFg}{\scriptsize\textsf{Penalty}}}}
+\newcommand{\tagterm}{%
+  \,\colorbox{TagTermBg}{\textcolor{TagTermFg}{\scriptsize\textsf{Termination}}}}
 
 % Theorem environments
 \newtheorem{theorem}{Theorem}

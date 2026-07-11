@@ -849,3 +849,453 @@ form the complete foundation from which each formulation level is constructed.
 Level~1 specializes them under deterministic full foresight; Level~2
 reintroduces stochasticity explicitly; Level~3 reformulates the resulting
 stochastic program as a CMDP.
+
+% ============================================================
+%  SECTION 3 — PART C: LEVEL 1
+%  Deterministic Full-Foresight Program
+% ============================================================
+
+% ------------------------------------------------------------
+\subsection{Level~1: Deterministic Full-Foresight Program}
+\label{subsec:level1}
+% ------------------------------------------------------------
+
+Level~1 specializes the shared primitives of
+Section~\ref{subsec:primitives} under the assumption of complete information.
+All budget-to-progress efficiencies $\eta_{i,t}$ are replaced by their
+known deterministic counterparts $\bar{\eta}_{i,t}$, calibrated from each
+project's planned performance profile such that under nominal execution
+$\bar{\eta}_{i,t} = 1$. With $\bar{\eta}_{i,t}$ fixed, the progress recursion
+becomes a deterministic linear map from allocation decisions to physical
+outcomes, and the active sets $\mathcal{P}_t^{\mathrm{active}}$ are derivable
+ex ante by tracing the implied completion and termination timing forward through
+the full horizon. Milestone certification times, advance recovery schedules,
+retention release dates, and termination settlement payments are consequently
+all known before any decision is made. The resulting program is a
+Mixed-Integer Linear Program (MILP) in the budget allocation variables
+$\{x_{i,t}\}$ and the milestone certification binaries $\{u_{i,j,t}\}$:
+continuous budget variables appear linearly in every constraint, and the only
+nonlinearity in the original dynamics --- the indicator function governing
+milestone certification --- is captured exactly by the binary formulation
+introduced below.
+
+Because Level~1 optimizes over the complete planning horizon with perfect
+knowledge of all outcomes, no causal policy operating under uncertainty can
+achieve a higher objective value. The Level~1 optimum therefore constitutes a
+theoretical performance ceiling for the portfolio allocation problem and
+anchors the empirical comparison in Section~\ref{sec:experiments}.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection*{Additional Level~1 Notation}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+One binary variable and one derived parameter are introduced exclusively for
+this level.
+
+\begin{description}
+  \item[$u_{i,j,t} \in \{0,1\}$]
+    Milestone certification indicator: $u_{i,j,t} = 1$ if and only if
+    milestone $j \in \mathcal{M}_i$ of project $i$ has been certified by
+    the end of period $t$. This binary encodes the state of
+    $\mathcal{M}_i^{\mathrm{cert}}(t)$ in a form compatible with the LP
+    coupling constraints.
+
+  \item[$\bar{\eta}_{i,t} > 0$]
+    Deterministic budget-to-progress efficiency for project $i$ at period
+    $t$, treated as a known parameter at Level~1. Under the nominal plan,
+    $\bar{\eta}_{i,t} = 1$ for all $t \in \mathcal{A}_i^{\mathrm{plan}}$.
+
+  \item[$\mathrm{act}_{i,t} \in \{0,1\}$]
+    Activity indicator derived from the deterministic efficiency trajectory:
+    $\mathrm{act}_{i,t} = 1$ if project $i$ is active at period $t$, and
+    $0$ otherwise. Because $\bar{\eta}_{i,t}$ is known, these indicators
+    are fixed parameters, not decision variables.
+\end{description}
+
+\noindent All other notation is as defined in
+Section~\ref{subsec:primitives} and Tables~\ref{tab:params-schedule-contract}
+and~\ref{tab:params-cost-penalty}.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection*{The Level~1 Program}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\paragraph{Objective.}
+The expectation in the shared objective (Section~\ref{subsubsec:objective})
+collapses to a deterministic evaluation under $\bar{\eta}_{i,t}$. Defining the
+per-period net cash-flow expression explicitly:
+
+\begin{align}
+  \max_{\{x_{i,t},\, u_{i,j,t}\}}
+  \quad
+  &\sum_{t=1}^{H} \gamma^{t-1}
+    \Biggl(
+      \underbrace{%
+        \sum_{i \in \mathcal{P}} \sum_{j \in \mathcal{M}_i}
+          R_{i,j}^{\mathrm{net}} \,(u_{i,j,t} - u_{i,j,t-1})
+        + \sum_{i \in \mathcal{P}} R_i^{\mathrm{ret}}
+            \,(u_{i,M_i,t} - u_{i,M_i,t-1})
+        + \sum_{i \in \mathcal{P}} R_i^{\mathrm{term}}
+            \cdot \mathbf{1}\{t = t_i^{\mathrm{term}}\}
+      }_{\displaystyle V_t}
+    \notag \\[4pt]
+  &\qquad\qquad
+      - \sum_{i \in \mathcal{P}} \mathrm{act}_{i,t}\, x_{i,t}
+      - \sum_{i \in \mathcal{P}} \mathrm{act}_{i,t}
+          \min\!\Bigl\{
+            \lambda_i \,|\delta_{i,t}|,\;
+            \Lambda_i \cdot CP_i
+          \Bigr\}
+    \Biggr),
+  \label{eq:L1_objective}
+\end{align}
+where $u_{i,j,0} = 0$ for all $i,j$ and $\delta_{i,t}$ is a linear function
+of $\{x_{i,\tau}\}_{\tau \leq t}$ through the progress recursion below.
+The min operator in the penalty term is linearized in
+constraint~\eqref{eq:L1_penalty_lin}.
+
+\paragraph{Budget Feasibility and Cash Balance Recursion.}
+
+\begin{align}
+  B_{t+1}
+    &= B_t
+       - \sum_{i \in \mathcal{P}} \mathrm{act}_{i,t}\, x_{i,t}
+       + V_t,
+    && \forall\, t \in \mathcal{T},
+  \label{eq:L1_balance} \\[4pt]
+  \sum_{i \in \mathcal{P}} \mathrm{act}_{i,t}\, x_{i,t}
+    &\leq B_t,
+    && \forall\, t \in \mathcal{T},
+  \label{eq:L1_budget} \\[4pt]
+  B_t
+    &\geq 0,
+    && \forall\, t \in \mathcal{T}.
+  \label{eq:L1_nonneg_balance}
+\end{align}
+
+\paragraph{Progress Recursion and Completion.}
+
+\begin{align}
+  P_{i,t}^{\mathrm{actual}}
+    &= P_{i,t-1}^{\mathrm{actual}}
+       + \bar{\eta}_{i,t} \cdot \frac{x_{i,t}}{\mathrm{BAC}_i},
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T},
+  \label{eq:L1_progress_rec} \\[4pt]
+  P_{i,t}^{\mathrm{actual}}
+    &\leq 1,
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T},
+  \label{eq:L1_progress_cap} \\[4pt]
+  P_{i,0}^{\mathrm{actual}}
+    &= 0,
+    && \forall\, i \in \mathcal{P}.
+  \label{eq:L1_progress_init}
+\end{align}
+
+\paragraph{Milestone Certification.}
+Let $\mathbf{M} = \max_{i,j}\{\theta_{i,j} \cdot \mathrm{BAC}_i / \bar{\eta}_{i,t}\}$
+be a valid big-$M$ constant. Milestone $j$ of project $i$ is certified by
+period $t$ if and only if cumulative progress has reached or exceeded the
+required threshold $\theta_{i,j}$:
+
+\begin{align}
+  P_{i,t}^{\mathrm{actual}}
+    &\geq \theta_{i,j} \cdot u_{i,j,t}
+       - \mathbf{M}(1 - u_{i,j,t}),
+    && \forall\, i \in \mathcal{P},\; j \in \mathcal{M}_i,\; t \in \mathcal{T},
+  \label{eq:L1_cert_lb} \\[4pt]
+  P_{i,t}^{\mathrm{actual}}
+    &\leq \theta_{i,j}
+       + \mathbf{M}\, u_{i,j,t},
+    && \forall\, i \in \mathcal{P},\; j \in \mathcal{M}_i,\; t \in \mathcal{T},
+  \label{eq:L1_cert_ub} \\[4pt]
+  u_{i,j,t}
+    &\geq u_{i,j,t-1},
+    && \forall\, i \in \mathcal{P},\; j \in \mathcal{M}_i,\; t \in \mathcal{T},
+  \label{eq:L1_cert_mono} \\[4pt]
+  u_{i,j+1,t}
+    &\leq u_{i,j,t},
+    && \forall\, i \in \mathcal{P},\; j \in \{1,\ldots,M_i - 1\},\; t \in \mathcal{T},
+  \label{eq:L1_cert_order} \\[4pt]
+  u_{i,j,0}
+    &= 0,
+    && \forall\, i \in \mathcal{P},\; j \in \mathcal{M}_i.
+  \label{eq:L1_cert_init}
+\end{align}
+
+\paragraph{Cash-Flow Mechanics.}
+Contractual cash inflows at each period are assembled from three deterministic
+components. The advance payment is received at project initiation:
+
+\begin{align}
+  V_t^{\mathrm{adv}}
+    &= \sum_{i \in \mathcal{P}} A_i \cdot \mathbf{1}\{t = s_i\},
+    && \forall\, t \in \mathcal{T}.
+  \label{eq:L1_advance}
+\end{align}
+
+\noindent Milestone net payments (after retention and advance recovery) are
+triggered at the first certification period:
+
+\begin{align}
+  V_t^{\mathrm{ms}}
+    &= \sum_{i \in \mathcal{P}} \sum_{j \in \mathcal{M}_i}
+        R_{i,j}^{\mathrm{net}} \,(u_{i,j,t} - u_{i,j,t-1}),
+    && \forall\, t \in \mathcal{T},
+  \label{eq:L1_milestone_pay} \\[4pt]
+  \text{where}\quad
+  R_{i,j}^{\mathrm{net}}
+    &= \phi_{i,j} \cdot CP_i (1 - \rho_i) - \phi_{i,j} \cdot A_i,
+    && \forall\, i \in \mathcal{P},\; j \in \mathcal{M}_i.
+  \label{eq:L1_Rnet_def}
+\end{align}
+
+\noindent Retention is released and the final milestone payment made upon
+completion (certification of $j = M_i$):
+
+\begin{align}
+  V_t^{\mathrm{ret}}
+    &= \sum_{i \in \mathcal{P}}
+        \bigl(R_i^{\mathrm{ret}} + R_{i,M_i}^{\mathrm{net}}\bigr)
+        \,(u_{i,M_i,t} - u_{i,M_i,t-1}),
+    && \forall\, t \in \mathcal{T}.
+  \label{eq:L1_retention}
+\end{align}
+
+\noindent Termination settlement is received at the known termination
+period $t_i^{\mathrm{term}}$, derivable from the deterministic
+efficiency trajectory:
+
+\begin{align}
+  V_t^{\mathrm{term}}
+    &= \sum_{i \in \mathcal{P}} R_i^{\mathrm{term}}
+        \cdot \mathbf{1}\{t = t_i^{\mathrm{term}}\},
+    && \forall\, t \in \mathcal{T},
+  \label{eq:L1_term_pay} \\[4pt]
+  \text{where}\quad
+  R_i^{\mathrm{term}}
+    &= P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}} \cdot CP_i (1 - \rho_i)
+       - A_i^{\mathrm{outstanding}},
+    && \forall\, i \in \mathcal{P}^{\mathrm{term}},
+  \label{eq:L1_term_settlement} \\[4pt]
+  A_i^{\mathrm{outstanding}}
+    &= A_i
+       - \sum_{j \in \mathcal{M}_i} \phi_{i,j} \cdot A_i \cdot u_{i,j,t_i^{\mathrm{term}}},
+    && \forall\, i \in \mathcal{P}^{\mathrm{term}}.
+  \label{eq:L1_advance_outstanding}
+\end{align}
+
+\noindent The aggregate period inflow entering the balance recursion
+\eqref{eq:L1_balance} is:
+\begin{equation}
+  V_t = V_t^{\mathrm{adv}} + V_t^{\mathrm{ms}} + V_t^{\mathrm{ret}}
+        + V_t^{\mathrm{term}},
+  \qquad \forall\, t \in \mathcal{T}.
+  \label{eq:L1_Vt_total}
+\end{equation}
+
+\paragraph{Deviation Penalty Linearization.}
+The symmetric running penalty involves an absolute value and a min operator,
+both of which are linearized by introducing auxiliary variables
+$d_{i,t}^{+}, d_{i,t}^{-} \geq 0$ for the positive and negative parts of
+the deviation, and $c_{i,t}^{\mathrm{dev}} \geq 0$ for the per-period penalty:
+
+\begin{align}
+  \delta_{i,t}
+    &= P_{i,t}^{\mathrm{actual}} - P_{i,t}^{\mathrm{plan}},
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T},
+  \label{eq:L1_dev_def} \\[4pt]
+  \delta_{i,t}
+    &= d_{i,t}^{+} - d_{i,t}^{-},
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T},
+  \label{eq:L1_dev_split} \\[4pt]
+  |\delta_{i,t}|
+    &= d_{i,t}^{+} + d_{i,t}^{-},
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T},
+  \label{eq:L1_abs_dev} \\[4pt]
+  c_{i,t}^{\mathrm{dev}}
+    &\geq \lambda_i (d_{i,t}^{+} + d_{i,t}^{-}),
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T},
+  \label{eq:L1_penalty_lin} \\[4pt]
+  c_{i,t}^{\mathrm{dev}}
+    &\leq \Lambda_i \cdot CP_i,
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T},
+  \label{eq:L1_penalty_cap} \\[4pt]
+  \Delta_{i,t}^{\mathrm{pen}}
+    &= \sum_{\tau = s_i}^{t} c_{i,\tau}^{\mathrm{dev}},
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T}.
+  \label{eq:L1_cum_pen}
+\end{align}
+
+\paragraph{Termination Conditions.}
+In Level~1, termination timing $t_i^{\mathrm{term}}$ is derivable from the
+known efficiency trajectory. For completeness, the two conditions of
+Section~\ref{subsubsec:termination} under deterministic foresight are:
+
+\begin{align}
+  \Delta_{i,t_i^{\mathrm{term}}}^{\mathrm{pen}}
+    &\geq \kappa_i \cdot \Lambda_i \cdot CP_i,
+    && \forall\, i \in \mathcal{P}^{\mathrm{term}},
+  \label{eq:L1_term_cond1} \\[4pt]
+  x_{i,\tilde{t}}
+    &\leq m_i^{0},
+    \quad \forall\, \tilde{t} \in
+      \{t_i^{\mathrm{term}} - k + 1, \ldots, t_i^{\mathrm{term}}\},
+    && \forall\, i \in \mathcal{P}^{\mathrm{term}}.
+  \label{eq:L1_term_cond2}
+\end{align}
+
+\paragraph{Allocation Floor.}
+
+\begin{align}
+  x_{i,t}
+    &\geq m_i^{0} \cdot \mathrm{act}_{i,t},
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T}.
+  \label{eq:L1_floor}
+\end{align}
+
+\paragraph{Variable Domains.}
+
+\begin{align}
+  x_{i,t}
+    &\geq 0,
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T},
+  \label{eq:L1_x_domain} \\[4pt]
+  u_{i,j,t}
+    &\in \{0,1\},
+    && \forall\, i \in \mathcal{P},\; j \in \mathcal{M}_i,\;
+       t \in \mathcal{T},
+  \label{eq:L1_u_domain} \\[4pt]
+  d_{i,t}^{+},\; d_{i,t}^{-},\; c_{i,t}^{\mathrm{dev}},\;
+  P_{i,t}^{\mathrm{actual}},\; B_t
+    &\geq 0,
+    && \forall\, i \in \mathcal{P},\; t \in \mathcal{T}.
+  \label{eq:L1_aux_domain}
+\end{align}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection*{Economic Interpretation}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The constraint groups are interpreted in turn.
+
+\paragraph{Budget feasibility and cash balance recursion
+  \eqref{eq:L1_balance}--\eqref{eq:L1_nonneg_balance}.}
+Constraint~\eqref{eq:L1_balance} propagates the portfolio cash balance
+forward by one period: it deducts total active-project expenditure from
+the opening balance and adds all contractual inflows received in period
+$t$. Constraint~\eqref{eq:L1_budget} enforces the hard spending limit: the
+total allocated budget in any period cannot exceed the cash available at the
+start of that period. Constraint~\eqref{eq:L1_nonneg_balance} prohibits
+borrowing, consistent with the fixed-capital governance structure described in
+Section~\ref{subsubsec:portfolio_aggregation}. Together, these three
+constraints encode the portfolio manager's primary operational constraint: all
+cash out must be covered by cash in, period by period.
+
+\paragraph{Progress recursion and completion
+  \eqref{eq:L1_progress_rec}--\eqref{eq:L1_progress_init}.}
+Constraint~\eqref{eq:L1_progress_rec} is the deterministic collapse of the
+budget-to-progress conversion from Section~\ref{subsubsec:dynamics}: a
+budget allocation $x_{i,t}$ generates a proportional progress increment
+scaled by the known efficiency $\bar{\eta}_{i,t}$ and normalized by
+$\mathrm{BAC}_i$. Constraint~\eqref{eq:L1_progress_cap} enforces the natural
+upper bound that no project can exceed full completion; this prevents the
+optimizer from over-allocating budget to drive nominal progress beyond 100\%.
+Constraint~\eqref{eq:L1_progress_init} initializes all projects at zero
+cumulative progress at the start of the horizon.
+
+\paragraph{Milestone certification
+  \eqref{eq:L1_cert_lb}--\eqref{eq:L1_cert_init}.}
+These constraints implement the certification logic of
+$\mathcal{M}_i^{\mathrm{cert}}(t)$ in binary form. Constraints
+\eqref{eq:L1_cert_lb} and \eqref{eq:L1_cert_ub} together enforce the
+equivalence: $u_{i,j,t} = 1$ if and only if $P_{i,t}^{\mathrm{actual}} \geq
+\theta_{i,j}$. Constraint~\eqref{eq:L1_cert_mono} imposes temporal
+monotonicity --- once a milestone is certified it cannot be decertified, which
+is a contractual requirement under FIDIC forms~\cite{fidic2017silver}.
+Constraint~\eqref{eq:L1_cert_order} enforces that milestones can only be
+certified in sequence, consistent with their ordered threshold structure
+$\theta_{i,1} < \cdots < \theta_{i,M_i}$. Constraint~\eqref{eq:L1_cert_init}
+initializes all milestones as uncertified.
+
+\paragraph{Cash-flow mechanics
+  \eqref{eq:L1_advance}--\eqref{eq:L1_Vt_total}.}
+These constraints translate the contractual payment structure from
+Section~\ref{subsubsec:dynamics} into deterministic linear expressions.
+Constraint~\eqref{eq:L1_advance} delivers the advance payment as a fixed
+inflow at the planned start date $s_i$; it enters the cash balance recursion
+immediately and reduces the net financing requirement of the project.
+Constraints~\eqref{eq:L1_milestone_pay}--\eqref{eq:L1_Rnet_def} compute
+milestone inflows as the difference in certification binaries $(u_{i,j,t} -
+u_{i,j,t-1})$, which equals one in exactly the period the milestone is first
+certified and zero thereafter. This formulation linearizes the milestone
+trigger without introducing additional binary variables beyond $u_{i,j,t}$.
+Constraint~\eqref{eq:L1_retention} similarly delivers the retention release
+and final milestone payment in the period the last milestone is certified.
+Constraints~\eqref{eq:L1_term_pay}--\eqref{eq:L1_advance_outstanding}
+model termination settlement as a known inflow at $t_i^{\mathrm{term}}$:
+the settlement value equals the progress fraction of the contract price,
+less any outstanding advance balance, both of which are deterministic
+functions of the known efficiency trajectory.
+
+\paragraph{Deviation penalty linearization
+  \eqref{eq:L1_dev_def}--\eqref{eq:L1_cum_pen}.}
+Constraints~\eqref{eq:L1_dev_split}--\eqref{eq:L1_abs_dev} decompose the
+signed progress deviation $\delta_{i,t}$ into non-negative positive and
+negative parts, enabling the absolute value to be handled linearly.
+Constraint~\eqref{eq:L1_penalty_lin} lower-bounds the per-period penalty
+variable $c_{i,t}^{\mathrm{dev}}$ by the weighted absolute deviation;
+since the objective minimizes total penalty (equivalently, maximizes the
+negated penalty), the optimizer drives $c_{i,t}^{\mathrm{dev}}$ to this
+bound, recovering the exact symmetric penalty without any nonlinearity.
+Constraint~\eqref{eq:L1_penalty_cap} imposes the contractual ceiling
+$\Lambda_i \cdot CP_i$, consistent with the cap defined in
+Table~\ref{tab:params-cost-penalty}. Constraint~\eqref{eq:L1_cum_pen}
+accumulates the per-period penalties into the running total $\Delta_{i,t}^{\mathrm{pen}}$,
+which feeds the termination condition.
+
+\paragraph{Termination conditions
+  \eqref{eq:L1_term_cond1}--\eqref{eq:L1_term_cond2}.}
+These constraints express the two-condition termination gate of
+Section~\ref{subsubsec:termination} under deterministic foresight. Because
+$\bar{\eta}_{i,t}$ is known, the period $t_i^{\mathrm{term}}$ at which both
+conditions are first simultaneously satisfied is a fixed parameter derivable
+from the efficiency trajectory before solving the MILP. The MILP therefore
+treats these constraints as verifiable parameter conditions rather than active
+optimization constraints; they are included for formal completeness and to
+preserve structural continuity with the Level~2 and Level~3 formulations, where
+termination timing is endogenous and these constraints are binding.
+
+\paragraph{Allocation floor \eqref{eq:L1_floor}.}
+This constraint enforces the minimum budget required to hold each active project
+in a contractually serviceable state. As established in
+Section~\ref{subsubsec:termination}, $m_i^{0}$ has no performance-recovery
+role; it is the floor allocation at which the termination conditions are
+evaluated without constituting a client default. The $\mathrm{act}_{i,t}$
+indicator, fixed as a parameter at Level~1, ensures the floor applies only
+while the project is active: it is vacuous once $\mathrm{status}_{i,t} \in
+\{\texttt{completed}, \texttt{terminated}\}$.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection*{The Upper Bound Argument}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Let $Z^*_{\mathrm{L1}}$ denote the optimal objective value of the Level~1
+program. The claim is that for any causal allocation policy $\pi$ operating
+under uncertainty, the expected objective value $Z^\pi$ satisfies
+$Z^\pi \leq Z^*_{\mathrm{L1}}$.
+
+The argument is direct. The feasible set of the Level~1 MILP is at least as
+large as the feasible set available to any causal policy: a causal policy can
+only condition allocations on information revealed up to the current period,
+whereas the Level~1 program conditions on all future information simultaneously.
+Any feasible allocation sequence generated by a causal policy under any
+realization of the efficiency process is also feasible in Level~1 --- since
+Level~1 is solved for the realized trajectory, not in expectation. Taking the
+expectation over realizations and the supremum over policies does not change
+this ordering: $\sup_\pi \mathbb{E}[Z^\pi] \leq Z^*_{\mathrm{L1}}$. The
+Level~1 optimum therefore constitutes a strict benchmark that no implementable
+policy can attain in expectation, and against which the PPO agent, the
+rule-based heuristic, and the two-stage stochastic program are all evaluated in
+Section~\ref{sec:experiments}. The gap between $Z^*_{\mathrm{L1}}$ and the
+achieved objective of each policy quantifies the cost of operating under
+uncertainty relative to an oracle with perfect foresight.
