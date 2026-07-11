@@ -108,6 +108,12 @@
 % \newpage
 
 \begin{abstract}
+
+% ⚠️ needs the updating according to the latest position of the the 
+% project portfolio selection extension and 
+% generalization of the projects across all industries 
+% problem formulation to be included
+
 Project portfolio budget allocation for EPC contractors in the oil and gas sector is a sequential decision-making problem under uncertain cash inflows, cash outflows, and project performance. Each portfolio consists of multiple projects with heterogeneous attributes, including budget at completion, start and finish dates, contractual S-curves, fixed profit margins, milestone-based payment structures, and uncertain contractor performance represented through Earned Value Management metrics such as cumulative SPI and CPI. The model also captures delayed and uncertain milestone payments, working-capital shortages, credit usage during negative-cashflow periods, and management intervention actions that affect cashflow and performance trajectories.
 
 Despite its practical importance, rigorous mathematical modeling of project portfolio budgeting under joint cashflow and performance uncertainty remains largely absent in recent literature, while most AI/ML-related studies discuss the topic qualitatively. This paper proposes a custom stochastic reinforcement learning environment for learning adaptive budget allocation policies under unknown future uncertainty. A PPO-based agent is trained with a multi-objective reward function to allocate constrained budgets efficiently, prioritize economically viable projects, avoid loss-making allocations, and learn optimal allocation timing. The framework provides a foundational RL model for EPC oil and gas portfolio budgeting, supports future fine-tuning with anonymized industry data, and enables immediate next-period allocation recommendations as well as rolling 12-period trajectory simulation.
@@ -120,54 +126,48 @@ Despite its practical importance, rigorous mathematical modeling of project port
 \textbf{Keywords:} Project Portfolio Budgeting, Reinforcement Learning, EPC Contractors, Oil and Gas Projects, Cashflow Uncertainty, Earned Value Management, PPO, Rolling Horizon Control
 \end{abstract}
 
-\section{Introduction}
-\label{sec:introduction}
-\input{sections/01_introduction.tex}
+% \section{Introduction}
+% \label{sec:introduction}
+% \input{sections/01_introduction.tex}
 
-\section{Literature Review}
-\label{sec:literature}
-\input{sections/02_literature.tex}
+% \section{Literature Review}
+% \label{sec:literature}
+% \input{sections/02_literature.tex}
 
 \section{Problem Formulation}
 \label{sec:problem}
 \input{sections/03_problem_formulation.tex}
 
-% ⚠️test input
-% \section{Distress Termination}
-% \label{sec:Distress Termination}
-% \input{sections/distress_termination.tex}
+% \section{Methodology}
+% \label{sec:methodology}
+% \input{sections/04_methodology.tex}
+
+% \section{Results and Analysis}
+% \label{sec:results}
+% \input{sections/05_results.tex}
+
+% \section{Conclusion}
+% \label{sec:conclusion}
+% \input{sections/06_conclusion.tex}
 
 
-\section{Methodology}
-\label{sec:methodology}
-\input{sections/04_methodology.tex}
-
-\section{Results and Analysis}
-\label{sec:results}
-\input{sections/05_results.tex}
-
-\section{Conclusion}
-\label{sec:conclusion}
-\input{sections/06_conclusion.tex}
-
-
-\section*{Acknowledgments}
-This research was supported by [Funding Agency]. The authors thank [Names] for valuable discussions and feedback.
+% \section*{Acknowledgments}
+% This research was supported by [Funding Agency]. The authors thank [Names] for valuable discussions and feedback.
 
 \bibliographystyle{apalike}
 \bibliography{references}
 
-\appendix
-\section{Mathematical Proofs}
-\label{app:proofs}
-\input{sections/appendix-proofs}
+% \appendix
+% \section{Mathematical Proofs}
+% \label{app:proofs}
+% \input{sections/appendix-proofs}
 
-\section{Parameter Calibration Details}
-\label{app:calibration}
-\input{sections/appendix-calibration}
+% \section{Parameter Calibration Details}
+% \label{app:calibration}
+% \input{sections/appendix-calibration}
 
-\section{Instance Generator Algorithm}
-\label{app:algorithm}
-\input{sections/appendix-algorithm}
+% \section{Instance Generator Algorithm}
+% \label{app:algorithm}
+% \input{sections/appendix-algorithm}
 
 \end{document}
