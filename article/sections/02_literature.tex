@@ -1,91 +1,314 @@
-% ⚠️ needs the updating according to the latest position of the the 
-% project portfolio selection extension and 
-% generalization of the projects across all industries 
-% problem formulation to be included
+% ============================================================
+%  SECTION 2 — LITERATURE REVIEW
+% ============================================================
 
-% ⚠️ to be adding the latest literature review positioning
-%  PRISMA 2020
+\section{Literature Review}
+\label{sec:litreview}
 
+% ------------------------------------------------------------
+\subsection{Overview and Review Strategy}
+\label{subsec:lr_overview}
+% ------------------------------------------------------------
 
-\subsection{Project Management}
+This section maps the intellectual lineage of the present work across four
+adjacent knowledge domains: project management~(PM) foundations, project
+portfolio management~(PPM) and selection, PPM budgeting and cash-flow
+modelling, and reinforcement learning~(RL) applied to sequential
+resource-allocation problems. Together these streams define both the
+theoretical foundation and the gap that motivates the proposed framework.
+The review follows the PRISMA~2020 reporting guidelines
+\citep{Page2021} to ensure transparency and reproducibility in source
+identification, screening, and inclusion decisions.
 
-\subsubsection{Cashflow Modeling and S-Curves}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Search and Screening Protocol}
+\label{subsubsec:prisma}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Project cashflow modeling has a rich history in construction management. \citet{kenley1986construction} introduced the idiographic approach to cashflow forecasting, recognizing that each project exhibits unique spending patterns. \citet{kaka1993towards} developed neural network models for cashflow prediction based on historical project data.
+Literature was retrieved from Google Scholar, Semantic Scholar, and Scopus
+using a progressively narrowing search strategy. Queries began at the broadest
+relevant domain (\emph{project management}) and were successively refined
+through \emph{project portfolio management}, \emph{portfolio budgeting and
+cash-flow optimisation}, \emph{earned value management under uncertainty}, and
+\emph{reinforcement learning for project scheduling and resource allocation}.
+Citation-network traversal --- backward and forward snowballing from
+high-citation anchor papers --- was used to recover seminal works not surfaced
+by keyword search.
 
-The S-curve model, representing cumulative spending as a sigmoid function of project duration, has become the standard representation. \citet{cioffi2005tool} provided analytical parameterization of S-curves using Beta distributions, enabling closed-form expressions for cashflow velocity and peak spending timing. \citet{barraza2007probabilistic} extended this to probabilistic S-curves incorporating uncertainty in project duration and spending patterns.
+Records were screened in three sequential stages consistent with the PRISMA~2020
+flow diagram (Appendix~A). \textbf{Stage~1} (identification) assessed machine
+readability and bibliographic completeness. \textbf{Stage~2} (relevance
+filtering) applied cosine-similarity ranking against the research hypothesis
+using sentence-transformer embeddings, retaining sources above a calibrated
+relevance threshold. \textbf{Stage~3} (structured extraction) classified each
+retained paper by contribution type, key variables, modelling paradigm, and
+empirical basis. The PRISMA flow diagram quantifying records at each stage is
+provided in Appendix~A.
 
-\citet{cui2010systems} analyzed milestone-based payment structures in construction contracts, finding that 87\% of contracts use progress-based payments rather than time-based schedules. This finding motivates our modeling choice to link payment timing to actual progress (SPI) rather than calendar dates.
+% [PLACEHOLDER: Insert PRISMA 2020 flow diagram counts once final corpus is
+%  fixed. Required fields: records identified per database, duplicates removed,
+%  records screened, records excluded with reasons, reports sought, reports
+%  assessed for eligibility, studies included in synthesis.]
 
+% ------------------------------------------------------------
+\subsection{Project Management: Foundational Concepts}
+\label{subsec:lr_pm}
+% ------------------------------------------------------------
 
-\subsubsection{Advance Payment and Recovery in EPC Contracts}
+The academic study of project management draws on schedule control (CPM/PERT),
+earned value management~(EVM), and risk modelling as its core quantitative
+pillars \citep{Fleming2010, PMI2021}. EVM introduced the Cost Performance Index
+(CPI) and Schedule Performance Index (SPI) as real-time diagnostic signals
+relating budgeted cost of work performed to actual expenditure and planned
+schedule --- providing the performance vocabulary that the present model
+inherits directly. Values of $\mathrm{CPI} < 1$ signal cost overrun;
+$\mathrm{SPI} < 1$ signals schedule lag. Stochastic extensions of EVM
+\citep{Acebes2015, Batselier2017} and Monte Carlo simulation frameworks
+\citep{Kwak2007} have modelled performance uncertainty at the project level,
+establishing that CPI and SPI follow empirically characterisable distributions
+over project life.
 
-Advance payment is a common contractual and financial mechanism in EPC and EPC/Turnkey projects, particularly in capital-intensive sectors such as oil and gas, where contractors often face substantial early cash requirements for mobilization, engineering start-up, procurement, equipment ordering, and site preparation. Standard EPC contract forms, including the FIDIC Silver Book, recognize advance payment as an early disbursement made by the Employer to the Contractor, normally subject to the provision of an Advance Payment Guarantee \cite{fidic1999silver, fidic2017silver}. This guarantee protects the Employer because the payment is made before the corresponding portion of the works has been fully executed or certified. From a contract-management perspective, the advance payment should not be interpreted as an additional payment beyond the Contract Price; rather, it represents an early release of part of the Contract Price to support the contractor's working-capital needs \cite{quollnetadvancepayment, constructionknowledgehubclause14}. Accordingly, the advance is typically recovered through deductions from subsequent interim or milestone payment certificates, with the recovery schedule defined in the contract conditions, Particular Conditions, or Contract Data \cite{fidic1999silver, fidic2017silver}. This design allows the contractor to benefit from early liquidity while ensuring that the Employer does not pay more than the agreed Contract Price over the project lifecycle. Therefore, in EPC project financial management, advance payment and its recovery primarily affect the timing and distribution of cash flows rather than the total contractual revenue. This distinction is particularly important in portfolio-level project control, where early liquidity support, delayed net receipts during recovery periods, and the interaction with external financing can materially influence the contractor's short-term financial balance and budget allocation decisions.
+S-curve analysis, formalised by \citet{Kenley2009} for construction cash flows,
+established that budget consumption follows characteristic sigmoid profiles
+whose shape parameters are project-type- and contract-form-dependent. The
+regularized incomplete Beta function provides a flexible single-family
+parameterisation of this profile \citep{barraza2004probabilistic}, and is
+adopted directly in the planned expenditure model of the present formulation.
 
+Large-scale empirical evidence on project performance is provided by
+\citet{Merrow2011} through the Independent Project Analysis database, and by
+\citet{Flyvbjerg2003, Flyvbjerg2018} through infrastructure cost-overrun
+datasets spanning decades and geographies. These datasets inform both the
+calibration of uncertainty distributions in the present model and the
+benchmarks against which synthetic environment parameters are validated.
+Complementary empirical benchmarks are drawn from AACE International and
+Construction Industry Institute cost-engineering databases
+\citep{christensen1993empirical}.
 
-\subsubsection{Project Performance Uncertainty and Empirical Evidence}
+Contract governance structures --- particularly FIDIC forms (Red, Yellow, and
+Silver Books) --- prescribe the financial interaction between owner and
+contractor through milestone payment schedules, advance payment and recovery
+mechanisms, and retention clauses \citep{FIDIC2017}. These mechanisms translate
+directly into the cash inflow and outflow dynamics formulated in
+Section~\ref{sec:problem_formulation}.
 
-A substantial body of empirical research documents systematic cost and schedule overruns in capital projects. \citet{flyvbjerg2002underestimating} analyzed 258 transportation infrastructure projects, finding mean cost overruns of 28\% and schedule delays of 27\%. \citet{flyvbjerg2003underestimating} extended this analysis to 258 projects across multiple sectors, confirming left-skewed performance distributions with long tails toward poor outcomes.
+% [PLACEHOLDER: Additional empirical PM literature on contractor performance
+%  variability (CPI/SPI distributions from Lipke 2003, Henderson 2004) to
+%  be incorporated once final calibration data access is confirmed.]
 
-\citet{merrow2011industrial} provided the most comprehensive analysis of EPC project performance, examining 318 industrial megaprojects in oil \& gas, chemicals, and mining. Key findings include: (1) mean SPI at completion of 0.81 (19\% behind schedule), (2) mean CPI of 0.87 (15\% over budget), (3) positive correlation between schedule and cost performance ($\rho \approx 0.68$), and (4) systematic variation in performance by project size, complexity, and contractor experience.
+% ------------------------------------------------------------
+\subsection{Project Portfolio Management: Selection and Governance}
+\label{subsec:lr_ppm}
+% ------------------------------------------------------------
 
-\citet{love2013probability} fitted probability distributions to schedule overrun data from 276 construction projects, validating Beta and lognormal distributions as appropriate models. \citet{love2016relationship} analyzed the relationship between SPI and CPI, confirming that schedule delays typically precede cost overruns due to extended overhead and acceleration costs.
+Project portfolio management formalises the problem of allocating an
+organisation's finite resources across a competing set of candidate projects to
+maximise strategic value \citep{Archer1999, Cooper2001}. The literature
+distinguishes two nested decision layers: \emph{portfolio selection} --- the
+binary or mixed-integer optimisation of which projects to include --- and
+\emph{portfolio governance} --- the ongoing operational oversight of approved,
+active projects.
 
+Portfolio selection models have been extensively developed. Markowitz-style
+mean--variance frameworks adapted from financial portfolio theory
+\citep{Markowitz1952} have been applied to project baskets to trade off
+expected NPV against variance \citep{Eilat2006}. Multi-criteria decision
+analysis extensions incorporate strategic alignment, risk ratings, and resource
+interdependencies \citep{Martinsuo2007, Killen2008}. Metaheuristic approaches
+--- genetic algorithms, particle swarm optimisation --- address large
+combinatorial instances \citep{Zhang2020}. Resource-constrained portfolio
+selection under capital rationing has been studied by \citet{kavadias2003resource},
+whose no-borrowing constraint is adopted directly in the present formulation.
 
-% ###################
+The present work \emph{explicitly adopts the output of portfolio selection as
+an exogenous input}. The selection problem is treated as solved upstream; the
+focus is entirely on the operational governance layer that receives a committed
+portfolio and must manage it through execution. This decomposition is consistent
+with the two-stage governance model of \citet{Turner2014} and the PMI Standard
+for Portfolio Management \citep{PMI2017}, which separates strategic selection
+from operational execution oversight. In doing so, this work builds directly on
+the selection literature while advancing the frontier into the governance domain
+that has received substantially less formal analytical treatment.
 
-\subsection{Portfolio Management}
+% [PLACEHOLDER: Governance-layer literature on portfolio performance
+%  monitoring and control (Dye and Pennypacker 1999, Levine 2005) to be
+%  incorporated once screened corpus is finalised.]
 
-\subsubsection{Project Portfolio Management Under Uncertainty}
+% ------------------------------------------------------------
+\subsection{PPM Budgeting, Cash-Flow Modelling, and Uncertainty}
+\label{subsec:lr_cashflow}
+% ------------------------------------------------------------
 
-Project portfolio management (PPM) has been extensively studied in operations research and management science. Early work by \citet{archer1999integrated} established frameworks for project selection and prioritization, while \citet{cooper2001portfolio} developed stage-gate processes for new product development portfolios. However, these approaches primarily address the \textit{selection} problem (which projects to pursue) rather than the \textit{execution} problem (how to allocate resources dynamically).
+Within portfolio governance, budget allocation across active projects over time
+represents a high-frequency, high-stakes operational decision. Despite its
+practical centrality, this specific problem has received limited formal
+treatment relative to portfolio selection. Existing work addresses project-level
+cash-flow modelling \citep{Kenley2009, Park2004}, EVM-based forecasting of
+individual project cost-at-completion \citep{Kim2002, Acebes2015}, and
+multi-project resource levelling \citep{Lova2000, Peteghem2010}. However,
+these contributions treat budgets as deterministic constraints rather than as
+dynamic decision variables subject to portfolio-level sequential optimisation.
 
-\citet{gutjahr2008project} formulated multi-objective portfolio optimization models balancing expected return, risk, and strategic alignment. \citet{doerner2006pareto} applied Pareto ant colony optimization to generate efficient frontiers for portfolio selection. These methods assume deterministic project execution once selected, ignoring the sequential decision-making required under performance uncertainty.
+Cash-flow uncertainty in construction and engineering projects arises from
+contractor performance variability, payment timing mismatches, scope changes,
+and external market shocks \citep{Odeh2002, Doloi2012}. Stochastic programming
+\citep{Birge2011} provides the canonical OR framework for optimisation under
+such uncertainty, and its two-stage variant has been applied to project
+scheduling under resource uncertainty \citep{Lova2000}. However, multi-stage
+stochastic programs for portfolio-level sequential budget allocation face
+scenario-tree explosion as the number of projects and periods increases, as
+established formally in Section~\ref{subsec:level2}.
 
-Stochastic programming approaches have been proposed to handle uncertainty. \citet{golenko1997stochastic} modeled resource-constrained project scheduling with stochastic activity durations. \citet{klerides2019stochastic} developed two-stage stochastic programs for portfolio selection under demand uncertainty. However, these methods require explicit scenario trees and known probability distributions, which are unavailable for contractor performance dynamics.
+The gap in the literature is precise: \emph{no established framework models the
+portfolio-level budget allocation decision as a sequential stochastic
+optimisation problem in which a central decision-maker allocates funds across
+multiple active projects whose cash inflow and outflow trajectories are
+uncertain and coupled through a shared capital constraint.} The present work
+addresses this gap.
 
+% [PLACEHOLDER: Cash-flow modelling literature specific to EPC sector
+%  (Kaka and Price 1993, Navon 1996) to be incorporated. Also: literature
+%  on advance payment and retention mechanics in international contracting
+%  (Eggers 2019, CIDB 2015) to be cross-checked against screened corpus.]
 
+% ------------------------------------------------------------
+\subsection{Performance Recovery Interventions and Project Termination}
+\label{subsec:lr_interventions}
+% ------------------------------------------------------------
 
-% ###################
+Two operational levers available to a portfolio-level decision-maker beyond
+budget allocation are management interventions to recover underperforming
+projects and the exercise of the contractual termination option. Both have
+received treatment in the project management literature, but neither has been
+integrated into a portfolio-level sequential optimisation model.
 
-\subsection{Reinforcement Learning in Operations Research}
+Recovery interventions --- crashing, scope reduction, procurement
+restructuring --- are discussed in EPC and construction project management
+contexts \citep{Meredith2011, Pinto2016}. The decision of when to intervene
+depends on real-time CPI and SPI signals and on the expected marginal value of
+recovery effort relative to its cost --- a fundamentally sequential decision
+under uncertainty that the CMDP formulation in Level~3 is equipped to address.
 
-RL has emerged as a powerful tool for sequential decision-making under uncertainty. \citet{sutton2018reinforcement} provide the foundational textbook covering Markov Decision Processes (MDPs), temporal difference learning, and policy gradient methods. Recent advances in deep RL, particularly Proximal Policy Optimization (PPO) \citep{schulman2017proximal} and Soft Actor-Critic (SAC) \citep{haarnoja2018soft}, have enabled application to high-dimensional continuous control problems.
+Project termination as a formal decision problem has been studied through the
+lens of escalation of commitment \citep{Staw1987} --- the well-documented
+behavioural tendency to continue investing in failing projects beyond the
+economically rational stopping point --- and through real options theory
+\citep{Dixit1994, Huchzermeier2001}. Real options models frame termination as
+the exercise of an abandonment option when continuation NPV falls below salvage
+value, a framing directly compatible with the two-condition termination gate
+of the present formulation. The penalty-saturation condition of the
+termination gate corresponds to the passage of the NPV threshold; the
+sustained allocation-floor condition confirms that the exercise decision is
+deliberate rather than transient.
 
-Applications of RL to operations research problems have grown rapidly. \citet{hubbs2020deep} applied deep RL to chemical production scheduling, achieving near-optimal solutions with 1000× speedup over MIP. \citet{bengio2021machine} surveyed machine learning for combinatorial optimization, highlighting RL's ability to learn heuristics that generalize across problem instances.
+% ------------------------------------------------------------
+\subsection{Reinforcement Learning for Sequential Resource Allocation}
+\label{subsec:lr_rl}
+% ------------------------------------------------------------
 
-In project management, RL applications remain limited. \citet{wauters2016learning} used RL for resource-constrained project scheduling with deterministic durations. \citet{chen2018reinforcement} applied RL to construction project scheduling under resource uncertainty. However, no prior work addresses portfolio-level budgeting under cashflow uncertainty with stochastic contractor performance.
+Reinforcement learning provides a principled framework for sequential
+decision-making under uncertainty \citep{Sutton2018}. The MDP
+formalisation --- state, action, transition, reward --- maps naturally onto the
+portfolio budget allocation problem, and the constrained MDP extension
+\citep{Altman1999} accommodates the hard budget feasibility constraints that
+the portfolio manager must satisfy at every period.
 
+RL has been applied to project scheduling \citep{Peng2021, Liu2023},
+resource-constrained project scheduling problems (RCPSP) \citep{Tassel2023},
+and supply chain inventory management \citep{Giannoccaro2002}. In each domain,
+RL demonstrates advantages over classical OR methods when state spaces are
+large, transition dynamics are stochastic, and the problem is non-stationary
+over the decision horizon. These are precisely the characteristics of the
+portfolio budget allocation problem at Levels~2 and~3.
 
+Proximal Policy Optimisation \citep{Schulman2017} is adopted as the solution
+algorithm for its stability in continuous action spaces, its sample efficiency
+relative to earlier policy-gradient methods, and its established use in
+operations management domains. Domain randomisation \citep{Tobin2017} ---
+randomising environment parameters during training to improve out-of-sample
+policy robustness --- is adopted to ensure the learned policy generalises across
+the range of project types, contract structures, and market conditions
+represented in the calibration data. Walk-forward validation
+\citep{Cerqueira2020} is used as the empirical evaluation protocol to guard
+against data leakage given the time-series structure of project cash-flow data.
 
-% ###################
+Direct application of RL to portfolio-level budget allocation remains absent
+from the literature. The present work provides the first formulation of this
+problem as a CMDP and the first empirical demonstration that a PPO agent can
+learn non-trivial allocation policies in a calibrated synthetic environment.
 
-\subsection{Synthetic Data Generation for OR/ML Research}
+% [PLACEHOLDER: Recent RL-for-scheduling literature from 2024--2025 to be
+%  checked via forward snowballing from Tassel 2023 and Liu 2023 once
+%  final screening is complete. Also: multi-agent RL formulations for
+%  multi-project resource allocation to be assessed for relevance.]
 
-The use of synthetic data in operations research has a long tradition. \citet{kolisch1997psplib} created the Project Scheduling Problem Library (PSPLIB), a benchmark dataset of synthetic instances that became the standard for algorithm comparison. \citet{vanhoucke2008experimental} generated synthetic project networks to study schedule risk analysis methods.
+% ------------------------------------------------------------
+\subsection{Synthesis: Positioning the Present Contribution}
+\label{subsec:lr_synthesis}
+% ------------------------------------------------------------
 
-In machine learning, synthetic data generation has become essential for domains with data scarcity or privacy constraints. \citet{jordon2022synthetic} surveyed synthetic data generation methods, emphasizing the importance of preserving statistical properties of real data. \citet{xu2019modeling} developed generative models for tabular data that maintain correlations and distributional characteristics.
+Table~\ref{tab:litmap} maps representative works across the four literature
+streams against the key modelling dimensions of the present framework. Three
+structural gaps emerge.
 
-For project management, \citet{vanhoucke2012integrated} generated synthetic project data with controlled complexity levels to benchmark scheduling algorithms. \citet{elshaer2014genetic} created synthetic portfolios with varying risk profiles to test portfolio optimization methods. Our work extends this tradition by developing a comprehensive synthetic data generator calibrated to empirical distributions from multiple literature sources, ensuring realism while maintaining reproducibility.
+First, the transition from portfolio \emph{selection} to portfolio
+\emph{operational governance} has not been modelled as a sequential decision
+problem. Selection literature assumes away post-selection management; project
+scheduling literature ignores portfolio interdependencies and the shared
+capital constraint.
 
+Second, existing stochastic models of project cash-flow uncertainty operate at
+the individual project level and do not feed uncertainty upward into a
+portfolio-level decision architecture with a shared budget constraint.
 
+Third, the specific operational levers of a portfolio governance board ---
+budget allocation timing, performance intervention, and project termination ---
+have not been jointly modelled as the action space of a single sequential
+decision-maker in a constrained optimisation framework.
 
-% ###################
+The present work addresses all three gaps through the three-level modelling arc
+described in Section~\ref{subsec:three_levels} and developed formally in
+Section~\ref{sec:problem_formulation}. The Gymnasium-compatible CMDP
+environment --- with parameterisable contract mechanics, stochastic performance
+model, and intervention and termination actions --- constitutes the primary
+methodological contribution. The PPO agent demonstrates its utility and
+provides the basis for empirical evaluation against classical OR baselines in
+Section~\ref{sec:experiments}.
 
-\subsection{Research Gaps}
-
-Despite extensive research in project portfolio management, performance uncertainty, and RL applications, critical gaps remain:
-
-\begin{enumerate}
-    \item \textbf{No RL framework for portfolio budgeting:} Existing RL applications to project management focus on single-project scheduling, not portfolio-level resource allocation under cashflow uncertainty.
-    
-    \item \textbf{Lack of realistic synthetic environments:} Prior synthetic data generators for project management do not model stochastic contractor performance, milestone-based payments, or portfolio-level cashflow dynamics.
-    
-    \item \textbf{Absence of rolling horizon RL architectures:} Rolling horizon control has not been integrated with RL for portfolio management, despite its natural fit for handling variable-duration portfolios.
-    
-    \item \textbf{No methodology for literature-calibrated data generation:} Existing approaches either use proprietary data (unavailable for research) or arbitrary synthetic distributions (lacking empirical grounding).
-\end{enumerate}
-
-This paper addresses these gaps by developing the first RL framework for portfolio budgeting with a literature-calibrated synthetic environment and rolling horizon architecture.
-
-% ###################
+\begin{table}[htbp]
+\centering
+\caption{Representative literature mapped against modelling dimensions of the
+  present framework.
+  \checkmark~=~fully addressed;\; $\circ$~=~partially addressed;\;
+  {--}~=~not addressed.}
+\label{tab:litmap}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcccccc}
+\hline
+\textbf{Work} &
+  \textbf{Portfolio} &
+  \textbf{Sequential} &
+  \textbf{Cash-flow} &
+  \textbf{Contract} &
+  \textbf{Termination} &
+  \textbf{RL} \\
+  &
+  \textbf{level} &
+  \textbf{decisions} &
+  \textbf{uncertainty} &
+  \textbf{mechanics} &
+  \textbf{option} &
+  \textbf{agent} \\
+\hline
+\citet{Kenley2009}        & --         & --         & $\circ$    & $\circ$    & --         & -- \\
+\citet{Eilat2006}         & \checkmark & --         & --         & --         & --         & -- \\
+\citet{Acebes2015}        & --         & $\circ$    & \checkmark & --         & --         & -- \\
+\citet{Huchzermeier2001}  & $\circ$    & \checkmark & \checkmark & --         & \checkmark & -- \\
+\citet{Lova2000}          & \checkmark & --         & --         & --         & --         & -- \\
+\citet{Peng2021}          & --         & \checkmark & $\circ$    & --         & --         & \checkmark \\
+\citet{Tassel2023}        & --         & \checkmark & --         & --         & --         & \checkmark \\
+\textbf{Present work}     & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\hline
+\end{tabular}
+\end{table}
