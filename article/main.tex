@@ -25,12 +25,16 @@
 \usepackage{array}
 \usepackage{xcolor}
 \usepackage{tikz}
+\usetikzlibrary{positioning, decorations.pathreplacing, shapes, arrows, backgrounds, fit, patterns}
+
 \usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{enumitem}
-\pgfplotsset{compat=1.18}
-\usetikzlibrary{shapes,arrows,positioning,patterns}
+
+\usepackage{placeins}
 
 % Page geometry for single-column format
 \geometry{
@@ -91,19 +95,19 @@
     colorlinks=true,
     linkcolor=blue,
     citecolor=blue,
-    urlcolor=blue
+urlcolor=blue
 }
 
 % Title and authors
 \title{\textbf{Development of a Deep Reinforcement Learning Agent for Optimal Project Portfolio Budgeting under Uncertain Cash Flows}}
 
 \author{
-    \begin{tabular}{c}
-        \textbf{Mahriar Gharaghani}\thanks{Corresponding author: mahriar\_gharaghani@ind.iust.ac.ir} \\
-        \textbf{Seyed Farid Ghannadpour} \\[6pt]
-        \textit{Department of Industrial Engineering, Iran University of Science and Technology} \\
-        \textit{Tehran, Iran}
-    \end{tabular}
+\begin{tabular}{c}
+    \textbf{Mahriar Gharaghani}\thanks{Corresponding author: mahriar\_gharaghani@ind.iust.ac.ir} \\
+    \textbf{Seyed Farid Ghannadpour} \\[6pt]
+    \textit{Department of Industrial Engineering, Iran University of Science and Technology} \\
+    \textit{Tehran, Iran}
+\end{tabular}
 }
 
 
@@ -116,74 +120,133 @@
 % \tableofcontents
 % \newpage
 
+% ============================================================
+%  ABSTRACT
+% ============================================================
+
 \begin{abstract}
 
-    Large contracted project portfolios expose governing boards to a recurring
-    operational decision absent from the formal literature: how to allocate budget
-    across active projects at each discrete period to maximise discounted net cash
-    flow under cash-flow uncertainty, FIDIC contract mechanics, and the options to
-    intervene in or terminate underperforming projects. This paper addresses that
-    gap through a three-level modelling arc. \textbf{Level~1} formulates the
-    problem as a deterministic full-foresight Mixed-Integer Linear Program whose
-    optimum constitutes a provable upper bound on any causal policy operating under
-    uncertainty. \textbf{Level~2} reintroduces stochastic contractor performance,
-    establishing that the resulting multi-stage stochastic program is computationally
-    intractable at realistic portfolio scales due to exponential scenario-tree
-    growth. \textbf{Level~3} reformulates the problem as a Constrained Markov
-    Decision Process, implemented as a configurable Gymnasium-compatible environment
-    calibrated from anonymised EPC contractor data, on which a Proximal Policy
-    Optimisation agent is trained and evaluated against the Level~1 oracle, a
-    two-stage stochastic program, and a rule-based heuristic. The environment
-    itself---encoding advance payment recovery, milestone-based payments, retention
-    release, symmetric deviation penalties, and a two-condition termination
-    gate---constitutes the primary contribution.
+The path toward a deployable decision-support system for project portfolio
+management comprises three steps: establishing domain foundations, formulating
+a tractable decision model, and validating at scale within incumbent systems.
+The first step is well served by existing literature --- contract mechanics,
+earned value management, S-curve profiles, and portfolio selection models are
+mature --- and the third remains future work. This paper occupies the second
+step through a relaxation hierarchy applied to a problem absent from the formal
+literature: \textit{given a fixed amount of capital and a committed portfolio of contracted projects, how should a
+governing board allocate budget across projects at each discrete period to
+maximise discounted net cash flow while managing schedule deviation, FIDIC
+contract mechanics, and the option to terminate underperforming
+projects?} 
+
+\textbf{Level~1} formulates
+the problem as a deterministic full-foresight Mixed-Integer Linear Program whose
+optimum constitutes a provable upper bound no causal policy under uncertainty
+can exceed. \textbf{Level~2} introduces stochastic contractor performance,
+establishing that the resulting multi-stage stochastic program is intractable at
+realistic portfolio scales due to exponential scenario-tree growth.
+\textbf{Level~3} recasts the problem as a Constrained Markov Decision Process
+implemented as a configurable Gymnasium-compatible environment, on which a
+Proximal Policy Optimisation agent is trained and evaluated against the
+Level~1 oracle, a two-stage stochastic program, and a rule-based heuristic.
+The environment --- encoding advance payment recovery, milestone payments,
+retention release, deviation penalties, and a two-condition termination gate
+--- constitutes the primary contribution, positioned as the tractable middle
+step between established domain foundations and future large-scale deployment.
 
 \medskip
-\noindent\textbf{Keywords:} project portfolio management; budget allocation;
-reinforcement learning; constrained Markov decision process; earned value
-management; FIDIC contracts; stochastic optimisation; mixed-integer linear
-programming.
+\noindent\textbf{Keywords:} project portfolio management; budget allocation
+under uncertainty; relaxation hierarchy; constrained Markov decision process;
+reinforcement learning; FIDIC contracts; earned value management;
+mixed-integer linear programming.
+
 \end{abstract}
+\FloatBarrier
+% ============================================================
+%  INTRO
+% ============================================================
 
 \section{Introduction}
 \label{sec:introduction}
 \input{sections/01_introduction.tex}
 
+\FloatBarrier
+% ============================================================
+%  LIT
+% ============================================================
+
 \section{Literature Review}
 \label{sec:literature}
 \input{sections/02_literature.tex}
 
+\FloatBarrier
+% ============================================================
+%  PF
+% ============================================================
+
+\FloatBarrier
 \section{Problem Formulation}
 \label{sec:problem}
 \input{sections/03_problem_formulation.tex}
 
-% \section{Methodology}
-% \label{sec:methodology}
-% \input{sections/04_methodology.tex}
+\FloatBarrier
+% ============================================================
+%  EXP
+% ============================================================
 
-% \section{Results and Analysis}
-% \label{sec:results}
-% \input{sections/05_results.tex}
+% \section{Experiments}
+% \label{sec:experiments}
+% \input{sections/04_experiments.tex}
+
+\FloatBarrier
+% ============================================================
+%  CON
+% ============================================================
 
 % \section{Conclusion}
 % \label{sec:conclusion}
 % \input{sections/06_conclusion.tex}
 
+\FloatBarrier
+% ============================================================
+%  ACK
+% ============================================================
 
 % \section*{Acknowledgments}
 % This research was supported by [Funding Agency]. The authors thank [Names] for valuable discussions and feedback.
 
+\FloatBarrier
+% ============================================================
+%  BIB
+% ============================================================
+
 \bibliographystyle{apalike}
 \bibliography{references}
+
+\FloatBarrier
+% ============================================================
+%  APPEN_A
+% ============================================================
 
 % \appendix
 % \section{Mathematical Proofs}
 % \label{app:proofs}
 % \input{sections/appendix-proofs}
 
+\FloatBarrier
+
+% ============================================================
+%  APPEN_B
+% ============================================================
 % \section{Parameter Calibration Details}
 % \label{app:calibration}
 % \input{sections/appendix-calibration}
+
+
+\FloatBarrier
+% ============================================================
+%  APPEN_C
+% ============================================================
 
 % \section{Instance Generator Algorithm}
 % \label{app:algorithm}

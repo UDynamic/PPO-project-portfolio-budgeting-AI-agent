@@ -2,10 +2,6 @@
 %  SECTION 2 — LITERATURE REVIEW
 % ============================================================
 
-\section{Literature Review}
-\label{sec:litreview}
-
-% ------------------------------------------------------------
 \subsection{Overview and Review Strategy}
 \label{subsec:lr_overview}
 % ------------------------------------------------------------
@@ -243,6 +239,7 @@ learn non-trivial allocation policies in a calibrated synthetic environment.
 %  multi-project resource allocation to be assessed for relevance.]
 
 % ------------------------------------------------------------
+% ------------------------------------------------------------
 \subsection{Synthesis: Positioning the Present Contribution}
 \label{subsec:lr_synthesis}
 % ------------------------------------------------------------
@@ -266,12 +263,95 @@ budget allocation timing, performance intervention, and project termination ---
 have not been jointly modelled as the action space of a single sequential
 decision-maker in a constrained optimisation framework.
 
-The present work addresses all three gaps through the three-level modelling arc
-described in Section~\ref{subsec:three_levels} and developed formally in
-Section~\ref{sec:problem_formulation}. The Gymnasium-compatible CMDP
-environment --- with parameterisable contract mechanics, stochastic performance
-model, and intervention and termination actions --- constitutes the primary
-methodological contribution. The PPO agent demonstrates its utility and
+These gaps are not isolated oversights; they reflect an incomplete progression
+along the path toward a deployable portfolio-level decision-support system.
+Figure~\ref{fig:maturity} situates this progression as three sequential steps.
+\textbf{Step~1} --- domain grounding --- is well established by the literature
+reviewed above: contract mechanics, EVM performance signals, S-curve
+expenditure profiles, and portfolio selection models collectively provide the
+inputs and boundary conditions that any operational governance model requires.
+\textbf{Step~2} --- tractable problem formulation --- is the gap. Bridging it
+requires a relaxation hierarchy: the governance problem must first be stated
+precisely under idealised assumptions (a deterministic MILP establishing a
+performance ceiling), then shown to be intractable under realistic stochastic
+assumptions (exponential scenario-tree growth), and finally reformulated into a
+tractable approximation (a CMDP solved by a policy-gradient agent). No existing
+work completes this hierarchy at the portfolio level.
+\textbf{Step~3} --- validated deployment within incumbent project management
+information systems such as Oracle Primavera~P6 --- remains future work,
+contingent on the tractable formulation that Step~2 must first provide.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance = 0.55cm,
+    box/.style    = {rectangle, rounded corners=4pt, minimum width=3.6cm,
+                      minimum height=1.05cm, align=center, font=\small},
+    sub/.style    = {rectangle, rounded corners=3pt, minimum width=2.8cm,
+                      minimum height=0.85cm, align=center, font=\footnotesize,
+                      draw=gray!60, fill=white},
+    arr/.style    = {->, thick, gray!70},
+    subarr/.style = {->, gray!50},
+  ]
+
+  %% ── Step 1 ──────────────────────────────────────────────
+  \node[box, fill=green!12, draw=green!50!black] (S1)
+    {\textbf{Step 1}\\Domain Grounding\\{\footnotesize\textit{established}}};
+
+  %% ── Step 2: place sub-nodes first, then fit frame around them ──
+  \node[sub, fill=orange!15, draw=orange!60,
+        right=1.6cm of S1] (L1)
+    {L1: Deterministic MILP\\{\scriptsize upper bound}};
+
+  \node[sub, fill=orange!20, draw=orange!70,
+        below=0.45cm of L1] (L2)
+    {L2: Stochastic Program\\{\scriptsize intractability}};
+
+  \node[sub, fill=blue!20, draw=blue!60,
+        below=0.45cm of L2] (L3)
+    {\textbf{L3: CMDP + PPO}\\{\scriptsize \textbf{this work}}};
+
+  \draw[subarr] (L1.south) -- (L2.north);
+  \draw[subarr] (L2.south) -- (L3.north);
+
+  %% ── Container drawn around the three sub-nodes ──────────
+  \begin{scope}[on background layer]
+    \node[draw=blue!50!black, fill=blue!7, rounded corners=5pt,
+          inner sep=10pt,
+          fit=(L1)(L2)(L3),
+          label={[font=\small\bfseries, text=blue!50!black]
+                  above:Step 2 \quad Tractable Formulation}]
+      (S2frame) {};
+  \end{scope}
+
+  %% ── Step 3 ──────────────────────────────────────────────
+  \node[box, fill=gray!10, draw=gray!50,
+        right=1.6cm of S2frame] (S3)
+    {\textbf{Step 3}\\PMIS Deployment\\{\footnotesize\textit{future work}}};
+
+  %% ── Main arrows ─────────────────────────────────────────
+  \draw[arr] (S1.east)      -- (S2frame.west);
+  \draw[arr] (S2frame.east) -- (S3.west);
+
+  %% ── "Relaxation hierarchy" brace label ──────────────────
+  \draw [decorate, decoration={brace, amplitude=5pt, mirror},
+          black!70]
+    ([xshift=-2pt]L1.north west) -- ([xshift=-2pt]L3.south west)
+    node [midway, left=10pt, font=\small\itshape, text=black!80, align=right]
+      {relaxation\\hierarchy};
+
+\end{tikzpicture}
+\caption{Solution maturity progression toward deployable portfolio-level budget
+  allocation.}
+\label{fig:maturity}
+\end{figure}
+
+The present work addresses all three gaps and completes Step~2 of this
+progression through the relaxation hierarchy described above and developed
+formally in Section~\ref{sec:problem_formulation}. The Gymnasium-compatible
+CMDP environment --- with parameterisable contract mechanics, stochastic
+performance model, and intervention and termination actions --- constitutes the
+primary methodological contribution. The PPO agent demonstrates its utility and
 provides the basis for empirical evaluation against classical OR baselines in
 Section~\ref{sec:experiments}.
 
