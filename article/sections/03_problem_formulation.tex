@@ -34,7 +34,7 @@ is fixed, commitments are signed, and the decision-maker exercises a single
 lever --- the budget $x_{i,t}$ directed to each active project $i$ at each
 discrete period $t$. All outcomes of interest (milestone achievement, cash
 balance, schedule adherence, termination) flow through this allocation decision.
-Portfolio selection is treated as exogenous \cite{archer1999project}.
+Portfolio selection is treated as exogenous \cite{Archer1999}.
 
 \paragraph{Structural assumptions.}
 Four choices underlie the entire formulation.
@@ -51,7 +51,7 @@ reporting, payment certification, performance review).
 (iv)~\emph{FIDIC contract mechanics}: the milestone payment structure, advance
 payment and recovery, retention, and termination settlement are parameterized
 consistently with FIDIC Red, Yellow, and Silver Book forms
-\cite{fidic2017silver}; all contract-specific quantities are calibrated
+\cite{FIDIC2017}; all contract-specific quantities are calibrated
 parameters, not fixed constants.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -91,7 +91,7 @@ parameters, not fixed constants.
 Tables~\ref{tab:params-schedule-contract} and~\ref{tab:params-cost-penalty}
 list all project parameters, fixed at commitment. The planned cumulative
 expenditure fraction follows a normalized S-curve
-\cite{kenley1986relationship,barraza2004probabilistic} parameterized by
+\cite{Kenley2009,barraza2004probabilistic} parameterized by
 $(a_i,b_i)$:
 \[
   P_{i,t}^{\mathrm{plan}} = F_i(\tau_{i,t}^c) = I_{\tau_{i,t}^c}(a_i, b_i),
@@ -240,7 +240,7 @@ value $\bar{\eta}_{i,t}$ (equal to unity under nominal plan); at Levels~2--3
 it is a stochastic primitive realized only after $x_{i,t}$ is committed.
 
 \paragraph{Contractual cash-flow mechanics.}
-Payment inflows follow FIDIC mechanics \cite{fidic2017silver}. At initiation
+Payment inflows follow FIDIC mechanics \cite{FIDIC2017}. At initiation
 ($t = s_i$), the advance payment $A_i = \alpha_i \cdot CP_i$ is received.
 Milestone $j$ is certified at the first $t$ with
 $P_{i,t}^{\mathrm{actual}} \geq \theta_{i,j}$; the net payment (after
@@ -276,7 +276,7 @@ Schedule adherence is priced at every period:
 \end{equation}
 The penalty is symmetric ($|\delta_{i,t}|$, not $\max\{0,-\delta_{i,t}\}$):
 both lag and acceleration are penalized, discouraging budget-pushing that risks
-quality degradation \cite{merrow2011industrial}. The cap $\Lambda_i \cdot CP_i$
+quality degradation \cite{Merrow2011}. The cap $\Lambda_i \cdot CP_i$
 mirrors the contractual delay-penalty ceiling under FIDIC terms.
 
 \paragraph{Termination conditions and settlement.}
