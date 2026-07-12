@@ -1,108 +1,315 @@
-% ⚠️ needs the updating according to the latest position of the the 
-% project portfolio selection extension and 
-% generalization of the projects across all industries 
-% problem formulation to be included
+% ============================================================
+%  SECTION 1 — INTRODUCTION
+% ============================================================
 
-\subsubsection{Project definition}
+\section{Introduction}
+\label{sec:introduction}
 
-project is a style of getting things done.
-project is a temporary endeavor with a defined beginning and end.⚠️ cite PMBOK
-from your neighborhood rapair shop to the power plant construction, there is an endevour for creating product or service.
-there must be a mutually aggreed upon scope for work.
-there must be a deadline defined for the project.
-we must plan the work ahead to get an estimate of the cost and the time required to complete the project.
-we must then allocate the resources to the project to get the project completed on time and within budget.
-we must then monitor the project to ensure that it is completed on time and within cost limits.
-we must then close the project and get the project completed on time and within cost limits.
+% ------------------------------------------------------------
+\subsection{Motivation and Problem Context}
+\label{subsec:motivation}
+% ------------------------------------------------------------
 
-now for an organization using this framework, they surely have multiple projects in their portfolio.
-they must then allocate the resources to the projects to get the projects completed on time and within cost limits.
-they must then monitor the projects to ensure that they are completed on time and within cost limits.
-they must then close the projects and get the projects completed on time and within cost limits.
+Large infrastructure and engineering projects routinely overrun their budgets
+and miss their schedules. Across a database of thousands of projects spanning
+seven decades, \citet{Flyvbjerg2003} document that cost overruns are the norm
+rather than the exception, with mean overruns exceeding 20\% in transportation
+infrastructure and reaching 70\% in large-scale IT systems.
+\citet{Merrow2011} reports that fewer than 40\% of industrial megaprojects
+achieve their approved cost and schedule targets. These figures describe
+individual projects. When a portfolio of such projects is executed
+simultaneously under a single governing body and a shared capital commitment,
+the risks compound: a cash-flow shortfall on one project propagates immediately
+to others, and the decision of how much budget to direct to each project at
+each period can determine whether the portfolio as a whole succeeds or fails.
 
-but this approach at the high level board member anual budget allocation and strategic meeting has no established solution framework, not even a software to record the proper data.
+Despite this, the formal treatment of the portfolio-level budget allocation
+problem as a sequential decision-making problem is conspicuously absent from
+the project portfolio management literature. Research attention has been
+concentrated at the \emph{selection} stage --- which projects to include in the
+portfolio --- while the \emph{operational governance} stage --- how to manage
+the portfolio of committed projects through to completion --- has received
+comparatively little analytical treatment
+\citep{Archer1999, Cooper2001, Turner2014}. The present work fills this gap.
 
-there have been softwares introduced for the project management such as Microsoft Project, Primavera, and others.
-but these softwares are not designed to handle the complexity of the project portfolio management.
-they are designed to handle the complexity of the project management.
-they demonstrated features to capture the temporal progress of the projects and earned value metrics.
-they don't have the reasoning model to intelligently monitor projects.
-they just capture data.
-they are data entry forms. the first steps to digital maturity for management.
+We consider a portfolio of $n$ projects, each governed by a bilateral contract
+consistent with FIDIC forms \citep{FIDIC2017}, executing concurrently under a
+fixed capital commitment. A portfolio manager --- a board, investment committee,
+or programme director --- exercises a single recurring decision at each discrete
+planning period: how much budget to allocate to each active project. All
+strategic and operational outcomes of interest flow through this allocation
+decision. The formal problem is to find the allocation policy that maximises
+discounted net cash flow across the portfolio horizon while satisfying hard
+liquidity constraints, respecting contract mechanics, and managing the options
+to intervene in underperforming projects or terminate them entirely.
 
-for the busy board member at headqurters managing different construction sites all over the contry and even abroad, these project control softwares just don't answer the need to give optimized budgeting solution.
+% ------------------------------------------------------------
+\subsection{The Project Management Decision Hierarchy}
+\label{subsec:hierarchy}
+% ------------------------------------------------------------
 
-there is some other functionality needed to be added on top of the management systems, to monitor the stream of data and get a complete view of the portfolio state and take budgeting allocation decisions.
+To situate the present contribution precisely, it is useful to distinguish the
+three nested decision layers that constitute project portfolio management
+\citep{PMI2017}.
 
-even if somehow the company has the world's best portfolio manager he must have about 40 years of portfolio management, this is not comparable to the machine learning algorithm that could learn all the data for all the projects for decades of data.
-to be able to learn the data and generalize over the different states and environments, different macro and micro conditions.
+\paragraph{Portfolio selection.}
+The selection problem asks: given a candidate set of projects and a capital
+budget, which subset should the organisation commit to? This is a combinatorial
+optimisation problem studied extensively in the literature using mean-variance
+portfolio theory \citep{Markowitz1952, Eilat2006}, multi-criteria decision
+analysis \citep{Martinsuo2007}, and metaheuristic methods \citep{Zhang2020}.
+The present work treats selection as an exogenous input: the portfolio of
+committed projects is fixed at the start of the planning horizon, and contracts
+have already been signed. This decomposition is consistent with the two-stage
+governance model of \citet{Turner2014} and the PMI Standard for Portfolio
+Management \citep{PMI2017}.
 
-we propose a configurable custome environment for the portfolio.
-user could configure the environment according to best fit to their experince and history,
-and use that environment to train an RL agent to propose the best allocations across the projects at each timestep.
+\paragraph{Portfolio governance.}
+Once a portfolio is committed, the governing body must monitor and control
+execution. This is the layer at which the present work operates. The governing
+body does not manage individual projects directly --- that is the contractor's
+role --- but it does control the budget directed to each project at each period,
+and it holds two options: triggering a management intervention to accelerate
+recovery on an underperforming project, and exercising the contractual
+termination clause if a project's performance has deteriorated beyond
+recoverable bounds. These three instruments --- allocation, intervention, and
+termination --- constitute the full action space of the portfolio manager.
 
-we configure the environment according to our data providers and train RL agent on it.
-this RL agent's performance is compared to the conventional OR baseline solutions for proving efficiency.
-we stress test the environment to demonstrait the frameworks capability to include the most giving and the most punishing states and dynamics for the portfolio manager.
-the agent's superiority relative to the baselines through the stress testing prove the model's robustness.
+\paragraph{Project execution.}
+At the project level, the contractor controls workforce, materials, equipment,
+and subcontracting. The portfolio manager observes the outcomes of these
+decisions --- cumulative progress, earned value, payment certifications ---
+but does not control them. The efficiency with which a budget allocation is
+converted into physical progress is determined at the project level and is
+uncertain from the portfolio manager's perspective.
 
+This hierarchy is central to the modelling architecture: the formulation
+developed in Section~\ref{sec:problem_formulation} lives entirely at the
+portfolio governance layer, with project execution dynamics appearing only as
+parameters (deterministic at Level~1, stochastic at Levels~2 and~3).
 
+% ------------------------------------------------------------
+\subsection{Contract Mechanics and Cash-Flow Structure}
+\label{subsec:contract_mechanics}
+% ------------------------------------------------------------
 
+The financial interaction between the portfolio manager (as client) and each
+contractor is governed by the contract. This paper parameterises all contract
+mechanics consistently with FIDIC Red, Yellow, and Silver Book forms
+\citep{FIDIC2017}, which represent the dominant international framework for
+EPC contracting. Understanding the cash-flow structure is essential to
+understanding the optimisation problem; this subsection provides that
+foundation.
 
-\subsection{Motivation and Context}
+\paragraph{Milestone-based payment.}
+Rather than paying contractors on a time-basis, FIDIC contracts structure
+payment around certified milestones: discrete progress thresholds at which the
+client verifies that a specified scope fraction has been physically completed
+and releases the corresponding payment. The gross payment at milestone $j$ is a
+contractually fixed fraction $\phi_{i,j}$ of the contract price $CP_i$.
+Because payment is contingent on certified progress, the timing of cash
+inflows is a function of the contractor's actual performance and, through the
+portfolio manager's allocation decisions, of the budget directed to the project.
+This creates the fundamental linkage between allocation decisions and cash
+inflows that makes the problem non-trivial.
 
-Project portfolio management (PPM) is a fundamental organizational capability for maintaining competitive advantage and achieving strategic objectives. In project-based industries, portfolio decisions determine which initiatives are selected, prioritized, and funded under limited resources, conflicting criteria, and uncertain execution outcomes \citep{archer1999integrated,cooper2001portfolio,martinsuo2013project,killen2008project}. These decisions become particularly critical in large-scale engineering environments, where organizations must coordinate multiple concurrent projects while balancing strategic value, financial feasibility, schedule pressure, and risk exposure.
+\paragraph{Advance payment and progressive recovery.}
+At project initiation, the client disburses an advance payment $A_i =
+\alpha_i \cdot CP_i$ to the contractor. This is a timing instrument: it
+reduces the contractor's early working-capital burden and is recovered
+progressively through deductions from subsequent milestone payments. The
+recovery is proportional to milestone payment weights, ensuring the full advance
+is recovered by final completion. The advance payment creates an immediate cash
+outflow at project start and a series of reduced inflows at each milestone,
+both of which must be tracked in the portfolio cash balance.
 
-In the Engineering, Procurement, and Construction (EPC) sector, especially in oil and gas projects, portfolio budgeting is complicated by heterogeneous contract structures, long project durations, capital intensity, and uncertain cash-flow behavior \citep{merrow2011industrial,cui2010systems,kenley1986construction,kaka1993towards}. Budget allocation must account for both cash outflows associated with procurement, labor, equipment, and subcontractors, and delayed cash inflows tied to contractual milestones and client approvals. Consequently, portfolio budgeting is not merely a one-time allocation problem; it is a sequential decision process in which current funding choices influence future project progress, liquidity conditions, and portfolio-level performance.
+\paragraph{Retention.}
+A fraction $\rho_i$ of each milestone payment is withheld by the client as a
+performance bond. The accumulated retention $R_i^{\mathrm{ret}} = \rho_i
+\cdot CP_i$ is released in full upon project completion. Retention creates a
+structural completion incentive embedded in the payment mechanics: the larger
+the retention fraction, the more strongly the cash flow profile rewards
+completion over partial delivery. In the formulation, retention release enters
+the portfolio cash balance as a lump inflow in the period the final milestone
+is certified.
 
-This challenge is amplified by persistent uncertainty in project execution. Large industrial and infrastructure projects frequently experience delays and cost overruns, and such deviations can propagate through both schedules and financial plans \citep{flyvbjerg2002underestimating,flyvbjerg2003underestimating,love2013probability,love2016relationship}. Earned value indicators such as the Schedule Performance Index (SPI) and Cost Performance Index (CPI) provide a compact representation of execution performance and can support project monitoring and control \citep{fleming2016earned,lipke2009prediction,vanhoucke2012integrated}. However, these indicators also underscore the difficulty of making reliable budget allocation decisions when future project states, payment realizations, and performance deviations remain uncertain. Therefore, portfolio budgeting under uncertain cash flows requires methods that can reason across multiple projects, multiple time periods, and stochastic state transitions.
+\paragraph{Earned value management as a performance signal.}
+The Earned Value Management framework \citep{Fleming2010} provides the
+diagnostic vocabulary used to monitor contractor performance. The Cost
+Performance Index $\mathrm{CPI}_{i,t} = \text{BCWP}_{i,t} /
+\text{ACWP}_{i,t}$ measures how much budgeted value has been earned per unit
+of actual expenditure; values below unity indicate cost overrun. The Schedule
+Performance Index $\mathrm{SPI}_{i,t} = \text{BCWP}_{i,t} /
+\text{BCWS}_{i,t}$ measures actual progress relative to planned progress;
+values below unity indicate schedule lag \citep{Fleming2010}. In the present
+formulation, these indices are observable state variables that inform the
+allocation decision; their stochastic dynamics at Levels~2 and~3 are
+calibrated from empirical EVM datasets \citep{Acebes2015, Batselier2017}.
 
-The broader literature on project portfolio management similarly characterizes such environments by large data volumes, multiple decision criteria, resource constraints, and the need for investment optimization. These characteristics are consistent with prior research on project portfolio selection, project scheduling under uncertainty, and construction cash-flow forecasting \citep{gutjahr2013project,doerner2006pareto,khanzadi2018integrating,golenko1997stochastic,ballesteros2015resource,barraza2007probabilistic}. Taken together, they motivate the development of intelligent decision-support methods when static or manually driven budgeting approaches become insufficient.
+\paragraph{S-curve expenditure profiles.}
+The planned expenditure of a construction or engineering project follows a
+characteristic sigmoid profile over its planned duration: slow ramp-up in the
+mobilisation phase, rapid expenditure in the peak execution phase, and tapering
+in the close-out phase \citep{Kenley2009}. This profile is modelled using the
+regularized incomplete Beta function $F_i(\tau) = I_\tau(a_i, b_i)$, whose
+shape parameters $(a_i, b_i)$ are calibrated from project data. The planned
+cumulative expenditure fraction at normalised time $\tau_{i,t}$ provides the
+baseline against which actual progress is measured throughout the formulation.
 
-\subsection{Research Gap}
+\paragraph{Termination.}
+FIDIC contracts provide for client-initiated termination when the contractor
+has materially breached the contract --- most commonly through sustained failure
+to meet schedule obligations. Termination triggers a settlement payment based
+on the value of work completed at the termination date, net of any outstanding
+advance recovery obligation. In the present model, termination is a deliberate
+decision by the portfolio manager, not an exogenous event: it is triggered by
+the joint satisfaction of a cumulative penalty threshold and a sustained
+allocation floor, and its timing affects the portfolio cash balance through the
+settlement payment $R_i^{\mathrm{term}}$, which may be positive or negative
+depending on the advance recovery position. Real options theory
+\citep{Dixit1994, Huchzermeier2001} provides the theoretical basis for
+treating termination as the exercise of an abandonment option.
 
-A substantial body of literature has addressed project portfolio selection, prioritization, and scheduling through operations research, multi-criteria decision-making, stochastic programming, and metaheuristic optimization \citep{archer1999integrated,liesio2007portfolio,klerides2019stochastic,elshaer2014genetic}. These methods provide valuable structure for complex decision problems, but they are often less suitable when portfolio budget allocation must respond to evolving project conditions under uncertainty. In many existing formulations, project cash flows, budget requirements, and performance trajectories are treated as fixed inputs, deterministic plans, or exogenous scenarios. This limits their ability to capture the interaction between current allocation decisions and future project and financial states.
+% ------------------------------------------------------------
+\subsection{The Three-Level Modelling Arc}
+\label{subsec:three_levels}
+% ------------------------------------------------------------
 
-A central limitation in this context is that portfolio budgeting in EPC environments is inherently sequential. Budget releases made at one time step affect project execution, milestone realization, cash availability, and subsequent allocation opportunities. Yet much of the existing literature approaches project portfolio decisions as static optimization, stage-wise planning, or scheduling problems rather than as a learned sequential policy problem under uncertainty. As a result, the adaptive linkage between observed portfolio state and subsequent allocation action remains insufficiently modeled.
+The formulation of Section~\ref{sec:problem_formulation} proceeds across three
+levels of increasing generality. This subsection provides the conceptual
+roadmap; each level is developed formally in its corresponding subsection.
 
-Recent advances in machine learning and reinforcement learning provide a promising direction for this class of problems. Reinforcement learning is specifically designed for sequential decision-making under uncertainty and has demonstrated value in operations, scheduling, and process control settings \citep{puterman1994markov,sutton2018reinforcement,wauters2016learning,chen2018reinforcement,hubbs2020deep,bengio2021machine}. Nevertheless, its application to project portfolio budgeting under uncertain cash flows remains limited. There is still a need for a reproducible framework that can integrate project-level uncertainty, cash-flow timing, milestone-based payments, and adaptive resource allocation within a portfolio-level sequential decision architecture.
+\paragraph{Level~1: Deterministic full-foresight MILP.}
+The natural starting point for any optimisation problem is its deterministic
+version: assume all uncertain parameters are known, and find the optimal
+decision sequence. In the portfolio budget allocation problem, the key
+uncertain parameter is the budget-to-progress efficiency $\eta_{i,t}$ ---
+the scalar that determines how much physical progress a given budget allocation
+yields in each period. If $\eta_{i,t}$ is treated as a known constant
+$\bar{\eta}_{i,t}$, the progress recursion becomes a deterministic linear map
+from budget allocations to physical outcomes, and the entire optimisation
+problem collapses to a Mixed-Integer Linear Program (MILP).
 
-A further practical constraint is data availability. Detailed industrial project portfolio data are typically confidential and difficult to release publicly, which creates a barrier to reproducible experimentation. As a result, the literature lacks sufficiently transparent benchmark environments for testing adaptive portfolio budgeting policies. This gap motivates the use of literature-calibrated synthetic data as a practical foundation for developing and evaluating learning-based decision-support systems \citep{jordon2022synthetic,xu2019modeling}.
+The MILP is not proposed as a practical solution method --- no real portfolio
+manager has advance knowledge of contractor efficiency trajectories. Rather,
+it serves two purposes. First, its optimal value $Z^*_{\mathrm{L1}}$ is a
+provable upper bound on the performance of any causal policy operating under
+uncertainty: since the MILP optimises with perfect foresight, it can do no
+worse than any policy that must make decisions without knowing future outcomes.
+Second, it provides an LP foundation from which the stochastic extensions of
+Levels~2 and~3 are constructed by systematic relaxation of the deterministic
+assumption.
 
-\subsection{Proposed Approach and Contributions}
+The MILP requires two structural choices that are standard in combinatorial
+optimisation. Milestone certification is a binary event --- a milestone is
+either certified or not --- captured by introducing binary decision variables
+$u_{i,j,t} \in \{0,1\}$. The symmetric running deviation penalty involves an
+absolute value and a cap, both of which are linearised by introducing auxiliary
+variables $d_{i,t}^+, d_{i,t}^- \geq 0$ for the positive and negative parts of
+the deviation. These linearisations are exact: no approximation is introduced.
 
-To address these gaps, this paper develops a deep reinforcement learning framework for optimal project portfolio budgeting under uncertain cash flows. The problem is modeled as a sequential decision process in which an agent observes the evolving state of a project portfolio and allocates constrained financial resources over time. The state representation incorporates project-level and portfolio-level information, including budget at completion, planned duration, contractual cash-flow patterns, performance indicators, milestone-based payment structures, and liquidity-related variables.
+\paragraph{Level~2: Stochastic extension and intractability.}
+When $\eta_{i,t}$ is replaced by a random variable --- as it must be to reflect
+reality --- the MILP becomes a multi-stage stochastic program
+\citep{Birge2011}. The scenario-tree representation of this program grows
+exponentially: if $\eta_{i,t}$ takes $K$ discrete values at each of $H$
+periods for each of $n$ projects, the scenario tree has $K^{nH}$ leaf nodes.
+For a portfolio of ten projects over a 24-month horizon with five efficiency
+scenarios per project per period, this is $5^{240}$ leaf nodes --- a number
+that renders exact stochastic programming computationally intractable. This is
+not merely a computational inconvenience; it is the fundamental barrier that
+motivates the Level~3 reformulation.
 
-The framework is designed to learn an allocation policy directly from repeated interaction with a stochastic simulation environment. Rather than relying on predefined deterministic decision rules or repeated re-optimization procedures, the agent learns how present allocation choices affect future portfolio states and cumulative performance over time. To learn this policy, the study employs deep reinforcement learning, with Proximal Policy Optimization (PPO) as the primary training algorithm \citep{schulman2017proximal}, consistent with the broader reinforcement-learning literature on stochastic control and policy optimization \citep{sutton2018reinforcement,haarnoja2018soft}.
+\paragraph{Level~3: Constrained MDP and RL agent.}
+The Constrained Markov Decision Process \citep{Altman1999} provides the
+tractable reformulation. Rather than optimising over all scenario-tree paths
+simultaneously, the CMDP formalises the problem as a sequential interaction
+between a policy and an environment: at each period, the policy observes the
+current portfolio state, selects a budget allocation, and the environment
+transitions stochastically to the next state. The key insight is that the
+CMDP does not require explicit scenario enumeration: the policy is optimised
+through repeated interaction with the environment, using sampled trajectories
+rather than exhaustive scenario trees.
 
-After training, the learned policy can also be deployed within the simulation environment to generate a forward policy rollout over a specified horizon, such as the next 12 time steps, in order to illustrate plausible portfolio evolution and corresponding recommended allocations. This forward policy rollout should be interpreted as a simulated policy-driven trajectory rather than as a realized future observation. Its purpose is to demonstrate the behavioral implications of the learned allocation policy under the modeled environment dynamics until actual future project states become available.
+The mapping from MILP to CMDP is exact in structure. The decision variables
+$\{x_{i,t}\}$ become the action space; the state variables $(P_{i,t}^{\rm
+actual}, E_{i,t}, \mathrm{CPI}_{i,t}, \mathrm{SPI}_{i,t}, \delta_{i,t},
+\Delta_{i,t}^{\rm pen}, \mathrm{status}_{i,t}, B_t)$ become the observation
+space; the budget constraint becomes the constrained action space; and the
+objective function becomes the reward signal. The CMDP is implemented as a
+configurable Gymnasium-compatible environment \citep{Towers2024}, and a
+Proximal Policy Optimisation agent \citep{Schulman2017} is trained on it using
+domain randomisation \citep{Tobin2017} to ensure generalisation across project
+types and contract structures.
 
-Because real EPC portfolio datasets are typically inaccessible due to confidentiality restrictions, the framework uses a literature-calibrated synthetic data generation process. This allows reproducible experimentation while preserving consistency with known characteristics of project cash flows, schedule variability, and portfolio structure. The synthetic environment is intended as a research testbed that can later be refined and calibrated using anonymized organizational data.
+% ------------------------------------------------------------
+\subsection{The Operations Research Lineage}
+\label{subsec:or_lineage}
+% ------------------------------------------------------------
 
-The main contributions of this paper are as follows:
+The present work is situated squarely within the Industrial Engineering and
+Operations Research tradition. The mathematical tools employed ---
+mixed-integer linear programming, stochastic programming, dynamic programming,
+and Markov decision processes --- share a common intellectual lineage that
+traces directly to Dantzig's simplex method \citep{Dantzig1963}, Bellman's
+principle of optimality \citep{Bellman1957}, and the stochastic programming
+framework of \citet{Dantzig1955}.
 
-\begin{enumerate}
-    \item \textbf{A sequential formulation of project portfolio budgeting:} The study formulates EPC portfolio budgeting under uncertain cash flows as a dynamic decision problem in which allocations, project progress, and liquidity conditions evolve jointly over time.
+The MDP formalisation used in Level~3 is, mathematically, a computationally
+tractable approach to solving a Bellman equation in a high-dimensional state
+space. The state space in the present problem --- $7n + 1$ continuous and
+categorical variables for a portfolio of $n$ projects --- is too large for
+tabular dynamic programming and too structured for model-free value-iteration
+methods, but well-suited to policy-gradient methods that learn a parameterised
+policy directly. PPO \citep{Schulman2017} is the policy-gradient algorithm of
+choice for its stability properties in continuous action spaces and its
+established use in operations management domains \citep{Giannoccaro2002,
+Peng2021}.
 
-    \item \textbf{A custom reinforcement learning environment for portfolio budgeting:} The paper develops an environment that captures project-level uncertainty, cash inflows and outflows, milestone-based payments, and portfolio-level financial constraints.
+The reinforcement learning agent is therefore not presented as a departure from
+the OR tradition, but as its continuation into the regime where the curse of
+dimensionality makes analytical dynamic programming intractable. The Level~1
+MILP and Level~2 stochastic program are not straw men; they are the canonical
+OR solutions to the deterministic and stochastic versions of the problem,
+respectively, and both serve as baselines against which the Level~3 agent is
+evaluated.
 
-    \item \textbf{A deep reinforcement learning policy for adaptive allocation:} The framework trains an agent to learn budget allocation decisions directly from stochastic interaction with the environment.
+% ------------------------------------------------------------
+\subsection{Practical Deployment Context}
+\label{subsec:deployment}
+% ------------------------------------------------------------
 
-    \item \textbf{A forward policy rollout capability for trajectory demonstration:} The study shows how the trained policy can be used to simulate plausible future portfolio trajectories and recommended allocations over a finite horizon.
+Incumbent project management information systems --- most prominently Oracle
+Primavera P6 and Microsoft Project --- provide rich project-level schedule and
+cost tracking but lack a portfolio-level optimisation layer. The portfolio
+manager's recurring budget allocation decision is currently supported, at best,
+by spreadsheet models, earned value dashboards, and expert judgement. The
+environment developed in Level~3 constitutes the analytical engine that such a
+portfolio-level decision-support module would require: it integrates contract
+mechanics, performance uncertainty, and multi-project cash-flow dynamics in a
+single configurable framework. This positions the contribution not only as a
+theoretical advance but as a step toward a deployable module for portfolio
+management information systems, a direction explicitly identified as a priority
+in the project management software literature \citep{PMI2017}.
 
-    \item \textbf{A literature-calibrated synthetic data framework:} The study provides a reproducible synthetic portfolio-generation procedure to address the industrial data confidentiality barrier.
-\end{enumerate}
+% ------------------------------------------------------------
+\subsection{Paper Organisation}
+\label{subsec:organisation}
+% ------------------------------------------------------------
 
-% PLACEHOLDER AFTER TRAINING:
-% Insert the main empirical performance summary here.
-% Example:
-% Experimental results show that the proposed PPO-based policy outperformed benchmark allocation strategies in terms of [INSERT METRICS].
-
-% PLACEHOLDER AFTER FORWARD POLICY ROLLOUT ANALYSIS:
-% Insert trajectory-demonstration findings here.
-% Example:
-% Forward policy rollout analysis over a 12-step horizon further illustrates how the trained agent adapts allocations under changing portfolio conditions.
-
-\subsection{Paper Organization}
-
-The remainder of this paper is organized as follows. Section~\ref{sec:literature} reviews prior research on project portfolio management, project control under uncertainty, and reinforcement learning for sequential decision-making. Section~\ref{sec:problem} formulates the project portfolio budgeting problem under uncertain cash flows as a sequential stochastic decision problem. Section~\ref{sec:methodology} presents the proposed solution methodology, including the synthetic data generation framework, cash-flow and uncertainty modeling, reinforcement learning environment design, and PPO-based training procedure. Section~\ref{sec:results} reports the computational results and analysis, including benchmark comparisons, robustness assessment, and forward policy rollout analysis. Finally, Section~\ref{sec:conclusion} concludes the paper and outlines future research directions.
+The remainder of the paper is organised as follows.
+Section~\ref{sec:litreview} reviews the four literature streams on which the
+work draws: project management foundations, project portfolio management and
+selection, PPM budgeting and cash-flow modelling, and reinforcement learning
+for sequential resource allocation.
+Section~\ref{sec:problem_formulation} develops the three-level problem
+formulation: the deterministic MILP (Level~1), the stochastic extension and
+intractability argument (Level~2), and the CMDP reformulation and
+Gymnasium-compatible environment (Level~3).
+Section~\ref{sec:experiments} presents the empirical evaluation: calibration
+of environment parameters, training protocol, and comparison of the PPO agent
+against the Level~1 MILP oracle, a two-stage stochastic program, and a
+rule-based heuristic.
+Section~\ref{sec:conclusion} concludes with implications for portfolio
+management practice, limitations of the framework, and directions for future
+research including integration with incumbent PMIS tools.
