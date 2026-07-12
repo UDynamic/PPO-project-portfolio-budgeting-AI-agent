@@ -258,10 +258,10 @@ Second, existing stochastic models of project cash-flow uncertainty operate at
 the individual project level and do not feed uncertainty upward into a
 portfolio-level decision architecture with a shared budget constraint.
 
-Third, the specific operational levers of a portfolio governance board ---
-budget allocation timing, performance intervention, and project termination ---
-have not been jointly modelled as the action space of a single sequential
-decision-maker in a constrained optimisation framework.
+Third, the endogenous mechanics of project failure --- the joint modelling of
+cumulative schedule penalty, contractual floor allocation, and termination
+settlement --- have not been embedded within a portfolio-level sequential
+decision framework in which budget allocation is the sole control variable.
 
 These gaps are not isolated oversights; they reflect an incomplete progression
 along the path toward a deployable portfolio-level decision-support system.
@@ -350,7 +350,7 @@ The present work addresses all three gaps and completes Step~2 of this
 progression through the relaxation hierarchy described above and developed
 formally in Section~\ref{sec:problem_formulation}. The Gymnasium-compatible
 CMDP environment --- with parameterisable contract mechanics, stochastic
-performance model, and intervention and termination actions --- constitutes the
+performance model and termination --- constitutes the
 primary methodological contribution. The PPO agent demonstrates its utility and
 provides the basis for empirical evaluation against classical OR baselines in
 Section~\ref{sec:experiments}.
