@@ -358,37 +358,41 @@ Section~\ref{sec:experiments}.
 \begin{table}[htbp]
 \centering
 \caption{Representative literature mapped against modelling dimensions of the
-  present framework.
+  present framework. \textit{Decision type}: S\,=\,selection,
+  Sc\,=\,scheduling, B\,=\,budgeting.
   \checkmark~=~fully addressed;\; $\circ$~=~partially addressed;\;
   {--}~=~not addressed.}
 \label{tab:litmap}
-\small
 \renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccccc}
 \hline
 \textbf{Work} &
   \textbf{Portfolio} &
+  \textbf{Decision} &
   \textbf{Sequential} &
-  \textbf{Cash-flow} &
+  \textbf{Stochastic} &
   \textbf{Contract} &
-  \textbf{Termination} &
-  \textbf{RL} \\
+  \textbf{Termination} \\
   &
   \textbf{level} &
+  \textbf{type} &
   \textbf{decisions} &
-  \textbf{uncertainty} &
+  \textbf{cash flows} &
   \textbf{mechanics} &
-  \textbf{option} &
-  \textbf{agent} \\
+  \textbf{settlement} \\
 \hline
-\citet{Kenley2009}        & --         & --         & $\circ$    & $\circ$    & --         & -- \\
-\citet{Eilat2006}         & \checkmark & --         & --         & --         & --         & -- \\
-\citet{Acebes2015}        & --         & $\circ$    & \checkmark & --         & --         & -- \\
-\citet{Huchzermeier2001}  & $\circ$    & \checkmark & \checkmark & --         & \checkmark & -- \\
-\citet{Lova2000}          & \checkmark & --         & --         & --         & --         & -- \\
-\citet{Peng2021}          & --         & \checkmark & $\circ$    & --         & --         & \checkmark \\
-\citet{Tassel2023}        & --         & \checkmark & --         & --         & --         & \checkmark \\
-\textbf{Present work}     & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\citet{Eilat2006}         & \checkmark & S  & --         & --         & --         & -- \\
+\citet{klerides2019stochastic} & \checkmark & S  & --         & $\circ$    & --         & -- \\
+\citet{Huchzermeier2001}  & $\circ$    & S  & \checkmark & \checkmark & --         & \checkmark \\
+\citet{Kenley2009}        & --         & B  & --         & $\circ$    & $\circ$    & -- \\
+\citet{Acebes2015}        & --         & B  & $\circ$    & \checkmark & --         & -- \\
+\citet{Lova2000}          & \checkmark & Sc & --         & --         & --         & -- \\
+\citet{Peng2021}          & --         & Sc & \checkmark & $\circ$    & --         & -- \\
+\citet{Tassel2023}        & --         & Sc & \checkmark & --         & --         & -- \\
+\textbf{Present work}     & \checkmark & \textbf{B}  & \checkmark & \checkmark & \checkmark & \checkmark \\
 \hline
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
