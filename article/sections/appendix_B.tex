@@ -1,156 +1,142 @@
-\subsection{Complete Parameter Tables}
-
-This appendix provides comprehensive parameter tables for all model components, with literature citations and calibration details.
-
-\subsubsection{Portfolio Composition Parameters}
-
-\begin{table}[h]
+The following flow diagram illustrates the systematic literature
+search and screening process following the PRISMA 2020 guidelines
+\cite{Page2021}.  % replace or remove if not using BibTeX
+ 
+\vspace{0.5cm}
+ 
+\begin{figure}[h!]
 \centering
-\small
-\caption{Portfolio Composition Model Parameters}
-\begin{tabular}{@{}lccl@{}}
-\toprule
-Parameter & Value & Unit & Source \\
-\midrule
-Domestic weight & 0.60 & fraction & Khanzadi et al. (2018) \\
-International weight & 0.40 & fraction & Khanzadi et al. (2018) \\
-Portfolio size min & 8 & projects & Merrow (2011), CII (2019) \\
-Portfolio size max & 18 & projects & Merrow (2011), CII (2019) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsubsection{Profit Margin Parameters}
-
-\begin{table}[h]
-\centering
-\small
-\caption{Profit Margin Distribution Parameters}
-\begin{tabular}{@{}lccl@{}}
-\toprule
-Parameter & Domestic & International & Source \\
-\midrule
-Mean $\mu$ & 0.10 & 0.14 & Khanzadi et al. (2018) \\
-Std Dev $\sigma$ & 0.012 & 0.030 & Khanzadi et al. (2018) \\
-Lower bound $a$ & 0.08 & 0.12 & Iran Budget Law \\
-Upper bound $b$ & 0.12 & 0.16 & Market analysis \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsubsection{Project BAC Parameters}
-
-\begin{table}[h]
-\centering
-\small
-\caption{Project BAC Lognormal Distribution}
-\begin{tabular}{@{}lcl@{}}
-\toprule
-Parameter & Value & Source \\
-\midrule
-$\mu_{\log}$ & 5.01 & Merrow (2011) \\
-$\sigma_{\log}$ & 0.69 & Merrow (2011) \\
-Median BAC & \$150M & Merrow (2011) \\
-Mean BAC & \$280M & Merrow (2011) \\
-Min BAC & \$50M & Industry practice \\
-Max BAC & \$5B & Industry practice \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsubsection{S-Curve Parameters}
-
-\begin{table}[h]
-\centering
-\small
-\caption{S-Curve Beta Distribution Base Parameters}
-\begin{tabular}{@{}lcl@{}}
-\toprule
-Parameter & Value & Source \\
-\midrule
-$\alpha_{\text{base}}$ & 2.5 & Cioffi (2005) \\
-$\beta_{\text{base}}$ & 2.0 & Cioffi (2005) \\
-Peak time $\tau^*$ & 0.60 & Kenley \& Wilson (1986) \\
-Size exponent & 0.15 & Barraza et al. (2007) \\
-Duration exponent & 0.12 & Barraza et al. (2007) \\
-Residual noise $\sigma$ & 0.10 & Calibrated \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsubsection{Performance Uncertainty Parameters}
-
-\begin{table}[h]
-\centering
-\small
-\caption{SPI and CPI Distribution Parameters}
-\begin{tabular}{@{}lcccl@{}}
-\toprule
-Parameter & SPI & CPI & Correlation & Source \\
-\midrule
-$\alpha$ & 2.8 & 3.2 & -- & Merrow (2011) \\
-$\beta$ & 2.2 & 1.8 & -- & Love et al. (2016) \\
-Lower bound & 0.3 & 0.5 & -- & Empirical range \\
-Upper bound & 1.3 & 1.2 & -- & Empirical range \\
-Mean & 0.86 & 0.87 & -- & Calibrated \\
-Std Dev & 0.18 & 0.14 & -- & Calibrated \\
-$\rho$(SPI, CPI) & -- & -- & 0.68 & Love et al. (2016) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsubsection{Duration Model Parameters}
-
-\begin{table}[h]
-\centering
-\small
-\caption{Project Duration Model Parameters}
-\begin{tabular}{@{}lcl@{}}
-\toprule
-Parameter & Value & Source \\
-\midrule
-$D_{\text{base}}$ & 24 months & Merrow (2011) \\
-$\text{BAC}_{\text{ref}}$ & \$150M & Merrow (2011) \\
-Scale exponent & 0.35 & Merrow (2011) \\
-Noise $\sigma_D$ & 0.15 & Calibrated \\
-Min duration & 12 months & Industry practice \\
-Max duration & 60 months & Industry practice \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsubsection{Milestone Payment Structure}
-
-\begin{table}[h]
-\centering
-\small
-\caption{Standard Milestone Payment Weights}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-Milestone & Progress Threshold & Payment Weight \\
-\midrule
-Advance & 0\% & 10\% \\
-Milestone 1 & 25\% & 20\% \\
-Milestone 2 & 50\% & 30\% \\
-Milestone 3 & 75\% & 30\% \\
-Final & 100\% & 10\% \\
-\bottomrule
-\end{tabular}
-\label{tab:milestone_weights}
-\end{table}
-
-\subsection{Validation Results}
-
-\textit{[To be completed: Statistical validation of generated instances against target distributions]}
-
-\subsubsection{Distributional Validation}
-
-\textit{[Tables showing sample statistics vs. target values for all key variables]}
-
-\subsubsection{Correlation Validation}
-
-\textit{[Correlation matrices comparing generated data to empirical values]}
-
-\subsubsection{Portfolio-Level Validation}
-
-\textit{[Aggregate statistics for generated portfolios]}
+\begin{tikzpicture}
+ 
+% ────────────────────────────────────────────────────────────
+%  All nodes use absolute coordinates so phase labels and
+%  their content boxes are always vertically centred together.
+%
+%  Main-flow boxes (col x=0):  id1, id2, sc1–sc4, inc1
+%  Phase labels   (col x=-5):  ph-id, ph-sc, ph-inc
+%  Exclusion boxes(col x=8.2): exc1–exc4
+% ────────────────────────────────────────────────────────────
+ 
+% ── Row y-positions ─────────────────────────────────────────
+%   id1  : y =  0
+%   id2  : y = -2.0
+%   sc1  : y = -4.2
+%   sc2  : y = -6.0
+%   sc3  : y = -7.8
+%   sc4  : y = -9.6
+%   inc1 : y = -11.8
+ 
+% ═══════════════════════════════════════════════════════════
+%  IDENTIFICATION
+% ═══════════════════════════════════════════════════════════
+ 
+% Phase label – vertically centred over id1 and id2
+% Centre of id1=0, centre of id2=-2.0  →  mid = -1.0
+\node[phase, minimum height=3.6cm] (ph-id) at (-5, -1.0)
+  {Identi-\\fication};
+ 
+\node[box] (id1) at (0, 0)
+  {Records identified from:\\
+   \textbf{Databases} (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\[1pt]
+   \footnotesize e.g.\ PubMed, Scopus, Web of Science, \ldots};
+ 
+\node[box] (id2) at (0, -2.0)
+  {Records identified from other sources:\\
+   \textbf{Registers / grey literature} (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\[1pt]
+   \footnotesize e.g.\ ClinicalTrials.gov, hand-searching, \ldots};
+ 
+\draw[arr] (id1.south) -- (id2.north);
+ 
+% ═══════════════════════════════════════════════════════════
+%  SCREENING
+% ═══════════════════════════════════════════════════════════
+ 
+% Phase label – centred over sc1(−4.2) through sc4(−9.6)  →  mid = −6.9
+\node[phase, minimum height=6.8cm] (ph-sc) at (-5, -6.9)
+  {Screening};
+ 
+\node[box] (sc1) at (0, -4.2)
+  {Records after duplicates removed\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\node[excl, right=1.7cm of sc1] (exc1)
+  {Records removed before screening:\\
+   Duplicates removed (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\
+   Flagged by automation tools (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\
+   Other reasons (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr]  (id2.south) -- (sc1.north);
+\draw[arr2] (sc1.east)  -- (exc1.west);
+ 
+\node[box] (sc2) at (0, -6.0)
+  {Records screened (title \& abstract)\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\node[excl, right=1.7cm of sc2] (exc2)
+  {Records excluded\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr]  (sc1.south) -- (sc2.north);
+\draw[arr2] (sc2.east)  -- (exc2.west);
+ 
+\node[box] (sc3) at (0, -7.8)
+  {Reports sought for retrieval (full text)\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\node[excl, right=1.7cm of sc3] (exc3)
+  {Reports not retrieved\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr]  (sc2.south) -- (sc3.north);
+\draw[arr2] (sc3.east)  -- (exc3.west);
+ 
+\node[box] (sc4) at (0, -9.6)
+  {Reports assessed for eligibility\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\node[excl, right=1.7cm of sc4] (exc4)
+  {Reports excluded:\\[2pt]
+   \quad \textlangle\textit{Reason 1}\textrangle\ (\textit{n}\,=\,\textlangle\textit{N}\textrangle)\\
+   \quad \textlangle\textit{Reason 2}\textrangle\ (\textit{n}\,=\,\textlangle\textit{N}\textrangle)\\
+   \quad \textlangle\textit{Reason 3}\textrangle\ (\textit{n}\,=\,\textlangle\textit{N}\textrangle)\\
+   \quad \ldots\\
+   \quad Total excluded (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr]  (sc3.south) -- (sc4.north);
+\draw[arr2] (sc4.east)  -- (exc4.west);
+ 
+% ═══════════════════════════════════════════════════════════
+%  INCLUDED
+% ═══════════════════════════════════════════════════════════
+ 
+% Phase label – centred on inc1 at y=−11.8
+\node[phase, minimum height=2.0cm] (ph-inc) at (-5, -11.8)
+  {Included};
+ 
+\node[incl] (inc1) at (0, -11.8)
+  {Studies included in review
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\[2pt]
+   \footnotesize Reports of included studies
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr] (sc4.south) -- (inc1.north);
+ 
+% ── Optional meta-analysis box – uncomment if needed ────────
+%\node[incl] (inc2) at (0, -13.6)
+%  {Studies included in meta-analysis\\
+%   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+%\draw[arr] (inc1.south) -- (inc2.north);
+%\node[phase, minimum height=2.0cm] at (-5,-13.6) {Included};
+ 
+\end{tikzpicture}
+ 
+\caption{PRISMA 2020 flow diagram of the literature search and
+         selection process.}
+\label{fig:prisma}
+\end{figure}
+ 
+{\footnotesize
+\textbf{Note.} Adapted from Page et al.\ (2021). \textit{The PRISMA
+2020 statement: an updated guideline for reporting systematic
+reviews.} \textit{BMJ}, 372, n71.
+}

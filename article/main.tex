@@ -24,8 +24,7 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{xcolor}
-\usepackage{tikz}
-\usetikzlibrary{positioning, decorations.pathreplacing, shapes, arrows, backgrounds, fit, patterns}
+
 
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
@@ -35,6 +34,35 @@
 \usepackage{enumitem}
 
 \usepackage{placeins}
+
+\usepackage{appendix} 
+
+\usepackage{rotating}
+\usepackage{tikz}
+\usetikzlibrary{positioning, decorations.pathreplacing, shapes, arrows, backgrounds, fit, patterns}
+\usetikzlibrary{shapes.geometric, arrows.meta, calc}
+
+\tikzset{
+  box/.style  = {draw, rectangle, rounded corners=4pt,
+                text width=7.0cm, align=center,
+                minimum height=1.2cm, inner sep=7pt,
+                fill=white, draw=black!70},
+  excl/.style = {draw, rectangle, rounded corners=4pt,
+                text width=5.5cm, align=left,
+                minimum height=1.2cm, inner sep=7pt,
+                fill=pink!25, draw=red!50!black},
+  incl/.style = {draw, rectangle, rounded corners=4pt,
+                text width=7.0cm, align=center,
+                minimum height=1.2cm, inner sep=7pt,
+                fill=green!15, draw=green!60!black},
+  phase/.style= {draw, rectangle, rounded corners=4pt,
+                text width=1.5cm, align=center,
+                minimum height=1.2cm, inner sep=5pt,
+                fill=blue!10, draw=blue!50!black,
+                font=\bfseries\small},
+  arr/.style  = {->, >=stealth, thick},
+  arr2/.style = {->, >=stealth, dashed, thick},
+}
 
 % Page geometry for single-column format
 \geometry{
@@ -57,6 +85,14 @@
 \definecolor{TagTermBg}{HTML}{F0EBFA}
 \definecolor{TagTermFg}{HTML}{4B1F8C}
 \definecolor{RowAlt}{HTML}{F8F7F4}
+\definecolor{prismaBlue}{RGB}{31,119,180}
+\definecolor{prismaLightBlue}{RGB}{174,214,241}
+\definecolor{prismaGreen}{RGB}{44,160,44}
+\definecolor{prismaLightGreen}{RGB}{198,239,206}
+\definecolor{prismaGray}{RGB}{127,127,127}
+\definecolor{prismaOrange}{RGB}{214,39,40}
+\definecolor{prismaLightOrange}{RGB}{255,205,210}
+
 
 % Per-category tag macros
 \newcommand{\tagschedule}{%
@@ -227,11 +263,11 @@ mixed-integer linear programming.
 % ============================================================
 %  APPEN_A
 % ============================================================
-
-% \appendix
-% \section{Mathematical Proofs}
-% \label{app:proofs}
-% \input{sections/appendix-proofs}
+\newpage
+\appendix
+\section{Appendix A : PRISMA 2020 Flow Diagram}
+\label{app:prisma}
+\input{sections/appendix_A.tex}
 
 \FloatBarrier
 
