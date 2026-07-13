@@ -64,8 +64,9 @@ execution. This is the layer at which the present work operates. The governing
 body does not manage individual projects directly --- that is the contractor's
 role --- but it controls the budget directed to each project at each period.
 This single continuous allocation decision is the sole instrument of the
-portfolio manager. Termination is not a discrete agent action but an
-endogenous environment mechanic demonstrating project failure.
+portfolio manager. Termination is not a discrete agent action but an endogenous environment
+mechanic demonstrating project failure; it is preceded by a cure period modelled
+as a project-specific tolerance counter observable in the portfolio state.
 
 \paragraph{Project execution.}
 At the project level, the contractor controls workforce, materials, equipment,
@@ -109,11 +110,17 @@ inflows that makes the problem non-trivial.
 At project initiation, the client disburses an advance payment $A_i =
 \alpha_i \cdot CP_i$ to the contractor. This is a timing instrument: it
 reduces the contractor's early working-capital burden and is recovered
-progressively through deductions from subsequent milestone payments. The
-recovery is proportional to milestone payment weights, ensuring the full advance
-is recovered by final completion. The advance payment creates an immediate cash
-outflow at project start and a series of reduced inflows at each milestone,
-both of which must be tracked in the portfolio cash balance.
+progressively through percentage deductions from subsequent interim payment
+certificates, with the deduction rate $\delta_i^{\mathrm{rec}}$ and
+commencement threshold $\psi_i$ specified as project-specific contract
+parameters \citep{FIDIC2017}. The advance payment creates an immediate cash inflow at project start and a
+series of reduced inflows at each certified milestone, both of which must be
+tracked in the portfolio cash balance. Interim milestone payments are
+additionally subject to stochastic timing delays between certification and
+receipt, consistent with observed payment practices in international EPC
+contracting \citep{Aibinu2006, Odeh2002}; the amount transferred equals the
+contractually fixed net milestone value, but the period of receipt is a random
+variable.
 
 \paragraph{Retention.}
 A fraction $\rho_i$ of each milestone payment is withheld by the client as a
@@ -153,14 +160,23 @@ FIDIC contracts provide for client-initiated termination when the contractor
 has materially breached the contract --- most commonly through sustained failure
 to meet schedule obligations. Termination triggers a settlement payment based
 on the value of work completed at the termination date, net of any outstanding
-advance recovery obligation. In the present model, termination is a deliberate
-decision by the portfolio manager, not an exogenous event: it is triggered by
-the joint satisfaction of a cumulative penalty threshold and a sustained
-allocation floor, and its timing affects the portfolio cash balance through the
-settlement payment $R_i^{\mathrm{term}}$, which may be positive or negative
-depending on the advance recovery position. Real options theory
-\citep{Dixit1994, Huchzermeier2001} provides the theoretical basis for
-treating termination as the exercise of an abandonment option.
+advance recovery obligation. In the present model, termination is an endogenous environment mechanic, not a
+deliberate agent action. It is triggered when two conditions hold simultaneously
+for a project-specific number of consecutive periods --- the termination
+tolerance $\tau_i^{\mathrm{tol}}$: the forecast finish deviation has exceeded
+the contractual penalty ceiling, and the cost performance index has fallen below
+a project-specific recovery threshold $\kappa_i$. This joint persistence
+requirement models the FIDIC cure period \citep{FIDIC2017, Ndekugri2008}, the
+contractually prescribed interval during which both parties are obliged to
+attempt performance recovery before the client may formally terminate. The
+tolerance counter $\tau_{i,t}^{\mathrm{rem}}$ --- periods remaining before
+termination executes --- is part of the observable environment state; the agent
+cannot override its dynamics but observes its value and can influence it
+indirectly through allocation decisions that affect $\mathrm{SPI}_{i,t}$ and
+$\mathrm{CPI}_{i,t}$. When the counter reaches zero, termination executes in
+the following period, and its timing affects the portfolio cash balance through
+the settlement payment $R_i^{\mathrm{term}}$, which may be positive or negative
+depending on the advance recovery position.
 
 % ------------------------------------------------------------
 \subsection{The Three-Level Modelling Arc}
@@ -198,7 +214,15 @@ either certified or not --- captured by introducing binary decision variables
 $u_{i,j,t} \in \{0,1\}$. The symmetric running deviation penalty involves an
 absolute value and a cap, both of which are linearised by introducing auxiliary
 variables $d_{i,t}^+, d_{i,t}^- \geq 0$ for the positive and negative parts of
-the deviation. These linearisations are exact: no approximation is introduced.
+the deviation. These linearisations are exact: no approximation is introduced. A third
+structural feature is the termination mechanic: under deterministic
+$\bar{\eta}_{i,t}$, both termination conditions and the tolerance counter
+trajectory $\tau_{i,t}^{\mathrm{rem}}$ are fully pre-computable, so
+termination periods $t_i^{\mathrm{term}}$ and their settlements
+$R_i^{\mathrm{term}}$ enter the MILP as fixed parameters rather than
+optimisation constraints --- a simplification that does not carry over to
+Levels~2 and~3, where termination timing is endogenous to the stochastic
+trajectory.
 
 \paragraph{Level~2: Stochastic extension and intractability.}
 When $\eta_{i,t}$ is replaced by a random variable --- as it must be to reflect
@@ -226,8 +250,9 @@ rather than exhaustive scenario trees.
 The mapping from MILP to CMDP is exact in structure. The decision variables
 $\{x_{i,t}\}$ become the action space; the state variables $(P_{i,t}^{\rm
 actual}, E_{i,t}, \mathrm{CPI}_{i,t}, \mathrm{SPI}_{i,t}, \delta_{i,t},
-\Delta_{i,t}^{\rm pen}, \mathrm{status}_{i,t}, B_t)$ become the observation
-space; the budget constraint becomes the constrained action space; and the
+\Delta_{i,t}^{\rm pen}, \mathrm{status}_{i,t}, \tau_{i,t}^{\mathrm{rem}},
+B_t)$ become the observation
+space; and the
 objective function becomes the reward signal. The CMDP is implemented as a
 configurable Gymnasium-compatible environment \citep{Towers2024}, and a
 Proximal Policy Optimisation agent \citep{Schulman2017} is trained on it using
@@ -249,7 +274,7 @@ framework of \citet{Dantzig1955}.
 
 The MDP formalisation used in Level~3 is, mathematically, a computationally
 tractable approach to solving a Bellman equation in a high-dimensional state
-space. The state space in the present problem --- $7n + 1$ continuous and
+space. The state space in the present problem --- $8n + 1$ continuous and
 categorical variables for a portfolio of $n$ projects --- is too large for
 tabular dynamic programming and too structured for model-free value-iteration
 methods, but well-suited to policy-gradient methods that learn a parameterised

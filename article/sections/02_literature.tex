@@ -84,7 +84,16 @@ Construction Industry Institute cost-engineering databases
 Contract governance structures --- particularly FIDIC forms (Red, Yellow, and
 Silver Books) --- prescribe the financial interaction between owner and
 contractor through milestone payment schedules, advance payment and recovery
-mechanisms, and retention clauses \citep{FIDIC2017}. These mechanisms translate
+mechanisms, and retention clauses \citep{FIDIC2017}. Under FIDIC
+Sub-Clause~14.2, the advance payment is an interest-free mobilisation loan
+recovered through percentage deductions from interim payment certificates: if
+not otherwise specified in the Appendix to Tender, deductions commence once
+cumulative certified interim payments exceed 10\% of the Accepted Contract
+Amount and are applied at a rate of 25\% of each subsequent payment certificate
+until the advance is fully recovered \citep{FIDIC2017}. The present model
+parameterises this mechanism with a project-specific commencement threshold
+$\psi_i$ and deduction rate $\delta_i^{\mathrm{rec}}$, accommodating the full
+range of particular conditions encountered in practice. These mechanisms translate
 directly into the cash inflow and outflow dynamics formulated in
 Section~\ref{sec:problem_formulation}.
 
@@ -146,8 +155,15 @@ these contributions treat budgets as deterministic constraints rather than as
 dynamic decision variables subject to portfolio-level sequential optimisation.
 
 Cash-flow uncertainty in construction and engineering projects arises from
-contractor performance variability, payment timing mismatches, scope changes,
-and external market shocks \citep{Odeh2002, Doloi2012}. Stochastic programming
+contractor performance variability, payment timing delays between certification
+and receipt, scope changes, and external market shocks \citep{Odeh2002,
+Doloi2012, Aibinu2006}. Empirical studies of payment practices in international
+construction contracting document systematic delays between milestone
+certification and client payment, with delay distributions that vary by contract
+type, jurisdiction, and client financial health \citep{Aibinu2006, Assaf1995};
+the present model treats certified-milestone payment timing as a stochastic
+variable while holding the payment amount fixed at the contractually determined
+net value after advance recovery deductions and retention withholding. Stochastic programming
 \citep{Birge2011} provides the canonical OR framework for optimisation under
 such uncertainty, and its two-stage variant has been applied to project
 scheduling under resource uncertainty \citep{Lova2000}. However, multi-stage
@@ -168,34 +184,54 @@ addresses this gap.
 %  (Eggers 2019, CIDB 2015) to be cross-checked against screened corpus.]
 
 % ------------------------------------------------------------
-\subsection{Performance Recovery Interventions and Project Termination}
+\subsection{Contractor Underperformance, Cure Periods, and Termination}
 \label{subsec:lr_interventions}
 % ------------------------------------------------------------
 
-Two operational levers available to a portfolio-level decision-maker beyond
-budget allocation are management interventions to recover underperforming
-projects and the exercise of the contractual termination option. Both have
-received treatment in the project management literature, but neither has been
-integrated into a portfolio-level sequential optimisation model.
+When a contractor fails to meet schedule or cost performance thresholds,
+international EPC contracts prescribe a structured escalation sequence before
+termination may be exercised. Under FIDIC Sub-Clause~15.1, the client must
+issue a formal notice of default and allow a cure period --- typically 28~days
+--- during which the contractor is obliged to demonstrate measurable recovery
+before the client may proceed to termination \citep{FIDIC2017, Ndekugri2008}.
+This cure period is not a discretionary grace; it is a contractual obligation
+whose omission constitutes wrongful termination. Empirical studies of
+international EPC disputes confirm that failure to observe the cure period is
+among the most frequently litigated grounds in contractor termination claims
+\citep{Ndekugri2008, Ennis2021}.
 
-Recovery interventions --- crashing, scope reduction, procurement
-restructuring --- are discussed in EPC and construction project management
-contexts \citep{Meredith2011, Pinto2016}. The decision of when to intervene
-depends on real-time CPI and SPI signals and on the expected marginal value of
-recovery effort relative to its cost --- a fundamentally sequential decision
-under uncertainty that the CMDP formulation in Level~3 is equipped to address.
+The behavioural project management literature has studied the conditions under
+which organisations fail to terminate underperforming projects at the
+economically rational point. Escalation of commitment \citep{Staw1987} ---
+the tendency to continue investing in failing projects beyond what expected
+value justifies --- has been documented across construction, IT, and
+infrastructure programmes. Real options theory \citep{Dixit1994,
+Huchzermeier2001} provides the normative counterpart: termination is the
+exercise of an abandonment option whose value exceeds continuation NPV once
+performance has deteriorated past a recoverable threshold. Together these
+streams establish that the decision to persist with or terminate an
+underperforming project is neither purely contractual nor purely financial ---
+it involves performance signals, contractual obligations, and timing all at
+once.
 
-Project termination as a formal decision problem has been studied through the
-lens of escalation of commitment \citep{Staw1987} --- the well-documented
-behavioural tendency to continue investing in failing projects beyond the
-economically rational stopping point --- and through real options theory
-\citep{Dixit1994, Huchzermeier2001}. Real options models frame termination as
-the exercise of an abandonment option when continuation NPV falls below salvage
-value, a framing directly compatible with the two-condition termination gate
-of the present formulation. The penalty-saturation condition of the
-termination gate corresponds to the passage of the NPV threshold; the
-sustained allocation-floor condition confirms that the exercise decision is
-deliberate rather than transient.
+The present model integrates all three dimensions into a single environment
+mechanic. Termination is triggered when two conditions hold simultaneously: the
+forecast finish deviation has exceeded the contractual penalty ceiling, and the
+cost performance index has fallen below a project-specific recovery threshold
+$\kappa_i$. Rather than executing immediately, the environment decrements a
+project-specific tolerance counter $\tau_{i,t}^{\mathrm{rem}}$, which
+represents the remaining cure period. Termination executes only when the counter
+reaches zero; if either condition lapses before then, the counter resets to its
+project-specific maximum $\tau_i^{\mathrm{tol}}$. This mechanic is grounded
+simultaneously in FIDIC contract law \citep{FIDIC2017, Ndekugri2008}, the real
+options framing of the abandonment threshold \citep{Dixit1994,
+Huchzermeier2001}, and the escalation-of-commitment literature's evidence that
+observable performance signals must be sustained --- not transient --- before
+termination is justified \citep{Staw1987}. The tolerance counter is part of the
+observable portfolio state, giving the RL agent an anticipatory signal that
+reflects contractual reality without granting it discretionary control over the
+termination outcome.
+
 
 % ------------------------------------------------------------
 \subsection{Reinforcement Learning for Sequential Resource Allocation}
@@ -258,10 +294,11 @@ Second, existing stochastic models of project cash-flow uncertainty operate at
 the individual project level and do not feed uncertainty upward into a
 portfolio-level decision architecture with a shared budget constraint.
 
-Third, the endogenous mechanics of project failure --- the joint modelling of
-cumulative schedule penalty, contractual floor allocation, and termination
-settlement --- have not been embedded within a portfolio-level sequential
-decision framework in which budget allocation is the sole control variable.
+the endogenous mechanics of project failure --- the joint modelling of
+forecast schedule deviation, cost performance deterioration, a contractual
+cure period, and termination settlement --- have not been embedded within a
+portfolio-level sequential decision framework in which budget allocation is
+the sole control variable.
 
 These gaps are not isolated oversights; they reflect an incomplete progression
 along the path toward a deployable portfolio-level decision-support system.
