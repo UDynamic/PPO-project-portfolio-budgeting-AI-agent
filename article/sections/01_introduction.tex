@@ -68,6 +68,66 @@ portfolio manager. Termination is not a discrete agent action but an endogenous 
 mechanic demonstrating project failure; it is preceded by a cure period modelled
 as a project-specific tolerance counter observable in the portfolio state.
 
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.8cm,
+    box/.style={rectangle, rounded corners=5pt, draw=black!60,
+                fill=blue!8, minimum width=4.2cm,
+                minimum height=1.2cm, align=center, font=\small},
+    env/.style={rectangle, rounded corners=5pt, draw=black!60,
+                fill=orange!10, minimum width=4.2cm,
+                minimum height=1.2cm, align=center, font=\small},
+    obs/.style={rectangle, rounded corners=5pt, draw=black!60,
+                fill=green!8, minimum width=10.2cm,
+                minimum height=1.4cm, align=center, font=\small},
+    arr/.style={->, thick},
+    ]
+
+    \node[box] (pm)
+    {\textbf{Portfolio Manager}\\policy $\pi(S_t) \to \mathbf{x}_t$};
+
+    \node[env, right=3.8cm of pm] (contractor)
+    {\textbf{Contractor}\\project execution};
+
+    \node[obs, below=2.4cm of $(pm)!0.5!(contractor)$] (state)
+    {\textbf{Observable State} $S_t$:\quad
+        $\bigl\{P_{i,t}^{\mathrm{actual}},\;
+        \mathrm{CPI}_{i,t},\;\mathrm{SPI}_{i,t},\;
+        \delta_{i,t},\;\Delta_{i,t}^{\mathrm{pen}},\;
+        \mathrm{status}_{i,t},\;\tau_{i,t}^{\mathrm{rem}}\bigr\}_{i},\;B_t$};
+
+    \draw[arr, blue!60!black] (pm.east) -- (contractor.west)
+    node[midway, above, font=\footnotesize] {allocation $\mathbf{x}_t$};
+
+    \draw[arr, orange!70!black]
+    (contractor.south) -- ++(0,-0.85) -| (state.north east)
+    node[near start, right, font=\footnotesize, align=left]
+        {$\Delta P_{i,t} = \eta_{i,t}\,x_{i,t}/\mathrm{BAC}_i$\\
+        \textcolor{gray!70}{($\eta_{i,t}$ unobservable)}};
+
+    \draw[arr, green!50!black]
+    (state.north west) -- ++(0,0.85) -| (pm.south)
+    node[near start, left, font=\footnotesize] {observe $S_t$};
+
+    \draw[arr, dashed, green!55!black]
+    (contractor.north) -- ++(0,1.1)
+    -- ++(-6.0,0)
+    -- (pm.north)
+    node[near end, above, font=\footnotesize, green!55!black, xshift=1.2cm]
+        {FIDIC payments:\;
+        $R_{i,j}^{\mathrm{net}},\;R_i^{\mathrm{ret}},\;R_i^{\mathrm{term}}$};
+
+\end{tikzpicture}
+\caption{Portfolio governance feedback loop. The portfolio manager (agent)
+    controls only the budget allocation vector $\mathbf{x}_t$. Contractors
+    convert allocations into physical progress through efficiency $\eta_{i,t}$,
+    which is unobservable and realized only after commitment. The full state
+    $S_t$ is observable each period; FIDIC milestone payments, retention
+    release, and termination settlement flow back as cash inflows.}
+\label{fig:feedback_loop}
+\end{figure}
+
 \paragraph{Project execution.}
 At the project level, the contractor controls workforce, materials, equipment,
 and subcontracting. The portfolio manager observes the outcomes of these
@@ -177,6 +237,67 @@ $\mathrm{CPI}_{i,t}$. When the counter reaches zero, termination executes in
 the following period, and its timing affects the portfolio cash balance through
 the settlement payment $R_i^{\mathrm{term}}$, which may be positive or negative
 depending on the advance recovery position.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    every node/.style={font=\small},
+    inflow/.style={->, thick, green!50!black},
+    outflow/.style={->, thick, red!70!black},
+    ]
+
+    \draw[->, thick] (0,0) -- (13.0,0) node[right] {$t$};
+
+    \foreach \x/\lbl in {1/$s_i$, 4/$\theta_{i,1}$, 7/$\theta_{i,2}$,
+                        10/$\theta_{i,3}{=}1$, 10.8/$f_i$}{
+    \draw (\x,0.08) -- (\x,-0.08)
+        node[below, font=\footnotesize] {\lbl};
+    }
+
+    \draw[inflow] (1,0) -- (1,2.4)
+    node[above, align=center, font=\footnotesize]
+        {Advance payment\\$A_i = \alpha_i \cdot CP_i$};
+
+    \draw[inflow] (4,0) -- (4,1.4)
+    node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
+    \draw[inflow] (7,0) -- (7,1.4)
+    node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
+
+    \draw[<->, dashed, gray!70] (7,1.05) -- (7.8,1.05)
+    node[midway, above, font=\scriptsize, gray!70] {stoch.\ delay};
+    \draw[dashed, gray!70] (7.8,0) -- (7.8,1.05);
+
+    \draw[inflow] (10,0) -- (10,2.4)
+    node[above, align=center, font=\footnotesize]
+        {$R_{i,3}^{\mathrm{net}}$\\$+\,R_i^{\mathrm{ret}}$};
+
+    \foreach \x in {1.5,2.2,2.9,3.6,4.3,5.0,5.7,6.4,7.1,7.8,8.5,9.2,9.9}{
+    \draw[outflow] (\x,0) -- (\x,-0.75);
+    }
+    \node[red!70!black, font=\footnotesize]
+    at (5.7,-1.15) {Budget allocations $x_{i,t}$ (outflows each period)};
+
+    \draw[dashed, thick, gray!60] (3.2,0) -- (3.2,-2.4)
+    node[below, align=center, font=\footnotesize, gray!60]
+        {Early termination\\$R_i^{\mathrm{term}}$ (may be $<0$)\\
+        {\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
+
+    \node[draw=gray!50, rounded corners, inner sep=5pt,
+        align=left, font=\footnotesize] at (12.2,-1.5) {
+    \textcolor{green!50!black}{$\uparrow$} Inflow\\[2pt]
+    \textcolor{red!70!black}{$\downarrow$} Outflow\\[2pt]
+    \textcolor{gray}{---} Contingent
+    };
+
+\end{tikzpicture}
+\caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics.
+    The advance payment and milestone inflows are received from the client;
+    budget allocations are disbursed each period. Milestone payments are
+    subject to stochastic timing delays between certification and receipt.
+    The dashed branch illustrates the termination settlement path if the
+    cure-period counter reaches zero before project completion.}
+\label{fig:cashflow_timeline}
+\end{figure}
 
 % ------------------------------------------------------------
 \subsection{The Three-Level Modelling Arc}

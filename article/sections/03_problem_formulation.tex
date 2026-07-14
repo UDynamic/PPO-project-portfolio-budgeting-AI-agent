@@ -1,4 +1,4 @@
-==================================================
+% ============================================================
 %  SECTION 3 — PROBLEM FORMULATION
 % ============================================================
 This section develops the formal problem structure for portfolio-level budget
@@ -137,7 +137,20 @@ $(a_i, b_i, s_i, f_i, \mathrm{BAC}_i)$; it is never a decision variable.
       & Contractual markup on $\mathrm{BAC}_i$. \\
     Advance payment ratio \newline\tagcontract
       & $\alpha_i$ & $[0,1]$
-      & $A_i = \alpha_i \cdot CP_i$ disbursed at $t = s_i$; recovered via milestone deductions. \\
+      & $A_i = \alpha_i \cdot CP_i$ received at $t = s_i$; recovered through
+        percentage deductions from subsequent interim payment certificates at
+        rate $\delta_i^{\mathrm{rec}}$ once cumulative certified payments
+        exceed threshold $\psi_i$ \citep{FIDIC2017}. \\
+    \rowcolor{RowAlt}
+    Recovery deduction rate \newline\tagcontract
+      & $\delta_i^{\mathrm{rec}}$ & $(0,1]$
+      & Fraction of each interim payment certificate deducted toward advance
+        recovery once the commencement threshold $\psi_i$ is exceeded. \\
+    Recovery commencement threshold \newline\tagcontract
+      & $\psi_i$ & $[0,1]$
+      & Cumulative certified interim payments as a fraction of $CP_i$ at which
+        advance recovery deductions begin; default 0.10 under FIDIC
+        Sub-Clause~14.2 \citep{FIDIC2017}. \\
     \rowcolor{RowAlt}
     Retention ratio \newline\tagcontract
       & $\rho_i$ & $[0,1]$
@@ -180,18 +193,21 @@ $(a_i, b_i, s_i, f_i, \mathrm{BAC}_i)$; it is never a decision variable.
       & $\Lambda_i$ & $\mathbb{R}^+_0$
       & Maximum cumulative penalty as fraction of $CP_i$; applies symmetrically to
         lag and acceleration. \\
+    Per-period delay rate \newline\tagpenalty
+      & $r_i$ & $\mathbb{R}^+_0$
+      & Per-period penalty rate used in the forecast-deviation termination
+        condition; $\Lambda_i / r_i$ gives the maximum tolerable delay in periods. \\
     \midrule
-    Termination threshold \newline\tagterm
-      & $\kappa_i$ & $(0,1]$
-      & Fraction of $\Lambda_i \cdot CP_i$ at which project enters termination candidacy. \\
     \rowcolor{RowAlt}
-    Minimum allocation \newline\tagterm
-      & $m_i^0$ & $\mathbb{R}^+_0$
-      & Floor budget to hold project in contractually serviceable state while
-        termination conditions are evaluated; no performance-recovery role. \\
-    Confirmation window \newline\tagterm
-      & $k$ & $\mathbb{Z}^+$
-      & Consecutive periods at floor $m_i^0$ required to confirm abandonment. \\
+    CPI recovery threshold \newline\tagterm
+      & $\kappa_i$ & $(0,1)$
+      & Project-specific CPI floor; $\mathrm{CPI}_{i,t} < \kappa_i$ signals
+        cost performance is unrecoverable and activates Termination Condition~2. \\
+    Termination tolerance \newline\tagterm
+      & $\tau_i^{\mathrm{tol}}$ & $\mathbb{Z}^+$
+      & Maximum number of consecutive periods both termination conditions may
+        hold simultaneously before termination executes; models the FIDIC
+        cure period \citep{FIDIC2017, Ndekugri2008}. \\
     \bottomrule
   \end{tabular}
   \caption{Cost, penalty, and termination parameters for project $i \in \mathcal{P}$ (fixed at commitment).}
@@ -210,14 +226,16 @@ $E_{i,t} \geq 0$ (cumulative expenditure),
 $\mathrm{SPI}_{i,t} = P_{i,t}^{\mathrm{actual}} / P_{i,t}^{\mathrm{plan}}$,
 $\mathrm{CPI}_{i,t} = P_{i,t}^{\mathrm{actual}} \cdot \mathrm{BAC}_i / E_{i,t}$,
 $\delta_{i,t} = P_{i,t}^{\mathrm{actual}} - P_{i,t}^{\mathrm{plan}}$ (signed deviation),
-$\Delta_{i,t}^{\mathrm{pen}} \geq 0$ (cumulative penalty), and
-$\mathrm{status}_{i,t} \in \{\texttt{active}, \texttt{completed}, \texttt{terminated}\}$.
+$\Delta_{i,t}^{\mathrm{pen}} \geq 0$ (cumulative penalty),
+$\mathrm{status}_{i,t} \in \{\texttt{active}, \texttt{completed}, \texttt{terminated}\}$,
+and $\tau_{i,t}^{\mathrm{rem}} \in \{0,1,\ldots,\tau_i^{\mathrm{tol}}\}$
+(periods remaining in the cure-period counter; zero triggers termination).
 The portfolio state at period $t$ is:
 \[
   S_t = \Bigl(
     \bigl\{P_{i,t}^{\mathrm{actual}},\, E_{i,t},\, \mathrm{SPI}_{i,t},\,
            \mathrm{CPI}_{i,t},\, \delta_{i,t},\, \Delta_{i,t}^{\mathrm{pen}},\,
-           \mathrm{status}_{i,t}\bigr\}_{i \in \mathcal{P}},\; B_t
+           \mathrm{status}_{i,t},\, \tau_{i,t}^{\mathrm{rem}}\bigr\}_{i \in \mathcal{P}},\; B_t
   \Bigr).
 \]
 
@@ -243,14 +261,19 @@ $P_{i,t}^{\mathrm{actual}} \geq \theta_{i,j}$; the net payment (after
 retention and advance recovery) is:
 \begin{equation}
   R_{i,j}^{\mathrm{net}}
-    = \phi_{i,j} \cdot CP_i (1 - \rho_i) - \phi_{i,j} \cdot A_i.
+    = \phi_{i,j} \cdot CP_i (1 - \rho_i)
+      - \delta_i^{\mathrm{rec}} \cdot \phi_{i,j} \cdot CP_i
+        \cdot \mathbf{1}\!\left\{
+          \sum_{k \leq j} \phi_{i,k} \geq \psi_i
+        \right\}.
   \label{eq:Rnet}
 \end{equation}
-Upon completion ($P_{i,t}^{\mathrm{actual}} = 1$) the accumulated retention
-$R_i^{\mathrm{ret}} = \rho_i \cdot CP_i$ is released together with the final
-milestone payment. The payment identity
-$A_i + \sum_j R_{i,j}^{\mathrm{net}} + R_i^{\mathrm{ret}} = CP_i$
-holds exactly. Aggregate period inflow is:
+The second term deducts the advance recovery fraction $\delta_i^{\mathrm{rec}}$
+from each milestone payment once cumulative certified payments have exceeded
+the commencement threshold $\psi_i$, consistent with FIDIC Sub-Clause~14.2
+\citep{FIDIC2017}. Upon completion ($P_{i,t}^{\mathrm{actual}} = 1$) the
+accumulated retention $R_i^{\mathrm{ret}} = \rho_i \cdot CP_i$ is released
+together with the final milestone payment. Aggregate period inflow is:
 \begin{equation}
   V_t = \sum_{i,j} R_{i,j}^{\mathrm{net}}
           \cdot \mathbf{1}\{\text{$(i,j)$ newly certified at $t$}\}
@@ -259,8 +282,12 @@ holds exactly. Aggregate period inflow is:
 \end{equation}
 where $\mathcal{P}_t^{\mathrm{term}}$ collects projects newly terminated at
 $t$, with settlement $R_i^{\mathrm{term}}$ defined in
-\eqref{eq:term_settlement} below.
+\eqref{eq:term_settlement} below. Milestone payments are subject to stochastic
+timing delays between certification and receipt at Levels~2--3
+\citep{Aibinu2006, Odeh2002}; the amount is fixed at the contractual net value
+but the period of receipt is a random variable.
 
+\FloatBarrier
 \paragraph{Symmetric running deviation penalty.}
 Schedule adherence is priced at every period:
 \begin{equation}
@@ -275,32 +302,222 @@ both lag and acceleration are penalized, discouraging budget-pushing that risks
 quality degradation \cite{Merrow2011}. The cap $\Lambda_i \cdot CP_i$
 mirrors the contractual delay-penalty ceiling under FIDIC terms.
 
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=13cm, height=7.5cm,
+    xlabel={Period $t$},
+    ylabel={Cumulative progress fraction},
+    xmin=0, xmax=24,
+    ymin=0, ymax=1.18,
+    xtick={0,4,8,12,16,20,24},
+    ytick={0,0.25,0.5,0.75,1.0},
+    yticklabels={0,0.25,0.50,0.75,1.00},
+    grid=major,
+    grid style={dashed,gray!30},
+    legend pos=north west,
+    legend style={font=\small, cells={anchor=west}},
+    tick label style={font=\small},
+    label style={font=\small},
+    clip=false,
+  ]
+
+  \addplot[thick, blue!70!black, smooth, domain=0:24, samples=80]
+    { 1/(1+exp(-0.42*(x-11))) };
+  \addlegendentry{Planned $P_{i,t}^{\mathrm{plan}}$}
+
+  \addplot[thick, red!60!black, smooth, domain=0:24, samples=80, dashed]
+    { 0.88/(1+exp(-0.42*(x-15))) };
+  \addlegendentry{Actual $P_{i,t}^{\mathrm{actual}}$}
+
+  \addplot[densely dotted, green!70, thick]
+    coordinates {(0,0.33)(24,0.33)};
+  \node[font=\footnotesize, green!80, right]
+    at (axis cs:24.2,0.33) {$\theta_{i,1}$};
+
+  \addplot[densely dotted, green!70, thick]
+    coordinates {(0,0.66)(24,0.66)};
+  \node[font=\footnotesize, green!80, right]
+    at (axis cs:24.2,0.66) {$\theta_{i,2}$};
+
+  \addplot[densely dotted, green!70, thick]
+    coordinates {(0,1.00)(24,1.00)};
+  \node[font=\footnotesize, green!80, right]
+    at (axis cs:24.2,1.00) {$\theta_{i,3}{=}1$};
+
+  \draw[->, thick, purple!70!black]
+    (axis cs:12,0.50) -- (axis cs:12,0.30)
+    node[midway, right, font=\footnotesize, purple!70!black]
+      {$\delta_{i,t}<0$};
+
+  \fill[red!8, opacity=0.8]
+    (axis cs:19,0) rectangle (axis cs:24,1.18);
+  \node[font=\footnotesize, red!60!black, align=center]
+    at (axis cs:21.5,0.46)
+    {penalty\\cap\\$\Lambda_i{\cdot}CP_i$};
+
+  \draw[dashed, blue!55, thick]
+    (axis cs:20,0) -- (axis cs:20,1.25);
+  \node[font=\footnotesize, blue!60, left]
+    at (axis cs:20,1.12) {$f_i$};
+
+  \draw[dashed, red!55, thick]
+    (axis cs:23,0) -- (axis cs:23,1.25);
+  \node[font=\footnotesize, red!60, right]
+    at (axis cs:23,1.12) {$\hat{f}_{i,t}$};
+
+  \draw[<->, thick, black!55]
+    (axis cs:20,1.25) -- (axis cs:23,1.25)
+    node[midway, above, font=\footnotesize]
+      {$>\Lambda_i/r_i \Rightarrow$ cond.~(\ref{eq:term_cond1})};
+
+  \node[draw=black!35, rounded corners, fill=white,
+        font=\footnotesize, inner sep=5pt, align=left]
+    at (axis cs:5.0,0.80) {
+      $\mathrm{SPI}_{i,t}
+        = P_{i,t}^{\mathrm{actual}}/P_{i,t}^{\mathrm{plan}} < 1$\\[4pt]
+      $\mathrm{CPI}_{i,t}
+        = P_{i,t}^{\mathrm{actual}}{\cdot}\mathrm{BAC}_i/E_{i,t} < 1$
+    };
+
+\end{axis}
+\end{tikzpicture}
+\caption{S-curve expenditure profile with EVM signals for a lagging project.
+  The planned curve follows the regularized incomplete Beta function; actual
+  progress runs below, producing negative signed deviation $\delta_{i,t}$
+  and values $\mathrm{SPI}_{i,t},\,\mathrm{CPI}_{i,t} < 1$. Dashed
+  horizontals mark milestone thresholds $\theta_{i,j}$. When the forecast
+  finish gap $\hat{f}_{i,t}-f_i$ exceeds $\Lambda_i/r_i$ (shaded region),
+  Termination Condition~(\ref{eq:term_cond1}) activates.}
+\label{fig:scurve_evm}
+\end{figure}
+
+\FloatBarrier
 \paragraph{Termination conditions and settlement.}
-A project transitions to \texttt{terminated} at the first period $t$ at which
-both conditions hold simultaneously:
+Termination is an endogenous environment mechanic. At each period $t$, the
+environment evaluates two conditions for every active project $i$:
 \begin{align}
-  &\text{(i) Penalty saturation:} \quad
-    \Delta_{i,t}^{\mathrm{pen}} \geq \kappa_i \cdot \Lambda_i \cdot CP_i,
+  &\text{(i) Schedule tolerance exhausted:} \quad
+    \hat{f}_{i,t} - f_i > \frac{\Lambda_i}{r_i},
   \label{eq:term_cond1} \\
-  &\text{(ii) Confirmed floor:} \quad
-    x_{i,\tilde{t}} \leq m_i^0 \quad
-    \forall\,\tilde{t} \in \{t-k+1,\ldots,t\}.
+  &\text{(ii) Cost performance unrecoverable:} \quad
+    \mathrm{CPI}_{i,t} < \kappa_i,
   \label{eq:term_cond2}
 \end{align}
-Condition~\eqref{eq:term_cond1} signals exhaustion of contractual schedule
-tolerance; condition~\eqref{eq:term_cond2} confirms that the portfolio
-manager has deliberately ceased investment rather than transiently reduced it.
+where $\hat{f}_{i,t} = s_i + (D_i^{\mathrm{plan}} - (t - s_i)) /
+\mathrm{SPI}_{i,t}$ is the linearly extrapolated forecast finish date and
+$r_i$ is the per-period delay penalty rate. Condition~\eqref{eq:term_cond1}
+signals that the forecast finish deviation has exceeded the maximum delay
+the contract price can absorb before the penalty ceiling $\Lambda_i$ is
+reached; Condition~\eqref{eq:term_cond2} signals that cost performance has
+deteriorated below the project-specific recovery threshold $\kappa_i$.
+
+When both conditions hold simultaneously, the environment decrements the
+cure-period counter:
+\begin{equation}
+  \tau_{i,t}^{\mathrm{rem}} =
+  \begin{cases}
+    \tau_{i,t-1}^{\mathrm{rem}} - 1
+      & \text{if \eqref{eq:term_cond1} and \eqref{eq:term_cond2} both hold,} \\
+    \tau_i^{\mathrm{tol}}
+      & \text{if either condition lapses.}
+  \end{cases}
+  \label{eq:counter}
+\end{equation}
+The counter initialises at $\tau_{i,s_i}^{\mathrm{rem}} = \tau_i^{\mathrm{tol}}$.
+Termination executes at the period immediately following
+$t_i^{\mathrm{term}} = \min\{t : \tau_{i,t}^{\mathrm{rem}} = 0\}$.
+The counter is part of the observable state $S_t$; the agent cannot override
+its dynamics but influences both conditions indirectly through allocation
+decisions that drive $\mathrm{SPI}_{i,t}$ and $\mathrm{CPI}_{i,t}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    every node/.style={font=\small},
+    state/.style={circle, draw=black!60, fill=white,
+                  minimum size=2.8cm, align=center, thick},
+    grace/.style={circle, draw=orange!80!black, fill=orange!7,
+                  minimum size=2.8cm, align=center, thick},
+    term/.style={circle, draw=red!70!black, fill=red!7,
+                  minimum size=2.8cm, align=center, thick},
+  ]
+
+  \node[state]  (normal) at (0,0)
+    {\textbf{Normal}\\[3pt]
+      $\tau_{i,t}^{\mathrm{rem}} = \tau_i^{\mathrm{tol}}$};
+
+  \node[grace]  (grace)  at (6.5,0)
+    {\textbf{Grace Period}\\[3pt]
+      $\tau_{i,t}^{\mathrm{rem}}$\\decrementing};
+
+  \node[term]   (term)   at (13,0)
+    {\textbf{Terminated}\\[3pt]
+      absorbing\\$R_i^{\mathrm{term}} \to V_t$};
+
+  \draw[->, thick] (-2.2,0) -- (normal.west)
+    node[midway, above, font=\footnotesize] {$t = s_i$};
+
+  \draw[->, thick, orange!80!black]
+    (normal.north) to[out=30, in=150]
+    node[above, font=\footnotesize, align=center]
+      {(\ref{eq:term_cond1}) $\wedge$ (\ref{eq:term_cond2})\\both active}
+    (grace.north);
+
+  \draw[->, thick, green!50!black]
+    (grace.south) to[out=210, in=330]
+    node[below, font=\footnotesize, align=center]
+      {either condition lapses:\\
+        $\tau_{i,t}^{\mathrm{rem}} \leftarrow \tau_i^{\mathrm{tol}}$}
+    (normal.south);
+
+  \draw[->, thick, orange!70!black]
+    (grace) to[out=80, in=100, looseness=5]
+    node[above, font=\footnotesize, align=center]
+      {both still active:\\
+        $\tau_{i,t}^{\mathrm{rem}} \mathrel{-}= 1$}
+    (grace);
+
+  \draw[->, thick, red!70!black] (grace.east) -- (term.west)
+    node[midway, above, font=\footnotesize, align=center]
+      {$\tau_{i,t}^{\mathrm{rem}} = 0$:\\terminate};
+
+  \draw[->, thick, black!35]
+    (normal) to[out=80, in=100, looseness=5]
+    node[above, font=\footnotesize] {conditions inactive}
+    (normal);
+
+  \draw[->, dashed, gray!60]
+    (term.south) -- ++(0,-1.1)
+    node[below, align=center, font=\footnotesize, gray!60]
+      {settlement $R_i^{\mathrm{term}}$ enters $V_t$\\
+        (priority queue if $R_i^{\mathrm{term}}<0$)};
+
+\end{tikzpicture}
+\caption{Finite-state representation of the termination mechanic for project
+  $i$. The cure-period counter $\tau_{i,t}^{\mathrm{rem}}$ decrements each
+  period both conditions~(\ref{eq:term_cond1})--(\ref{eq:term_cond2}) are
+  simultaneously active, and resets to $\tau_i^{\mathrm{tol}}$ if either
+  lapses. Termination executes in the period the counter reaches zero.
+  The terminated state is absorbing; the settlement enters portfolio inflows,
+  with negative obligations recovered via a priority queue.}
+\label{fig:state_machine}
+\end{figure}
+
 Upon termination at $t_i^{\mathrm{term}}$, the net settlement is:
 \begin{equation}
   R_i^{\mathrm{term}}
     = P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}} \cdot CP_i (1-\rho_i)
       - \Bigl(A_i - \sum_{j \in \mathcal{M}_i^{\mathrm{cert}}(t_i^{\mathrm{term}})}
-                \phi_{i,j} \cdot A_i\Bigr).
+                \delta_i^{\mathrm{rec}} \cdot \phi_{i,j} \cdot CP_i
+                \cdot \mathbf{1}\!\left\{\sum_{k \leq j} \phi_{i,k} \geq \psi_i\right\}
+        \Bigr).
   \label{eq:term_settlement}
 \end{equation}
 Negative $R_i^{\mathrm{term}}$ (outstanding advance exceeds earned value)
 constitutes a net obligation recovered from portfolio inflows, consistent with
-FIDIC termination clauses.
+FIDIC termination clauses \citep{FIDIC2017}.
 
 \paragraph{Portfolio cash balance recursion.}
 \begin{equation}
@@ -340,17 +557,18 @@ subject to, for all $i \in \mathcal{P}$, $t \in \mathcal{T}$:
   \label{eq:nonnegativity} \\
   \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t} &\leq B_t,
   \label{eq:budget} \\
-  x_{i,t} &\geq m_i^0 \cdot
-    \mathbf{1}\{\mathrm{status}_{i,t} = \texttt{active}\}.
-  \label{eq:floor}
+  x_{i,t} &= 0 \quad \text{if } \mathrm{status}_{i,t} \neq \texttt{active}.
+  \label{eq:inactive}
 \end{align}
 There is no terminal sum. Completion incentives are embedded structurally:
 $R_i^{\mathrm{ret}}$ and $R_{i,M_i}^{\mathrm{net}}$ enter $V_t$ at the
 certification period; $R_i^{\mathrm{term}}$ (possibly negative) enters at
-termination, creating a natural deterrent against premature abandonment.
-Constraint~\eqref{eq:floor} ensures each active project remains in a
-contractually serviceable state; it is vacuous once
-$\mathrm{status}_{i,t} \neq \texttt{active}$.
+termination, creating a natural deterrent against allowing project performance
+to deteriorate to the termination threshold.
+Constraint~\eqref{eq:inactive} enforces that no budget is directed to
+completed or terminated projects; the agent is free to allocate any
+non-negative amount to active projects subject only to the shared
+liquidity constraint~\eqref{eq:budget}.
 The expectation $\mathbb{E}[\cdot]$ collapses to a deterministic
 evaluation at Level~1 and is retained at Levels~2 and~3.
 
@@ -430,9 +648,9 @@ parameter), the stochastic objective~\eqref{eq:objective} collapses to the MILP:
   \label{eq:L1_penalty_lin} \\
 %
   x_{i,t}
-    &\geq m_i^0 \cdot \mathrm{act}_{i,t},
+    &= 0 \quad \text{if } \mathrm{act}_{i,t} = 0,
     && \forall\, i,t
-  \label{eq:L1_floor} \\
+  \label{eq:L1_inactive} \\
 %
   x_{i,t} &\geq 0, \quad u_{i,j,t} \in \{0,1\},
     \quad u_{i,j,0} = P_{i,0}^{\mathrm{actual}} = 0.
@@ -453,9 +671,15 @@ $(u_{i,j,t} - u_{i,j,t-1})$ in \eqref{eq:L1_cashflow} equals one in the sole
 period a milestone is first certified, linearizing the trigger without
 additional binaries. Termination timing $t_i^{\mathrm{term}}$ and the
 settlement $R_i^{\mathrm{term}}$ (\ref{eq:term_settlement}) are pre-computed
-from $\bar{\eta}_{i,t}$ before solving; the termination conditions
-\eqref{eq:term_cond1}--\eqref{eq:term_cond2} are parameter-verifiable at
-Level~1 and become binding optimization constraints at Levels~2--3.
+from $\bar{\eta}_{i,t}$ before solving: under deterministic efficiency, the
+trajectories of $\mathrm{SPI}_{i,t}$, $\mathrm{CPI}_{i,t}$, and therefore
+the counter $\tau_{i,t}^{\mathrm{rem}}$ are fully determined ex ante, so
+both termination conditions \eqref{eq:term_cond1}--\eqref{eq:term_cond2}
+and the counter dynamics \eqref{eq:counter} are parameter-verifiable at
+Level~1. Termination periods and settlements enter the MILP as fixed
+parameters rather than optimisation constraints, a simplification that
+does not carry over to Levels~2--3 where termination timing is endogenous
+to the stochastic trajectory.
 
 \paragraph{Upper bound.}
 Let $Z^*_{\mathrm{L1}}$ denote the Level~1 optimum. For any causal policy
