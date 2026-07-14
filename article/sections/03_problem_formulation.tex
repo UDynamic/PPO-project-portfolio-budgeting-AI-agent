@@ -214,6 +214,51 @@ $(a_i, b_i, s_i, f_i, \mathrm{BAC}_i)$; it is never a decision variable.
   \label{tab:params-cost-penalty}
 \end{table}
 
+\begin{table}[htbp]
+  \centering
+  \caption{Parameter groups cross-referenced to model equations and formulation
+    levels. All parameters are fixed at project commitment.}
+  \label{tab:param_navigation}
+  \renewcommand{\arraystretch}{1.35}
+  \setlength{\tabcolsep}{7pt}
+  \begin{tabular}{p{3.2cm} p{5.8cm} p{3.0cm} p{1.6cm}}
+  \hline
+  \textbf{Group} & \textbf{Parameters} & \textbf{Enters at} & \textbf{Level} \\
+  \hline
+  Schedule
+    & $s_i,\; f_i,\; D_i^{\mathrm{plan}},\; a_i,\; b_i,\; \mathrm{buffer}_i$
+    & \eqref{eq:progress_rec}, S-curve
+    & 1, 2, 3 \\
+  \rowcolor{RowAlt}
+  Contract payments
+    & $CP_i,\; \pi_i,\; \alpha_i,\; \delta_i^{\mathrm{rec}},\;
+       \psi_i,\; \rho_i,\; \phi_{i,j}$
+    & \eqref{eq:Rnet}, \eqref{eq:Vt}
+    & 1, 2, 3 \\
+  Deviation penalty
+    & $\lambda_i,\; \Lambda_i,\; r_i$
+    & \eqref{eq:penalty}, \eqref{eq:term_cond1}
+    & 1, 2, 3 \\
+  \rowcolor{RowAlt}
+  Termination
+    & $\kappa_i,\; \tau_i^{\mathrm{tol}}$
+    & \eqref{eq:term_cond2}, \eqref{eq:counter}
+    & 2, 3 \\
+  Portfolio
+    & $B_1,\; \gamma$
+    & \eqref{eq:balance}, \eqref{eq:objective}
+    & 1, 2, 3 \\
+  \rowcolor{RowAlt}
+  State variables
+    & $\mathrm{CPI}_{i,t},\; \mathrm{SPI}_{i,t},\;
+       \delta_{i,t},\; \Delta_{i,t}^{\mathrm{pen}},\;
+       \tau_{i,t}^{\mathrm{rem}}$
+    & $S_t$,\;\eqref{eq:counter}
+    & 2, 3 \\
+  \hline
+  \end{tabular}
+  \end{table}
+
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{State Variables and Transition Dynamics}
 \label{subsubsec:dynamics}
@@ -308,12 +353,12 @@ mirrors the contractual delay-penalty ceiling under FIDIC terms.
 \begin{axis}[
     width=13cm, height=7.5cm,
     xlabel={Period $t$},
-    ylabel={Cumulative progress fraction},
-    xmin=0, xmax=24,
+    ylabel={Cumulative progress},
+    xmin=0, xmax=25,
     ymin=0, ymax=1.18,
-    xtick={0,4,8,12,16,20,24},
-    ytick={0,0.25,0.5,0.75,1.0},
-    yticklabels={0,0.25,0.50,0.75,1.00},
+    xtick={0,4,8,12,16.65,20,24},
+    ytick={0,0.25,0.5,0.683,0.75,0.937,1.0},
+    yticklabels={0,0.25,0.50,0.683,0.75,0.937,1.00},
     grid=major,
     grid style={dashed,gray!30},
     legend pos=north west,
@@ -322,40 +367,41 @@ mirrors the contractual delay-penalty ceiling under FIDIC terms.
     label style={font=\small},
     clip=false,
   ]
+  % ⚠️ this needs calibration. the actual curve must be expected to cross the threshold at an integer time
 
-  \addplot[thick, blue!70!black, smooth, domain=0:24, samples=80]
-    { 1/(1+exp(-0.42*(x-11))) };
-  \addlegendentry{Planned $P_{i,t}^{\mathrm{plan}}$}
+  \addplot[thick, blue!70!black, smooth, domain=0:20, samples=80]
+    { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
+  \addlegendentry{Planned progress}
 
-  \addplot[thick, red!60!black, smooth, domain=0:24, samples=80, dashed]
-    { 0.88/(1+exp(-0.42*(x-15))) };
-  \addlegendentry{Actual $P_{i,t}^{\mathrm{actual}}$}
+  % \addplot[thick, red!60!black, smooth, domain=0:24, samples=80, dashed]
+  %   { (0.88/(1+exp(-0.42*(x-15)))) / 0.860 };
+  % \addlegendentry{Actual progress}
+  
+  \addplot[thick, red!60!black, smooth, domain=0:16.65, samples=80]
+  { (1/(1+exp(-0.34*(x-11)))) / 0.945 };
+  \addlegendentry{Actual progress}
 
-  \addplot[densely dotted, green!70, thick]
-    coordinates {(0,0.33)(24,0.33)};
-  \node[font=\footnotesize, green!80, right]
-    at (axis cs:24.2,0.33) {$\theta_{i,1}$};
+  \draw[dashed, green!55!black, thick]
+  (axis cs:16.65,0) -- (axis cs:16.65,1.25);
 
-  \addplot[densely dotted, green!70, thick]
-    coordinates {(0,0.66)(24,0.66)};
-  \node[font=\footnotesize, green!80, right]
-    at (axis cs:24.2,0.66) {$\theta_{i,2}$};
+  \addplot[thick, red!80!black, dashdotted]
+  coordinates {
+    (16.65,0.683)
+    (23,1)
+  };
+  \addlegendentry{Forecasted completion (linear)}
 
-  \addplot[densely dotted, green!70, thick]
-    coordinates {(0,1.00)(24,1.00)};
-  \node[font=\footnotesize, green!80, right]
-    at (axis cs:24.2,1.00) {$\theta_{i,3}{=}1$};
+  \addplot[densely dotted, gray!60!black, thick]
+  coordinates {(0,0.937)(16.65,0.937)};
 
-  \draw[->, thick, purple!70!black]
-    (axis cs:12,0.50) -- (axis cs:12,0.30)
-    node[midway, right, font=\footnotesize, purple!70!black]
-      {$\delta_{i,t}<0$};
-
+  \addplot[densely dotted, gray!60!black, thick]
+  coordinates {(0,0.683)(16.65,0.683)};
+  
   \fill[red!8, opacity=0.8]
-    (axis cs:19,0) rectangle (axis cs:24,1.18);
+  (axis cs:20,0) rectangle (axis cs:23,1.18);
   \node[font=\footnotesize, red!60!black, align=center]
     at (axis cs:21.5,0.46)
-    {penalty\\cap\\$\Lambda_i{\cdot}CP_i$};
+    {penalty\\cap};
 
   \draw[dashed, blue!55, thick]
     (axis cs:20,0) -- (axis cs:20,1.25);
@@ -363,31 +409,19 @@ mirrors the contractual delay-penalty ceiling under FIDIC terms.
     at (axis cs:20,1.12) {$f_i$};
 
   \draw[dashed, red!55, thick]
-    (axis cs:23,0) -- (axis cs:23,1.25);
+    (axis cs:24,0) -- (axis cs:24,1.25);
   \node[font=\footnotesize, red!60, right]
-    at (axis cs:23,1.12) {$\hat{f}_{i,t}$};
+    at (axis cs:24,1.12) {$\hat{f}_{i,t}$};
 
   \draw[<->, thick, black!55]
-    (axis cs:20,1.25) -- (axis cs:23,1.25)
+    (axis cs:20,1.25) -- (axis cs:24,1.25)
     node[midway, above, font=\footnotesize]
-      {$>\Lambda_i/r_i \Rightarrow$ cond.~(\ref{eq:term_cond1})};
-
-  \node[draw=black!35, rounded corners, fill=white,
-        font=\footnotesize, inner sep=5pt, align=left]
-    at (axis cs:5.0,0.80) {
-      $\mathrm{SPI}_{i,t}
-        = P_{i,t}^{\mathrm{actual}}/P_{i,t}^{\mathrm{plan}} < 1$\\[4pt]
-      $\mathrm{CPI}_{i,t}
-        = P_{i,t}^{\mathrm{actual}}{\cdot}\mathrm{BAC}_i/E_{i,t} < 1$
-    };
+      {$\delta_{i,t} > \Lambda_i/r_i \Rightarrow$ cond.~(\ref{eq:term_cond1})};
 
 \end{axis}
 \end{tikzpicture}
-\caption{S-curve expenditure profile with EVM signals for a lagging project.
-  The planned curve follows the regularized incomplete Beta function; actual
-  progress runs below, producing negative signed deviation $\delta_{i,t}$
-  and values $\mathrm{SPI}_{i,t},\,\mathrm{CPI}_{i,t} < 1$. Dashed
-  horizontals mark milestone thresholds $\theta_{i,j}$. When the forecast
+\caption{actual progress runs below, producing negative signed deviation $\delta_{i,t}$
+  and values $\mathrm{SPI}_{i,t},\,\mathrm{CPI}_{i,t} < 1$. When the forecast
   finish gap $\hat{f}_{i,t}-f_i$ exceeds $\Lambda_i/r_i$ (shaded region),
   Termination Condition~(\ref{eq:term_cond1}) activates.}
 \label{fig:scurve_evm}
@@ -433,77 +467,88 @@ its dynamics but influences both conditions indirectly through allocation
 decisions that drive $\mathrm{SPI}_{i,t}$ and $\mathrm{CPI}_{i,t}$.
 
 \begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    every node/.style={font=\small},
-    state/.style={circle, draw=black!60, fill=white,
-                  minimum size=2.8cm, align=center, thick},
-    grace/.style={circle, draw=orange!80!black, fill=orange!7,
-                  minimum size=2.8cm, align=center, thick},
-    term/.style={circle, draw=red!70!black, fill=red!7,
-                  minimum size=2.8cm, align=center, thick},
-  ]
-
-  \node[state]  (normal) at (0,0)
-    {\textbf{Normal}\\[3pt]
-      $\tau_{i,t}^{\mathrm{rem}} = \tau_i^{\mathrm{tol}}$};
-
-  \node[grace]  (grace)  at (6.5,0)
-    {\textbf{Grace Period}\\[3pt]
-      $\tau_{i,t}^{\mathrm{rem}}$\\decrementing};
-
-  \node[term]   (term)   at (13,0)
-    {\textbf{Terminated}\\[3pt]
-      absorbing\\$R_i^{\mathrm{term}} \to V_t$};
-
-  \draw[->, thick] (-2.2,0) -- (normal.west)
-    node[midway, above, font=\footnotesize] {$t = s_i$};
-
-  \draw[->, thick, orange!80!black]
-    (normal.north) to[out=30, in=150]
-    node[above, font=\footnotesize, align=center]
-      {(\ref{eq:term_cond1}) $\wedge$ (\ref{eq:term_cond2})\\both active}
-    (grace.north);
-
-  \draw[->, thick, green!50!black]
-    (grace.south) to[out=210, in=330]
-    node[below, font=\footnotesize, align=center]
-      {either condition lapses:\\
-        $\tau_{i,t}^{\mathrm{rem}} \leftarrow \tau_i^{\mathrm{tol}}$}
-    (normal.south);
-
-  \draw[->, thick, orange!70!black]
-    (grace) to[out=80, in=100, looseness=5]
-    node[above, font=\footnotesize, align=center]
-      {both still active:\\
-        $\tau_{i,t}^{\mathrm{rem}} \mathrel{-}= 1$}
-    (grace);
-
-  \draw[->, thick, red!70!black] (grace.east) -- (term.west)
-    node[midway, above, font=\footnotesize, align=center]
-      {$\tau_{i,t}^{\mathrm{rem}} = 0$:\\terminate};
-
-  \draw[->, thick, black!35]
-    (normal) to[out=80, in=100, looseness=5]
-    node[above, font=\footnotesize] {conditions inactive}
-    (normal);
-
-  \draw[->, dashed, gray!60]
-    (term.south) -- ++(0,-1.1)
-    node[below, align=center, font=\footnotesize, gray!60]
-      {settlement $R_i^{\mathrm{term}}$ enters $V_t$\\
-        (priority queue if $R_i^{\mathrm{term}}<0$)};
-
-\end{tikzpicture}
-\caption{Finite-state representation of the termination mechanic for project
-  $i$. The cure-period counter $\tau_{i,t}^{\mathrm{rem}}$ decrements each
-  period both conditions~(\ref{eq:term_cond1})--(\ref{eq:term_cond2}) are
-  simultaneously active, and resets to $\tau_i^{\mathrm{tol}}$ if either
-  lapses. Termination executes in the period the counter reaches zero.
-  The terminated state is absorbing; the settlement enters portfolio inflows,
-  with negative obligations recovered via a priority queue.}
-\label{fig:state_machine}
-\end{figure}
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+      every node/.style={font=\small},
+      state/.style={circle, draw=black!60, fill=white,
+                    minimum size=2.8cm, align=center, thick},
+      grace/.style={circle, draw=orange!80!black, fill=orange!7,
+                    minimum size=2.8cm, align=center, thick},
+      term/.style={circle, draw=red!70!black, fill=red!7,
+                    minimum size=2.8cm, align=center, thick},
+      posnode/.style={rectangle, rounded corners=6pt, draw=green!60!black,
+                  fill=green!6, minimum width=3.2cm, minimum height=1.2cm,
+                  align=center, thick},
+      negnode/.style={rectangle, rounded corners=6pt, draw=blue!60!black,
+                  fill=blue!6, minimum width=3.2cm, minimum height=1.2cm,
+                  align=center, thick},
+    ]
+  
+    \node[state] (normal) at (0,0)
+      {\textbf{Normal}\\[3pt]
+        $\tau_{i,t}^{\mathrm{rem}} = \tau_i^{\mathrm{tol}}$};
+  
+    \node[grace] (grace) at (6.5,0)
+      {\textbf{Grace Period}\\[3pt]
+        $\tau_{i,t}^{\mathrm{rem}} \mathrel{-}= 1$};
+  
+    \node[term] (term) at (13,0)
+      {\textbf{Terminated}};
+  
+    \node[posnode] (posout) at (18,1.6)
+      {$R_i^{\mathrm{term}}$ enters $V_t$};
+  
+    \node[negnode] (negout) at (18,-1.6)
+      {priority-queue\\cost allocation};
+  
+    \draw[->, thick] (-2.2,0) -- (normal.west)
+      node[midway, above, font=\normalsize] {$t = s_i$};
+  
+    \draw[->, thick, orange!80!black]
+      (normal.north) to[out=30, in=150]
+      node[above, font=\normalsize, align=center]
+        {(\ref{eq:term_cond1}) $\wedge$ (\ref{eq:term_cond2})\\both conditions active}
+      (grace.north);
+  
+    \draw[->, thick, green!50!black]
+      (grace.south) to[out=210, in=330]
+      node[below, font=\normalsize, align=center]
+        {either condition lapses}
+      (normal.south);
+  
+    \draw[->, thick, orange!70!black]
+      (grace) to[out=20, in=60, looseness=5]
+      node[above, font=\normalsize, sloped]
+        {both still active}
+      (grace);
+  
+    \draw[->, thick, red!70!black] (grace.east) -- (term.west)
+      node[midway, below, font=\normalsize, align=center]
+        {$\tau_{i,t}^{\mathrm{rem}} = 0$};
+  
+    \draw[->, thick, black]
+      (normal) to[out=110, in=150, looseness=5]
+      node[above, font=\normalsize, sloped] {conditions inactive}
+      (normal);
+  
+    \draw[->, thick, green!60!black]
+      (term.east) to[out=30, in=180]
+      node[midway, above, font=\normalsize, sloped]
+        {$R_i^{\mathrm{term}} > 0$}
+      (posout.west);
+  
+    \draw[->, thick, blue!60!black]
+      (term.east) to[out=-30, in=180]
+      node[midway, below, font=\normalsize, sloped]
+        {$R_i^{\mathrm{term}} < 0$}
+      (negout.west);
+  
+  \end{tikzpicture}%
+  }
+  \caption{Finite-state representation of the termination mechanic for project $i$.}
+  \label{fig:state_machine}
+  \end{figure}
 
 Upon termination at $t_i^{\mathrm{term}}$, the net settlement is:
 \begin{equation}
