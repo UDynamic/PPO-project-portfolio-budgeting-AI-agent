@@ -48,65 +48,128 @@ not fixed constants, accommodating the full range of particular conditions
 encountered in practice.
 
 \begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    node distance=1.8cm,
-    box/.style={rectangle, rounded corners=5pt, draw=black!60,
-                fill=blue!8, minimum width=4.2cm,
-                minimum height=1.2cm, align=center, font=\small},
-    env/.style={rectangle, rounded corners=5pt, draw=black!60,
-                fill=orange!10, minimum width=4.2cm,
-                minimum height=1.2cm, align=center, font=\small},
-    obs/.style={rectangle, rounded corners=5pt, draw=black!60,
-                fill=green!8, minimum width=10.2cm,
-                minimum height=1.4cm, align=center, font=\small},
-    arr/.style={->, thick},
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    every node/.style = {font=\normalsize},
+    box/.style = {
+      rectangle, rounded corners=6pt,
+      draw, thick,
+      minimum width=3.4cm, minimum height=1.2cm,
+      align=center
+    },
+    agent/.style  = {box, draw=violet!70!black, fill=violet!10},
+    contr/.style  = {box, draw=orange!70!red,   fill=orange!8},
+    client/.style = {box, draw=teal!70!black,   fill=teal!8},
+    state/.style  = {
+      rectangle, rounded corners=6pt,
+      draw=gray!60, thick, fill=gray!6,
+      minimum width=17cm, minimum height=1.3cm,
+      align=center
+    },
+    act/.style  = {-{Latex[length=6pt]}, thick, violet!70!black},
+    rew/.style  = {-{Latex[length=6pt]}, thick, blue!60!black, dashed},
+    obs/.style  = {-{Latex[length=6pt]}, thick, gray!50!black},
+    prog/.style = {-{Latex[length=6pt]}, thick, orange!70!red},
+    int/.style  = {-{Latex[length=6pt]}, thick, teal!60!black, dashed},
+    lbl/.style  = {font=\normalsize},
   ]
-
-  \node[box] (pm)
-    {\textbf{Portfolio Manager}\\policy $\pi(S_t) \to \mathbf{x}_t$};
-
-  \node[env, right=3.8cm of pm] (contractor)
-    {\textbf{Contractor}\\project execution};
-
-  \node[obs, below=2.4cm of $(pm)!0.5!(contractor)$] (state)
-    {\textbf{Observable State} $S_t$:\quad
-     $\bigl\{P_{i,t}^{\mathrm{actual}},\;
+  
+    %% ── NODES ──────────────────────────────────────────────────────────────
+  
+    % Agent (left)
+    \node[agent] (pm) {%
+      \textbf{Portfolio Manager}\\[2pt]
+      policy $\pi(S_t)\!\to\!\mathbf{x}_t$};
+  
+    % Client (left of contractor, inside environment)
+    \node[client, right=10cm of pm] (client) {%
+      \textbf{Client}\\[2pt]
+      milestone approval};
+    
+    % Contractor (right side of environment, placed first)
+    \node[contr, left=3cm of client] (contractor) {%
+      \textbf{Contractor}\\[2pt]
+      project execution};
+  
+    % Environment bounding box — drawn BEFORE redrawing inner nodes
+    \node[
+      rectangle, rounded corners=20pt,
+      draw=orange!50!black, thick, fill=orange!4,
+      inner xsep=20pt, inner ysep=18pt,
+      fit=(contractor)(client),
+      label={[font=\footnotesize\itshape, text=orange!60!black]
+             above:Environment \textit{(contract)}},
+    ] (env) {};
+  
+    % Redraw inner nodes on top of the environment rect
+    % Client (left of contractor, inside environment)
+    \node[client, right=10cm of pm] (client) {%
+      \textbf{Client}\\[2pt]
+      milestone approval};
+    
+    \node[contr, left=3cm of client] (contractor) {%
+      \textbf{Contractor}\\[2pt]
+      project execution};
+  
+    % Observable state (below, centred)
+    \node[state,
+          below=3.5cm of $(pm.south)!0.55!(contractor.south)$] (state) {%
+      \textbf{Observable State} $S_t$:\quad
+      $\bigl\{P_{i,t}^{\mathrm{actual}},\;
        \mathrm{CPI}_{i,t},\;\mathrm{SPI}_{i,t},\;
        \mathrm{EAC}_{i,t},\;
        \delta_{i,t},\;\Delta_{i,t}^{\mathrm{pen}},\;
        \mathrm{status}_{i,t},\;\tau_{i,t}^{\mathrm{rem}}\bigr\}_{i},\;B_t$};
+  
+    %% ── ARROWS ─────────────────────────────────────────────────────────────
+  
+    % 1. Action: Agent → Contractor (straight horizontal, side to side)
+    \draw[act]
+      (pm.east) -- (contractor.west)
+      node[midway, above, lbl, violet!80!black] {allocation $\mathbf{x}_t$};
+  
+    % 2. Internal: Contractor → Client (straight horizontal inside env)
+    \draw[prog]
+      (contractor.east) -- (client.west)
+      node[midway, above, lbl, orange!80!red] {progress $\Delta P_{i,t}$};
+  
+    % 3. Reward: Client → Agent (over the top, clean arc)
+    \draw[rew]
+      (client.north)
+        -- ++(0, 1.4)
+        -| (pm.north)
+      node[pos=0.28, above, lbl, blue!60!black]
+        {payments:\;
+         $R_{i,j}^{\mathrm{net}},\;R_i^{\mathrm{ret}},\;R_i^{\mathrm{term}}$
+         \quad(reward $r_t$)};
+  
+    % 4. Delta P update: contractor RIGHT side → state RIGHT side (clean vertical)
+    \draw[prog]
+    (contractor.south)
+        -- (state.north -| contractor)
+        node[midway,right,lbl]{$\Delta P_{i,t}=\eta_{i,t}x_{i,t}/\mathrm{BAC}_i$};
 
-  \draw[arr, blue!60!black] (pm.east) -- (contractor.west)
-    node[midway, above, font=\footnotesize] {allocation $\mathbf{x}_t$};
-
-  \draw[arr, orange!70!black]
-    (contractor.south) -- ++(0,-0.85) -| (state.north east)
-    node[near start, right, font=\footnotesize, align=left]
-      {$\Delta P_{i,t} = \eta_{i,t}\,x_{i,t}/\mathrm{BAC}_i$\\
-       \textcolor{gray!70}{($\eta_{i,t}$ unobservable)}};
-
-  \draw[arr, green!50!black]
-    (state.north west) -- ++(0,0.85) -| (pm.south)
-    node[near start, left, font=\footnotesize] {observe $S_t$};
-
-  \draw[arr, dashed, green!55!black]
-    (contractor.north) -- ++(0,1.1)
-    -- ++(-6.0,0)
-    -- (pm.north)
-    node[near end, above, font=\footnotesize, green!55!black, xshift=1.2cm]
-      {FIDIC payments:\;
-       $R_{i,j}^{\mathrm{net}},\;R_i^{\mathrm{ret}},\;R_i^{\mathrm{term}}$};
-
-\end{tikzpicture}
-\caption{Portfolio governance feedback loop. The portfolio manager controls
-  only the budget allocation vector $\mathbf{x}_t$. Contractors convert
-  allocations into physical progress through efficiency $\eta_{i,t}$,
-  unobservable and realised only after commitment. The full state $S_t$ is
-  observable each period; FIDIC milestone payments, retention release, and
-  termination settlement flow back as cash inflows.}
-\label{fig:feedback_loop}
-\end{figure}
+  
+    % 5. Milestone revenue: Client → State (straight down, side entry)
+    \draw[int]
+      (client.east) 
+      -- ++(1.2, 0)
+      |- (state.east)
+      node[pos=0.25, left, lbl, teal!60!black] {milestone revenue};
+  
+    % 6. Observation: State LEFT side → Agent LEFT side (clean horizontal loop)
+    \draw[obs]
+      (state.west)
+        -- ++(-1.2, 0)
+        |- (pm.west)
+      node[pos=0.25, right, lbl, gray!60!black] {observe $S_t$};
+  
+  \end{tikzpicture}%
+  }
+  \caption{Portfolio governance as a reinforcement learning feedback loop.}
+  \label{fig:feedback_loop}
+  \end{figure}
 
 % ------------------------------------------------------------
 \subsection{Environment Definition}
@@ -231,67 +294,6 @@ where $\mathcal{P}_t^{\mathrm{term}}$ collects projects newly terminated at
 $t$, with settlement $R_i^{\mathrm{term}}$ defined in
 Section~\ref{subsubsec:termination} below.
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    every node/.style={font=\small},
-    inflow/.style={->, thick, green!50!black},
-    outflow/.style={->, thick, red!70!black},
-  ]
-
-  \draw[->, thick] (0,0) -- (13.0,0) node[right] {$t$};
-
-  \foreach \x/\lbl in {1/$s_i$, 4/$\theta_{i,1}$, 7/$\theta_{i,2}$,
-                        10/$\theta_{i,3}{=}1$, 10.8/$f_i$}{
-    \draw (\x,0.08) -- (\x,-0.08)
-      node[below, font=\footnotesize] {\lbl};
-  }
-
-  \draw[inflow] (1,0) -- (1,2.4)
-    node[above, align=center, font=\footnotesize]
-      {Advance payment\\$A_i = \alpha_i \cdot CP_i$};
-
-  \draw[inflow] (4,0) -- (4,1.4)
-    node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
-  \draw[inflow] (7,0) -- (7,1.4)
-    node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
-
-  \draw[<->, dashed, gray!70] (7,1.05) -- (7.8,1.05)
-    node[midway, above, font=\scriptsize, gray!70] {stoch.\ delay};
-  \draw[dashed, gray!70] (7.8,0) -- (7.8,1.05);
-
-  \draw[inflow] (10,0) -- (10,2.4)
-    node[above, align=center, font=\footnotesize]
-      {$R_{i,3}^{\mathrm{net}}$\\$+\,R_i^{\mathrm{ret}}$};
-
-  \foreach \x in {1.5,2.2,2.9,3.6,4.3,5.0,5.7,6.4,7.1,7.8,8.5,9.2,9.9}{
-    \draw[outflow] (\x,0) -- (\x,-0.75);
-  }
-  \node[red!70!black, font=\footnotesize]
-    at (5.7,-1.15) {Budget allocations $x_{i,t}$ (outflows each period)};
-
-  \draw[dashed, thick, gray!60] (3.2,0) -- (3.2,-2.4)
-    node[below, align=center, font=\footnotesize, gray!60]
-      {Early termination\\$R_i^{\mathrm{term}}$ (may be $<0$)\\
-       {\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
-
-  \node[draw=gray!50, rounded corners, inner sep=5pt,
-        align=left, font=\footnotesize] at (12.2,-1.5) {
-    \textcolor{green!50!black}{$\uparrow$} Inflow\\[2pt]
-    \textcolor{red!70!black}{$\downarrow$} Outflow\\[2pt]
-    \textcolor{gray}{---} Contingent
-  };
-
-\end{tikzpicture}
-\caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics.
-  Advance payment and milestone inflows are received from the client; budget
-  allocations are disbursed each period. Milestone payments are subject to
-  stochastic timing delays between certification and receipt. The dashed
-  branch illustrates the termination settlement path if the cure-period
-  counter reaches zero before completion.}
-\label{fig:cashflow_timeline}
-\end{figure}
-
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{Performance Monitoring: EVM Signals}
 \label{subsubsec:evm}
@@ -328,97 +330,87 @@ forecasts, with reliability increasing beyond the 20\% completion mark
 stochastic dynamics at Levels~2--3 are calibrated from empirical EVM datasets
 \citep{Acebes2015, Batselier2017}.
 
+
 \begin{figure}[htbp]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-    width=13cm, height=7.5cm,
-    xlabel={Period $t$},
-    ylabel={Cumulative progress fraction},
-    xmin=0, xmax=24,
-    ymin=0, ymax=1.18,
-    xtick={0,4,8,12,16,20,24},
-    ytick={0,0.25,0.5,0.75,1.0},
-    yticklabels={0,0.25,0.50,0.75,1.00},
-    grid=major,
-    grid style={dashed,gray!30},
-    legend pos=north west,
-    legend style={font=\small, cells={anchor=west}},
-    tick label style={font=\small},
-    label style={font=\small},
-    clip=false,
-  ]
-
-  \addplot[thick, blue!70!black, smooth, domain=0:24, samples=80]
-    { 1/(1+exp(-0.42*(x-11))) };
-  \addlegendentry{Planned $P_{i,t}^{\mathrm{plan}}$}
-
-  \addplot[thick, red!60!black, smooth, domain=0:24, samples=80, dashed]
-    { 0.88/(1+exp(-0.42*(x-15))) };
-  \addlegendentry{Actual $P_{i,t}^{\mathrm{actual}}$}
-
-  \addplot[densely dotted, gray!70, thick]
-    coordinates {(0,0.33)(24,0.33)};
-  \node[font=\footnotesize, gray!80, right]
-    at (axis cs:24.2,0.33) {$\theta_{i,1}$};
-
-  \addplot[densely dotted, gray!70, thick]
-    coordinates {(0,0.66)(24,0.66)};
-  \node[font=\footnotesize, gray!80, right]
-    at (axis cs:24.2,0.66) {$\theta_{i,2}$};
-
-  \addplot[densely dotted, gray!70, thick]
-    coordinates {(0,1.00)(24,1.00)};
-  \node[font=\footnotesize, gray!80, right]
-    at (axis cs:24.2,1.00) {$\theta_{i,3}{=}1$};
-
-  \draw[->, thick, purple!70!black]
-    (axis cs:12,0.50) -- (axis cs:12,0.30)
-    node[midway, right, font=\footnotesize, purple!70!black]
-      {$\delta_{i,t}<0$};
-
-  \fill[red!8, opacity=0.8]
-    (axis cs:19,0) rectangle (axis cs:24,1.18);
-  \node[font=\footnotesize, red!60!black, align=center]
-    at (axis cs:21.5,0.46)
-    {penalty\\cap\\$\Lambda_i{\cdot}CP_i$};
-
-  \draw[dashed, blue!55, thick]
-    (axis cs:20,0) -- (axis cs:20,1.12);
-  \node[font=\footnotesize, blue!60, above]
-    at (axis cs:20,1.12) {$f_i$};
-
-  \draw[dashed, red!55, thick]
-    (axis cs:23,0) -- (axis cs:23,1.12);
-  \node[font=\footnotesize, red!60, above]
-    at (axis cs:23,1.12) {$\hat{f}_{i,t}$};
-
-  \draw[<->, thick, black!55]
-    (axis cs:20,1.10) -- (axis cs:23,1.10)
-    node[midway, above, font=\footnotesize]
-      {$>\Lambda_i/r_i \Rightarrow$ cond.~\eqref{eq:term_cond1}};
-
-  \node[draw=black!35, rounded corners, fill=white,
-        font=\footnotesize, inner sep=5pt, align=left]
-    at (axis cs:5.0,0.80) {
-      $\mathrm{SPI}_{i,t}
-        = P_{i,t}^{\mathrm{actual}}/P_{i,t}^{\mathrm{plan}} < 1$\\[4pt]
-      $\mathrm{EAC}_{i,t}
-        = E_{i,t} + \dfrac{\mathrm{BAC}_i - \mathrm{EV}_{i,t}}{\mathrm{CPI}_{i,t}}
-        > (1+\mu_i){\cdot}\mathrm{BAC}_i$
+  \centering
+  \begin{tikzpicture}
+  \begin{axis}[
+      width=13cm, height=7.5cm,
+      xlabel={Period $t$},
+      ylabel={Cumulative progress},
+      xmin=0, xmax=25,
+      ymin=0, ymax=1.18,
+      xtick={0,4,8,12,16.65,20,24},
+      ytick={0,0.25,0.5,0.683,0.75,0.937,1.0},
+      yticklabels={0,0.25,0.50,0.683,0.75,0.937,1.00},
+      grid=major,
+      grid style={dashed,gray!30},
+      legend pos=north west,
+      legend style={font=\small, cells={anchor=west}},
+      tick label style={font=\small},
+      label style={font=\small},
+      clip=false,
+    ]
+    % ⚠️ this needs calibration. the actual curve must be expected to cross the threshold at an integer time
+  
+    \addplot[thick, blue!70!black, smooth, domain=0:20, samples=80]
+      { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
+    \addlegendentry{Planned progress}
+  
+    % \addplot[thick, red!60!black, smooth, domain=0:24, samples=80, dashed]
+    %   { (0.88/(1+exp(-0.42*(x-15)))) / 0.860 };
+    % \addlegendentry{Actual progress}
+    
+    \addplot[thick, red!60!black, smooth, domain=0:16.65, samples=80]
+    { (1/(1+exp(-0.34*(x-11)))) / 0.945 };
+    \addlegendentry{Actual progress}
+  
+    \draw[dashed, green!55!black, thick]
+    (axis cs:16.65,0) -- (axis cs:16.65,1.25);
+  
+    \addplot[thick, red!80!black, dashdotted]
+    coordinates {
+      (16.65,0.683)
+      (23,1)
     };
-
-\end{axis}
-\end{tikzpicture}
-\caption{S-curve expenditure profile with EVM signals for a lagging project.
-  The planned curve follows the regularized incomplete Beta function; actual
-  progress runs below it, producing negative signed deviation $\delta_{i,t}$
-  and $\mathrm{SPI}_{i,t} < 1$. The EVM annotation box shows the two
-  forward-looking signals that drive the termination conditions: the forecast
-  finish gap (Condition~1) and the Estimate at Completion exceedance
-  (Condition~2). The shaded region marks where Condition~1 activates.}
-\label{fig:scurve_evm}
-\end{figure}
+    \addlegendentry{Forecasted completion (linear)}
+  
+    \addplot[densely dotted, gray!60!black, thick]
+    coordinates {(0,0.937)(16.65,0.937)};
+  
+    \addplot[densely dotted, gray!60!black, thick]
+    coordinates {(0,0.683)(16.65,0.683)};
+    
+    \fill[red!8, opacity=0.8]
+    (axis cs:20,0) rectangle (axis cs:23,1.18);
+    \node[font=\footnotesize, red!60!black, align=center]
+      at (axis cs:21.5,0.46)
+      {penalty\\cap};
+  
+    \draw[dashed, blue!55, thick]
+      (axis cs:20,0) -- (axis cs:20,1.25);
+    \node[font=\footnotesize, blue!60, left]
+      at (axis cs:20,1.12) {$f_i$};
+  
+    \draw[dashed, red!55, thick]
+      (axis cs:24,0) -- (axis cs:24,1.25);
+    \node[font=\footnotesize, red!60, right]
+      at (axis cs:24,1.12) {$\hat{f}_{i,t}$};
+  
+    \draw[<->, thick, black!55]
+      (axis cs:20,1.25) -- (axis cs:24,1.25)
+      node[midway, above, font=\footnotesize]
+        {$\delta_{i,t} > \Lambda_i/r_i \Rightarrow$ cond.~(\ref{eq:term_cond1})};
+  
+  \end{axis}
+  \end{tikzpicture}
+  \caption{actual progress runs below, producing negative signed deviation $\delta_{i,t}$
+    and values $\mathrm{SPI}_{i,t},\,\mathrm{CPI}_{i,t} < 1$. When the forecast
+    finish gap $\hat{f}_{i,t}-f_i$ exceeds $\Lambda_i/r_i$ (shaded region),
+    Termination Condition~(\ref{eq:term_cond1}) activates.}
+  \label{fig:scurve_evm}
+  \end{figure}
+  
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{Deviation Penalty}
@@ -532,77 +524,88 @@ recovered from portfolio inflows in subsequent periods consistent with
 FIDIC termination clauses \citep{FIDIC2017}.
 
 \begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    every node/.style={font=\small},
-    state/.style={circle, draw=black!60, fill=white,
-                  minimum size=2.8cm, align=center, thick},
-    grace/.style={circle, draw=orange!80!black, fill=orange!7,
-                  minimum size=2.8cm, align=center, thick},
-    term/.style={circle, draw=red!70!black, fill=red!7,
-                 minimum size=2.8cm, align=center, thick},
-  ]
-
-  \node[state]  (normal) at (0,0)
-    {\textbf{Normal}\\[3pt]
-     $\tau_{i,t}^{\mathrm{rem}} = \tau_i^{\mathrm{tol}}$};
-
-  \node[grace]  (grace)  at (6.5,0)
-    {\textbf{Grace Period}\\[3pt]
-     $\tau_{i,t}^{\mathrm{rem}}$\\decrementing};
-
-  \node[term]   (term)   at (13,0)
-    {\textbf{Terminated}\\[3pt]
-     absorbing\\$R_i^{\mathrm{term}} \to V_t$};
-
-  \draw[->, thick] (-2.2,0) -- (normal.west)
-    node[midway, above, font=\footnotesize] {$t = s_i$};
-
-  \draw[->, thick, orange!80!black]
-    (normal.north) to[out=30, in=150]
-    node[above, font=\footnotesize, align=center]
-      {\eqref{eq:term_cond1} $\wedge$ \eqref{eq:term_cond2}\\both active}
-    (grace.north);
-
-  \draw[->, thick, green!50!black]
-    (grace.south) to[out=210, in=330]
-    node[below, font=\footnotesize, align=center]
-      {either condition lapses:\\
-       $\tau_{i,t}^{\mathrm{rem}} \leftarrow \tau_i^{\mathrm{tol}}$}
-    (normal.south);
-
-  \draw[->, thick, orange!70!black]
-    (grace) to[out=80, in=100, looseness=5]
-    node[above, font=\footnotesize, align=center]
-      {both still active:\\
-       $\tau_{i,t}^{\mathrm{rem}} \mathrel{-}= 1$}
-    (grace);
-
-  \draw[->, thick, red!70!black] (grace.east) -- (term.west)
-    node[midway, above, font=\footnotesize, align=center]
-      {$\tau_{i,t}^{\mathrm{rem}} = 0$:\\terminate};
-
-  \draw[->, thick, black!35]
-    (normal) to[out=80, in=100, looseness=5]
-    node[above, font=\footnotesize] {conditions inactive}
-    (normal);
-
-  \draw[->, dashed, gray!60]
-    (term.south) -- ++(0,-1.1)
-    node[below, align=center, font=\footnotesize, gray!60]
-      {settlement $R_i^{\mathrm{term}}$ enters $V_t$\\
-       (priority recovery if $R_i^{\mathrm{term}}<0$)};
-
-\end{tikzpicture}
-\caption{Finite-state representation of the termination mechanic for project
-  $i$. The cure-period counter $\tau_{i,t}^{\mathrm{rem}}$ decrements each
-  period both conditions~\eqref{eq:term_cond1}--\eqref{eq:term_cond2} are
-  simultaneously active, and resets to $\tau_i^{\mathrm{tol}}$ if either
-  lapses. Termination executes in the period the counter reaches zero.
-  The terminated state is absorbing; settlement enters portfolio inflows,
-  with negative obligations recovered via priority allocation.}
-\label{fig:state_machine}
-\end{figure}
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+      every node/.style={font=\small},
+      state/.style={circle, draw=black!60, fill=white,
+                    minimum size=2.8cm, align=center, thick},
+      grace/.style={circle, draw=orange!80!black, fill=orange!7,
+                    minimum size=2.8cm, align=center, thick},
+      term/.style={circle, draw=red!70!black, fill=red!7,
+                    minimum size=2.8cm, align=center, thick},
+      posnode/.style={rectangle, rounded corners=6pt, draw=green!60!black,
+                  fill=green!6, minimum width=3.2cm, minimum height=1.2cm,
+                  align=center, thick},
+      negnode/.style={rectangle, rounded corners=6pt, draw=blue!60!black,
+                  fill=blue!6, minimum width=3.2cm, minimum height=1.2cm,
+                  align=center, thick},
+    ]
+  
+    \node[state] (normal) at (0,0)
+      {\textbf{Normal}\\[3pt]
+        $\tau_{i,t}^{\mathrm{rem}} = \tau_i^{\mathrm{tol}}$};
+  
+    \node[grace] (grace) at (6.5,0)
+      {\textbf{Grace Period}\\[3pt]
+        $\tau_{i,t}^{\mathrm{rem}} \mathrel{-}= 1$};
+  
+    \node[term] (term) at (13,0)
+      {\textbf{Terminated}};
+  
+    \node[posnode] (posout) at (18,1.6)
+      {$R_i^{\mathrm{term}}$ enters $V_t$};
+  
+    \node[negnode] (negout) at (18,-1.6)
+      {priority-queue\\cost allocation};
+  
+    \draw[->, thick] (-2.2,0) -- (normal.west)
+      node[midway, above, font=\normalsize] {$t = s_i$};
+  
+    \draw[->, thick, orange!80!black]
+      (normal.north) to[out=30, in=150]
+      node[above, font=\normalsize, align=center]
+        {(\ref{eq:term_cond1}) $\wedge$ (\ref{eq:term_cond2})\\both conditions active}
+      (grace.north);
+  
+    \draw[->, thick, green!50!black]
+      (grace.south) to[out=210, in=330]
+      node[below, font=\normalsize, align=center]
+        {either condition lapses}
+      (normal.south);
+  
+    \draw[->, thick, orange!70!black]
+      (grace) to[out=20, in=60, looseness=5]
+      node[above, font=\normalsize, sloped]
+        {both still active}
+      (grace);
+  
+    \draw[->, thick, red!70!black] (grace.east) -- (term.west)
+      node[midway, below, font=\normalsize, align=center]
+        {$\tau_{i,t}^{\mathrm{rem}} = 0$};
+  
+    \draw[->, thick, black]
+      (normal) to[out=110, in=150, looseness=5]
+      node[above, font=\normalsize, sloped] {conditions inactive}
+      (normal);
+  
+    \draw[->, thick, green!60!black]
+      (term.east) to[out=30, in=180]
+      node[midway, above, font=\normalsize, sloped]
+        {$R_i^{\mathrm{term}} > 0$}
+      (posout.west);
+  
+    \draw[->, thick, blue!60!black]
+      (term.east) to[out=-30, in=180]
+      node[midway, below, font=\normalsize, sloped]
+        {$R_i^{\mathrm{term}} < 0$}
+      (negout.west);
+  
+  \end{tikzpicture}%
+  }
+  \caption{Finite-state representation of the termination mechanic for project $i$.}
+  \label{fig:state_machine}
+  \end{figure}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{Portfolio Cash Balance}
