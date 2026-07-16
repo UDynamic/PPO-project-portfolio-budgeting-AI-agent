@@ -68,65 +68,130 @@ portfolio manager. Termination is not a discrete agent action but an endogenous 
 mechanic demonstrating project failure; it is preceded by a cure period modelled
 as a project-specific tolerance counter observable in the portfolio state.
 
+
 \begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    node distance=1.8cm,
-    box/.style={rectangle, rounded corners=5pt, draw=black!60,
-                fill=blue!8, minimum width=4.2cm,
-                minimum height=1.2cm, align=center, font=\small},
-    env/.style={rectangle, rounded corners=5pt, draw=black!60,
-                fill=orange!10, minimum width=4.2cm,
-                minimum height=1.2cm, align=center, font=\small},
-    obs/.style={rectangle, rounded corners=5pt, draw=black!60,
-                fill=green!8, minimum width=10.2cm,
-                minimum height=1.4cm, align=center, font=\small},
-    arr/.style={->, thick},
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}[
+      every node/.style = {font=\normalsize},
+      box/.style = {
+        rectangle, rounded corners=6pt,
+        draw, thick,
+        minimum width=3.4cm, minimum height=1.2cm,
+        align=center
+      },
+      agent/.style  = {box, draw=violet!70!black, fill=violet!10},
+      contr/.style  = {box, draw=orange!70!red,   fill=orange!8},
+      client/.style = {box, draw=teal!70!black,   fill=teal!8},
+      state/.style  = {
+        rectangle, rounded corners=6pt,
+        draw=gray!60, thick, fill=gray!6,
+        minimum width=17cm, minimum height=1.3cm,
+        align=center
+      },
+      act/.style  = {-{Latex[length=6pt]}, thick, violet!70!black},
+      rew/.style  = {-{Latex[length=6pt]}, thick, blue!60!black, dashed},
+      obs/.style  = {-{Latex[length=6pt]}, thick, gray!50!black},
+      prog/.style = {-{Latex[length=6pt]}, thick, orange!70!red},
+      int/.style  = {-{Latex[length=6pt]}, thick, teal!60!black, dashed},
+      lbl/.style  = {font=\normalsize},
     ]
-
-    \node[box] (pm)
-    {\textbf{Portfolio Manager}\\policy $\pi(S_t) \to \mathbf{x}_t$};
-
-    \node[env, right=3.8cm of pm] (contractor)
-    {\textbf{Contractor}\\project execution};
-
-    \node[obs, below=2.4cm of $(pm)!0.5!(contractor)$] (state)
-    {\textbf{Observable State} $S_t$:\quad
-        $\bigl\{P_{i,t}^{\mathrm{actual}},\;
-        \mathrm{CPI}_{i,t},\;\mathrm{SPI}_{i,t},\;
-        \delta_{i,t},\;\Delta_{i,t}^{\mathrm{pen}},\;
-        \mathrm{status}_{i,t},\;\tau_{i,t}^{\mathrm{rem}}\bigr\}_{i},\;B_t$};
-
-    \draw[arr, blue!60!black] (pm.east) -- (contractor.west)
-    node[midway, above, font=\footnotesize] {allocation $\mathbf{x}_t$};
-
-    \draw[arr, orange!70!black]
-    (contractor.south) -- ++(0,-0.85) -| (state.north east)
-    node[near start, right, font=\footnotesize, align=left]
-        {$\Delta P_{i,t} = \eta_{i,t}\,x_{i,t}/\mathrm{BAC}_i$\\
-        \textcolor{gray!70}{($\eta_{i,t}$ unobservable)}};
-
-    \draw[arr, green!50!black]
-    (state.north west) -- ++(0,0.85) -| (pm.south)
-    node[near start, left, font=\footnotesize] {observe $S_t$};
-
-    \draw[arr, dashed, green!55!black]
-    (contractor.north) -- ++(0,1.1)
-    -- ++(-6.0,0)
-    -- (pm.north)
-    node[near end, above, font=\footnotesize, green!55!black, xshift=1.2cm]
-        {FIDIC payments:\;
-        $R_{i,j}^{\mathrm{net}},\;R_i^{\mathrm{ret}},\;R_i^{\mathrm{term}}$};
-
-\end{tikzpicture}
-\caption{Portfolio governance feedback loop. The portfolio manager (agent)
-    controls only the budget allocation vector $\mathbf{x}_t$. Contractors
-    convert allocations into physical progress through efficiency $\eta_{i,t}$,
-    which is unobservable and realized only after commitment. The full state
-    $S_t$ is observable each period; FIDIC milestone payments, retention
-    release, and termination settlement flow back as cash inflows.}
-\label{fig:feedback_loop}
-\end{figure}
+    
+      %% ── NODES ──────────────────────────────────────────────────────────────
+    
+      % Agent (left)
+      \node[agent] (pm) {%
+        \textbf{Portfolio Manager}\\[2pt]
+        policy $\pi(S_t)\!\to\!\mathbf{x}_t$};
+    
+      % Client (left of contractor, inside environment)
+      \node[client, right=10cm of pm] (client) {%
+        \textbf{Client}\\[2pt]
+        milestone approval};
+      
+      % Contractor (right side of environment, placed first)
+      \node[contr, left=3cm of client] (contractor) {%
+        \textbf{Contractor}\\[2pt]
+        project execution};
+    
+      % Environment bounding box — drawn BEFORE redrawing inner nodes
+      \node[
+        rectangle, rounded corners=20pt,
+        draw=orange!50!black, thick, fill=orange!4,
+        inner xsep=20pt, inner ysep=18pt,
+        fit=(contractor)(client),
+        label={[font=\footnotesize\itshape, text=orange!60!black]
+               above:Environment \textit{(contract)}},
+      ] (env) {};
+    
+      % Redraw inner nodes on top of the environment rect
+      % Client (left of contractor, inside environment)
+      \node[client, right=10cm of pm] (client) {%
+        \textbf{Client}\\[2pt]
+        milestone approval};
+      
+      \node[contr, left=3cm of client] (contractor) {%
+        \textbf{Contractor}\\[2pt]
+        project execution};
+    
+      % Observable state (below, centred)
+      \node[state,
+            below=3.5cm of $(pm.south)!0.55!(contractor.south)$] (state) 
+            {\textbf{Observable State} $S_t$:\quad
+            $\bigl\{P_{i,t}^{\mathrm{actual}},\;
+            \mathrm{CPI}_{i,t},\;\mathrm{SPI}_{i,t},\;
+            \mathrm{EAC}_{i,t},\;
+            \delta_{i,t},\;\Delta_{i,t}^{\mathrm{pen}},\;
+            \mathrm{status}_{i,t},\;\tau_{i,t}^{\mathrm{rem}}\bigr\}_{i},\;B_t$};
+    
+      %% ── ARROWS ─────────────────────────────────────────────────────────────
+    
+      % 1. Action: Agent → Contractor (straight horizontal, side to side)
+      \draw[act]
+        (pm.east) -- (contractor.west)
+        node[midway, above, lbl, violet!80!black] {allocation $\mathbf{x}_t$};
+    
+      % 2. Internal: Contractor → Client (straight horizontal inside env)
+      \draw[prog]
+        (contractor.east) -- (client.west)
+        node[midway, above, lbl, orange!80!red] {progress $\Delta P_{i,t}$};
+    
+      % 3. Reward: Client → Agent (over the top, clean arc)
+      \draw[rew]
+        (client.north)
+          -- ++(0, 1.4)
+          -| (pm.north)
+        node[pos=0.28, above, lbl, blue!60!black]
+          {payments:\;
+           $R_{i,j}^{\mathrm{net}},\;R_i^{\mathrm{ret}},\;R_i^{\mathrm{term}}$
+           \quad(reward $r_t$)};
+    
+      % 4. Delta P update: contractor RIGHT side → state RIGHT side (clean vertical)
+      \draw[prog]
+      (contractor.south)
+          -- (state.north -| contractor)
+          node[midway,right,lbl]{$\Delta P_{i,t}=\eta_{i,t}x_{i,t}/\mathrm{BAC}_i$};
+  
+    
+      % 5. Milestone revenue: Client → State (straight down, side entry)
+      \draw[int]
+        (client.east) 
+        -- ++(1.2, 0)
+        |- (state.east)
+        node[pos=0.25, left, lbl, teal!60!black] {milestone revenue};
+    
+      % 6. Observation: State LEFT side → Agent LEFT side (clean horizontal loop)
+      \draw[obs]
+        (state.west)
+          -- ++(-1.2, 0)
+          |- (pm.west)
+        node[pos=0.25, right, lbl, gray!60!black] {observe $S_t$};
+    
+    \end{tikzpicture}%
+    }
+    \caption{Portfolio governance as a reinforcement learning feedback loop.}
+    \label{fig:feedback_loop}
+    \end{figure}
 
 \paragraph{Project execution.}
 At the project level, the contractor controls workforce, materials, equipment,
@@ -192,18 +257,84 @@ completion over partial delivery. In the formulation, retention release enters
 the portfolio cash balance as a lump inflow in the period the final milestone
 is certified.
 
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        every node/.style={font=\small},
+        inflow/.style={->, thick, green!50!black},
+        outflow/.style={->, thick, red!70!black},
+        ]
+    
+        \draw[->, thick] (0,0) -- (13.0,0) node[right] {$t$};
+    
+        \foreach \x/\lbl in {1/$s_i$, 4/$\theta_{i,1}$, 7/$\theta_{i,2}$,
+                            10/$\theta_{i,3}$, 10.8/$f_i$}{
+        \draw (\x,0.08) -- (\x,-0.08)
+            node[below, font=\footnotesize] {\lbl};
+        }
+    
+        \draw[inflow] (1,0) -- (1,2.4)
+        node[above, align=center, font=\footnotesize]
+            {Advance payment};
+    
+        \draw[inflow] (4,0) -- (4,1.4)
+        node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
+        \draw[inflow] (7,0) -- (7,1.4)
+        node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
+    
+        \draw[<->, dashed, blue] (7,1.05) -- (7.8,1.05)
+        node[midway, right, font=\scriptsize, blue] {stochastic delay};
+        \draw[dashed, blue] (7.8,0) -- (7.8,1.05);
+    
+        \draw[inflow] (10,0) -- (10,1.4)
+        node[above, align=center, font=\footnotesize]
+            {$R_{i,3}^{\mathrm{net}}$};
+        
+        \draw[inflow] (10.8,0) -- (10.8,2.4)
+        node[right, align=center, font=\footnotesize]
+            {final payment $+\,R_i^{\mathrm{ret}}$};
+    
+        \foreach \x in {1.5,2.2,2.9,3.6,4.3,5.0,5.7,6.4,7.1,7.8,8.5,9.2,9.9}{
+        \draw[outflow] (\x,0) -- (\x,-0.75);
+        }
+        \node[red!70!black, font=\footnotesize]
+        at (5.7,-1.15) {Budget allocations $x_{i,t}$ (outflows each period)};
+    
+        \draw[dashed, thick, black] (6.0,2.4) -- (6.0,-2.4)
+        node[below, align=center, font=\footnotesize, black]
+            {Early termination {\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
+    
+        \node[draw=gray!50, rounded corners, inner sep=5pt,
+            align=left, font=\footnotesize] at (12.2,-1.5) {
+        \textcolor{green!50!black}{$\uparrow$} Inflow\\[2pt]
+        \textcolor{red!70!black}{$\downarrow$} Outflow\\[2pt]
+        \textcolor{black}{---} termination
+        };
+    
+    \end{tikzpicture}
+    \caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics.}
+    \label{fig:cashflow_timeline}
+    \end{figure}
+    
 \paragraph{Earned value management as a performance signal.}
 The Earned Value Management framework \citep{Fleming2010} provides the
-diagnostic vocabulary used to monitor contractor performance. The Cost
-Performance Index $\mathrm{CPI}_{i,t} = \text{BCWP}_{i,t} /
+diagnostic vocabulary used to monitor contractor performance. The Cost Performance Index $\mathrm{CPI}_{i,t} = \text{BCWP}_{i,t} /
 \text{ACWP}_{i,t}$ measures how much budgeted value has been earned per unit
 of actual expenditure; values below unity indicate cost overrun. The Schedule
 Performance Index $\mathrm{SPI}_{i,t} = \text{BCWP}_{i,t} /
 \text{BCWS}_{i,t}$ measures actual progress relative to planned progress;
-values below unity indicate schedule lag \citep{Fleming2010}. In the present
-formulation, these indices are observable state variables that inform the
-allocation decision; their stochastic dynamics at Levels~2 and~3 are
-calibrated from empirical EVM datasets \citep{Acebes2015, Batselier2017}.
+values below unity indicate schedule lag \citep{Fleming2010}. The Estimate at
+Completion $\mathrm{EAC}_{i,t} = E_{i,t} + (\mathrm{BAC}_i -
+\mathrm{EV}_{i,t})/\mathrm{CPI}_{i,t}$ projects the total cost of the project
+at the current cost performance rate, directly analogous to the forecast finish
+date computation; \citet{Christensen1993} established that this formulation
+produces stable and accurate cost-at-completion forecasts beyond the 20\%
+completion mark \citep{Lipke2003}. In the present formulation, all three
+indices are observable state variables; CPI and SPI additionally feed the two
+forward-looking termination conditions, making their stochastic dynamics ---
+calibrated from empirical EVM datasets \citep{Acebes2015, Batselier2017} ---
+directly consequential for termination timing.
 
 \paragraph{S-curve expenditure profiles.}
 The planned expenditure of a construction or engineering project follows a
@@ -223,80 +354,185 @@ on the value of work completed at the termination date, net of any outstanding
 advance recovery obligation. In the present model, termination is an endogenous environment mechanic, not a
 deliberate agent action. It is triggered when two conditions hold simultaneously
 for a project-specific number of consecutive periods --- the termination
-tolerance $\tau_i^{\mathrm{tol}}$: the forecast finish deviation has exceeded
-the contractual penalty ceiling, and the cost performance index has fallen below
-a project-specific recovery threshold $\kappa_i$. This joint persistence
+tolerance $\tau_i^{\mathrm{tol}}$. Both conditions are forward-looking
+trajectory estimates symmetric in structure to one another: Condition~1 fires
+when the forecast finish date $\hat{f}_{i,t}$, extrapolated from the current
+schedule performance rate, exceeds the planned finish by more than the
+contractual schedule tolerance; Condition~2 fires when the Estimate at
+Completion $\mathrm{EAC}_{i,t} = E_{i,t} + (\mathrm{BAC}_i -
+\mathrm{EV}_{i,t})/\mathrm{CPI}_{i,t}$ exceeds the project-specific maximum
+tolerable cost overrun $(1+\mu_i)\cdot\mathrm{BAC}_i$. This joint persistence
 requirement models the FIDIC cure period \citep{FIDIC2017, Ndekugri2008}, the
 contractually prescribed interval during which both parties are obliged to
 attempt performance recovery before the client may formally terminate. The
 tolerance counter $\tau_{i,t}^{\mathrm{rem}}$ --- periods remaining before
 termination executes --- is part of the observable environment state; the agent
 cannot override its dynamics but observes its value and can influence it
-indirectly through allocation decisions that affect $\mathrm{SPI}_{i,t}$ and
+indirectly through allocation decisions that drive $\mathrm{SPI}_{i,t}$ and
 $\mathrm{CPI}_{i,t}$. When the counter reaches zero, termination executes in
 the following period, and its timing affects the portfolio cash balance through
 the settlement payment $R_i^{\mathrm{term}}$, which may be positive or negative
 depending on the advance recovery position.
 
 \begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    every node/.style={font=\small},
-    inflow/.style={->, thick, green!50!black},
-    outflow/.style={->, thick, red!70!black},
+  \centering
+  \begin{tikzpicture}
+
+  %% ── PRIMARY AXIS (left): progress 0–1 ──────────────────────────────
+  \begin{axis}[
+      name=mainax,
+      width=13cm, height=7.5cm,
+      xlabel={Period $t$},
+      ylabel={Cumulative progress (normalized)},
+      xmin=0, xmax=25,
+      ymin=0, ymax=1.30,
+      xtick={0,4,8,12,16.65,20,24},
+      ytick={0,0.25,0.5,0.683,0.75,0.937,1.0},
+      yticklabels={0,0.25,0.50,0.683,0.75,0.937,1.00},
+      grid=major,
+      grid style={dashed,gray!30},
+      legend style={
+        at={(0.0,1.45)},
+        anchor=north west,
+        font=\small,
+        cells={anchor=west},
+        row sep=2pt,
+        draw=none,
+        fill=white,
+      },
+      tick label style={font=\small},
+      label style={font=\small},
+      clip=false,
     ]
 
-    \draw[->, thick] (0,0) -- (13.0,0) node[right] {$t$};
+    %--- BCWS: baseline planned S-curve (blue) ---
+    \addplot[thick, blue!70!black, smooth, domain=0:20, samples=80]
+      { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
+    \addlegendentry{BCWS (Budgeted Cost of Work Scheduled)}
 
-    \foreach \x/\lbl in {1/$s_i$, 4/$\theta_{i,1}$, 7/$\theta_{i,2}$,
-                        10/$\theta_{i,3}$, 10.8/$f_i$}{
-    \draw (\x,0.08) -- (\x,-0.08)
-        node[below, font=\footnotesize] {\lbl};
-    }
+    %--- BCWP: earned value (green), lags behind BCWS ---
+    \addplot[
+      thick,
+      green!55!black,
+      smooth
+      ] coordinates {
+        (0,0.01)
+        (4,0.07)
+        (8,0.25)
+        (12,0.45)
+      };
+    \addlegendentry{BCWP (Budgeted Cost of Work Performed)}
 
-    \draw[inflow] (1,0) -- (1,2.4)
-    node[above, align=center, font=\footnotesize]
-        {Advance payment};
+    %--- Forecasted completion (dashdotted) ---
+    \addplot[thick, red!80!black, dashdotted]
+      coordinates { (16.65,0.683) (24,1) };
+    \addlegendentry{Forecasted completion (linear)}
 
-    \draw[inflow] (4,0) -- (4,1.4)
-    node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
-    \draw[inflow] (7,0) -- (7,1.4)
-    node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
+    %--- Dotted reference lines at status date ---
+    \addplot[densely dotted, gray!60!black, thick]
+      coordinates {(0,0.937)(16.65,0.937)};
+    \addplot[densely dotted, gray!60!black, thick]
+      coordinates {(0,0.683)(16.65,0.683)};
 
-    \draw[<->, dashed, blue] (7,1.05) -- (7.8,1.05)
-    node[midway, right, font=\scriptsize, blue] {stochastic delay};
-    \draw[dashed, blue] (7.8,0) -- (7.8,1.05);
+    %--- SCHEDULE OVERRUN: vertical red filled box ---
+    \fill[red!12, opacity=0.85]
+      (axis cs:20,0) rectangle (axis cs:23,1.25);
+    \node[font=\footnotesize, red!60!black, align=center]
+      at (axis cs:21.5,0.40)
+      {schedule\\overrun\\cap};
 
-    \draw[inflow] (10,0) -- (10,1.4)
-    node[above, align=center, font=\footnotesize]
-        {$R_{i,3}^{\mathrm{net}}$};
-    
-    \draw[inflow] (10.8,0) -- (10.8,2.4)
-    node[right, align=center, font=\footnotesize]
-        {final payment $+\,R_i^{\mathrm{ret}}$};
+    %--- COST OVERRUN: horizontal red band above BAC (top of BCWS) ---
+    %    In left-axis coords, BAC = 1.0; band goes up to 1.22
+    \fill[red!12, opacity=0.85]
+      (axis cs:0,1.0) rectangle (axis cs:20,1.22);
+    \node[font=\footnotesize, red!60!black, align=center]
+      at (axis cs:10,1.11)
+      {cost overrun cap};
 
-    \foreach \x in {1.5,2.2,2.9,3.6,4.3,5.0,5.7,6.4,7.1,7.8,8.5,9.2,9.9}{
-    \draw[outflow] (\x,0) -- (\x,-0.75);
-    }
-    \node[red!70!black, font=\footnotesize]
-    at (5.7,-1.15) {Budget allocations $x_{i,t}$ (outflows each period)};
+    %--- Status date vertical dashed line ---
+    \draw[dashed, green!55!black, thick]
+      (axis cs:16.65,0) -- (axis cs:16.65,1.27);
 
-    \draw[dashed, thick, black] (6.0,2.4) -- (6.0,-2.4)
-    node[below, align=center, font=\footnotesize, black]
-        {Early termination {\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
+    %--- Planned finish ---
+    \draw[dashed, blue!55, thick]
+      (axis cs:20,0) -- (axis cs:20,1.27);
+    \node[font=\footnotesize, blue!60, left]
+      at (axis cs:20,1.245) {$f_i$};
 
-    \node[draw=gray!50, rounded corners, inner sep=5pt,
-        align=left, font=\footnotesize] at (12.2,-1.5) {
-    \textcolor{green!50!black}{$\uparrow$} Inflow\\[2pt]
-    \textcolor{red!70!black}{$\downarrow$} Outflow\\[2pt]
-    \textcolor{black}{---} termination
-    };
+    %--- Forecasted finish ---
+    \draw[dashed, red!55, thick]
+      (axis cs:24,0) -- (axis cs:24,1.27);
+    \node[font=\footnotesize, red!60, right]
+      at (axis cs:24,1.245) {$\hat{f}_{i,t}$};
 
-\end{tikzpicture}
-\caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics.}
-\label{fig:cashflow_timeline}
+    %--- Schedule overrun arrow ---
+    \draw[<->, thick, black!55]
+      (axis cs:20,1.27) -- (axis cs:24,1.27)
+      node[midway, above, font=\footnotesize]
+        {$\delta_{i,t} > \Lambda_i/r_i \Rightarrow$ cond.~(\ref{eq:term_cond1})};
+
+  \end{axis}
+
+  %% ── SECONDARY AXIS (right): cost in budget units ────────────────────
+  %  BAC = 1.0 on this axis; cost overrun cap = 1.22 * BAC
+  %  ACWP is a cost curve that rises above BCWS in budget units.
+  %  We map: right-axis 0–1.30 aligns 1-to-1 with left-axis 0–1.30
+  %  so that BAC (right y = 1.0) sits exactly at the BCWS finish level.
+  \begin{axis}[
+      at={(mainax.south east)},
+      anchor=south east,
+      width=13cm, height=7.5cm,
+      xmin=0, xmax=25,
+      ymin=0, ymax=1.30,
+      axis x line=none,
+      axis y line=right,
+      ylabel={Cost (budget units)},
+      ylabel style={font=\small},
+      ytick={0, 0.25, 0.50, 0.75, 1.00, 1.22},
+      yticklabels={$0$, $0.25\,\mathrm{BAC}$, $0.50\,\mathrm{BAC}$,
+                   $0.75\,\mathrm{BAC}$, $\mathrm{BAC}$,
+                   $\mathrm{BAC}{+}\Lambda_c$},
+      legend style={
+        at={(0.0,1.17)},
+        anchor=north west,
+        font=\small,
+        cells={anchor=west},
+        row sep=2pt,
+        draw=none,
+        fill=white,
+      },
+      tick label style={font=\small},
+      clip=false,
+    ]
+
+    %--- ACWP: actual cost curve, riding above BCWS, saturating ~1.18 BAC ---
+    \addplot[
+      thick,
+      orange!85!black,
+      smooth
+      ] coordinates {
+        (0,0.01)
+        (4,0.07)
+        (8,0.26)
+        (12,0.54)
+      };
+    \addlegendentry{ACWP (Actual Cost of Work Performed)}
+
+  \end{axis}
+
+  \end{tikzpicture}
+  \caption{EVM S-curve: BCWS is the baseline plan; BCWP the earned value (left axis,
+    normalized progress); ACWP the actual cost incurred (right axis, budget units).
+    The vertical red band marks the schedule overrun cap beyond planned finish $f_i$;
+    the horizontal red band above BAC marks the cost overrun cap $\Lambda_c$.
+    Negative variances $\mathrm{SPI}_{i,t},\,\mathrm{CPI}_{i,t} < 1$ arise when
+    BCWP lags BCWS and ACWP exceeds BCWP.
+    Termination Condition~(\ref{eq:term_cond1}) activates when
+    $\hat{f}_{i,t}-f_i > \Lambda_i/r_i$.}
+  \label{fig:scurve_evm}
 \end{figure}
 
+  \FloatBarrier
 % ------------------------------------------------------------
 \subsection{The Three-Level Modelling Arc}
 \label{subsec:three_levels}
@@ -330,10 +566,13 @@ assumption.
 The MILP requires two structural choices that are standard in combinatorial
 optimisation. Milestone certification is a binary event --- a milestone is
 either certified or not --- captured by introducing binary decision variables
-$u_{i,j,t} \in \{0,1\}$. The symmetric running deviation penalty involves an
-absolute value and a cap, both of which are linearised by introducing auxiliary
-variables $d_{i,t}^+, d_{i,t}^- \geq 0$ for the positive and negative parts of
-the deviation. These linearisations are exact: no approximation is introduced. A third
+$u_{i,j,t} \in \{0,1\}$. The objective is pure discounted net cash flow:
+inflows minus outflows, discounted at rate $\gamma$. No deviation penalty
+enters the objective; the deviation state variable $\delta_{i,t}$ is tracked
+solely to feed the termination conditions, whose consequences --- loss of all
+future milestone payments, retention, and a potentially negative settlement
+--- provide sufficient incentive for the agent to manage schedule performance
+without requiring an additional penalty term \citep{Ng1999}. A second
 structural feature is the termination mechanic: under deterministic
 $\bar{\eta}_{i,t}$, both termination conditions and the tolerance counter
 trajectory $\tau_{i,t}^{\mathrm{rem}}$ are fully pre-computable, so
@@ -367,12 +606,12 @@ through repeated interaction with the environment, using sampled trajectories
 rather than exhaustive scenario trees.
 
 The mapping from MILP to CMDP is exact in structure. The decision variables
-$\{x_{i,t}\}$ become the action space; the state variables $(P_{i,t}^{\rm
-actual}, E_{i,t}, \mathrm{CPI}_{i,t}, \mathrm{SPI}_{i,t}, \delta_{i,t},
-\Delta_{i,t}^{\rm pen}, \mathrm{status}_{i,t}, \tau_{i,t}^{\mathrm{rem}},
-B_t)$ become the observation
-space; and the
-objective function becomes the reward signal. The CMDP is implemented as a
+$\{x_{i,t}\}$ become the action space; the state variables $$(P_{i,t}^{\rm
+actual}, E_{i,t}, \mathrm{CPI}_{i,t}, \mathrm{SPI}_{i,t},
+\mathrm{EAC}_{i,t}, \delta_{i,t}, \Delta_{i,t}^{\rm pen},
+\mathrm{status}_{i,t}, \tau_{i,t}^{\mathrm{rem}}, B_t)$$ become the
+observation space; and the objective function --- discounted net cash flow becomes the reward signal.
+The CMDP is implemented as a
 configurable Gymnasium-compatible environment \citep{Towers2024}, and a
 Proximal Policy Optimisation agent \citep{Schulman2017} is trained on it using
 domain randomisation \citep{Tobin2017} to ensure generalisation across project
@@ -393,7 +632,7 @@ framework of \citet{Dantzig1955}.
 
 The MDP formalisation used in Level~3 is, mathematically, a computationally
 tractable approach to solving a Bellman equation in a high-dimensional state
-space. The state space in the present problem --- $8n + 1$ continuous and
+space. The state space in the present problem --- $9n + 1$ continuous and
 categorical variables for a portfolio of $n$ projects --- is too large for
 tabular dynamic programming and too structured for model-free value-iteration
 methods, but well-suited to policy-gradient methods that learn a parameterised

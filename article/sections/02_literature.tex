@@ -84,7 +84,15 @@ Construction Industry Institute cost-engineering databases
 Contract governance structures --- particularly FIDIC forms (Red, Yellow, and
 Silver Books) --- prescribe the financial interaction between owner and
 contractor through milestone payment schedules, advance payment and recovery
-mechanisms, and retention clauses \citep{FIDIC2017}. Under FIDIC
+mechanisms, and retention clauses \citep{FIDIC2017}. The Estimate at
+Completion $\mathrm{EAC}_{i,t} = \mathrm{AC}_{i,t} + (\mathrm{BAC}_i -
+\mathrm{EV}_{i,t})/\mathrm{CPI}_{i,t}$ extends CPI into a forward-looking
+cost trajectory signal; \citet{Christensen1993} established across 155
+contracts that this formulation produces the most accurate and stable
+cost-at-completion forecasts, with reliability increasing beyond the 20\%
+completion mark \citep{Lipke2003}. The present model adopts EAC as the
+second termination condition signal, directly parallel to the forecast finish
+deviation used in Condition~1. Under FIDIC
 Sub-Clause~14.2, the advance payment is an interest-free mobilisation loan
 recovered through percentage deductions from interim payment certificates: if
 not otherwise specified in the Appendix to Tender, deductions commence once
@@ -176,7 +184,16 @@ portfolio-level budget allocation decision as a sequential stochastic
 optimisation problem in which a central decision-maker allocates funds across
 multiple active projects whose cash inflow and outflow trajectories are
 uncertain and coupled through a shared capital constraint.} The present work
-addresses this gap.
+addresses this gap. The objective is pure discounted net cash flow; no
+deviation penalty enters the objective function. This is a deliberate design
+choice: the consequences of sustained deviation --- termination and loss of
+all future milestone payments and retention --- are sufficient to make
+deviation undesirable without a separate penalty term, and including one would
+introduce an arbitrary scalarisation weight with no natural calibration from
+contract data \citep{Ng1999}. A consequence is that the learned policy may
+produce allocation trajectories that concentrate expenditure around milestone
+certification thresholds, mirroring documented contractor financial strategy
+in milestone-payment contracts \citep{Kenley2009, Kaka1993, Arditi2005}.
 
 % [PLACEHOLDER: Cash-flow modelling literature specific to EPC sector
 %  (Kaka and Price 1993, Navon 1996) to be incorporated. Also: literature
@@ -216,18 +233,25 @@ once.
 
 The present model integrates all three dimensions into a single environment
 mechanic. Termination is triggered when two conditions hold simultaneously: the
-forecast finish deviation has exceeded the contractual penalty ceiling, and the
-cost performance index has fallen below a project-specific recovery threshold
-$\kappa_i$. Rather than executing immediately, the environment decrements a
+forecast finish deviation has exceeded the contractual schedule tolerance
+(Condition~1), and the Estimate at Completion $\mathrm{EAC}_{i,t} =
+E_{i,t} + (\mathrm{BAC}_i - \mathrm{EV}_{i,t})/\mathrm{CPI}_{i,t}$ has
+exceeded the project-specific maximum tolerable cost overrun
+$(1+\mu_i)\cdot\mathrm{BAC}_i$ (Condition~2). Both conditions are
+forward-looking trajectory estimates symmetric in structure: remaining planned
+work divided by current performance rate, projected forward to completion
+\citep{Fleming2010, Christensen1993}. Rather than executing immediately, the environment decrements a
 project-specific tolerance counter $\tau_{i,t}^{\mathrm{rem}}$, which
 represents the remaining cure period. Termination executes only when the counter
 reaches zero; if either condition lapses before then, the counter resets to its
 project-specific maximum $\tau_i^{\mathrm{tol}}$. This mechanic is grounded
 simultaneously in FIDIC contract law \citep{FIDIC2017, Ndekugri2008}, the real
 options framing of the abandonment threshold \citep{Dixit1994,
-Huchzermeier2001}, and the escalation-of-commitment literature's evidence that
-observable performance signals must be sustained --- not transient --- before
-termination is justified \citep{Staw1987}. The tolerance counter is part of the
+Huchzermeier2001}, the EVM literature's validation of EAC as a stable
+forward cost signal \citep{Christensen1993, Lipke2003}, and the
+escalation-of-commitment literature's evidence that observable performance
+signals must be sustained --- not transient --- before termination is
+justified \citep{Staw1987}. The tolerance counter is part of the
 observable portfolio state, giving the RL agent an anticipatory signal that
 reflects contractual reality without granting it discretionary control over the
 termination outcome.
@@ -294,8 +318,8 @@ Second, existing stochastic models of project cash-flow uncertainty operate at
 the individual project level and do not feed uncertainty upward into a
 portfolio-level decision architecture with a shared budget constraint.
 
-the endogenous mechanics of project failure --- the joint modelling of
-forecast schedule deviation, cost performance deterioration, a contractual
+Third, the endogenous mechanics of project failure --- the joint modelling of
+forecast schedule deviation, EAC-based cost overrun trajectory, a contractual
 cure period, and termination settlement --- have not been embedded within a
 portfolio-level sequential decision framework in which budget allocation is
 the sole control variable.
