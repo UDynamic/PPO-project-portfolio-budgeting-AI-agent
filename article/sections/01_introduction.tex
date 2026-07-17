@@ -260,6 +260,7 @@ is certified.
 
 \begin{figure}[htbp]
     \centering
+    \resizebox{\textwidth}{!}{%
     \begin{tikzpicture}[
         every node/.style={font=\small},
         inflow/.style={->, thick, green!50!black},
@@ -313,6 +314,7 @@ is certified.
         };
     
     \end{tikzpicture}
+    }
     \caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics.}
     \label{fig:cashflow_timeline}
     \end{figure}
@@ -376,25 +378,35 @@ depending on the advance recovery position.
 
 \begin{figure}[htbp]
   \centering
+  \resizebox{\textwidth}{!}{%
   \begin{tikzpicture}
-
-  %% ── PRIMARY AXIS (left): progress 0–1 ──────────────────────────────
   \begin{axis}[
-      name=mainax,
-      width=13cm, height=7.5cm,
+      width=13cm,
+      height=7.5cm,
       xlabel={Period $t$},
-      ylabel={Cumulative progress (normalized)},
-      xmin=0, xmax=25,
-      ymin=0, ymax=1.30,
-      xtick={0,4,8,12,16.65,20,24},
-      ytick={0,0.25,0.5,0.683,0.75,0.937,1.0},
-      yticklabels={0,0.25,0.50,0.683,0.75,0.937,1.00},
+      ylabel={Normalized value (fraction of BAC)},
+      xmin=0,
+      xmax=25,
+      ymin=0,
+      ymax=1.30,
+      xtick={0,4,8,12,16,20,23,24},
+      ytick={0,0.25,0.45,0.54,0.60,0.75,1.00,1.10},
+      yticklabels={
+        $0$,
+        $0.25$,
+        $0.45$,
+        $0.54$,
+        $0.60$,
+        $0.75$,
+        $\mathrm{BAC}$,
+        $1.1\,\mathrm{BAC}$
+      },
       grid=major,
       grid style={dashed,gray!30},
       legend style={
-        at={(0.0,1.45)},
+        at={(1.05,0.4)},
         anchor=north west,
-        font=\small,
+        font=\footnotesize,
         cells={anchor=west},
         row sep=2pt,
         draw=none,
@@ -405,130 +417,165 @@ depending on the advance recovery position.
       clip=false,
     ]
 
-    %--- BCWS: baseline planned S-curve (blue) ---
-    \addplot[thick, blue!70!black, smooth, domain=0:20, samples=80]
-      { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
-    \addlegendentry{BCWS (Budgeted Cost of Work Scheduled)}
+    %-------------------------------------------------
+    % BCWS
+    %-------------------------------------------------
+    \addplot[
+      thick,
+      blue!70!black,
+      smooth,
+      domain=0:20,
+      samples=80
+    ]
+    { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
+    \addlegendentry{BCWS}
 
-    %--- BCWP: earned value (green), lags behind BCWS ---
+    %-------------------------------------------------
+    % BCWP history
+    %-------------------------------------------------
     \addplot[
       thick,
       green!55!black,
       smooth
-      ] coordinates {
-        (0,0.01)
-        (4,0.07)
-        (8,0.25)
-        (12,0.45)
-      };
-    \addlegendentry{BCWP (Budgeted Cost of Work Performed)}
+    ] coordinates {
+      (0,0.01)
+      (4,0.07)
+      (8,0.25)
+      (12,0.45)
+    };
+    \addlegendentry{BCWP}
 
-    %--- Forecasted completion (dashdotted) ---
-    \addplot[thick, red!80!black, dashdotted]
-      coordinates { (16.65,0.683) (24,1) };
-    \addlegendentry{Forecasted completion (linear)}
+    %-------------------------------------------------
+    % Forecast BCWP
+    %-------------------------------------------------
+    \addplot[
+      thick,
+      green!85!black,
+      dashed
+    ] coordinates {
+      (12,0.45)
+      (24,1.00)
+    };
+    \addlegendentry{BCWP extended}
 
-    %--- Dotted reference lines at status date ---
-    \addplot[densely dotted, gray!60!black, thick]
-      coordinates {(0,0.937)(16.65,0.937)};
-    \addplot[densely dotted, gray!60!black, thick]
-      coordinates {(0,0.683)(16.65,0.683)};
+    % Forecast finish marker
+    \addplot[
+      only marks,
+      mark=*,
+      mark size=2.8pt,
+      green!85!black,
+      forget plot
+    ] coordinates {
+      (24,1.00)
+    };
 
-    %--- SCHEDULE OVERRUN: vertical red filled box ---
-    \fill[red!12, opacity=0.85]
-      (axis cs:20,0) rectangle (axis cs:23,1.25);
-    \node[font=\footnotesize, red!60!black, align=center]
-      at (axis cs:21.5,0.40)
-      {schedule\\overrun\\cap};
-
-    %--- COST OVERRUN: horizontal red band above BAC (top of BCWS) ---
-    %    In left-axis coords, BAC = 1.0; band goes up to 1.22
-    \fill[red!12, opacity=0.85]
-      (axis cs:0,1.0) rectangle (axis cs:20,1.22);
-    \node[font=\footnotesize, red!60!black, align=center]
-      at (axis cs:10,1.11)
-      {cost overrun cap};
-
-    %--- Status date vertical dashed line ---
-    \draw[dashed, green!55!black, thick]
-      (axis cs:16.65,0) -- (axis cs:16.65,1.27);
-
-    %--- Planned finish ---
-    \draw[dashed, blue!55, thick]
-      (axis cs:20,0) -- (axis cs:20,1.27);
-    \node[font=\footnotesize, blue!60, left]
-      at (axis cs:20,1.245) {$f_i$};
-
-    %--- Forecasted finish ---
-    \draw[dashed, red!55, thick]
-      (axis cs:24,0) -- (axis cs:24,1.27);
-    \node[font=\footnotesize, red!60, right]
-      at (axis cs:24,1.245) {$\hat{f}_{i,t}$};
-
-    %--- Schedule overrun arrow ---
-    \draw[<->, thick, black!55]
-      (axis cs:20,1.27) -- (axis cs:24,1.27)
-      node[midway, above, font=\footnotesize]
-        {$\delta_{i,t} > \Lambda_i/r_i \Rightarrow$ cond.~(\ref{eq:term_cond1})};
-
-  \end{axis}
-
-  %% ── SECONDARY AXIS (right): cost in budget units ────────────────────
-  %  BAC = 1.0 on this axis; cost overrun cap = 1.22 * BAC
-  %  ACWP is a cost curve that rises above BCWS in budget units.
-  %  We map: right-axis 0–1.30 aligns 1-to-1 with left-axis 0–1.30
-  %  so that BAC (right y = 1.0) sits exactly at the BCWS finish level.
-  \begin{axis}[
-      at={(mainax.south east)},
-      anchor=south east,
-      width=13cm, height=7.5cm,
-      xmin=0, xmax=25,
-      ymin=0, ymax=1.30,
-      axis x line=none,
-      axis y line=right,
-      ylabel={Cost (budget units)},
-      ylabel style={font=\small},
-      ytick={0, 0.25, 0.50, 0.75, 1.00, 1.22},
-      yticklabels={$0$, $0.25\,\mathrm{BAC}$, $0.50\,\mathrm{BAC}$,
-                   $0.75\,\mathrm{BAC}$, $\mathrm{BAC}$,
-                   $\mathrm{BAC}{+}\Lambda_c$},
-      legend style={
-        at={(0.0,1.17)},
-        anchor=north west,
-        font=\small,
-        cells={anchor=west},
-        row sep=2pt,
-        draw=none,
-        fill=white,
-      },
-      tick label style={font=\small},
-      clip=false,
+    \node[
+      font=\footnotesize,
+      text=green!85!black,
+      anchor=west
     ]
+    at (axis cs:24,1.00)
+    {$\hat{f}_{i,t}=24$};
 
-    %--- ACWP: actual cost curve, riding above BCWS, saturating ~1.18 BAC ---
+    %-------------------------------------------------
+    % ACWP history
+    %-------------------------------------------------
     \addplot[
       thick,
       orange!85!black,
       smooth
-      ] coordinates {
-        (0,0.01)
-        (4,0.07)
-        (8,0.26)
-        (12,0.54)
-      };
-    \addlegendentry{ACWP (Actual Cost of Work Performed)}
+    ] coordinates {
+      (0,0.01)
+      (4,0.07)
+      (8,0.26)
+      (12,0.54)
+    };
+    \addlegendentry{ACWP}
+
+    %-------------------------------------------------
+    % Forecast ACWP
+    %-------------------------------------------------
+    \addplot[
+      thick,
+      orange!85!black,
+      densely dashed
+    ] coordinates {
+      (12,0.54)
+      (24,1.20)
+    };
+    \addlegendentry{ACWP extended}
+
+    % EAC marker
+    \addplot[
+      only marks,
+      mark=square*,
+      mark size=3pt,
+      orange!85!black
+    ] coordinates {
+      (24,1.20)
+    };
+
+    \node[
+      font=\footnotesize,
+      text=orange!85!black,
+      anchor=west,
+      align=left
+    ]
+    at (axis cs:24,1.20)
+    {$\mathrm{EAC}_{i,t}=1.2\,\mathrm{BAC}$};
+
+    %-------------------------------------------------
+    % Schedule overrun region
+    %-------------------------------------------------
+    \fill[red!12,opacity=0.65]
+      (axis cs:20,0)
+      rectangle
+      (axis cs:23,1.10);
+
+    \node[
+      font=\footnotesize,
+      red!60!black,
+      align=center
+    ]
+    at (axis cs:21.5,0.40)
+    {schedule\\overrun\\cap};
+
+    %-------------------------------------------------
+    % Cost overrun region
+    %-------------------------------------------------
+    \fill[red!12,opacity=0.65]
+      (axis cs:0,1.00)
+      rectangle
+      (axis cs:23,1.10);
+
+    \node[
+      font=\footnotesize,
+      red!60!black,
+      align=center
+    ]
+    at (axis cs:10,1.05)
+    {cost overrun cap};
+
+    %-------------------------------------------------
+    % Status date
+    %-------------------------------------------------
+
+    % Planned finish
+
+    \node[
+      font=\footnotesize,
+      blue!60,
+      above
+    ]
+    at (axis cs:20,1.0)
+    {$f_i=20$};
 
   \end{axis}
 
   \end{tikzpicture}
-  \caption{EVM S-curve: BCWS is the baseline plan; BCWP the earned value (left axis,
-    normalized progress); ACWP the actual cost incurred (right axis, budget units).
-    The vertical red band marks the schedule overrun cap beyond planned finish $f_i$;
-    the horizontal red band above BAC marks the cost overrun cap $\Lambda_c$.
-    Negative variances $\mathrm{SPI}_{i,t},\,\mathrm{CPI}_{i,t} < 1$ arise when
-    BCWP lags BCWS and ACWP exceeds BCWP.
-    Termination Condition~(\ref{eq:term_cond1}) activates when
-    $\hat{f}_{i,t}-f_i > \Lambda_i/r_i$.}
+  }
+  \caption{Illustration of EVM-based project termination conditions.}
+
   \label{fig:scurve_evm}
 \end{figure}
 
