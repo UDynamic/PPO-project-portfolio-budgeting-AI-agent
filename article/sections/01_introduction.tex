@@ -141,7 +141,7 @@ as a project-specific tolerance counter observable in the portfolio state.
             $\bigl\{P_{i,t}^{\mathrm{actual}},\;
             \mathrm{CPI}_{i,t},\;\mathrm{SPI}_{i,t},\;
             \mathrm{EAC}_{i,t},\;
-            \delta_{i,t},\;\Delta_{i,t}^{\mathrm{pen}},\;
+            \Delta f_{i,t},\;
             \mathrm{status}_{i,t},\;\tau_{i,t}^{\mathrm{rem}}\bigr\}_{i},\;B_t$};
     
       %% ── ARROWS ─────────────────────────────────────────────────────────────
@@ -225,9 +225,13 @@ payment around certified milestones: discrete progress thresholds at which the
 client verifies that a specified scope fraction has been physically completed
 and releases the corresponding payment. The gross payment at milestone $j$ is a
 contractually fixed fraction $\phi_{i,j}$ of the contract price $CP_i$.
-Because payment is contingent on certified progress, the timing of cash
-inflows is a function of the contractor's actual performance and, through the
-portfolio manager's allocation decisions, of the budget directed to the project.
+The contract price relates to the budget at completion through the contractor's 
+profit margin $\pi_i$ as $ CP_i = (1 + \pi_i)\cdot \mathrm{BAC}_i$, and it 
+serves exclusively as the payment accumulation baseline. All EVM performance signals, 
+progress calculations, and termination conditions are normalised against $\mathrm{BAC}_i$. 
+Because payment is contingent on certified progress, the timing of cash inflows 
+is a function of the contractor's actual performance. and, through the
+portfolio manager's allocation decisions.
 This creates the fundamental linkage between allocation decisions and cash
 inflows that makes the problem non-trivial.
 
@@ -372,8 +376,8 @@ of actual expenditure; values below unity indicate cost overrun. The Schedule
 Performance Index $\mathrm{SPI}_{i,t} = \text{BCWP}_{i,t} /
 \text{BCWS}_{i,t}$ measures actual progress relative to planned progress;
 values below unity indicate schedule lag \citep{Fleming2010}. The Estimate at
-Completion $\mathrm{EAC}_{i,t} = E_{i,t} + (\mathrm{BAC}_i -
-\mathrm{EV}_{i,t})/\mathrm{CPI}_{i,t}$ projects the total cost of the project
+Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
+\mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ projects the total cost of the project
 at the current cost performance rate, directly analogous to the forecast finish
 date computation; \citet{Christensen1993} established that this formulation
 produces stable and accurate cost-at-completion forecasts beyond the 20\%
@@ -406,8 +410,8 @@ trajectory estimates symmetric in structure to one another: Condition~1 fires
 when the forecast finish date $\hat{f}_{i,t}$, extrapolated from the current
 schedule performance rate, exceeds the planned finish by more than the
 contractual schedule tolerance; Condition~2 fires when the Estimate at
-Completion $\mathrm{EAC}_{i,t} = E_{i,t} + (\mathrm{BAC}_i -
-\mathrm{EV}_{i,t})/\mathrm{CPI}_{i,t}$ exceeds the project-specific maximum
+Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
+\mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ exceeds the project-specific maximum
 tolerable cost overrun $(1+\mu_i)\cdot\mathrm{BAC}_i$. This joint persistence
 requirement models the FIDIC cure period \citep{FIDIC2017, Ndekugri2008}, the
 contractually prescribed interval during which both parties are obliged to
@@ -660,7 +664,7 @@ optimisation. Milestone certification is a binary event --- a milestone is
 either certified or not --- captured by introducing binary decision variables
 $u_{i,j,t} \in \{0,1\}$. The objective is pure discounted net cash flow:
 inflows minus outflows, discounted at rate $\gamma$. No deviation penalty
-enters the objective; the deviation state variable $\delta_{i,t}$ is tracked
+enters the objective; the deviation state variable $\Delta f_{i,t}$ is tracked
 solely to feed the termination conditions, whose consequences --- loss of all
 future milestone payments, retention, and a potentially negative settlement
 --- provide sufficient incentive for the agent to manage schedule performance
@@ -698,9 +702,9 @@ through repeated interaction with the environment, using sampled trajectories
 rather than exhaustive scenario trees.
 
 The mapping from MILP to CMDP is exact in structure. The decision variables
-$\{x_{i,t}\}$ become the action space; the state variables $$(P_{i,t}^{\rm
-actual}, E_{i,t}, \mathrm{CPI}_{i,t}, \mathrm{SPI}_{i,t},
-\mathrm{EAC}_{i,t}, \delta_{i,t}, \Delta_{i,t}^{\rm pen},
+$\{x_{i,t}\}$ become the action space; the state variables $$(P_{i,t}^{\rm actual}, 
+\mathrm{ACWP}_{i,t}, \mathrm{CPI}_{i,t}, \mathrm{SPI}_{i,t},
+\mathrm{EAC}_{i,t}, \Delta f_{i,t},
 \mathrm{status}_{i,t}, \tau_{i,t}^{\mathrm{rem}}, B_t)$$ become the
 observation space; and the objective function --- discounted net cash flow becomes the reward signal.
 The CMDP is implemented as a

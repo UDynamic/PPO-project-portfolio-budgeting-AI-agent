@@ -85,8 +85,8 @@ Contract governance structures --- particularly FIDIC forms (Red, Yellow, and
 Silver Books) --- prescribe the financial interaction between owner and
 contractor through milestone payment schedules, advance payment and recovery
 mechanisms, and retention clauses \citep{FIDIC2017}. The Estimate at
-Completion $\mathrm{EAC}_{i,t} = \mathrm{AC}_{i,t} + (\mathrm{BAC}_i -
-\mathrm{EV}_{i,t})/\mathrm{CPI}_{i,t}$ extends CPI into a forward-looking
+Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
+\mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ extends CPI into a forward-looking
 cost trajectory signal; \citet{Christensen1993} established across 155
 contracts that this formulation produces the most accurate and stable
 cost-at-completion forecasts, with reliability increasing beyond the 20\%
@@ -235,7 +235,8 @@ The present model integrates all three dimensions into a single environment
 mechanic. Termination is triggered when two conditions hold simultaneously: the
 forecast finish deviation has exceeded the contractual schedule tolerance
 (Condition~1), and the Estimate at Completion $\mathrm{EAC}_{i,t} =
-E_{i,t} + (\mathrm{BAC}_i - \mathrm{EV}_{i,t})/\mathrm{CPI}_{i,t}$ has
+\mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
+\mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ has
 exceeded the project-specific maximum tolerable cost overrun
 $(1+\mu_i)\cdot\mathrm{BAC}_i$ (Condition~2). Both conditions are
 forward-looking trajectory estimates symmetric in structure: remaining planned
