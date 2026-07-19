@@ -42,7 +42,11 @@ with standard EPC contracting practice.
 (ii)~\emph{Budget as the sole control}: the contractor's internal resource
 decisions are absorbed into a stochastic efficiency parameter $\eta_{i,t}$;
 the portfolio manager observes how much physical progress a budget allocation
-yields, not how it is achieved.
+yields, not how it is achieved. The timing of that allocation --- specifically
+how quickly milestones are certified --- determines the discounted value of
+inflows under $\gamma < 1$, making the scheduling of spend, not just its
+total magnitude, the operative decision variable for a return-maximising
+portfolio manager \citep{Damodaran2012}.
 (iii)~\emph{Discrete monthly periods}: $\mathcal{T} = \{1,\ldots,H\}$,
 where $H$ is determined dynamically from the portfolio
 (see Section~\ref{subsubsec:sets}), reflects the standard monthly
@@ -311,9 +315,20 @@ is:
 \end{equation}
 The first term is the value of work delivered net of retention; the
 second is the outstanding advance not yet recovered through milestone
-deductions. Negative $R_i^{\mathrm{term}}$ constitutes a net contractor
-obligation, recovered from portfolio inflows in subsequent periods
-consistent with FIDIC termination clauses \citep{FIDIC2017}.
+deductions. Negative $R_i^{\mathrm{term}}$ constitutes a net contractor obligation,
+recovered from portfolio inflows in subsequent periods consistent with
+FIDIC termination clauses \citep{FIDIC2017}. The settlement formula
+values delivered work at $P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}}
+\cdot CP_i(1-\rho_i)$ --- the fraction of contract price attributable
+to physically completed scope, net of retention. This is not a penalty
+construct; it is a direct valuation of productive assets transferred at
+termination \citep{Dixit1994}, grounding the model's financial signals
+in the real asset value of work in place rather than in arbitrarily
+weighted deviation terms. A portfolio manager interpreting a negative
+$R_i^{\mathrm{term}}$ correctly reads it as the cost of having disbursed
+an advance against work that was never delivered --- a capital allocation
+error whose financial consequence is fully determined by the contract
+without requiring external calibration.
 
 \begin{figure}[htbp]
   \centering
@@ -472,12 +487,25 @@ subject to, for all $i \in \mathcal{P}$, $t \in \mathcal{T}$:
     \quad \text{if } \mathrm{status}_{i,t} \neq \texttt{active}.
   \label{eq:inactive}
 \end{align}
+
+
 There is no terminal sum and no deviation penalty in the objective.
 Completion incentives are embedded structurally: $R_i^{\mathrm{ret}}$
 and $R_{i,M_i}^{\mathrm{net}}$ enter $V_t$ at the final certification
 period; $R_i^{\mathrm{term}}$ (possibly negative) enters at termination,
 creating a natural deterrent against allowing project performance to
-deteriorate to the termination threshold \citep{Ng1999}. The expectation
+deteriorate to the termination threshold \citep{Ng1999}. Symmetrically,
+the discounting of inflows by $\gamma^{t-1}$ in \eqref{eq:objective}
+creates a completion incentive from above --- earlier certification of
+milestone $j$ yields $R_{i,j}^{\mathrm{net}}$ at a higher discount
+weight, so a return-maximising agent will front-load allocations to
+projects where earlier certification is feasible, without any additional
+objective term. In competitive project-based markets where $\pi_i$ is
+fixed at contract signing, this discounting effect is the formal
+expression of the capital velocity argument: the annualised return on
+committed capital increases with completion speed, and $\gamma$ encodes
+the opportunity cost of capital that makes this concrete
+\citep{Damodaran2012}.The expectation
 $\mathbb{E}[\cdot]$ collapses to a deterministic evaluation at Level~1
 and is retained at Levels~2 and~3.
 
@@ -581,7 +609,8 @@ balance $B_1$ are portfolio-level parameters shared across all projects.
     \rowcolor{RowAlt}
     Discount factor
       & $\gamma$ & $(0,1]$
-      & Per-period discount; shared across $\mathcal{P}$. \\
+      & Per-period discount factor; encodes time preference and opportunity cost
+      of capital \citep{Damodaran2012}; shared across $\mathcal{P}$. \\
     Initial cash balance
       & $B_1$ & $\mathbb{R}^+$
       & Portfolio cash balance at horizon start. \\

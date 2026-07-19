@@ -233,7 +233,14 @@ Because payment is contingent on certified progress, the timing of cash inflows
 is a function of the contractor's actual performance. and, through the
 portfolio manager's allocation decisions.
 This creates the fundamental linkage between allocation decisions and cash
-inflows that makes the problem non-trivial.
+inflows that makes the problem non-trivial. A portfolio manager operating
+in a competitive market with a pipeline of future contracts has a direct
+incentive to complete projects early --- not merely on time --- because
+the profit margin $\pi_i$ is fixed at signing and the only variable the
+manager controls is how quickly that margin is realised and capital is
+freed for redeployment. Earlier completion under fixed margin is
+equivalent to a higher annualised return on the capital committed
+\citep{Damodaran2012}.
 
 \paragraph{Advance payment and progressive recovery.}
 At project initiation, the client disburses an advance payment $A_i =
@@ -415,15 +422,22 @@ Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
 tolerable cost overrun $(1+\mu_i)\cdot\mathrm{BAC}_i$. This joint persistence
 requirement models the FIDIC cure period \citep{FIDIC2017, Ndekugri2008}, the
 contractually prescribed interval during which both parties are obliged to
-attempt performance recovery before the client may formally terminate. The
-tolerance counter $\tau_{i,t}^{\mathrm{rem}}$ --- periods remaining before
+attempt performance recovery before the client may formally terminate. the tolerance 
+counter $\tau_{i,t}^{\mathrm{rem}}$ --- periods remaining before
 termination executes --- is part of the observable environment state; the agent
 cannot override its dynamics but observes its value and can influence it
 indirectly through allocation decisions that drive $\mathrm{SPI}_{i,t}$ and
 $\mathrm{CPI}_{i,t}$. When the counter reaches zero, termination executes in
 the following period, and its timing affects the portfolio cash balance through
 the settlement payment $R_i^{\mathrm{term}}$, which may be positive or negative
-depending on the advance recovery position.
+depending on the advance recovery position. The settlement formula computes
+value as the fraction of work physically delivered multiplied by the contract
+price --- this is not a penalty construct but a direct valuation of transferred
+productive assets, consistent with how FIDIC termination clauses treat
+partially completed works as resources whose ownership and value must be
+accounted for at contract close \citep{FIDIC2017}. This grounding means the
+model's financial signals reflect real asset values, not arbitrary penalty
+weights.
 
 \begin{figure}[htbp]
   \centering
@@ -663,12 +677,20 @@ The MILP requires two structural choices that are standard in combinatorial
 optimisation. Milestone certification is a binary event --- a milestone is
 either certified or not --- captured by introducing binary decision variables
 $u_{i,j,t} \in \{0,1\}$. The objective is pure discounted net cash flow:
-inflows minus outflows, discounted at rate $\gamma$. No deviation penalty
-enters the objective; the deviation state variable $\Delta f_{i,t}$ is tracked
-solely to feed the termination conditions, whose consequences --- loss of all
-future milestone payments, retention, and a potentially negative settlement
---- provide sufficient incentive for the agent to manage schedule performance
-without requiring an additional penalty term \citep{Ng1999}. A second
+inflows minus outflows, discounted at rate $\gamma$.No deviation penalty 
+enters the objective; the deviation state variable $\Delta f_{i,t}$ is tracked 
+solely to feed the termination conditions, whose
+consequences --- loss of all future milestone payments, retention, and a
+potentially negative settlement --- provide sufficient incentive for the agent
+to manage schedule performance without requiring an additional penalty term
+\citep{Ng1999}. The absence of a penalty weight is not merely a modelling
+simplification but reflects the actual structure of FIDIC contracts, which do
+not penalise schedule deviation directly but impose consequences through the
+termination mechanism. A portfolio manager who internalises this structure will
+front-load allocations under discounting not because a penalty pushes them to
+do so, but because earlier milestone certification yields higher discounted
+inflows --- a pure income-maximisation motive requiring no additional
+calibration parameters. A second
 structural feature is the termination mechanic: under deterministic
 $\bar{\eta}_{i,t}$, both termination conditions and the tolerance counter
 trajectory $\tau_{i,t}^{\mathrm{rem}}$ are fully pre-computable, so

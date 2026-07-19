@@ -187,13 +187,22 @@ portfolio-level budget allocation decision as a sequential stochastic
 optimisation problem in which a central decision-maker allocates funds across
 multiple active projects whose cash inflow and outflow trajectories are
 uncertain and coupled through a shared capital constraint.} The present work
-addresses this gap. The objective is pure discounted net cash flow; no
-deviation penalty enters the objective function. This is a deliberate design
-choice: the consequences of sustained deviation --- termination and loss of
-all future milestone payments and retention --- are sufficient to make
-deviation undesirable without a separate penalty term, and including one would
-introduce an arbitrary scalarisation weight with no natural calibration from
-contract data \citep{Ng1999}. A consequence is that the learned policy may
+addresses this gap. The objective is pure discounted net cash flow; no deviation penalty enters
+the objective function. This is a deliberate design choice: the consequences
+of sustained deviation --- termination and loss of all future milestone
+payments and retention --- are sufficient to make deviation undesirable
+without a separate penalty term, and including one would introduce an
+arbitrary scalarisation weight with no natural calibration from contract data
+\citep{Ng1999}. Symmetrically, the discount factor $\gamma$ encodes not only
+time preference but the opportunity cost of tied-up capital in a competitive
+environment where future projects are foregone while current ones remain
+incomplete \citep{Damodaran2012}. This interpretation gives $\gamma$ a
+concrete calibration anchor beyond abstract preference --- it can be estimated
+from the firm's observed pipeline redeployment rates or from prevailing
+cost-of-capital benchmarks. The termination settlement further grounds the
+model in real asset values: the settlement payment computes the liquidation
+value of assets in place at termination \citep{Dixit1994, Huchzermeier2001},
+not an arbitrarily weighted deviation penalty. A consequence is that the learned policy may
 produce allocation trajectories that concentrate expenditure around milestone
 certification thresholds, mirroring documented contractor financial strategy
 in milestone-payment contracts \citep{Kenley2009, Kaka1993, Arditi2005}.
@@ -255,10 +264,19 @@ Huchzermeier2001}, the EVM literature's validation of EAC as a stable
 forward cost signal \citep{Christensen1993, Lipke2003}, and the
 escalation-of-commitment literature's evidence that observable performance
 signals must be sustained --- not transient --- before termination is
-justified \citep{Staw1987}. The tolerance counter is part of the
-observable portfolio state, giving the RL agent an anticipatory signal that
-reflects contractual reality without granting it discretionary control over the
-termination outcome.
+justified \citep{Staw1987}. The tolerance counter is part of the observable portfolio state, giving the
+RL agent an anticipatory signal that reflects contractual reality without
+granting it discretionary control over the termination outcome. From the
+portfolio manager's perspective, this anticipatory signal serves a dual
+function --- it flags projects approaching contractual failure while also
+signalling the point at which continued allocation yields diminishing returns
+relative to the settlement value of work already delivered. A rational manager
+reading a counter approaching zero in a high-opportunity-cost environment
+would recognise that the real value of future milestone payments is eroding
+while the settlement value of work in place is fixed in nominal terms ---
+creating a natural reallocation incentive that the model captures through the
+interaction of $\gamma$ and $R_i^{\mathrm{term}}$ without requiring explicit
+inflation modelling \citep{Dixit1994, FIDIC2017}.
 
 
 % ------------------------------------------------------------
