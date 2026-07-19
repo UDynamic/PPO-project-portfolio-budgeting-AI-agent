@@ -25,9 +25,13 @@ projects is fixed: commitments are signed, start dates are scheduled, and
 contracts are parameterised consistently with FIDIC Red, Yellow, and Silver
 Book forms \citep{FIDIC2017}. The decision-maker --- a portfolio manager,
 board, or programme director --- exercises a single recurring lever at each
-discrete planning period $t \in \mathcal{T} = \{1,\ldots,H\}$: the budget
-$x_{i,t} \geq 0$ directed to each active project $i$. All outcomes of
-interest --- milestone achievement, cash inflows, schedule adherence, and
+discrete planning period $t \in \mathcal{T} = \{1,\ldots,H\}$: the budget 
+$x_{i,t} \geq 0$ directed to each active project $i$.
+The planning horizon $H$ is not a fixed configuration parameter but is
+determined endogenously as $H = \max_i f_i- \min_i s_i + 1$, where $s_i$
+and $f_i$ are the planned start and finish of project $i$; the index is
+shifted so that period $t=1$ aligns with the earliest project start.
+All outcomes of interest --- milestone achievement, cash inflows, schedule adherence, and
 project termination --- flow through this allocation decision. Portfolio
 selection is treated as an exogenous upstream input \citep{Archer1999}.
 
@@ -39,9 +43,10 @@ with standard EPC contracting practice.
 decisions are absorbed into a stochastic efficiency parameter $\eta_{i,t}$;
 the portfolio manager observes how much physical progress a budget allocation
 yields, not how it is achieved.
-(iii)~\emph{Discrete monthly periods}: $\mathcal{T} = \{1,\ldots,H\}$
-reflects the standard monthly governance cycle of portfolio management
-(progress reporting, payment certification, performance review).
+(iii)~\emph{Discrete monthly periods}: $\mathcal{T} = \{1,\ldots,H\}$,
+where $H$ is determined dynamically from the portfolio
+(see Section~\ref{subsubsec:sets}), reflects the standard monthly
+governance cycle of portfolio management
 (iv)~\emph{FIDIC contract mechanics}: milestone payments, advance payment
 and recovery, retention, and termination settlement are all calibrated
 parameters, not fixed constants, accommodating the full range of particular
@@ -62,7 +67,11 @@ conditions encountered in practice.
     Projects $\{1,\ldots,n\}$, indexed by $i$; all committed at horizon
     start.
   \item[$\mathcal{T}$]
-    Planning periods $\{1,\ldots,H\}$, indexed by $t$ (calendar months).
+    Planning periods $\{1,\ldots,H\}$, indexed by $t$ (calendar months),
+    where $H = \max_{i\in\mathcal{P}} f_i- \min_{i\in\mathcal{P}} s_i + 1$
+    is derived endogenously from the committed portfolio; period $t=1$
+    corresponds to the calendar month of the earliest project start
+    $\min_i s_i$.
   \item[$\mathcal{M}_i$]
     Ordered milestones $\{1,\ldots,M_i\}$ for project $i$, indexed by $j$,
     with progress thresholds $\theta_{i,1} < \cdots < \theta_{i,M_i} = 1$.
@@ -576,6 +585,11 @@ balance $B_1$ are portfolio-level parameters shared across all projects.
     Initial cash balance
       & $B_1$ & $\mathbb{R}^+$
       & Portfolio cash balance at horizon start. \\
+    \rowcolor{RowAlt}
+      Planning horizon
+      & $H$ & $\mathbb{Z}^+$
+      & Derived as $\max_i f_i- \min_i s_i + 1$; $t=1$
+      aligns with $\min_i s_i$. Not a fixed input. \\
     \bottomrule
   \end{tabular}
   \caption{All project and portfolio parameters fixed at commitment,
@@ -689,121 +703,600 @@ anchors the empirical comparison in Section~\ref{sec:experiments}.
 \label{subsec:level2}
 % ------------------------------------------------------------
 
-When $\eta_{i,t}$ is replaced by a random variable --- as it must be to
-reflect reality --- the progress recursion \eqref{eq:progress_rec}
-becomes stochastic and $S_t$ can no longer be computed ex ante. The
-MILP of Section~\ref{subsec:level1} becomes a multi-stage stochastic
-program \citep{Birge2011}: at each period $t$, the allocation
-$\mathbf{x}_t$ must be selected as a function of the history
-$\mathcal{H}_t = (S_1, \mathbf{x}_1, \ldots, S_{t-1},
-\mathbf{x}_{t-1}, S_t)$, and the optimisation must account for all
-future realisations of $\eta_{i,t}$.
+\subsubsection{Stochastic Primitive and Distributional Assumption}
+\label{subsubsec:l2_primitive}
 
-The scenario-tree representation of this program grows exponentially.
-If $\eta_{i,t}$ takes $K$ discrete values at each of $H$ periods for
-each of $n$ projects, the scenario tree has $K^{nH}$ leaf nodes. For a
-portfolio of ten projects over a 24-month horizon with five efficiency
-scenarios per project per period, this is $5^{240}$ leaf nodes --- a
-number that renders exact stochastic programming computationally
-intractable regardless of solver capability. The intractability is not
-a function of the MILP structure; it is intrinsic to the multi-stage
-stochastic formulation. Even replacing the binary milestone variables
-with continuous relaxations does not change the exponential scaling in
-$n$ and $H$.
+At Level~2, the deterministic efficiency scalar $\bar{\eta}_{i,t}$ is
+replaced by a random variable $\eta_{i,t}$ defined on a probability
+space $(\Omega, \mathcal{F}, \mathbb{P})$. The efficiency realisations
+are assumed to satisfy:
+\begin{assumption}[Efficiency structure]
+\label{ass:eta}
+For each project $i \in \mathcal{P}$ and period $t \in \mathcal{T}$:
+\begin{enumerate}[label=(\roman*)]
+  \item $\eta_{i,t} > 0$ almost surely;
+  \item $\{\eta_{i,t}\}_{t \in \mathcal{T}}$ are independent across
+    periods given project $i$;
+  \item $\eta_{i,t}$ are independent across projects $i \in \mathcal{P}$;
+  \item the marginal distribution of $\eta_{i,t}$ is project-specific
+    and calibrated from empirical EVM datasets
+    \citep{Acebes2015, Batselier2017}.
+\end{enumerate}
+\end{assumption}
 
-This intractability is not merely a computational inconvenience. It
-establishes a fundamental barrier: no exact method can compute the
-multi-stage stochastic optimal policy at realistic portfolio scales.
-This barrier motivates the Level~3 reformulation, which trades exact
-optimality for tractability by reformulating the problem as a sequential
-decision-process solved through sampled interaction rather than
-exhaustive scenario enumeration.
+The realisation $\eta_{i,t}(\omega)$ for scenario $\omega \in \Omega$ is
+revealed to neither the portfolio manager nor the environment until
+\emph{after} the allocation $x_{i,t}$ is committed. This timing
+assumption is the defining structural difference from Level~1: the
+manager must act under genuine uncertainty about the period's
+productivity before observing its outcome.
 
-It is worth noting that termination timing, which is a fixed parameter
-at Level~1, becomes an endogenous stochastic outcome at Level~2: since
-$\mathrm{SPI}_{i,t}$, $\mathrm{CPI}_{i,t}$, and $\mathrm{EAC}_{i,t}$
-all depend on the realised $\eta_{i,\tau}$ trajectory, the periods at
-which Conditions~\eqref{eq:term_cond1}--\eqref{eq:term_cond2} activate
-and the counter $\tau_{i,t}^{\mathrm{rem}}$ reaches zero are random
-variables. This further compounds the scenario-tree explosion, since
-each termination event creates a structural change in the active project
-set $\mathcal{P}_t^{\mathrm{active}}$ that bifurcates the tree.
+\subsubsection{Information Structure and Non-Anticipativity}
+\label{subsubsec:l2_filtration}
 
+Let $\mathcal{F}_t$ denote the $\sigma$-algebra generated by all
+efficiency realisations and resulting state transitions up to and
+including period $t$:
+\begin{equation}
+  \mathcal{F}_t = \sigma\!\bigl(
+    \eta_{i,\tau}(\omega) : i \in \mathcal{P},\; \tau \leq t
+  \bigr),
+  \qquad \mathcal{F}_0 = \{\emptyset, \Omega\}.
+  \label{eq:filtration}
+\end{equation}
+The history available to the portfolio manager at the start of period
+$t$, prior to committing $\mathbf{x}_t$, is:
+\begin{equation}
+  \mathcal{H}_t = \bigl(S_1,\, \mathbf{x}_1,\,
+                         S_2,\, \mathbf{x}_2,\, \ldots,\,
+                         S_{t-1},\, \mathbf{x}_{t-1},\, S_t\bigr),
+  \label{eq:history}
+\end{equation}
+where $S_t$ is the portfolio state defined in \eqref{eq:state}, which
+is $\mathcal{F}_{t-1}$-measurable since it reflects only realisations
+up to period $t-1$. The \emph{non-anticipativity constraint} requires
+that the allocation at period $t$ depends only on the available history:
+\begin{equation}
+  \mathbf{x}_t \in \sigma(\mathcal{H}_t)
+  \qquad \forall\, t \in \mathcal{T}.
+  \label{eq:nonanticipativity}
+\end{equation}
+This constraint distinguishes a causal policy from the full-foresight
+MILP of Level~1, which optimises over the entire realised trajectory
+$(\eta_{i,t})_{i,t}$ simultaneously.
+
+\subsubsection{The Multi-Stage Stochastic Program}
+\label{subsubsec:l2_mssp}
+
+Under Assumption~\ref{ass:eta} and constraint \eqref{eq:nonanticipativity},
+the Level~1 MILP \eqref{eq:L1} becomes a multi-stage stochastic program
+\citep{Birge2011}. The decision at each stage is a \emph{policy}
+$\pi_t : \mathcal{H}_t \to \mathbb{R}^{|\mathcal{P}_t^{\mathrm{active}}|}_{\geq 0}$
+rather than a fixed scalar, and the objective is an expectation over
+all scenario realisations. The program is:
+\begin{subequations}
+\label{eq:L2}
+\begin{align}
+  \max_{\{\pi_t\}} \quad
+  & \mathbb{E}\!\left[
+      \sum_{t=1}^{H} \gamma^{t-1}\!\left(
+        V_t - \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
+      \right)
+    \right]
+  \label{eq:L2_obj} \\[4pt]
+  \text{s.t.} \quad
+  x_{i,t} &= \pi_t(\mathcal{H}_t)_i,
+  \qquad \mathbf{x}_t \in \sigma(\mathcal{H}_t),
+  && \forall\, i,\, t
+  \label{eq:L2_nonant} \\
+  P_{i,t}^{\mathrm{actual}}
+    &= P_{i,t-1}^{\mathrm{actual}}
+       + \eta_{i,t} \cdot \frac{x_{i,t}}{\mathrm{BAC}_i},
+    && \forall\, i,\, t
+  \label{eq:L2_progress} \\
+  B_{t+1}
+    &= B_t
+       - \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
+       + V_t,
+    \quad B_t \geq 0,
+    && \forall\, t
+  \label{eq:L2_balance} \\
+  \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
+    &\leq B_t,
+    && \forall\, t
+  \label{eq:L2_budget} \\
+  x_{i,t} &= 0
+    \quad \text{if } \mathrm{status}_{i,t} \neq \texttt{active},
+    && \forall\, i,\, t
+  \label{eq:L2_inactive} \\
+  x_{i,t} &\geq 0,
+    && \forall\, i,\, t
+  \label{eq:L2_nonneg}
+\end{align}
+\end{subequations}
+where $V_t$ is as defined in \eqref{eq:Vt}, now a random variable
+whose realisation depends on $(\eta_{i,\tau})_{\tau \leq t}$ through
+the progress recursion \eqref{eq:L2_progress} and the milestone
+certification events it generates. The termination counter
+\eqref{eq:counter}, and therefore $\mathcal{P}_t^{\mathrm{active}}$
+and $\mathrm{status}_{i,t}$, are likewise random variables endogenous
+to the realised efficiency trajectory, in contrast to Level~1 where
+they were fixed parameters.
+
+\subsubsection{Scenario-Tree Representation and Exponential Growth}
+\label{subsubsec:l2_tree}
+
+The canonical solution method for multi-stage stochastic programs is
+scenario-tree enumeration \citep{Birge2011}. The scenario tree for
+\eqref{eq:L2} has the following structure. Discretise $\eta_{i,t}$ to
+$K$ values per project per period. At each period $t$, the tree branches
+by $K^n$ (one branching factor of $K$ per project, with $n$ projects
+independent by Assumption~\ref{ass:eta}(iii)). Over a horizon of $H$
+periods the tree has:
+\begin{equation}
+  |\mathcal{S}| = K^{nH}
+  \label{eq:tree_size}
+\end{equation}
+leaf nodes, each corresponding to a complete realisation of
+$(\eta_{i,t})_{i \in \mathcal{P},\, t \in \mathcal{T}}$.
+
+For a representative infrastructure portfolio with $n = 10$ projects,
+a horizon $H$ derived endogenously from the committed portfolio
+(typically $H \in [18, 36]$ months in practice), and $K = 5$ discrete
+efficiency scenarios per project per period, the leaf-node count is:
+\begin{equation}
+  |\mathcal{S}| = 5^{10 \times 24} = 5^{240}
+    \approx 10^{167},
+  \label{eq:tree_example}
+\end{equation}
+a number that exceeds the estimated number of atoms in the observable
+universe by more than 80 orders of magnitude. This is not a
+consequence of the binary milestone variables inherited from the MILP
+structure: replacing them with continuous relaxations leaves the
+exponent $nH$ unchanged, since the exponential growth is intrinsic to
+the multi-stage stochastic formulation and independent of the
+within-stage problem structure.
+
+\paragraph{Endogenous horizon compounding.}
+A further compounding factor distinguishes this problem from standard
+multi-stage stochastic programs with fixed horizons. The planning
+horizon $H = \max_i f_i - \min_i s_i + 1$ is itself a function of the
+committed portfolio; it is not an external configuration parameter.
+Under stochastic efficiency, the effective execution window of each
+project is uncertain — a project with $\mathrm{SPI}_{i,t} < 1$
+throughout will overrun $f_i$, extending the realised horizon beyond
+$H$. In the worst case, every project overruns simultaneously, and the
+actual number of periods over which decisions must be made grows with
+the portfolio. Each additional period multiplies the scenario tree by
+$K^n$, so horizon uncertainty compounds \eqref{eq:tree_size}
+multiplicatively.
+
+\paragraph{Termination as structural bifurcation.}
+At Level~1, termination periods $t_i^{\mathrm{term}}$ were fixed
+parameters precomputed from the known efficiency trajectory. At
+Level~2, the period at which the cure-period counter
+\eqref{eq:counter} reaches zero depends on the realised sequence of
+$\mathrm{SPI}_{i,t}$ and $\mathrm{CPI}_{i,t}$ values, which are in
+turn determined by $(\eta_{i,\tau})_{\tau \leq t}$. Each termination
+event removes project $i$ from $\mathcal{P}_t^{\mathrm{active}}$ and
+delivers $R_i^{\mathrm{term}}$ into $V_t$ — a structural change in the
+active project set that bifurcates the scenario tree at every period
+in which a project's counter is positive. Across $n$ projects each
+with counter depth $\tau_i^{\mathrm{tol}}$, the number of
+structurally distinct subtrees grows combinatorially in the
+termination event space, adding a second source of exponential scaling
+beyond \eqref{eq:tree_size}.
+
+\subsubsection{Intractability and the Motivation for Level~3}
+\label{subsubsec:l2_intractability}
+
+The exponential scaling established in \eqref{eq:tree_size} constitutes
+a fundamental computational barrier. It is not a function of solver
+technology or implementation efficiency; it is intrinsic to the
+multi-stage stochastic formulation of any sequential decision problem
+with independent per-stage uncertainty across $n$ components over $H$
+stages \citep{Birge2011}. Approximation methods for multi-stage
+stochastic programs --- Sample Average Approximation \citep{Kleywegt2002},
+Progressive Hedging \citep{Rockafellar1991}, and Stochastic Dual
+Dynamic Programming \citep{Pereira1991} --- reduce the computational
+burden but do not escape the exponential scaling in $n$ and $H$ at
+portfolio scales of practical interest. Sample Average Approximation,
+for instance, requires a sample size that grows with the variance of
+the objective and the number of stages to achieve a given optimality
+gap \citep{Kleywegt2002}; for $n = 10$ and $H = 24$ this remains
+intractable without structural decomposition that the shared cash
+balance \eqref{eq:L2_balance} prevents.
+
+\begin{proposition}[Level~1 as upper bound]
+\label{prop:upper_bound}
+Let $Z^*_{\mathrm{L1}}$ denote the optimal value of the Level~1 MILP
+\eqref{eq:L1} evaluated on a realised efficiency trajectory
+$(\bar{\eta}_{i,t})_{i,t}$. Let $Z^\pi$ denote the objective value
+achieved by any causal policy $\pi$ satisfying
+\eqref{eq:nonanticipativity} on the same trajectory. Then:
+\begin{equation}
+  \sup_{\pi \in \Pi^{\mathrm{causal}}}
+    \mathbb{E}\!\left[Z^\pi\right]
+  \leq Z^*_{\mathrm{L1}},
+  \label{eq:upper_bound}
+\end{equation}
+where $\Pi^{\mathrm{causal}}$ denotes the set of all policies
+satisfying \eqref{eq:nonanticipativity}.
+\end{proposition}
+
+\begin{proof}
+Fix any realised trajectory $\omega \in \Omega$. Any allocation
+sequence $\{x_{i,t}\}$ produced by a causal policy $\pi$ under
+$\omega$ is a feasible solution to the Level~1 MILP solved on
+$\omega$ (since feasibility constraints \eqref{eq:L1_balance}--
+\eqref{eq:L1_inactive} are identical to
+\eqref{eq:L2_balance}--\eqref{eq:L2_inactive} for fixed
+$\bar{\eta}_{i,t} = \eta_{i,t}(\omega)$). Therefore
+$Z^\pi(\omega) \leq Z^*_{\mathrm{L1}}(\omega)$ for every $\omega$.
+Taking expectations on both sides yields \eqref{eq:upper_bound}.
+\end{proof}
+
+The gap $Z^*_{\mathrm{L1}} - \mathbb{E}[Z^\pi]$ quantifies the cost
+of uncertainty: the value destroyed by operating under incomplete
+information relative to a hypothetical full-foresight oracle. This gap
+is the primary empirical quantity reported in
+Section~\ref{sec:experiments}. The intractability of computing the
+exact solution to \eqref{eq:L2} motivates the Level~3 reformulation:
+rather than enumerating the scenario tree, the problem is recast as a
+sequential interaction between a policy and an environment, solved
+through sampled trajectory experience rather than exhaustive
+enumeration.
 % ------------------------------------------------------------
 \subsection{Level~3: Constrained MDP and RL Agent}
 \label{subsec:level3}
 % ------------------------------------------------------------
 
-The Constrained Markov Decision Process \citep{Altman1999} provides the
-tractable reformulation. Rather than optimising over all scenario-tree
-paths simultaneously, the CMDP formalises the problem as a sequential
-interaction between a policy and an environment: at each period $t$, the
-policy observes the current portfolio state $S_t$, selects an allocation
-$\mathbf{x}_t$, the environment transitions stochastically to
-$S_{t+1}$, and a reward is received. The policy is optimised through
-repeated interaction with the environment, using sampled trajectories
-rather than exhaustive scenario trees.
+The intractability established in Section~\ref{subsec:level2} rules out
+exact solution of \eqref{eq:L2} at realistic portfolio scales. The
+Level~3 reformulation replaces exhaustive scenario-tree enumeration
+with a sequential interaction framework: the portfolio manager is
+modelled as a \emph{policy} that observes the current state, commits
+an allocation, and receives a reward signal, with the environment
+transitioning stochastically to the next state. Optimisation proceeds
+through repeated sampled interaction rather than explicit enumeration,
+making the computational cost per training step independent of
+$|\mathcal{S}| = K^{nH}$.
 
-\paragraph{Mapping from MILP to CMDP.}
-The mapping from the Level~1 MILP to the Level~3 CMDP is exact in
-structure:
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Constrained Markov Decision Process Formulation}
+\label{subsubsec:l3_cmdp}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-\begin{itemize}[leftmargin=1.6cm]
-  \item \textbf{Action space}: the decision variables $\{x_{i,t}\}$
-    become the continuous action vector
-    $\mathbf{x}_t \in
-    \mathbb{R}^{|\mathcal{P}_t^{\mathrm{active}}|}_{\geq 0}$.
-  \item \textbf{Observation space}: the portfolio state $S_t$ defined
-    in \eqref{eq:state}, with dimension $8n + 1$.
-  \item \textbf{Constrained action space}: the budget constraint
-    \eqref{eq:budget} and inactivity constraint \eqref{eq:inactive}
-    define the feasible action set at each period, implementing the
-    hard liquidity constraint that the agent cannot violate.
-  \item \textbf{Reward signal}: the per-period term inside the
-    expectation in \eqref{eq:objective}, discounted by $\gamma^{t-1}$.
-  \item \textbf{Transition dynamics}: the stochastic progress recursion
-    \eqref{eq:progress_rec}, cash-flow mechanics
-    \eqref{eq:Rnet}--\eqref{eq:Vt}, EVM signal updates
-    \eqref{eq:SPI}--\eqref{eq:EAC}, termination counter
-    \eqref{eq:counter}, and balance recursion \eqref{eq:balance}
-    together define the environment transition kernel
-    $\mathcal{T}(S_{t+1} \mid S_t, \mathbf{x}_t)$.
-\end{itemize}
+\begin{definition}[Portfolio Governance CMDP]
+\label{def:cmdp}
+The portfolio budget allocation problem at Level~3 is formalised as a
+finite-horizon Constrained Markov Decision Process
+\citep{Altman1999}:
+\begin{equation}
+  \mathcal{M} = \bigl(
+    \mathcal{S},\;\mathcal{A},\;\mathcal{T},\;R,\;\mathcal{C},\;\gamma,\;H
+  \bigr),
+  \label{eq:cmdp_tuple}
+\end{equation}
+with components defined as follows.
+\end{definition}
 
-\paragraph{Gymnasium environment.}
-The CMDP is implemented as a configurable Gymnasium-compatible
-environment \citep{Towers2024}. All project and portfolio parameters
-(Table~\ref{tab:params}) are passed as a configuration dictionary at
-initialisation, making the environment fully parameterisable across
-contract types, portfolio sizes, and planning horizons without code
-modification. The stochastic efficiency $\eta_{i,t}$ is drawn each
-period from a project-specific distribution calibrated from empirical
-EVM datasets \citep{Acebes2015, Batselier2017}. Milestone payment
-timing delays are drawn from project-specific stochastic delay
-distributions \citep{Aibinu2006}. The environment enforces the budget
-constraint as a hard projection of the agent's action vector onto the
-feasible simplex before applying the transition, ensuring constraint
-satisfaction by construction.
+\paragraph{State space $\mathcal{S}$.}
+The state at period $t$ is the portfolio state $S_t$ defined in
+\eqref{eq:state}:
+\begin{equation}
+  S_t \in \mathcal{S} \subseteq
+  [0,1]^n \times \mathbb{R}^n_{\geq 0} \times
+  \mathbb{R}^{4n} \times \{0,1,2\}^n \times
+  \mathbb{Z}^n_{\geq 0} \times \mathbb{R}_{\geq 0},
+  \label{eq:l3_state}
+\end{equation}
+collecting, for each project $i$: actual progress
+$P_{i,t}^{\mathrm{actual}} \in [0,1]$, cumulative actual cost
+$\mathrm{ACWP}_{i,t} \in \mathbb{R}_{\geq 0}$, performance indices
+$\mathrm{SPI}_{i,t}$, $\mathrm{CPI}_{i,t}$, $\mathrm{EAC}_{i,t}$,
+schedule deviation $\Delta f_{i,t}$, project status
+$\mathrm{status}_{i,t} \in \{0,1,2\}$ encoding
+$\{\texttt{active}, \texttt{completed}, \texttt{terminated}\}$, and
+cure-period counter $\tau_{i,t}^{\mathrm{rem}} \in \mathbb{Z}_{\geq 0}$;
+together with the portfolio cash balance $B_t \in \mathbb{R}_{\geq 0}$.
+The state dimension is $8n + 1$. The sole unobservable primitive is
+$\eta_{i,t}$, realised only after $\mathbf{x}_t$ is committed.
 
-\paragraph{PPO agent and training protocol.}
-A Proximal Policy Optimisation agent \citep{Schulman2017} is trained on
-the environment for its stability properties in continuous action spaces
-and its established use in operations management domains
-\citep{Giannoccaro2002, Peng2021}. Domain randomisation
-\citep{Tobin2017} --- randomising all parameters in
-Table~\ref{tab:params} within calibrated ranges during training ---
-ensures the learned policy generalises across project types, contract
-structures, and market conditions rather than overfitting to a single
-parameterisation. Walk-forward validation \citep{Cerqueira2020} is used
-as the empirical evaluation protocol to guard against data leakage given
-the time-series structure of project cash-flow data.
+\paragraph{Action space $\mathcal{A}$ and feasible set.}
+The raw action space is:
+\begin{equation}
+  \mathcal{A} = \mathbb{R}^n_{\geq 0},
+  \label{eq:l3_action}
+\end{equation}
+with the state-dependent feasible action set:
+\begin{equation}
+  \mathcal{A}(S_t) = \left\{
+    \mathbf{x}_t \in \mathbb{R}^n_{\geq 0} \;\middle|\;
+    \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t} \leq B_t,\quad
+    x_{i,t} = 0 \;\text{if}\; \mathrm{status}_{i,t} \neq \texttt{active}
+  \right\},
+  \label{eq:l3_feasible}
+\end{equation}
+encoding constraints \eqref{eq:budget} and \eqref{eq:inactive}
+directly. The hard liquidity constraint $B_t \geq 0$ is enforced by
+construction through the projection operator defined below.
 
-\paragraph{Baselines.}
-The PPO agent is evaluated against three baselines in
-Section~\ref{sec:experiments}: the Level~1 MILP oracle
-($Z^*_{\mathrm{L1}}$, the theoretical upper bound), a two-stage
-stochastic program representing the best tractable exact method, and a
-rule-based proportional heuristic representing current practice. The gap
-between the PPO agent and the MILP oracle quantifies the cost of
-uncertainty; the gap between the PPO agent and the rule-based heuristic
-quantifies the practical value of the learned policy.
+\paragraph{Projection operator.}
+To guarantee $\mathbf{x}_t \in \mathcal{A}(S_t)$ for any raw
+network output $\tilde{\mathbf{x}}_t \in \mathbb{R}^n$, the
+environment applies a two-step projection before executing the
+transition. First, allocations to inactive projects are zeroed:
+$\tilde{x}_{i,t} \leftarrow 0$ for all $i$ with
+$\mathrm{status}_{i,t} \neq \texttt{active}$. Second, the remaining
+vector is projected onto the budget simplex:
+\begin{equation}
+  \mathbf{x}_t = B_t \cdot
+    \frac{\max(\tilde{\mathbf{x}}_t^{\mathrm{active}},\, \mathbf{0})}
+         {\left\|\max(\tilde{\mathbf{x}}_t^{\mathrm{active}},\,
+           \mathbf{0})\right\|_1 \vee 1},
+  \label{eq:projection}
+\end{equation}
+where $\tilde{\mathbf{x}}_t^{\mathrm{active}}$ denotes the
+sub-vector restricted to active projects, and $\vee$ denotes the
+maximum operator ensuring the denominator is at least one when the
+agent outputs all-zero or all-negative values. This projection is
+differentiable almost everywhere and preserves gradient flow through
+the policy network during training \citep{Schulman2017}.
+
+\paragraph{Transition kernel $\mathcal{T}$.}
+The stochastic transition
+$\mathcal{T}(S_{t+1} \mid S_t, \mathbf{x}_t)$ is defined by the
+composition of environment mechanics applied sequentially within each
+period:
+\begin{enumerate}[label=(\roman*)]
+  \item Draw $\eta_{i,t} \sim F_i$ independently for each active
+    project $i$, where $F_i$ is the project-specific efficiency
+    distribution calibrated from \citet{Acebes2015, Batselier2017}.
+  \item Update progress and actual cost via \eqref{eq:progress_rec}.
+  \item Compute EVM signals via \eqref{eq:SPI}--\eqref{eq:EAC}.
+  \item Evaluate termination conditions
+    \eqref{eq:term_cond1}--\eqref{eq:term_cond2} and update counter
+    via \eqref{eq:counter}.
+  \item Certify milestones, compute $V_t$ via
+    \eqref{eq:Rnet}--\eqref{eq:Vt}, apply stochastic payment delays
+    \citep{Aibinu2006}.
+  \item Update portfolio cash balance via \eqref{eq:balance}.
+  \item Execute termination for any project with
+    $\tau_{i,t}^{\mathrm{rem}} = 0$, compute
+    $R_i^{\mathrm{term}}$ via \eqref{eq:term_settlement}.
+\end{enumerate}
+The transition kernel is Markovian: $S_{t+1}$ depends on
+$(S_t, \mathbf{x}_t, \boldsymbol{\eta}_t)$ only, not on
+$\mathcal{H}_{t-1}$. This is the key structural property that makes
+the CMDP formulation exact rather than approximate: the full portfolio
+state $S_t$ defined in \eqref{eq:state} is a sufficient statistic for
+the history $\mathcal{H}_t$ defined in \eqref{eq:history}.
+
+\paragraph{Reward signal $R$.}
+The per-period reward is the discounted net cash flow term from
+\eqref{eq:objective}:
+\begin{equation}
+  r_t(S_t, \mathbf{x}_t, S_{t+1})
+    = \gamma^{t-1}\!\left(
+        V_t - \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
+      \right),
+  \label{eq:l3_reward}
+\end{equation}
+where $V_t$ is realised after the transition. The reward contains no
+deviation penalty term; completion incentives are embedded structurally
+through $R_i^{\mathrm{ret}}$ and $R_{i,M_i}^{\mathrm{net}}$ at
+project completion and through $R_i^{\mathrm{term}}$ (possibly
+negative) at termination, as established in
+Section~\ref{subsubsec:objective}.
+
+\paragraph{Constraint set $\mathcal{C}$.}
+The hard liquidity constraint $B_t \geq 0$ is the sole constraint
+promoted to the CMDP constraint set:
+\begin{equation}
+  \mathcal{C} = \bigl\{
+    \mathbf{x}_t \in \mathcal{A} \;\mid\; B_{t+1} \geq 0
+  \bigr\}.
+  \label{eq:l3_constraint}
+\end{equation}
+This constraint is enforced by the projection \eqref{eq:projection}
+rather than through a Lagrangian penalty, ensuring hard satisfaction
+at every step rather than satisfaction only in expectation
+\citep{Altman1999}.
+
+\paragraph{CMDP objective.}
+The policy optimisation problem is:
+\begin{equation}
+  \pi^* = \argmax_{\pi \in \Pi}
+    \;J(\pi) \;=\;
+    \argmax_{\pi \in \Pi}
+    \;\mathbb{E}_{\pi}\!\left[
+      \sum_{t=1}^{H} r_t(S_t, \mathbf{x}_t, S_{t+1})
+    \right],
+  \label{eq:l3_objective}
+\end{equation}
+subject to $\mathbf{x}_t \in \mathcal{C}$ for all $t$, where
+$\Pi$ denotes the set of all measurable policies satisfying
+\eqref{eq:nonanticipativity} and $\mathbb{E}_\pi$ denotes expectation
+under the distribution over trajectories induced by $\pi$ and
+$\mathcal{T}$. The objective $J(\pi)$ in \eqref{eq:l3_objective} is
+identical to the intractable stochastic program \eqref{eq:L2_obj};
+the CMDP reformulation does not change the objective but changes the
+solution method from scenario-tree enumeration to policy-gradient
+optimisation.
+
+\begin{remark}[Relationship to Level~1 upper bound]
+By Proposition~\ref{prop:upper_bound}, $J(\pi^*) \leq Z^*_{\mathrm{L1}}$
+for any causal policy $\pi^*$. The CMDP does not close this gap; it
+provides the tractable path to finding the best achievable $J(\pi)$
+within $\Pi^{\mathrm{causal}}$. The empirical gap
+$Z^*_{\mathrm{L1}} - J(\hat{\pi})$, where $\hat{\pi}$ is the trained
+PPO agent, quantifies the combined cost of uncertainty and
+approximation error in Section~\ref{sec:experiments}.
+\end{remark}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Gymnasium-Compatible Environment}
+\label{subsubsec:l3_env}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The CMDP $\mathcal{M}$ is implemented as a configurable
+Gymnasium-compatible environment \citep{Towers2024}. The environment
+exposes the standard \texttt{reset()} / \texttt{step()} interface,
+with \texttt{observation\_space} $= \mathcal{S}$ and
+\texttt{action\_space} $= \mathcal{A}$. All project and portfolio
+parameters (Table~\ref{tab:params}) are passed as a configuration
+dictionary at initialisation; the planning horizon $H$ is derived
+automatically as $\max_i f_i - \min_i s_i + 1$ from the committed
+project set, making the environment fully parameterisable across
+contract types and portfolio sizes without code modification.
+
+The observation vector returned at each step is a flattened
+concatenation of $S_t$ as defined in \eqref{eq:l3_state}, normalised
+to $[0,1]$ per component to facilitate stable policy gradient
+estimation. The environment enforces the projection \eqref{eq:projection}
+on the raw action vector before applying the transition kernel,
+guaranteeing $\mathbf{x}_t \in \mathcal{A}(S_t)$ regardless of the
+policy output. Episodes terminate when $t = H$ or when all projects
+have reached \texttt{completed} or \texttt{terminated} status,
+whichever occurs first.
+
+The stochastic efficiency $\eta_{i,t}$ is drawn each period from a
+project-specific Beta distribution calibrated from empirical EVM
+datasets \citep{Acebes2015, Batselier2017}; the Beta family
+accommodates the right-skewed, bounded support structure of empirical
+CPI and SPI distributions documented in \citet{Lipke2003} and
+\citet{Batselier2017}. Milestone payment timing delays are drawn from
+project-specific discrete distributions over $\{0, 1, \ldots,
+d_i^{\max}\}$ periods \citep{Aibinu2006}, applied to the net payment
+amount $R_{i,j}^{\mathrm{net}}$ at certification without affecting
+the certified amount itself.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{PPO Agent and Training Protocol}
+\label{subsubsec:l3_ppo}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\paragraph{Algorithm selection.}
+Proximal Policy Optimisation \citep{Schulman2017} is selected as the
+solution algorithm for three reasons. First, its clipped surrogate
+objective provides stable updates in continuous action spaces without
+the step-size sensitivity of vanilla policy gradient methods. Second,
+its on-policy sample collection is compatible with the non-stationary
+episode structure of the environment, in which the active project set
+$\mathcal{P}_t^{\mathrm{active}}$ changes endogenously across
+periods. Third, PPO has demonstrated consistent performance in
+operations management domains with similar state-action structure
+\citep{Giannoccaro2002, Peng2021}.
+
+\paragraph{PPO surrogate objective.}
+At each training iteration, PPO collects a batch of trajectories
+$\mathcal{D} = \{\tau_k\}_{k=1}^{N}$ under the current policy
+$\pi_\theta$ and optimises the clipped surrogate:
+\begin{equation}
+  \mathcal{L}^{\mathrm{CLIP}}(\theta)
+    = \mathbb{E}_{\mathcal{D}}\!\left[
+        \min\!\left(
+          \frac{\pi_\theta(a_t \mid s_t)}
+               {\pi_{\theta_{\mathrm{old}}}(a_t \mid s_t)}
+          \hat{A}_t,\;\;
+          \mathrm{clip}\!\left(
+            \frac{\pi_\theta(a_t \mid s_t)}
+                 {\pi_{\theta_{\mathrm{old}}}(a_t \mid s_t)},\,
+            1-\epsilon,\, 1+\epsilon
+          \right)\hat{A}_t
+        \right)
+      \right],
+  \label{eq:ppo_clip}
+\end{equation}
+where $\hat{A}_t$ is the Generalised Advantage Estimate
+\citep{Schulman2016} computed from the value function baseline
+$V_\phi(S_t)$ trained jointly with the policy, and $\epsilon$ is the
+clipping threshold. The value function shares the lower network layers
+with the policy (actor-critic architecture), with separate output
+heads for $\pi_\theta$ and $V_\phi$.
+
+\paragraph{Policy architecture.}
+The policy network maps the observation vector $S_t \in \mathbb{R}^{8n+1}$
+to a raw allocation vector $\tilde{\mathbf{x}}_t \in \mathbb{R}^n$
+through a fully connected network with layer normalisation. The raw
+output is passed through the projection \eqref{eq:projection} before
+being applied to the environment, ensuring constraint satisfaction
+without a penalty term in \eqref{eq:ppo_clip}. The output
+distribution is a diagonal Gaussian with state-dependent mean
+$\mu_\theta(S_t)$ and learned log-standard-deviation
+$\log\sigma_\theta$, consistent with standard continuous-action PPO
+implementations.
+
+\paragraph{Domain randomisation.}
+To ensure the learned policy $\hat{\pi}$ generalises across project
+types, contract structures, and market conditions rather than
+overfitting to a single parameterisation, all parameters in
+Table~\ref{tab:params} are randomised within calibrated ranges at the
+start of each training episode \citep{Tobin2017}. Formally, at each
+episode reset, a parameter vector
+$\boldsymbol{\xi} \sim \mathcal{U}(\boldsymbol{\Xi})$ is sampled from
+a calibrated uniform distribution over the parameter space
+$\boldsymbol{\Xi}$, and the environment is initialised with
+$\boldsymbol{\xi}$. The trained policy $\hat{\pi}$ implicitly
+conditions on the observable consequences of $\boldsymbol{\xi}$ (as
+reflected in $S_t$) rather than on $\boldsymbol{\xi}$ directly,
+producing a policy that is robust to parameter uncertainty without
+requiring an explicit model of the parameter distribution at
+deployment \citep{Tobin2017}.
+
+\paragraph{Validation protocol.}
+Walk-forward validation \citep{Cerqueira2020} is used as the empirical
+evaluation protocol to guard against data leakage given the
+time-series structure of project cash-flow data. The training set
+consists of episodes whose parameter draws fall within the calibrated
+historical range; the test set consists of held-out parameter
+configurations drawn from the tails of $\boldsymbol{\Xi}$,
+representing out-of-distribution contract and market conditions. All
+performance metrics in Section~\ref{sec:experiments} are reported on
+the held-out test set.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Evaluation Baselines}
+\label{subsubsec:l3_baselines}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The trained agent $\hat{\pi}$ is evaluated against three baselines
+that span the tractability-optimality spectrum established by the
+three-level arc.
+
+\paragraph{Baseline 1 — Level~1 MILP oracle.}
+The MILP \eqref{eq:L1} is solved on each test episode's realised
+efficiency trajectory $(\eta_{i,t}(\omega))_{i,t}$ using a
+commercial solver. Its objective value $Z^*_{\mathrm{L1}}(\omega)$
+is the per-episode upper bound from Proposition~\ref{prop:upper_bound}.
+The gap $Z^*_{\mathrm{L1}} - J(\hat{\pi})$ is the primary performance
+metric.
+
+\paragraph{Baseline 2 — Two-stage stochastic program.}
+A two-stage approximation of \eqref{eq:L2} is solved by fixing
+first-stage decisions $\mathbf{x}_1$ and optimising over the
+expected recourse across $N_s$ sampled scenarios for subsequent
+stages \citep{Birge2011}. This represents the best tractable exact
+method available within the stochastic programming tradition and
+quantifies the value of the full sequential policy over a rolling
+two-stage approximation.
+
+\paragraph{Baseline 3 — Proportional heuristic.}
+At each period $t$, the available balance $B_t$ is distributed across
+active projects proportionally to their remaining planned expenditure
+$\mathrm{BAC}_i(1 - P_{i,t}^{\mathrm{actual}})$:
+\begin{equation}
+  x_{i,t}^{\mathrm{prop}}
+    = B_t \cdot
+      \frac{\mathrm{BAC}_i(1 - P_{i,t}^{\mathrm{actual}})}
+           {\displaystyle\sum_{j \in \mathcal{P}_t^{\mathrm{active}}}
+            \mathrm{BAC}_j(1 - P_{j,t}^{\mathrm{actual}})}.
+  \label{eq:heuristic}
+\end{equation}
+This rule is parameter-free and represents current practice in
+portfolio management information systems: budget is distributed
+in proportion to remaining work without regard to contract
+profitability, schedule urgency, or termination risk. The gap between
+the PPO agent and this baseline quantifies the practical value of the
+learned policy over the incumbent approach.

@@ -174,10 +174,13 @@ variable while holding the payment amount fixed at the contractually determined
 net value after advance recovery deductions and retention withholding. Stochastic programming
 \citep{Birge2011} provides the canonical OR framework for optimisation under
 such uncertainty, and its two-stage variant has been applied to project
-scheduling under resource uncertainty \citep{Lova2000}. However, multi-stage
-stochastic programs for portfolio-level sequential budget allocation face
-scenario-tree explosion as the number of projects and periods increases, as
-established formally in Section~\ref{subsec:level2}.
+scheduling under resource uncertainty \citep{Lova2000}. However, multi-stage 
+stochastic programs for portfolio-level sequential budget
+allocation face scenario-tree explosion as the number of projects and
+periods increases. The effective planning horizon is itself
+portfolio-dependent---determined by the latest project finish---compounding
+the explosion, since $H$ grows with the most delayed project in the
+committed set. Both effects are formalised in Section~\ref{subsec:level2}..
 
 The gap in the literature is precise: \emph{no established framework models the
 portfolio-level budget allocation decision as a sequential stochastic
@@ -273,9 +276,10 @@ the portfolio manager must satisfy at every period.
 RL has been applied to project scheduling \citep{Peng2021, Liu2023},
 resource-constrained project scheduling problems (RCPSP) \citep{Tassel2023},
 and supply chain inventory management \citep{Giannoccaro2002}. In each domain,
-RL demonstrates advantages over classical OR methods when state spaces are
-large, transition dynamics are stochastic, and the problem is non-stationary
-over the decision horizon. These are precisely the characteristics of the
+ RL demonstrates advantages over classical OR methods when
+state spaces are large, transition dynamics are stochastic, the problem is
+non-stationary over the decision horizon, and the horizon length is itself
+uncertain at the outset of planning. These are precisely the characteristics of the
 portfolio budget allocation problem at Levels~2 and~3.
 
 Proximal Policy Optimisation \citep{Schulman2017} is adopted as the solution
