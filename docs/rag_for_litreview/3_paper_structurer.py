@@ -96,7 +96,18 @@ def extract_key_sections(pdf_path: str) -> str:
 SYSTEM_PROMPT = """You are a research assistant helping with a Master's thesis on:
 Reinforcement Learning for Project Portfolio Management Budgeting.
 
-Return ONLY valid JSON. No explanations. No markdown."""
+Return ONLY valid JSON. No explanations. No markdown.
+
+each metadata has a meaning:
+- portfolio level: portfolio or project level,
+- decision type: scheduling, selection, resource allocation or budgeting
+- stochastic cash flows: uncertain or random cash inflow and outflow
+- contract mechanics: advanced payment, retention, milestone payment, earned value management
+- termination settlement: completion delay penalty or completion cost overrun penalty
+- method: LP, stochastic programming or RL
+- model type: LP, stochastic programming or RL
+
+"""
 
 def build_prompt(text: str) -> str:
     return f"""Extract structured information.
@@ -108,9 +119,13 @@ Return ONLY this JSON schema:
     "title_guess": "",
     "year_guess": "",
     "problem": "",
+    "portfolio level": "",
+    "decision type": "",
+    "sequential decisions": ""
+    "stochastic cash flows": "",
+    "contract mechanics": "",
+    "termination settlement": "",
     "method": "",
-    "domain": "",
-    "level": "",
     "model_type": "",
     "data_type": ""
   }},
@@ -123,7 +138,7 @@ Return ONLY this JSON schema:
     "sample_size": null,
     "scurve_params": null,
     "efficiency_params": null,
-    "horizon": null
+    "dynamic horizon": null
   }},
   "thesis_relevance": {{
     "supports_environment_design": false,

@@ -45,7 +45,9 @@ os.makedirs(IRRELEVANT,      exist_ok=True)
 # What your thesis is about — used for semantic similarity
 # ─────────────────────────────────────────────
 THESIS_QUERIES = [
-    "reinforcement learning project portfolio management budget allocation",
+    "project management",
+    "project portfolio management",
+    "project portfolio management budget allocation",
     "stochastic environment simulation project portfolio optimization",
     "earned value management CPI SPI performance indices construction projects",
     "S-curve expenditure profile beta distribution project cost modeling",
@@ -62,17 +64,18 @@ THESIS_QUERIES = [
 # Direct keyword hits boost the relevance score
 # ─────────────────────────────────────────────
 HIGH_VALUE_KEYWORDS = [
-    "reinforcement learning", "markov decision", "mdp", "deep rl", "ppo",
     "project portfolio", "portfolio management", "budget allocation",
     "earned value", "evm", "cpi", "spi", "cost performance", "schedule performance",
     "s-curve", "expenditure profile", "cost overrun", "schedule overrun",
-    "stochastic", "uncertainty", "simulation", "gymnasium", "openai gym",
     "milestone", "advance payment", "retention", "contract", "epc",
     "resource allocation", "multi-project", "portfolio optimization",
+    "stochastic", "uncertainty", "simulation", "gymnasium", "openai gym",
+    "reinforcement learning", "markov decision", "mdp", "deep rl", "ppo",
 ]
 
 MEDIUM_VALUE_KEYWORDS = [
     "project management", "project scheduling", "resource constrained",
+    "project selection",
     "optimization", "heuristic", "metaheuristic", "genetic algorithm",
     "monte carlo", "risk", "probability distribution", "empirical",
     "construction", "infrastructure", "contractor", "stakeholder",

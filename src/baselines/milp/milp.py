@@ -1,5 +1,5 @@
 """
-milp_ppm_test.py
+milp.py
 ================
 Level-1 Deterministic Full-Foresight MILP — PPM Budget Allocation
 Section 3 of the paper.
