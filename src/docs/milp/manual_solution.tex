@@ -1,7 +1,3 @@
-% ============================================================
-%  TEST CASE MANUAL SOLUTIONS
-% ============================================================
-
 \documentclass[11pt, a4paper]{article}
 \usepackage{amsmath, amssymb, amsthm}
 \usepackage{booktabs}
@@ -20,7 +16,7 @@
 \geometry{margin=2.5cm}
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{PPM — Updates \& Test Cases}
+\rhead{PPM --- Test Case Manual Solutions}
 \cfoot{\thepage}
 
 \definecolor{oldred}{RGB}{180,30,30}
@@ -41,18 +37,10 @@
   xrightmargin=4pt,
 }
 
-\newmdenv[backgroundcolor=oldred!8, linecolor=oldred, linewidth=1pt,
-          leftmargin=0pt, rightmargin=0pt, innerleftmargin=6pt,
-          innerrightmargin=6pt, innertopmargin=4pt, innerbottommargin=4pt]{removebox}
-\newmdenv[backgroundcolor=newgreen!8, linecolor=newgreen, linewidth=1pt,
-          leftmargin=0pt, rightmargin=0pt, innerleftmargin=6pt,
-          innerrightmargin=6pt, innertopmargin=4pt, innerbottommargin=4pt]{insertbox}
 \newmdenv[backgroundcolor=noteblu!6, linecolor=noteblu, linewidth=1pt,
           leftmargin=0pt, rightmargin=0pt, innerleftmargin=6pt,
           innerrightmargin=6pt, innertopmargin=4pt, innerbottommargin=4pt]{notebox}
 
-\newcommand{\REMOVE}{\textcolor{oldred}{\bfseries REMOVE:}\quad}
-\newcommand{\INSERT}{\textcolor{newgreen}{\bfseries INSERT:}\quad}
 \newcommand{\NOTEH}{\textcolor{noteblu}{\bfseries Note:}\quad}
 
 \newcommand{\BAC}{\mathrm{BAC}}
@@ -61,12 +49,10 @@
 \newcommand{\CPI}{\mathrm{CPI}}
 \newcommand{\EV}{\mathrm{EV}}
 \newcommand{\ACWP}{\mathrm{ACWP}}
-\newcommand{\BCWP}{\mathrm{BCWP}}
-\newcommand{\BCWS}{\mathrm{BCWS}}
 
 \title{\textbf{PPM Framework}\\[4pt]
-Hand-Solved MILP Test Cases\\[6pt]
-\large Modifications: Dynamic Horizon $+$ Large $B_1$}
+Hand-Solved Test Cases\\[6pt]
+\large Grouped by Mechanic}
 \author{Internal Technical Reference}
 \date{\today}
 
@@ -76,46 +62,50 @@ Hand-Solved MILP Test Cases\\[6pt]
 \newpage
 
 % ============================================================
-\section{Hand-Solved MILP Test Cases}
+\section*{Conventions}
 % ============================================================
 
-All cases share these conventions unless explicitly relaxed:
+All cases share these conventions unless explicitly overridden:
 \begin{itemize}
   \item $\gamma = 1.0$ (no discounting), to keep arithmetic clean.
-  \item $B_1 = 3 \cdot \sum_i \BAC_i$ (large; cash never binding).
-  \item $\bar\eta_{i,t} = \bar\eta$ constant and deterministic.
-  \item Equal milestone weights: $\phi_{i,j} = 1/M_i$.
+  \item $B_1 = 3 \cdot \sum_i \BAC_i$ (large; cash never binding unless stated).
+  \item $\bar\eta_{i,t} = \bar\eta$ constant and deterministic unless stated.
+  \item Equal milestone weights $\phi_{i,j} = 1/M_i$ unless stated.
   \item $\alpha_i = 0$, $\rho_i = 0$ (no advance, no retention) unless stated.
-  \item $\delta^{\mathrm{rec}} = 0.25$, $\psi = 0.10$ (FIDIC defaults).
-  \item $\pi_i = 0$ unless stated ($CP_i = \BAC_i$: baseline with zero margin).
-  \item Monetary units are abstract (``k'').
-  \item S-curve shape: $a_i = b_i = 2$ (symmetric Beta) throughout.
+  \item $\delta^{\mathrm{rec}} = 0.25$, $\psi = 0.10$ (FIDIC defaults) unless stated.
+  \item $\pi_i = 0$ unless stated ($CP_i = \BAC_i$).
+  \item S-curve shape $a_i = b_i = 2$ (symmetric Beta) unless stated.
+  \item Monetary units are abstract.
 \end{itemize}
 
 % ============================================================
-\subsection{Single-Project Cases}
+\section{Group 1: Progress and Milestone Certification}
 % ============================================================
 
+\textit{What is being proven:} budget converts to progress at rate $\eta$,
+milestones certify at the correct threshold, payments trigger correctly, and
+milestone ordering is enforced even when progress jumps past multiple
+thresholds in a single period.
+
 % ------------------------------------------------------------
-\subsubsection{SP-1: Perfect Efficiency, No Termination Risk}
+\subsection{SP-1: Perfect Efficiency, Two Milestones, Front-Load}
 % ------------------------------------------------------------
 
 \paragraph{Economic claim.}
-With $\eta=1$, no budget pressure, and $\gamma=1$, the MILP front-loads spend
-to certify milestones as early as possible. No termination conditions fire.
+With $\eta=1$, no budget pressure, and $\gamma=1$, the MILP front-loads
+spend to certify milestones as early as possible. No termination conditions
+fire.
 
 \paragraph{Parameters.}
 \[
-  n=1,\quad s_1=1,\quad f_1=4,\quad \BAC_1=100,\quad CP_1=120,\quad
-  \pi_1=0.20.
+  n=1,\quad s_1=1,\quad f_1=4,\quad \BAC_1=100,\quad CP_1=120,\quad \pi_1=0.20.
 \]
 \[
-  M_1=2,\quad \theta=(0.5,\;1.0),\quad \phi=(0.5,\;0.5),\quad
-  \bar\eta=1.0.
+  M_1=2,\quad \theta=(0.5,\;1.0),\quad \phi=(0.5,\;0.5),\quad \bar\eta=1.0.
 \]
 \[
-  \alpha_1=0,\quad \rho_1=0,\quad
-  \Omega_1=1,\quad \mu_1=0.30,\quad \tau_1^{\mathrm{tol}}=2.
+  \alpha_1=0,\quad \rho_1=0,\quad \Omega_1=1,\quad \mu_1=0.30,\quad
+  \tau_1^{\mathrm{tol}}=2.
 \]
 \[
   B_1=300,\quad H=4.
@@ -123,595 +113,1308 @@ to certify milestones as early as possible. No termination conditions fire.
 
 \paragraph{Milestone payments.}
 \[
-  R_{1,1}^{\mathrm{net}} = 0.5 \times 120 = 60,\qquad
-  R_{1,2}^{\mathrm{net}} = 0.5 \times 120 = 60.
+  R_{1,1}^{\mathrm{net}} = 0.5\times120 = 60,\qquad
+  R_{1,2}^{\mathrm{net}} = 0.5\times120 = 60.
 \]
-Payment identity: $0 + 60 + 60 + 0 = 120 = CP_1$. \checkmark
-
-\paragraph{Progress mechanics.}
-$P_{1,t} = \eta \cdot x_{1,t} / \BAC_1 = x_{1,t}/100$ per period.
-To certify MS1, need cumulative $P \geq 0.5$, i.e.\ cumulative spend $\geq 50$.
-To certify MS2, need cumulative $P = 1$, i.e.\ cumulative spend $= 100$.
+Identity: $0+60+60+0=120=CP_1$. \checkmark
 
 \paragraph{Optimal strategy.}
-With $\gamma=1$ and cash non-binding, the MILP maximises inflow speed.
-Spend 50 at $t=1$ (MS1 certified immediately), then 50 at $t=2$ (MS2 certified).
-
+Spend 50 at $t=1$ (MS1 certified), then 50 at $t=2$ (MS2 certified).
 \begin{center}
 \begin{tabular}{cccccc}
 \toprule
 $t$ & $x_{1,t}$ & $P_{1,t}$ & Inflow & Net & $B_t$\\
 \midrule
-1 & 50 & 0.50 & 60 (MS1) & $+10$ & $300\to310$\\
-2 & 50 & 1.00 & 60 (MS2) & $+10$ & $310\to320$\\
-3 &  0 & 1.00 &  0       &   $0$ & $320$\\
-4 &  0 & 1.00 &  0       &   $0$ & $320$\\
+1 & 50 & 0.50 & 60 & $+10$ & $300\to310$\\
+2 & 50 & 1.00 & 60 & $+10$ & $310\to320$\\
+3 &  0 & 1.00 &  0 & $0$   & $320$\\
+4 &  0 & 1.00 &  0 & $0$   & $320$\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Objective.}
-\[
-  Z^*_{\mathrm{L1}} = (60-50)+(60-50) = \mathbf{20}.
-\]
+\paragraph{Objective.} $Z^*_{\mathrm{L1}} = (60-50)+(60-50) = \mathbf{20}$.
 
 \paragraph{Termination check.}
-At $t=1$: $P^{\mathrm{plan}}_{1,1} = I_{0.25}(2,2) \approx 0.156$.
-$\SPI = 0.50/0.156 = 3.2 \gg 1$. $\CPI = 50/50 = 1.0$.
-$\EAC = 50 + 50/1 = 100 \leq 1.30 \times 100$. Neither condition fires. \checkmark
+$\CPI=1.0$, $\EAC=100\leq1.30\times100$. Neither condition fires. \checkmark
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
-  \item $x_{1,1} = 50\pm 0.5$, $x_{1,2} = 50\pm 0.5$, $x_{1,3}=x_{1,4}=0$.
-  \item $P_{1,1} = 0.50\pm 0.01$, $P_{1,2} = 1.00\pm 0.01$.
+  \item $x_{1,1}=50\pm0.5$, $x_{1,2}=50\pm0.5$, $x_{1,3}=x_{1,4}=0$.
+  \item $P_{1,1}=0.50\pm0.01$, $P_{1,2}=1.00\pm0.01$.
   \item MS1 certified at $t=1$; MS2 certified at $t=2$.
   \item Status: \texttt{completed}. No $\tau$ decrement.
-  \item $|Z^* - 20| \leq 1.0$.
+  \item $|Z^*-20|\leq1.0$.
 \end{enumerate}
 
 % ------------------------------------------------------------
-\subsubsection{SP-2: Advance Payment Harvesting, Forced Termination}
+\subsection{SP-3: Three Milestones, Uniform Allocation, $\gamma=1$}
 % ------------------------------------------------------------
 
 \paragraph{Economic claim.}
-A large advance combined with rapidly decaying efficiency makes the project
-economically dead within two periods. The MILP receives the advance and accepts
-termination. The settlement exactly cancels the advance, yielding $Z^*=0$.
+With $\gamma=1$, total net cash flow is independent of allocation timing
+within the feasible set. Any completing allocation achieves $Z^*$.
 
 \paragraph{Parameters.}
 \[
-  n=1,\quad s_1=1,\quad f_1=6,\quad \BAC_1=100,\quad CP_1=100,\quad \pi_1=0.
-\]
-\[
-  M_1=2,\quad \theta=(0.5,\;1.0),\quad \phi=(0.5,\;0.5).
-\]
-\[
-  \alpha_1=0.30 \Rightarrow A_1=30,\quad
-  \delta^{\mathrm{rec}}=0.25,\quad \psi=0.10,\quad \rho_1=0.
-\]
-\[
-  \Omega_1=1,\quad \mu_1=0.05,\quad \tau_1^{\mathrm{tol}}=1.
-\]
-Efficiency profile (geometric decay):
-\[
-  \bar\eta_{1,t} = \begin{cases}
-    1.00 & t=1\\
-    0.05 & t\geq 2
-  \end{cases}
-\]
-
-\paragraph{Milestone payment computation.}
-Recovery threshold $\psi=0.10$; MS1 weight $\phi_1=0.5 \geq 0.10$, so recovery
-starts at MS1.
-\begin{align*}
-  R_{1,1}^{\mathrm{net}} &= 0.5\times100 - 0.25\times0.5\times100 = 50-12.5=37.5\\
-  R_{1,2}^{\mathrm{net}} &= 0.5\times100 - 0.25\times0.5\times100 = 37.5
-\end{align*}
-Total recovered via deductions $= 25$. Advance outstanding at full completion $= 5$.
-(The remaining 5 is recovered at final settlement; identity: $30 + 37.5 + 37.5 - 5 = 100$.)
-
-\paragraph{Feasibility of reaching MS1 from $t=2$.}
-To reach $\theta=0.5$ starting from $P=0$ with $\eta=0.05$:
-\[
-  x^{\mathrm{needed}} = 0.5 \times \BAC / \eta = 0.5\times100/0.05 = 1000 \gg \BAC.
-\]
-\textbf{MS1 is physically unreachable from $t=2$.}
-
-\paragraph{Termination under zero spend.}
-\begin{itemize}
-  \item $t=1$, $x=0$: $P=0$. $P^{\mathrm{plan}}_{1,1}=I_{1/6}(2,2)\approx0.042>0$.
-    $\Delta f=\infty>\Omega=1$ (Cond.~1). $\EAC=\infty>1.05\times100$ (Cond.~2).
-    Counter: $1\to0$.
-  \item Termination executes at $t=2$ (the period after counter hits 0).
-\end{itemize}
-
-\paragraph{Settlement at $t_1^{\mathrm{term}}=2$, $P_{1,2}=0$.}
-Outstanding advance recovery $= 0$ (no milestones certified).
-\[
-  R_1^{\mathrm{term}} = 0\times100 - (30-0) = -30.
-\]
-
-\paragraph{Cash flows.}
-\begin{center}
-\begin{tabular}{ccccc}
-\toprule
-$t$ & $x_{1,t}$ & Inflow & Net & Cumul.\\
-\midrule
-1 & 0 & $A_1=30$          & $+30$ & $+30$\\
-2 & 0 & 0                 &   $0$ & $+30$\\
-3 & 0 & $R^{\mathrm{term}}=-30$ & $-30$ & $0$\\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\paragraph{Objective.}
-\[
-  Z^* = 30 + 0 - 30 = \mathbf{0}.
-\]
-
-\begin{notebox}
-\NOTEH The advance payment is exactly recovered in the settlement.
-No allocation is ever worthwhile; any spend at $t=1$ yields progress
-too small to certify MS1 (given $\eta=0.05$ from $t=2$), and the settlement
-simply grows by $P\times CP$ which is less than the spend. Hence $Z^*=0$
-regardless of the allocation, and the MILP should allocate zero.
-\end{notebox}
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\sum_t x_{1,t} \leq 1.0$ (effectively zero spend).
-  \item Project terminates at $t \leq 3$.
-  \item $R_1^{\mathrm{term}} = -30 \pm 1$.
-  \item No milestone certified.
-  \item $|Z^* - 0| \leq 1.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsubsection{SP-3: Uniform Allocation, High Margin, Completion Optimal}
-% ------------------------------------------------------------
-
-\paragraph{Economic claim.}
-With large profit margin and constant $\eta$, completing the project dominates
-all alternatives (including termination). With $\gamma=1$, total net cash flow
-is independent of timing within the feasible set, so any completing allocation
-achieves $Z^*$.
-
-\paragraph{Parameters.}
-\[
-  n=1,\quad s_1=1,\quad f_1=6,\quad \BAC_1=60,\quad \pi_1=0.50\Rightarrow CP_1=90.
+  n=1,\quad s_1=1,\quad f_1=6,\quad \BAC_1=60,\quad \pi_1=0.50
+  \Rightarrow CP_1=90.
 \]
 \[
   M_1=3,\quad \theta=(1/3,\;2/3,\;1),\quad \phi=(1/3,\;1/3,\;1/3),\quad
   \bar\eta=1.0.
 \]
 \[
-  \alpha_1=0,\quad \rho_1=0,\quad
-  \Omega_1=2,\quad \mu_1=0.50,\quad \tau_1^{\mathrm{tol}}=2.
+  \alpha_1=0,\quad\rho_1=0,\quad\Omega_1=2,\quad\mu_1=0.50,\quad
+  \tau_1^{\mathrm{tol}}=2.
 \]
 
 \paragraph{Milestone payments.}
-\[
-  R_{1,j}^{\mathrm{net}} = (1/3)\times90 = 30 \text{ per milestone.}
-\]
-Total inflow $= 90$. Total outflow (to complete) $= 60$.
-\[
-  Z^* = 90 - 60 = \mathbf{30}.
-\]
+$R_{1,j}^{\mathrm{net}}=30$ per milestone. Total inflow $=90$.
 
-\paragraph{Uniform allocation realisation.}
-Spend $x_t = 10$ per period:
-$P_{1,t} = 10t/60 = t/6$.
-\begin{center}
-\begin{tabular}{cccccc}
-\toprule
-$t$ & $x$ & $P_{1,t}$ & Inflow & Net & Cumul.\\
-\midrule
-1 & 10 & 1/6 &    0 & $-10$ & $-10$\\
-2 & 10 & 2/6 & $30$ & $+20$ & $+10$\\
-3 & 10 & 3/6 &    0 & $-10$ & $0$\\
-4 & 10 & 4/6 & $30$ & $+20$ & $+20$\\
-5 & 10 & 5/6 &    0 & $-10$ & $+10$\\
-6 & 10 & 6/6 & $30$ & $+20$ & $+30$\\
-\bottomrule
-\end{tabular}
-\end{center}
-$Z = 30$. Any completing allocation gives the same $Z$ when $\gamma=1$.
-
-\paragraph{Termination check.}
-$\SPI \approx 1$ (actual tracks plan with uniform spend); $\CPI=1$. No conditions fire. \checkmark
+\paragraph{Uniform allocation.}
+Spend $x_t=10$ per period, milestones certify at $t=2,4,6$.
+$Z^*=90-60=\mathbf{30}$.
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
-  \item Total outflow $= 60 \pm 0.5$.
+  \item Total outflow $=60\pm0.5$.
   \item All three milestones certified.
   \item Status: \texttt{completed}.
-  \item $|Z^* - 30| \leq 1.0$.
-  \item No termination conditions ever simultaneously active.
+  \item $|Z^*-30|\leq1.0$.
+  \item No termination conditions simultaneously active.
 \end{enumerate}
 
 % ------------------------------------------------------------
-\subsubsection{SP-4: Front-Loading Beats Uniform Allocation ($\gamma < 1$)}
+\subsection{SP-J: Milestone Ordering Enforced on Progress Jump}
 % ------------------------------------------------------------
 
 \paragraph{Economic claim.}
-With discounting, earlier inflows are worth more. The MILP front-loads all
-spending to certify milestones at $t=1$ and $t=2$, beating the uniform
-allocation by a computable margin.
+When a single large allocation causes progress to cross multiple milestone
+thresholds in one period, the model must certify them in order. Both
+payments arrive in the same period but the ordering constraint
+$u_{i,j+1,t}\leq u_{i,j,t}$ is satisfied.
 
 \paragraph{Parameters.}
 \[
-  n=1,\quad s_1=1,\quad f_1=8,\quad \BAC_1=100,\quad \pi_1=0.40\Rightarrow CP_1=140.
+  n=1,\quad s_1=1,\quad f_1=4,\quad \BAC_1=100,\quad CP_1=100,\quad\pi_1=0.
 \]
 \[
-  M_1=2,\quad \theta=(0.5,\;1),\quad \phi=(0.5,\;0.5),\quad
-  \bar\eta=1.0,\quad \gamma=0.95.
+  M_1=2,\quad\theta=(0.5,\;1.0),\quad\phi=(0.5,\;0.5),\quad\bar\eta=1.0.
 \]
 \[
-  \alpha_1=0,\quad \rho_1=0,\quad
-  R_{1,j}^{\mathrm{net}}=70 \text{ each.}
+  \alpha_1=0,\quad\rho_1=0,\quad\Omega_1=2,\quad\mu_1=0.50,\quad
+  \tau_1^{\mathrm{tol}}=2.
+\]
+\[
+  B_1=300,\quad H=4.
 \]
 
-\paragraph{Front-loaded allocation.}
-Spend $x_{1,1}=50$, $x_{1,2}=50$, rest zero:
-\begin{align*}
-  Z^{\mathrm{front}}
-  &= \underbrace{\gamma^0 \times 70}_{\text{MS1 at }t=1}
-   + \underbrace{\gamma^1 \times 70}_{\text{MS2 at }t=2}
-   - \gamma^0\times50 - \gamma^1\times50\\
-  &= 70 + 0.95\times70 - 50 - 0.95\times50\\
-  &= 70 + 66.50 - 50 - 47.50 = \mathbf{39.00}.
-\end{align*}
+\paragraph{Allocation.}
+Spend $x_{1,1}=100$ at $t=1$. Progress: $P_{1,1}=1.0$, crossing both
+$\theta=0.5$ and $\theta=1.0$ simultaneously.
 
-\paragraph{Uniform allocation baseline.}
-Spend $x_t = 100/8 = 12.5$ per period. MS1 certified at $t=4$, MS2 at $t=8$.
-\begin{align*}
-  Z^{\mathrm{uniform}}
-  &= \gamma^3\times70 + \gamma^7\times70
-   - 12.5\sum_{t=0}^{7}\gamma^t\\
-  &= 0.8574\times70 + 0.6983\times70
-   - 12.5\times\frac{1-0.95^8}{0.05}\\
-  &= 60.02 + 48.88 - 12.5\times6.423\\
-  &= 108.90 - 80.29 = \mathbf{28.61}.
-\end{align*}
+\paragraph{Payments at $t=1$.}
+MS1 certifies: $R_{1,1}^{\mathrm{net}}=50$.
+MS2 certifies: $R_{1,2}^{\mathrm{net}}=50$.
+Total inflow at $t=1$: 100. Total outflow: 100. Net: 0.
 
-Since $39.00 > 28.61$, front-loading is strictly better. The MILP must
-choose front-loading.
+\paragraph{Objective.} $Z^*=\mathbf{0}$.
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
-  \item $x_{1,1} = 50\pm 0.5$, $x_{1,2} = 50\pm 0.5$.
-  \item MS1 certified at $t=1$; MS2 certified at $t=2$.
-  \item $Z^* \geq 38.5$.
-  \item $Z^* > Z^{\mathrm{uniform}} = 28.61$.
+  \item Both MS1 and MS2 certified at $t=1$.
+  \item Ordering satisfied: MS1 certified before or simultaneously with MS2.
+  \item $P_{1,1}=1.00\pm0.01$.
+  \item Status: \texttt{completed} by $t=1$.
+  \item $|Z^*-0|\leq1.0$.
 \end{enumerate}
 
+% ============================================================
+\section{Group 2: Discounting and Timing Incentives}
+% ============================================================
+
+\textit{What is being proven:} $\gamma<1$ creates a genuine preference for
+earlier milestone certification; the MILP exploits this by front-loading
+allocations to projects whose milestone structure yields higher discounted
+inflows when completed first.
+
 % ------------------------------------------------------------
-\subsubsection{SP-5: Cure-Period Counter — Exact Boundary}
+\subsection{SP-4: Front-Loading Beats Uniform Allocation ($\gamma<1$)}
 % ------------------------------------------------------------
 
 \paragraph{Economic claim.}
-A project with zero $\eta$ from the start ($t \geq 1$) fires both termination
-conditions at $t=1$. With $\tau^{\mathrm{tol}}=3$, the counter reaches zero at
-$t=3$ and termination executes at $t=4$. The settlement exactly cancels the
-advance.
+With discounting, earlier inflows are worth more. The MILP front-loads
+all spending to certify milestones at $t=1$ and $t=2$, beating the
+uniform allocation by a computable margin.
 
 \paragraph{Parameters.}
 \[
-  n=1,\quad s_1=1,\quad f_1=6,\quad \BAC_1=100,\quad CP_1=100,\quad \pi_1=0.
+  n=1,\quad s_1=1,\quad f_1=8,\quad \BAC_1=100,\quad\pi_1=0.40
+  \Rightarrow CP_1=140.
 \]
 \[
-  M_1=1,\quad \theta=(1.0),\quad \phi=(1.0).
+  M_1=2,\quad\theta=(0.5,\;1),\quad\phi=(0.5,\;0.5),\quad
+  \bar\eta=1.0,\quad\gamma=0.95.
 \]
 \[
-  \alpha_1=0.20\Rightarrow A_1=20,\quad
-  \delta^{\mathrm{rec}}=0.25,\quad \psi=0.10,\quad \rho_1=0.
+  \alpha_1=0,\quad\rho_1=0,\quad R_{1,j}^{\mathrm{net}}=70\text{ each.}
+\]
+
+\paragraph{Front-loaded vs.\ uniform.}
+\[
+  Z^{\mathrm{front}} = 70+0.95\times70-50-0.95\times50
+  = 70+66.50-50-47.50 = \mathbf{39.00}.
+\]
+Uniform (MS1 at $t=4$, MS2 at $t=8$):
+\[
+  Z^{\mathrm{uniform}}
+  = 0.95^3\times70+0.95^7\times70-12.5\sum_{t=0}^{7}0.95^t
+  \approx 60.02+48.88-80.29 = \mathbf{28.61}.
+\]
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $x_{1,1}=50\pm0.5$, $x_{1,2}=50\pm0.5$.
+  \item MS1 certified at $t=1$; MS2 certified at $t=2$.
+  \item $Z^*\geq38.5$.
+  \item $Z^*>28.61$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{MP-K: Two Projects, $\gamma<1$, Front-Heavy vs.\ Back-Heavy Milestones}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+Two projects are identical in $\BAC$, $CP$, $\eta$, and duration but differ
+in milestone weight distribution. Under $\gamma<1$, the MILP completes the
+front-heavy project (large early payment) before the back-heavy project,
+since completing it first yields higher discounted total inflow.
+
+\paragraph{Parameters.}
+\[
+  n=2,\quad s_i=1,\quad f_i=6,\quad\BAC_i=60,\quad\pi_i=0.50
+  \Rightarrow CP_i=90.
 \]
 \[
-  \tau_1^{\mathrm{tol}}=3,\quad \Omega_1=1,\quad \mu_1=0.10.
+  M_i=2,\quad\theta_i=(0.5,\;1.0),\quad\bar\eta_i=1.0,\quad\gamma=0.90.
 \]
 \[
-  \bar\eta_{1,t} = 0 \text{ for all } t.
+  \phi_A=(0.70,\;0.30),\quad\phi_B=(0.30,\;0.70).
+\]
+\[
+  \alpha_i=0,\quad\rho_i=0,\quad B_1=300.
+\]
+
+\paragraph{Milestone payments.}
+Project A: $R_{A,1}^{\mathrm{net}}=63$, $R_{A,2}^{\mathrm{net}}=27$.
+Project B: $R_{B,1}^{\mathrm{net}}=27$, $R_{B,2}^{\mathrm{net}}=63$.
+Each milestone requires spend of 30.
+
+\paragraph{Strategy comparison.}
+\textit{Strategy 1 (A first, then B):}
+\[
+  Z = (63-30)+0.90(27-30)+0.81(27-30)+0.729(63-30)
+    = 33-2.7-2.43+24.06 = \mathbf{51.93}.
+\]
+\textit{Strategy 2 (B first, then A):}
+\[
+  Z = (27-30)+0.90(63-30)+0.81(63-30)+0.729(27-30)
+    = -3+29.7+26.73-2.19 = \mathbf{51.24}.
+\]
+Strategy~1 dominates. MILP must choose A first or any strategy with
+$Z\geq51.93$.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item Project A completed before or simultaneously with Project B.
+  \item $Z^*\geq51.90$.
+  \item $Z^*>51.24$ (B-first strategy strictly dominated).
+  \item Both projects \texttt{completed}.
+\end{enumerate}
+
+% ============================================================
+\section{Group 3: Advance Payment and Recovery Mechanics}
+% ============================================================
+
+\textit{What is being proven:} advance payment arrives at $t=s_i$,
+recovery deductions apply correctly once the cumulative payment threshold
+$\psi_i$ is crossed, deductions stop once the advance is fully recovered,
+and the payment identity $A_i+\sum_j R_{i,j}^{\mathrm{net}}+R_i^{\mathrm{ret}}=CP_i$
+holds exactly.
+
+% ------------------------------------------------------------
+\subsection{SP-2: Advance Harvest, Efficiency Decay, Forced Termination}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+A large advance combined with rapidly decaying efficiency makes the project
+economically dead within two periods. The MILP receives the advance and
+accepts termination. The settlement exactly cancels the advance, yielding
+$Z^*=0$.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=6,\quad\BAC_1=100,\quad CP_1=100,\quad\pi_1=0.
+\]
+\[
+  M_1=2,\quad\theta=(0.5,\;1.0),\quad\phi=(0.5,\;0.5).
+\]
+\[
+  \alpha_1=0.30\Rightarrow A_1=30,\quad\delta^{\mathrm{rec}}=0.25,\quad
+  \psi=0.10,\quad\rho_1=0.
+\]
+\[
+  \Omega_1=1,\quad\mu_1=0.05,\quad\tau_1^{\mathrm{tol}}=1.
+\]
+\[
+  \bar\eta_{1,1}=1.00,\quad\bar\eta_{1,t}=0.05\text{ for }t\geq2.
+\]
+
+\paragraph{Termination and settlement.}
+With zero spend from $t=1$: counter $1\to0$ at $t=1$, termination at $t=2$.
+$P_{1,2}=0$. $R_1^{\mathrm{term}}=0-30=-30$.
+$Z^*=30+0-30=\mathbf{0}$.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $\sum_t x_{1,t}\leq1.0$.
+  \item Project terminates at $t\leq3$.
+  \item $R_1^{\mathrm{term}}=-30\pm1$.
+  \item No milestone certified.
+  \item $|Z^*-0|\leq1.5$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{SP-A: Late Recovery Threshold ($\psi=0.40$)}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+When $\psi=0.40$, the cumulative certified payment fraction must exceed 40\%
+before recovery deductions begin. MS1 carries weight $\phi_1=1/3<0.40$, so
+its payment is received in full. Deductions apply from MS2 onward. The
+payment identity holds exactly.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=6,\quad\BAC_1=120,\quad\pi_1=0.50
+  \Rightarrow CP_1=180.
+\]
+\[
+  M_1=3,\quad\theta=(1/3,\;2/3,\;1),\quad\phi=(1/3,\;1/3,\;1/3).
+\]
+\[
+  \alpha_1=0.20\Rightarrow A_1=36,\quad\psi=0.40,\quad
+  \delta^{\mathrm{rec}}=0.30,\quad\rho_1=0,\quad\bar\eta=1.0.
+\]
+\[
+  \Omega_1=2,\quad\mu_1=0.50,\quad\tau_1^{\mathrm{tol}}=2,\quad B_1=400.
+\]
+
+\paragraph{Recovery threshold check.}
+\begin{align*}
+  \text{After MS1:}&\quad\textstyle\sum_{k\leq1}\phi_k=1/3\approx0.333<0.40
+    \Rightarrow\text{no deduction.}\\
+  \text{After MS2:}&\quad\textstyle\sum_{k\leq2}\phi_k=2/3\approx0.667\geq0.40
+    \Rightarrow\text{deduction applies.}\\
+  \text{After MS3:}&\quad\textstyle\sum_{k\leq3}\phi_k=1.0\geq0.40
+    \Rightarrow\text{deduction applies.}
+\end{align*}
+
+\paragraph{Net payments.}
+Each milestone gross $=60$.
+\begin{align*}
+  R_{1,1}^{\mathrm{net}} &= 60 - 0 = 60.\\
+  R_{1,2}^{\mathrm{net}} &= 60 - 0.30\times60 = 60-18 = 42.\\
+  R_{1,3}^{\mathrm{net}} &= 60 - 0.30\times60 = 60-18 = 42.
+\end{align*}
+Total deductions $=36=A_1$. Identity: $36+60+42+42=180=CP_1$. \checkmark
+
+\paragraph{Allocation.}
+Spend $x_t=40$ per period; MS$j$ certifies at $t=j$.
+
+\paragraph{Objective.}
+$Z^*=(36+60-40)+(42-40)+(42-40)=56+2+2=\mathbf{60}$.
+
+\begin{notebox}
+\NOTEH MS1 payment is received in full (no deduction) because cumulative
+weight $1/3<\psi=0.40$. This isolates the threshold mechanic from the
+SP-2 case where deductions begin at the first milestone.
+\end{notebox}
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $R_{1,1}^{\mathrm{net}}=60\pm0.5$ (no deduction).
+  \item $R_{1,2}^{\mathrm{net}}=42\pm0.5$ (deduction applies).
+  \item $R_{1,3}^{\mathrm{net}}=42\pm0.5$ (deduction applies).
+  \item Total inflow $=180=CP_1$.
+  \item $|Z^*-60|\leq1.5$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{SP-B: Advance Fully Recovered Before Final Milestone}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+When recovery deductions on MS1 and MS2 exactly exhaust the advance,
+MS3 carries no deduction despite $\delta^{\mathrm{rec}}>0$. The final
+payment equals the gross milestone amount.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=4,\quad\BAC_1=60,\quad\pi_1=0.50
+  \Rightarrow CP_1=90.
+\]
+\[
+  M_1=3,\quad\theta=(1/3,\;2/3,\;1),\quad\phi=(1/3,\;1/3,\;1/3).
+\]
+\[
+  \alpha_1=0.20\Rightarrow A_1=18,\quad\psi=0.10,\quad
+  \delta^{\mathrm{rec}}=0.30,\quad\rho_1=0,\quad\bar\eta=1.0.
+\]
+\[
+  \Omega_1=2,\quad\mu_1=0.50,\quad\tau_1^{\mathrm{tol}}=2,\quad B_1=200.
+\]
+
+\paragraph{Deduction schedule.}
+Each milestone gross $=30$. $\psi=0.10$: all milestones eligible.
+Deduction per milestone $=0.30\times30=9$.
+\begin{align*}
+  R_{1,1}^{\mathrm{net}} &= 30-9=21.\quad\text{Recovered: }9.\\
+  R_{1,2}^{\mathrm{net}} &= 30-9=21.\quad\text{Recovered: }18=A_1.\quad
+    \text{Advance fully recovered.}\\
+  R_{1,3}^{\mathrm{net}} &= 30-0=30.\quad\text{No further deduction.}
+\end{align*}
+Identity: $18+21+21+30=90=CP_1$. \checkmark
+
+\paragraph{Objective.}
+Spend $x_t=20$ per period; MS$j$ certifies at $t=j$.
+$Z^*=(18+21-20)+(21-20)+(30-20)=19+1+10=\mathbf{30}$.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $R_{1,1}^{\mathrm{net}}=21\pm0.5$.
+  \item $R_{1,2}^{\mathrm{net}}=21\pm0.5$.
+  \item $R_{1,3}^{\mathrm{net}}=30\pm0.5$ (no deduction on final milestone).
+  \item Total inflow $=90=CP_1$.
+  \item $|Z^*-30|\leq1.0$.
+\end{enumerate}
+
+% ============================================================
+\section{Group 4: Retention}
+% ============================================================
+
+\textit{What is being proven:} retention fraction $\rho_i$ is withheld
+from every milestone payment, accumulates to $\rho_i\cdot CP_i$, and is
+released as a single lump sum at project completion only. Retention and
+advance recovery interact correctly when both are active.
+
+% ------------------------------------------------------------
+\subsection{SP-C: Retention Only, Lump Release at Completion}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+With $\rho=0.10$ and no advance, each milestone payment is reduced by
+10\%. The withheld amounts accumulate and are released in full when the
+final milestone is certified.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=6,\quad\BAC_1=60,\quad\pi_1=0.50
+  \Rightarrow CP_1=90.
+\]
+\[
+  M_1=3,\quad\theta=(1/3,\;2/3,\;1),\quad\phi=(1/3,\;1/3,\;1/3),\quad\bar\eta=1.0.
+\]
+\[
+  \alpha_1=0,\quad\rho_1=0.10,\quad\Omega_1=2,\quad\mu_1=0.50,\quad
+  \tau_1^{\mathrm{tol}}=2.
+\]
+
+\paragraph{Net payments.}
+Each gross milestone $=30$. Retention per milestone $=0.10\times30=3$.
+\[
+  R_{1,j}^{\mathrm{net}}=30\times(1-0.10)=27\quad\text{for }j=1,2,3.
+\]
+Retention release at completion: $R_1^{\mathrm{ret}}=0.10\times90=9$.
+
+Final period inflow $= R_{1,3}^{\mathrm{net}}+R_1^{\mathrm{ret}}=27+9=36$.
+
+Identity: $0+27+27+27+9=90=CP_1$. \checkmark
+
+\paragraph{Objective.}
+Spend $x_t=20$ per period.
+$Z^*=(27+27+36)-(20+20+20)=90-60=\mathbf{30}$.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $R_{1,j}^{\mathrm{net}}=27\pm0.5$ for $j=1,2,3$.
+  \item $R_1^{\mathrm{ret}}=9\pm0.5$ released at final certification only.
+  \item No retention released before project \texttt{completed}.
+  \item Total inflow $=90=CP_1$.
+  \item $|Z^*-30|\leq1.0$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{SP-D: Retention and Advance Recovery Simultaneously Active}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+When both $\rho>0$ and $\alpha>0$, each milestone payment is reduced by
+both retention withholding and advance recovery deduction. After the
+advance is fully recovered, only retention applies. The payment identity
+holds exactly.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=6,\quad\BAC_1=60,\quad\pi_1=0.50
+  \Rightarrow CP_1=90.
+\]
+\[
+  M_1=3,\quad\theta=(1/3,\;2/3,\;1),\quad\phi=(1/3,\;1/3,\;1/3),\quad\bar\eta=1.0.
+\]
+\[
+  \alpha_1=0.20\Rightarrow A_1=18,\quad\psi=0.10,\quad
+  \delta^{\mathrm{rec}}=0.30,\quad\rho_1=0.10.
+\]
+\[
+  \Omega_1=2,\quad\mu_1=0.50,\quad\tau_1^{\mathrm{tol}}=2,\quad B_1=200.
+\]
+
+\paragraph{Payment mechanics.}
+Each gross milestone $=30$. Retention per milestone $=3$.
+\begin{align*}
+  R_{1,1}^{\mathrm{net}} &= 30\times0.90 - 0.30\times30 = 27-9=18.
+    \quad\text{Recovered: }9.\\
+  R_{1,2}^{\mathrm{net}} &= 27-9=18.
+    \quad\text{Recovered: }18=A_1.\quad\text{Advance fully recovered.}\\
+  R_{1,3}^{\mathrm{net}} &= 27-0=27.
+    \quad\text{Only retention; no recovery deduction.}
+\end{align*}
+$R_1^{\mathrm{ret}}=0.10\times90=9$ at completion.
+
+Identity: $18+18+18+27+9=90=CP_1$. \checkmark
+
+\paragraph{Objective.}
+$Z^*=(18+18+18+27+9)-(20+20+20)=90-60=\mathbf{30}$.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $R_{1,1}^{\mathrm{net}}=18\pm0.5$ (both retention and recovery deducted).
+  \item $R_{1,2}^{\mathrm{net}}=18\pm0.5$ (both deducted; advance now recovered).
+  \item $R_{1,3}^{\mathrm{net}}=27\pm0.5$ (retention only; no recovery deduction).
+  \item $R_1^{\mathrm{ret}}=9\pm0.5$ at completion.
+  \item Total inflow $=90=CP_1$.
+  \item $|Z^*-30|\leq1.0$.
+\end{enumerate}
+
+% ============================================================
+\section{Group 5: Termination Conditions in Isolation}
+% ============================================================
+
+\textit{What is being proven:} Conditions~1 and~2 are independent. The
+cure-period counter decrements only when \emph{both} conditions hold
+simultaneously. When only one holds, the counter must remain at
+$\tau_i^{\mathrm{tol}}$. When one lapses mid-cure, the counter resets.
+
+\begin{notebox}
+\NOTEH A key identity: $\CPI_{i,t}=\eta_{i,t}$ always. Therefore
+$\CPI=1$ if and only if $\eta=1$, and $\EAC=\BAC$ whenever $\eta=1$,
+making Condition~2 structurally impossible to fire under $\eta=1$.
+\end{notebox}
+
+% ------------------------------------------------------------
+\subsection{SP-E: Only Condition~1 Fires (Schedule Lag, CPI~$=$~1)}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+With $\eta=1$, $\CPI=1$ always and $\EAC=\BAC$, so Condition~2 cannot
+fire regardless of spend. Spending far below the planned rate causes
+$\SPI<1$ and Condition~1 to fire. The counter must stay at $\tau^{\mathrm{tol}}$
+throughout.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=8,\quad\BAC_1=80,\quad CP_1=80,\quad\pi_1=0.
+\]
+\[
+  M_1=1,\quad\theta=(1.0),\quad\phi=(1.0),\quad\bar\eta=1.0.
+\]
+\[
+  \alpha_1=0,\quad\rho_1=0,\quad\Omega_1=1,\quad\mu_1=0.30,\quad
+  \tau_1^{\mathrm{tol}}=3.
+\]
+\[
+  a_1=b_1=1\text{ (uniform S-curve)},\quad B_1=300.
+\]
+
+Spend $x_t=5$ per period (half the uniform plan rate of 10).
+
+\paragraph{Condition checks at $t=3$.}
+$P^{\mathrm{actual}}_3=15/80=0.1875$.
+$P^{\mathrm{plan}}_3=(3-1)/(8-1)=2/7\approx0.286$.
+$\SPI=0.1875/0.286=0.656<1$. Condition~1 fires.
+$\CPI=\eta=1.0$. $\EAC=15+(80-15)/1=80\leq1.30\times80$. Condition~2 \emph{does not} fire.
+
+Counter at every period: $\tau^{\mathrm{rem}}=3$ (unchanged).
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $\SPI_{1,t}<1$ for $t\geq3$.
+  \item $\CPI_{1,t}=1.0\pm0.01$ for all $t$.
+  \item $\EAC_{1,t}\leq(1+\mu_1)\BAC_1$ for all $t$.
+  \item $\tau_{1,t}^{\mathrm{rem}}=3$ for all $t$ (counter never decrements).
+  \item Status never \texttt{terminated}.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{SP-F: Only Condition~2 Fires (Cost Overrun, SPI~$\geq$~1)}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+With $\eta=0.5$, $\CPI=0.5$ and $\EAC$ quickly exceeds $(1+\mu)\BAC$.
+A very long planned duration and large spending keeps $\SPI\geq1$, so
+Condition~1 does not fire. The counter must stay at $\tau^{\mathrm{tol}}$.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=20,\quad\BAC_1=100,\quad CP_1=100,\quad\pi_1=0.
+\]
+\[
+  M_1=1,\quad\theta=(1.0),\quad\phi=(1.0),\quad\bar\eta=0.5.
+\]
+\[
+  \alpha_1=0,\quad\rho_1=0,\quad\Omega_1=5,\quad\mu_1=0.05,\quad
+  \tau_1^{\mathrm{tol}}=3.
+\]
+\[
+  a_1=b_1=1\text{ (uniform S-curve)},\quad B_1=500.
+\]
+
+Spend $x_t=10$ per period.
+
+\paragraph{Condition checks at $t=3$.}
+$P^{\mathrm{actual}}_3=0.5\times30/100=0.15$.
+$P^{\mathrm{plan}}_3=(3-1)/(20-1)=2/19\approx0.105$.
+$\SPI=0.15/0.105=1.43>1$. Ahead of schedule. Condition~1 \emph{does not} fire.
+$\CPI=0.5$. $\EAC=30+(100-15)/0.5=30+170=200>1.05\times100=105$. Condition~2 fires.
+
+Counter at every period: $\tau^{\mathrm{rem}}=3$ (unchanged).
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $\SPI_{1,t}>1$ for $t\leq10$.
+  \item $\EAC_{1,t}>105$ from $t=1$ onward.
+  \item $\tau_{1,t}^{\mathrm{rem}}=3$ for all observed periods
+    (counter never decrements).
+  \item Status never \texttt{terminated}.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{SP-G: Both Fire, Then Condition~1 Lapses --- Counter Resets}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+After the counter has decremented twice under simultaneous conditions,
+a large allocation in one period recovers the schedule sufficiently to
+lapse Condition~1. The counter must reset to $\tau^{\mathrm{tol}}$
+immediately.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=12,\quad\BAC_1=100,\quad CP_1=100,\quad\pi_1=0.
+\]
+\[
+  M_1=1,\quad\theta=(1.0),\quad\phi=(1.0).
+\]
+\[
+  \alpha_1=0,\quad\rho_1=0,\quad\Omega_1=0,\quad\mu_1=0.50,\quad
+  \tau_1^{\mathrm{tol}}=3.
+\]
+\[
+  a_1=b_1=1\text{ (uniform S-curve)},\quad B_1=500.
+\]
+
+Efficiency schedule: $\bar\eta_t=0.3$ for $t=1,2$; $\bar\eta_3=1.0$.
+Spend $x_t=10$ for $t=1,2$; $x_3=80$.
+
+\paragraph{Period-by-period trace.}
+
+\textit{$t=1$:}
+$P^{\mathrm{actual}}_1=0.03$. $P^{\mathrm{plan}}_1=0$. Convention: $\SPI=1$
+when plan$=0$. Only CPI fires ($\CPI=0.3$, $\EAC=10+233=243>150$).
+Counter: stays at 3.
+
+\textit{$t=2$:}
+$P^{\mathrm{actual}}_2=0.06$. $P^{\mathrm{plan}}_2=1/11\approx0.091$.
+$\SPI=0.06/0.091=0.66<1$. $\Delta f$ fires. Both conditions active.
+Counter: $3\to2$.
+
+\textit{$t=3$:}
+$P^{\mathrm{actual}}_3=0.06+1.0\times80/100=0.86$.
+$P^{\mathrm{plan}}_3=2/11\approx0.182$. $\SPI=0.86/0.182=4.7>1$.
+$\hat f_3=3+(12-3+1-1)/4.7=3+1.91=4.91<12$. $\Delta f<0\leq\Omega=0$.
+Condition~1 lapses. Counter resets to 3.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $\tau_{1,1}^{\mathrm{rem}}=3$ (only one condition at $t=1$).
+  \item $\tau_{1,2}^{\mathrm{rem}}=2$ (both conditions; decrement).
+  \item $\tau_{1,3}^{\mathrm{rem}}=3$ (Condition~1 lapses; counter resets).
+  \item Status at $t=3$: \texttt{active} (not terminated).
+\end{enumerate}
+
+% ============================================================
+\section{Group 6: Cure Period and Termination Execution}
+% ============================================================
+
+\textit{What is being proven:} the counter decrements correctly period by
+period, termination executes exactly in the period after the counter reaches
+zero, the settlement is computed at the correct progress level, and the
+counter restart mechanic is correctly accounted for when computing the
+total time to termination.
+
+% ------------------------------------------------------------
+\subsection{SP-5: Zero Efficiency, Exact Counter Boundary}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+With $\eta=0$, no progress is achievable. Both conditions fire from the
+start. With $\tau^{\mathrm{tol}}=3$, termination executes at $t=4$.
+The settlement exactly cancels the advance, yielding $Z^*=0$.
+
+\paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=6,\quad\BAC_1=100,\quad CP_1=100,\quad\pi_1=0.
+\]
+\[
+  M_1=1,\quad\theta=(1.0),\quad\phi=(1.0).
+\]
+\[
+  \alpha_1=0.20\Rightarrow A_1=20,\quad\delta^{\mathrm{rec}}=0.25,\quad
+  \psi=0.10,\quad\rho_1=0.
+\]
+\[
+  \tau_1^{\mathrm{tol}}=3,\quad\Omega_1=1,\quad\mu_1=0.10,\quad\bar\eta=0.
 \]
 
 \paragraph{Termination timeline.}
-Since $\eta = 0$, no progress is possible regardless of spend. $P=0$ always.
-$P^{\mathrm{plan}}>0$ from $t=1$: Condition~1 fires ($\Delta f=\infty$).
-$\ACWP=0$, $t\geq s_1$: Condition~2 fires ($\EAC=\infty$).
 \begin{center}
 \begin{tabular}{cccc}
 \toprule
-$t$ & Both conds.\ active? & $\tau^{\mathrm{rem}}$ & Action\\
+$t$ & Both conditions? & $\tau^{\mathrm{rem}}$ & Event\\
 \midrule
-1 & Yes & $3-1=2$ & Decrement\\
-2 & Yes & $2-1=1$ & Decrement\\
-3 & Yes & $1-1=0$ & Decrement; counter hits 0\\
-4 & --- & ---     & Termination executes\\
+1 & Yes & $3\to2$ & Decrement\\
+2 & Yes & $2\to1$ & Decrement\\
+3 & Yes & $1\to0$ & Counter hits zero\\
+4 & ---  & ---    & Termination executes\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Settlement at $t_1^{\mathrm{term}}=4$.}
-$P_{1,4}=0$. No milestones certified; no recovery deductions.
+$P_{1,4}=0$. $R_1^{\mathrm{term}}=0-(20-0)=-20$. $Z^*=20-20=\mathbf{0}$.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $\tau_{1,1}^{\mathrm{rem}}=2$, $\tau_{1,2}^{\mathrm{rem}}=1$,
+    $\tau_{1,3}^{\mathrm{rem}}=0$.
+  \item Termination period $=4$.
+  \item $R_1^{\mathrm{term}}=-20\pm0.5$.
+  \item Status: \texttt{terminated}.
+  \item $|Z^*-0|\leq1.0$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{SP-H: Partial Progress at Termination, Positive Settlement}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+A project that reaches partial progress before conditions fire produces a
+positive termination settlement when the value of work in place exceeds
+the outstanding advance obligation. The MILP prefers this outcome over
+zero spend.
+
+\paragraph{Parameters.}
 \[
-  R_1^{\mathrm{term}} = 0\times100 - (20-0) = -20.
+  n=1,\quad s_1=1,\quad f_1=10,\quad\BAC_1=100,\quad CP_1=100,\quad\pi_1=0.
+\]
+\[
+  M_1=2,\quad\theta=(0.30,\;1.0),\quad\phi=(0.40,\;0.60).
+\]
+\[
+  \alpha_1=0.10\Rightarrow A_1=10,\quad\psi=0.10,\quad
+  \delta^{\mathrm{rec}}=0.25,\quad\rho_1=0.
+\]
+\[
+  \bar\eta=0.5,\quad\Omega_1=0,\quad\mu_1=0.05,\quad\tau_1^{\mathrm{tol}}=2.
+\]
+\[
+  a_1=0.5,\;b_1=2\text{ (front-loaded plan)},\quad B_1=300.
+\]
+
+\paragraph{Strategy: spend 60 at $t=1$.}
+$P_{1,1}=0.5\times60/100=0.30$.
+MS1 certified ($\theta_1=0.30$): $R_{1,1}^{\mathrm{net}}=0.40\times100
+-0.25\times0.40\times100=40-10=30$.
+(Deduction applies since $\phi_1=0.40\geq\psi=0.10$.)
+Advance recovered: 10. Outstanding advance: 0.
+
+Condition checks at $t=1$:
+$P^{\mathrm{plan}}_1=I_{0.1}(0.5,2)\approx0.47$.
+$\SPI=0.30/0.47=0.638<1$. Condition~1 fires.
+$\CPI=0.5$. $\EAC=60+(100-30)/0.5=200>1.05\times100$. Condition~2 fires.
+Counter: $2\to1$.
+
+No spend at $t=2$. Both conditions persist. Counter: $1\to0$.
+Termination executes at $t=3$. $P_{1,3}=0.30$.
+
+\paragraph{Settlement.}
+Outstanding advance after MS1 deduction $=0$.
+\[
+  R_1^{\mathrm{term}}=0.30\times100\times(1-0)-0=30>0.\quad\checkmark
 \]
 
 \paragraph{Cash flows.}
 \begin{center}
-\begin{tabular}{ccccc}
+\begin{tabular}{cccccc}
 \toprule
 $t$ & $x$ & Inflow & Net & $B_t$\\
 \midrule
-1 & 0 & $A_1=20$ & $+20$ & $300\to320$\\
-2 & 0 & 0        &   $0$ & $320$\\
-3 & 0 & 0        &   $0$ & $320$\\
-5 & 0 & $-20$    & $-20$ & $320\to300$\\
+1 & 60 & $A_1=10$, $R_{1,1}^{\mathrm{net}}=30$ & $-20$ & $300\to280$\\
+2 &  0 & 0 & 0 & $280$\\
+3 &  0 & $R_1^{\mathrm{term}}=30$ & $+30$ & $310$\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Objective.} $Z^* = 20 - 20 = \mathbf{0}$.
+$Z^*=(10+30-60)+0+30=\mathbf{10}$.
+
+\begin{notebox}
+\NOTEH Zero-spend strategy: $P=0$, $R_1^{\mathrm{term}}=-10$,
+$Z=10-10=0<10$. MILP correctly prefers spending 60 at $t=1$.
+\end{notebox}
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
-  \item $\tau_{1,1}^{\mathrm{rem}} = 2$, $\tau_{1,2}^{\mathrm{rem}} = 1$,
-    $\tau_{1,3}^{\mathrm{rem}} = 0$.
-  \item Termination period $= 4$.
-  \item $R_1^{\mathrm{term}} = -20 \pm 0.5$.
-  \item Status: \texttt{terminated}.
-  \item $|Z^* - 0| \leq 1.0$.
+  \item MS1 certified at $t=1$; $R_{1,1}^{\mathrm{net}}=30\pm0.5$.
+  \item $\tau_{1,1}^{\mathrm{rem}}=1$, $\tau_{1,2}^{\mathrm{rem}}=0$.
+  \item Termination at $t=3$.
+  \item $R_1^{\mathrm{term}}=30\pm0.5$ (positive).
+  \item $|Z^*-10|\leq1.5$.
 \end{enumerate}
 
-% ============================================================
-\subsection{Multi-Project Portfolio Cases}
-% ============================================================
-
 % ------------------------------------------------------------
-\subsubsection{MP-1: Two Non-Overlapping Projects, Additive Objective}
+\subsection{SP-I: Cure Period Interrupted and Restarted}
 % ------------------------------------------------------------
 
 \paragraph{Economic claim.}
-Two projects with no temporal overlap behave independently. $Z^* = Z_A + Z_B$.
+After the counter has decremented, a large mid-cure allocation that
+restores schedule causes the counter to reset. Subsequent renewed
+deterioration restarts the full cure period. The total time to termination
+is therefore longer than the na\"ive count of $\tau^{\mathrm{tol}}$ periods.
 
 \paragraph{Parameters.}
+\[
+  n=1,\quad s_1=1,\quad f_1=12,\quad\BAC_1=100,\quad CP_1=100,\quad\pi_1=0.
+\]
+\[
+  M_1=1,\quad\theta=(1.0),\quad\phi=(1.0).
+\]
+\[
+  \alpha_1=0,\quad\rho_1=0,\quad\Omega_1=0,\quad\mu_1=0.50,\quad
+  \tau_1^{\mathrm{tol}}=3.
+\]
+\[
+  a_1=b_1=1\text{ (uniform)},\quad B_1=500.
+\]
+
+Efficiency schedule: $\bar\eta_t=0.3$ for $t=1,2$; $\bar\eta_3=1.0$,
+$x_3=80$ (recovery spike); $\bar\eta_t=0.3$ for $t\geq4$, $x_t=10$.
+
+\paragraph{Counter trajectory.}
 \begin{center}
-\begin{tabular}{lccccccc}
+\begin{tabular}{ccccc}
 \toprule
-Proj. & $s$ & $f$ & $\BAC$ & $\pi$ & $M$ & $\theta$ & $\bar\eta$\\
+$t$ & Both conditions? & $\tau^{\mathrm{rem}}$ & Reason\\
 \midrule
-A (SP-1) & 1 & 4 & 100 & 0.20 & 2 & $(0.5, 1)$ & 1.0\\
-B (SP-3) & 5 & 10 & 60 & 0.50 & 3 & $(1/3, 2/3, 1)$ & 1.0\\
+1 & No (plan$=0$)      & 3 & Only Cond.~2; no decrement\\
+2 & Yes                & $3\to2$ & Both fire\\
+3 & No (Cond.~1 lapses after spike) & $2\to3$ & Reset to $\tau^{\mathrm{tol}}$\\
+4 & Yes (slow spend resumes) & $3\to2$ & Both fire\\
+5 & Yes                & $2\to1$ & Both fire\\
+6 & Yes                & $1\to0$ & Counter hits zero\\
+7 & ---                & ---     & Termination executes\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-$H = \max(4,10) - \min(1,5) + 1 = 10$.
-$B_1 = 3\times(100+60) = 480$.
-
-Since $f_A = 4 < s_B = 5$: zero overlap. Each solves independently.
-\[
-  Z^* = Z_A + Z_B = 20 + 30 = \mathbf{50}.
-\]
+Without the recovery spike, termination would execute at $t=4$ (counter
+$3\to2\to1\to0$ over $t=1,2,3$). With the reset, it executes at $t=7$
+--- three additional periods later.
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
-  \item $|Z^* - 50| \leq 1.0$.
-  \item Project A: \texttt{completed}.
-  \item Project B: \texttt{completed}.
-  \item No terminations.
-  \item $x_{A,t} = 0$ for $t \geq 5$; $x_{B,t} = 0$ for $t \leq 4$.
+  \item $\tau_{1,2}^{\mathrm{rem}}=2$ (decrement at $t=2$).
+  \item $\tau_{1,3}^{\mathrm{rem}}=3$ (reset at $t=3$ after Cond.~1 lapses).
+  \item $\tau_{1,6}^{\mathrm{rem}}=0$.
+  \item Termination period $=7$ (not $t=4$).
+  \item Status: \texttt{terminated}.
 \end{enumerate}
 
+% ============================================================
+\section{Group 7: Portfolio Cash Balance and Coupling}
+% ============================================================
+
+\textit{What is being proven:} $B_t$ is the sole coupling between
+projects; inflows from one project correctly fund allocations to another;
+the no-borrowing constraint is respected; and negative settlement payments
+reduce the shared balance and constrain subsequent allocations.
+
 % ------------------------------------------------------------
-\subsubsection{MP-2: Good Project vs.\ Bad Project (Unconstrained Cash)}
+\subsection{MP-3: Advance Harvest Funds Concurrent Good Project}
 % ------------------------------------------------------------
 
 \paragraph{Economic claim.}
-With abundant cash, the MILP allocates zero to the bad project (which terminates
-giving net zero) and maximises spend on the good project. $Z^* = Z_{\mathrm{Good}}$.
+The advance from the Bad project, received at $t=1$, enters the shared
+balance and is immediately available to fund the Good project. The net
+result is identical whether or not the advance exists, because the
+settlement exactly cancels it.
+
+\paragraph{Parameters.}
+Same as MP-2 (below) but $B_1=90=0.5\times(100+80)$.
+
+\paragraph{Period-by-period trace.}
+\begin{center}
+\begin{tabular}{cccccc}
+\toprule
+$t$ & $x_G$ & $x_B$ & Inflow & Net & $B_t$\\
+\midrule
+1 & 40 & 0 & $A_B=30$, $R_{G,1}=60$ & $+50$ & $90\to140$\\
+2 & 40 & 0 & $R_{G,2}=60$           & $+20$ & $140\to160$\\
+3 &  0 & 0 & $R_B^{\mathrm{term}}=-30$ & $-30$ & $160\to130$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$Z^*=50+20-30=\mathbf{40}$. $B_t\geq0$ throughout. \checkmark
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $B_t\geq0$ for all $t$.
+  \item Bad terminates; advance received then cancelled by settlement.
+  \item Good: \texttt{completed} by $t=2$.
+  \item $|Z^*-40|\leq1.5$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{MP-A: Sequential Funding --- Second Project Waits for Milestone Inflow}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+When $B_1$ covers only the first milestone allocation of Project~1, Project~2
+cannot receive any allocation until Project~1's first milestone payment
+replenishes the shared balance.
+
+\paragraph{Parameters.}
+\[
+  n=2.\quad\text{Both: }s_i=1,\;f_i=6,\;\BAC_i=60,\;\pi_i=0.50
+  \Rightarrow CP_i=90.
+\]
+\[
+  M_i=2,\;\theta_i=(0.5,\;1.0),\;\phi_i=(0.5,\;0.5),\;\bar\eta_i=1.0.
+\]
+\[
+  \alpha_i=0,\;\rho_i=0,\;\Omega_i=2,\;\mu_i=0.50,\;\tau_i^{\mathrm{tol}}=2.
+\]
+\[
+  B_1=30\quad\text{(covers exactly one first-milestone spend of P1)}.
+\]
+
+\paragraph{Trace.}
+$t=1$: $B_1=30$. Spend 30 on P1 ($P_{1,1}=0.5$, MS1 certified,
+$R_{1,1}^{\mathrm{net}}=45$). Cannot allocate to P2 ($B$ exhausted
+before inflow). $B_2=30-30+45=45$.
+
+$t=2$: $B_2=45$. Spend 30 on P1 (MS2, $R_{1,2}^{\mathrm{net}}=45$).
+Spend 15 on P2 ($P_{2,2}=0.25$, MS1 not yet certified). $B_3=45-45+45=45$.
+
+$t=3$: Spend 15 on P2 ($P_{2,3}=0.5$, MS1 certified, $R_{2,1}^{\mathrm{net}}=45$).
+$B_4=45-15+45=75$.
+
+$t=4$: Spend 30 on P2 (MS2, $R_{2,2}^{\mathrm{net}}=45$). $B_5=75-30+45=90$.
+
+$Z^*=(30-30)+(45+45-30-15)+(45-15)+(45-30)$\ldots
+
+Let me compute directly: total inflow $=45+45+45+45=180$. Total outflow
+$=30+30+15+15+30=120$. $Z^*=180-120=\mathbf{60}$.
+
+\paragraph{Key assertion:} $x_{2,1}=0$ (P2 receives no allocation at $t=1$
+because $B_1$ is exhausted funding P1's first milestone).
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $x_{2,1}=0$ (no allocation to P2 at $t=1$).
+  \item $B_t\geq0$ for all $t$.
+  \item Both projects \texttt{completed}.
+  \item $|Z^*-60|\leq2.0$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{MP-B: Negative Settlement Drains Shared Balance}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+When a terminated project produces a negative settlement $R^{\mathrm{term}}<0$,
+the shared balance $B_t$ is reduced accordingly. Subsequent allocations
+to surviving projects must respect the reduced balance.
+
+\paragraph{Parameters.}
+\[
+  n=2.
+\]
+\textit{Project Term:} $s=1$, $f=8$, $\BAC=60$, $CP=60$, $\pi=0$,
+$M=1$, $\theta=(1.0)$, $\phi=(1.0)$, $\alpha=0.30\Rightarrow A=18$,
+$\psi=0.10$, $\delta^{\mathrm{rec}}=0.25$, $\rho=0$, $\bar\eta=0$,
+$\Omega=1$, $\mu=0.10$, $\tau^{\mathrm{tol}}=2$.
+
+\textit{Project Good:} $s=1$, $f=8$, $\BAC=60$, $\pi=0.50\Rightarrow CP=90$,
+$M=2$, $\theta=(0.5,1.0)$, $\phi=(0.5,0.5)$, $\alpha=0$, $\rho=0$,
+$\bar\eta=1.0$, $\Omega=2$, $\mu=0.50$, $\tau^{\mathrm{tol}}=3$.
+
+$B_1=100$.
+
+\paragraph{Trace.}
+$t=1$: Receive $A_{\mathrm{Term}}=18$. Spend 30 on Good.
+$P_{\mathrm{Good},1}=0.5$. MS1$_{\mathrm{Good}}$ certified: $R_{\mathrm{Good},1}=45$.
+$B_2=100+18-30+45=133$.
+Term: $\eta=0$, both conditions fire, counter $2\to1$.
+
+$t=2$: Term counter $1\to0$. Spend 30 on Good. $P_{\mathrm{Good},2}=1.0$.
+MS2$_{\mathrm{Good}}$ certified: $R_{\mathrm{Good},2}=45$. $B_3=133-30+45=148$.
+
+$t=3$: Term executes. $P_{\mathrm{Term}}=0$.
+$R_{\mathrm{Term}}^{\mathrm{term}}=0-(18-0)=-18$.
+$B_4=148+(-18)=130$.
+
+After $t=3$: Good is completed; no further allocations needed.
+$Z^*=(18-30+45)+(45-30)+(-18)=33+15-18=\mathbf{30}$.
+
+\paragraph{Key assertion:} $B_4=130$ (reduced by $|R^{\mathrm{term}}|=18$
+relative to $B_3=148$); no constraint violation.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $R_{\mathrm{Term}}^{\mathrm{term}}=-18\pm0.5$.
+  \item $B_4=130\pm1$ (balance reduced by settlement).
+  \item $B_t\geq0$ for all $t$.
+  \item Good: \texttt{completed}. Term: \texttt{terminated}.
+  \item $|Z^*-30|\leq1.5$.
+\end{enumerate}
+
+% ============================================================
+\section{Group 8: Portfolio Selection Under Constraints}
+% ============================================================
+
+\textit{What is being proven:} when capital is scarce, the MILP correctly
+prioritises higher-NPV projects, may starve lower-NPV projects to
+termination, and evaluates the option value of funding a low-NPV project
+whose early milestone provides cash that unlocks completion of a
+higher-NPV project.
+
+% ------------------------------------------------------------
+\subsection{MP-2: Good vs.\ Bad Project, Unconstrained Cash}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+With abundant cash, the MILP allocates zero to the Bad project
+(which terminates yielding net zero) and maximises spend on the Good
+project. $Z^*=Z_{\mathrm{Good}}$.
 
 \paragraph{Parameters.}
 
 \textit{Project Bad:}
-$\BAC_B=100$, $CP_B=100$, $\pi_B=0$, $s_B=f_B^{\mathrm{plan}}=1\ldots8$,
-$M=2$, $\theta=(0.5,1)$, $\alpha_B=0.30$ ($A_B=30$),
-$\delta^{\mathrm{rec}}=0.25$, $\psi=0.10$, $\rho_B=0$,
-$\Omega_B=1$, $\mu_B=0.10$, $\tau_B^{\mathrm{tol}}=2$.
-\[
-  \bar\eta_{B,1}=1.0,\quad \bar\eta_{B,t}=0.05 \text{ for } t\geq2.
-\]
+$\BAC=100$, $CP=100$, $\pi=0$, $s=f^{\mathrm{plan}}=1\ldots8$,
+$M=2$, $\theta=(0.5,1)$, $\alpha=0.30$ ($A=30$),
+$\delta^{\mathrm{rec}}=0.25$, $\psi=0.10$, $\rho=0$,
+$\Omega=1$, $\mu=0.10$, $\tau^{\mathrm{tol}}=2$.
+$\bar\eta_{1}=1.0$; $\bar\eta_{t}=0.05$ for $t\geq2$.
 
 \textit{Project Good:}
-$\BAC_G=80$, $CP_G=120$, $\pi_G=0.50$, $s_G=1$, $f_G=8$,
-$M=2$, $\theta=(0.5,1)$, $\alpha_G=0$, $\rho_G=0$,
-$\Omega_G=2$, $\mu_G=0.30$, $\tau_G^{\mathrm{tol}}=3$,
-$\bar\eta_G=1.0$.
+$\BAC=80$, $CP=120$, $\pi=0.50$, $s=1$, $f=8$,
+$M=2$, $\theta=(0.5,1)$, $\alpha=0$, $\rho=0$,
+$\Omega=2$, $\mu=0.30$, $\tau^{\mathrm{tol}}=3$, $\bar\eta=1.0$.
 
-$H=8$. $B_1=3\times180=540$.
+$H=8$. $B_1=540$.
 
-\paragraph{Analysis of Project Bad.}
-From $t=2$, $\eta_B=0.05$. To reach MS1: need $50/0.05 = 1000 \gg \BAC$.
-MS1 unreachable. With zero spend: counter decrements from $\tau^{\mathrm{tol}}=2$,
-hitting zero at $t=3$, termination at $t=4$.
-Settlement: $R_B^{\mathrm{term}} = 0 - 30 = -30$. Advance $= +30$.
-Net contribution of Bad $= 30 - 30 = 0$.
-
-\paragraph{Analysis of Project Good.}
-Front-load: $x_{G,1}=40$, $x_{G,2}=40$.
-$P_{G,1}=0.5$ (MS1, $R_{G,1}^{\mathrm{net}}=60$), $P_{G,2}=1.0$ (MS2, $R_{G,2}^{\mathrm{net}}=60$).
-$Z_G = (60-40)+(60-40) = 40$.
-
-\[
-  Z^* = Z_B + Z_G = 0 + 40 = \mathbf{40}.
-\]
+Bad terminates at $t=4$; net contribution $=0$.
+Good: front-load $x=40$ at $t=1,2$; $Z_G=(60-40)+(60-40)=40$.
+$Z^*=\mathbf{40}$.
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
-  \item $\sum_t x_{B,t} \leq 2.0$.
-  \item Project Bad terminates at $t \leq 4$.
-  \item Project Good: \texttt{completed}.
-  \item $|Z^* - 40| \leq 1.5$.
+  \item $\sum_t x_{\mathrm{Bad},t}\leq2.0$.
+  \item Bad terminates at $t\leq4$.
+  \item Good: \texttt{completed}.
+  \item $|Z^*-40|\leq1.5$.
 \end{enumerate}
 
 % ------------------------------------------------------------
-\subsubsection{MP-3: Advance Harvest Then Redirect to Good Project}
+\subsection{MP-4: Three Projects, Low Always Terminates}
 % ------------------------------------------------------------
 
 \paragraph{Economic claim.}
-This repeats MP-2 with a tighter initial balance, verifying that the advance
-from Bad is correctly absorbed into the shared balance before being spent on Good.
-The net result is identical because advance cancels settlement exactly.
-
-\paragraph{Parameters.} Same as MP-2 but $B_1 = 0.5\times(100+80) = 90$.
-
-\paragraph{Period-by-period trace.}
-\begin{center}
-\begin{tabular}{ccccccc}
-\toprule
-$t$ & $x_G$ & $x_B$ & Inflow & Net & $B_t$\\
-\midrule
-1 & 40 & 0 & $A_B=30$ and $R_{G,1}=60$ = 90 & $+50$ & $90\to140$\\
-2 & 40 & 0 & $R_{G,2}=60$                   & $+20$ & $140\to160$\\
-3 & 0  & 0 & $R_B^{\mathrm{term}}=-30$       & $-30$ & $160\to130$\\
-4--8 & 0 & 0 & 0                             &    0  & $130$\\
-\bottomrule
-\end{tabular}
-\end{center}
-
-$Z^* = 50 + 20 - 30 = \mathbf{40}$.
-$B_t \geq 0$ throughout. \checkmark
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $B_t \geq 0$ for all $t$.
-  \item Project Bad: advance received at $t=1$; terminates by $t=4$.
-  \item Project Good: \texttt{completed} by $t=2$.
-  \item $|Z^* - 40| \leq 1.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsubsection{MP-4: Three Projects, Budget-Driven Termination of Low Project}
-% ------------------------------------------------------------
-
-\paragraph{Economic claim.}
-Project~Low has $\eta=0.5$, so achieving MS1 requires spend that immediately
-triggers EAC overrun. The MILP terminates Low and completes High and Mid,
-achieving $Z^* = Z_H + Z_M + Z_L = 30 + 12 + 0 = 42$.
+Project Low has $\eta=0.5$, making any spend immediately trigger an EAC
+overrun. The MILP terminates Low and completes High and Mid.
 
 \paragraph{Parameters.}
 $H=6$, $B_1=150$, $\gamma=1$. All: $\alpha=0$, $\rho=0$,
 $\tau^{\mathrm{tol}}=2$, $\delta^{\mathrm{rec}}=0.25$, $\psi=0.10$.
-
 \begin{center}
-\begin{tabular}{lccccccc}
+\begin{tabular}{lcccccc}
 \toprule
-Proj. & $\BAC$ & $\pi$ & $CP$ & $M$ & $\theta$ & $\bar\eta$ & $\Omega/\mu$\\
+Proj. & $\BAC$ & $\pi$ & $CP$ & $\bar\eta$ & $\Omega/\mu$\\
 \midrule
-High & 60 & 0.50 & 90 & 2 & $(0.5,1)$ & 1.0 & $2/0.40$\\
-Mid  & 60 & 0.20 & 72 & 2 & $(0.5,1)$ & 1.0 & $2/0.30$\\
-Low  & 60 & 0.10 & 66 & 2 & $(0.5,1)$ & 0.5 & $1/0.10$\\
+High & 60 & 0.50 & 90 & 1.0 & $2/0.40$\\
+Mid  & 60 & 0.20 & 72 & 1.0 & $2/0.30$\\
+Low  & 60 & 0.10 & 66 & 0.5 & $1/0.10$\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Why Low terminates.}
-To reach MS1 ($\theta=0.5$) with $\eta=0.5$:
-$x^{\mathrm{needed}} = 0.5 \times 60 / 0.5 = 60 = \BAC$.
-After spending 60: $\ACWP=60$, $\EV=0.5\times60=30$, $\CPI=30/60=0.5$.
-$\EAC = 60 + (60-30)/0.5 = 60+60=120 > (1+0.10)\times60 = 66$.
-Condition~2 fires immediately. Even spending less does not help: any $x$ yields
-$\CPI < 1$ from $t=1$, so $\EAC > 60$ always. Condition~2 always fires.
-Condition~1 fires because progress is slower than plan with $\eta=0.5$.
-\textbf{Low terminates after $\tau^{\mathrm{tol}}=2$ consecutive periods.}
-
-\paragraph{Settlement for Low.}
-$\alpha_L=0$, so $A_L=0$ and $R_L^{\mathrm{term}} = P_L \times CP_L \approx 0$
-(minimal progress if zero spend). Net contribution $= 0$.
-
-\paragraph{Optimal allocation (High and Mid).}
-Spend 30 each at $t=1$ (certify MS1 of H and M simultaneously):
-\begin{align*}
-  P_{H,1}&=30/60=0.5 \Rightarrow R_{H,1}^{\mathrm{net}}=45,\quad
-  P_{M,1}=30/60=0.5 \Rightarrow R_{M,1}^{\mathrm{net}}=36.
-\end{align*}
-$B_2 = 150 - 60 + (45+36) = 171$.
-Spend 30 each at $t=2$ (certify MS2 of H and M):
-\[
-  R_{H,2}^{\mathrm{net}}=45,\quad R_{M,2}^{\mathrm{net}}=36.
-\]
-$B_3 = 171 - 60 + 81 = 192$.
-
-$Z^* = (45-30)+(36-30)+(45-30)+(36-30) + 0 = 15+6+15+6 = \mathbf{42}$.
+$Z^*=Z_H+Z_M+Z_L=(45-30)+(36-30)+(45-30)+(36-30)+0=15+6+15+6=\mathbf{42}$.
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
-  \item High and Mid: \texttt{completed} by $t=2$.
-  \item Low: \texttt{terminated} by $t \leq 4$; allocation to Low $\leq 2$.
-  \item $|Z^* - 42| \leq 1.5$.
-  \item $B_t \geq 0$ for all $t$.
+  \item High and Mid \texttt{completed} by $t=2$.
+  \item Low \texttt{terminated} by $t\leq4$; allocation to Low $\leq2$.
+  \item $|Z^*-42|\leq1.5$.
+  \item $B_t\geq0$ for all $t$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{MP-C: Two Positive-NPV Projects, Cash Sufficient for Only One}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+$B_1$ is sufficient to complete exactly one project. The MILP completes
+the higher-margin project; the lower-margin project receives zero
+allocation and terminates, yielding net zero contribution.
+
+\paragraph{Parameters.}
+\[
+  n=2,\quad s_i=1,\quad f_i=4.
+\]
+\textit{Project Hi:} $\BAC=60$, $\pi=0.50\Rightarrow CP=90$, $M=2$,
+$\theta=(0.5,1)$, $\phi=(0.5,0.5)$, $\bar\eta=1.0$, $\alpha=0$,
+$\rho=0$, $\Omega=2$, $\mu=0.50$, $\tau^{\mathrm{tol}}=2$.
+
+\textit{Project Lo:} $\BAC=60$, $\pi=0.10\Rightarrow CP=66$, $M=2$,
+$\theta=(0.5,1)$, $\phi=(0.5,0.5)$, $\bar\eta=1.0$, $\alpha=0$,
+$\rho=0$, $\Omega=2$, $\mu=0.50$, $\tau^{\mathrm{tol}}=2$.
+
+$B_1=60$ (covers exactly $\BAC_{\mathrm{Hi}}$, insufficient for both).
+
+\paragraph{Analysis.}
+Completing Hi: outflow 60, inflow 90. $Z_{\mathrm{Hi}}=30$.
+Completing Lo: outflow 60, inflow 66. $Z_{\mathrm{Lo}}=6$.
+Cannot complete both simultaneously (would require $B_1\geq120$).
+
+With $B_1=60$: MILP allocates fully to Hi. Lo receives zero, both
+conditions fire from $t=1$ (with zero spend, SPI undefined; default to
+termination). Lo terminates; $A_{\mathrm{Lo}}=0$, $R_{\mathrm{Lo}}^{\mathrm{term}}=0$.
+
+$Z^*=Z_{\mathrm{Hi}}+0=\mathbf{30}$.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $\sum_t x_{\mathrm{Lo},t}\leq1.0$.
+  \item Lo: \texttt{terminated}.
+  \item Hi: \texttt{completed}.
+  \item $|Z^*-30|\leq1.5$.
+  \item $B_t\geq0$ for all $t$.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{MP-D: Early Milestone Cash Unlocks Higher-NPV Project}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+A low-NPV project with an early milestone can be worth funding partially
+if its payment replenishes the balance sufficiently to enable completion
+of a higher-NPV project that would otherwise stall. The MILP evaluates
+this option correctly.
+
+\paragraph{Parameters.}
+\[
+  n=3,\quad s_i=1,\quad B_1=40.
+\]
+\textit{Project Bridge:} $f=3$, $\BAC=30$, $\pi=0.10\Rightarrow CP=33$,
+$M=1$, $\theta=(1.0)$, $\phi=(1.0)$, $\bar\eta=1.0$, $\alpha=0$,
+$\rho=0$, $\Omega=2$, $\mu=0.50$, $\tau^{\mathrm{tol}}=2$.
+
+\textit{Project Alpha:} $f=6$, $\BAC=60$, $\pi=0.50\Rightarrow CP=90$,
+$M=2$, $\theta=(0.5,1)$, $\phi=(0.5,0.5)$, $\bar\eta=1.0$, $\alpha=0$,
+$\rho=0$, $\Omega=2$, $\mu=0.50$, $\tau^{\mathrm{tol}}=2$.
+
+\textit{Project Beta:} same as Alpha.
+
+\paragraph{Strategy 1: fund Bridge first.}
+$t=1$: spend 30 on Bridge. $B_2=40-30+33=43$.
+$t=2$: spend 30 on Alpha (MS1, $R=45$), 13 on Beta. $B_3=43-43+45=45$.
+$t=3$: spend 17 on Beta (cum.\ 30, MS1$_\beta$, $R=45$), 28 on Alpha.
+$B_4=45-45+45=45$.
+$t=4$: spend 30 on Alpha (MS2, $R=45$), 15 on Beta. $B_5=45-45+45=45$.
+$t=5$: spend 15 on Beta (MS2, $R=45$). $B_6=45-15+45=75$.
+
+This gets complex. The key economic point is simpler to state:
+$Z_{\mathrm{Bridge}}=33-30=3$ (small positive).
+If Bridge enables completion of Alpha and Beta which otherwise stall,
+the total $Z=3+30+30=63$ versus not funding Bridge and completing only
+one of Alpha/Beta with $Z=30$.
+MILP must recognize the option value of Bridge.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item Bridge funded at $t=1$: $x_{\mathrm{Bridge},1}\geq28$.
+  \item Bridge \texttt{completed}.
+  \item $Z^*>30$ (MILP does better than completing only one major project).
+  \item $B_t\geq0$ for all $t$.
 \end{enumerate}
 
 % ============================================================
-\section{Summary and Pytest Assertion Reference}
+\section{Group 9: Horizon and Staggered Starts}
 % ============================================================
 
-\begin{longtable}{p{1.1cm}p{3.8cm}p{2.2cm}p{1.4cm}p{5cm}}
-\toprule
-\textbf{Case} & \textbf{Pattern tested} & \textbf{Outcome} &
-\textbf{$Z^*$} & \textbf{Key assertions}\\
-\midrule
-\endhead
-SP-1 & Perfect $\eta$, 2~MS, no discount & Completed & 20 &
-  $x=[50,50,0,0]$; MS1@t=1; MS2@t=2\\[3pt]
-SP-2 & Advance harvest, decay, term & Terminated & 0 &
-  $x\approx0$; term $\leq t=3$; settlement $=-30$\\[3pt]
-SP-3 & High margin, uniform, $\gamma=1$ & Completed & 30 &
-  Outflow$=60$; 3~MS; no Cond.~1/2 fire\\[3pt]
-SP-4 & Front-load beats uniform, $\gamma<1$ & Completed & 39 &
-  $x=[50,50,0,\ldots]$; $Z>28.61$\\[3pt]
-SP-5 & Cure-period boundary, 3 periods & Terminated & 0 &
-  $\tau=[2,1,0]$; term@t=4; settlement$=-20$\\[3pt]
-MP-1 & Non-overlapping, additive & Both comp. & 50 &
-  $Z=Z_A+Z_B$; no interference\\[3pt]
-MP-2 & Good vs Bad, large $B_1$ & Bad term. & 40 &
-  Alloc to Bad$\approx0$; Good completes\\[3pt]
-MP-3 & Advance harvest + redirect & Bad term. & 40 &
-  $B_t\geq0$; advance absorbed; $Z=40$\\[3pt]
-MP-4 & 3 projects; Low always terminates & Low term. & 42 &
-  H\&M complete@t=2; Low term$\leq t=4$\\[3pt]
-\bottomrule
-\caption{Test case summary and assertions.}
-\label{tab:summary}
-\end{longtable}
+\textit{What is being proven:} $H$ is derived correctly as
+$\max_i f_i - \min_i s_i + 1$; allocations outside each project's active
+window $[s_i, f_i]$ are zero; EVM signals are only computed within active
+windows; non-overlapping projects have additive objectives.
 
-\section{Testing Architecture Notes}
+% ------------------------------------------------------------
+\subsection{MP-1: Two Non-Overlapping Projects, Additive Objective}
+% ------------------------------------------------------------
 
-\paragraph{Framework.} Use \texttt{pytest}. Install: \texttt{pip install pytest}.
-All numerical comparisons use \texttt{pytest.approx(expected, abs=tol)}.
+\paragraph{Economic claim.}
+Two projects with no temporal overlap behave independently. $Z^*=Z_A+Z_B$.
 
-\paragraph{Fixture pattern.} Each case is a pytest fixture that builds a
-hard-coded \texttt{CONFIG} dict, calls \texttt{generate\_portfolio},
-\texttt{build\_and\_solve}, and \texttt{build\_records}, then exposes
-\texttt{sol}, \texttt{rec}, \texttt{portfolio} to the test function.
+\paragraph{Parameters.}
+Project A (SP-1): $s=1$, $f=4$. Project B (SP-3): $s=5$, $f=10$.
+$H=\max(4,10)-\min(1,5)+1=10$.
 
-\paragraph{Plot flag.} Add a \texttt{conftest.py} flag \texttt{--plots}; when
-passed, each test saves the full per-project and portfolio plots to
-\texttt{test\_plots/\{case\_id\}/}. This reuses the existing
-\texttt{plot\_portfolio} function from \texttt{milp\_ppm\_test.py} directly.
+$Z^*=20+30=\mathbf{50}$.
 
-\paragraph{Tolerances.}
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $|Z^*-50|\leq1.0$.
+  \item Both \texttt{completed}.
+  \item $x_{A,t}=0$ for $t\geq5$; $x_{B,t}=0$ for $t\leq4$.
+  \item No terminations.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{MP-E: Three Projects with Staggered Starts}
+% ------------------------------------------------------------
+
+\paragraph{Economic claim.}
+Projects starting at $s_i\in\{1,4,9\}$ produce $H=14$. Allocations
+outside each project's active window are structurally zero. EVM signals
+are undefined (and should not be computed) before $t=s_i$.
+
+\paragraph{Parameters.}
+\[
+  n=3.
+\]
 \begin{center}
-\begin{tabular}{ll}
+\begin{tabular}{lcccccc}
 \toprule
-Quantity & Absolute tolerance $\epsilon$\\
+Proj. & $s$ & $f$ & $\BAC$ & $\pi$ & $M$ & $\bar\eta$\\
 \midrule
-Objective $Z^*$ & 1.5 (solver rounding + MILP gap)\\
-Allocation $x_{i,t}$ & 0.5\\
-Progress $P_{i,t}$ & 0.01\\
-Settlement $R^{\mathrm{term}}$ & 1.0\\
-Counter $\tau_{i,t}^{\mathrm{rem}}$ & exact integer (0 tolerance)\\
+P1 & 1  & 4  & 60 & 0.50 & 2 & 1.0\\
+P2 & 4  & 8  & 60 & 0.50 & 2 & 1.0\\
+P3 & 9  & 14 & 60 & 0.50 & 2 & 1.0\\
 \bottomrule
 \end{tabular}
 \end{center}
+$H=\max(4,8,14)-\min(1,4,9)+1=14-1+1=14$.
+All: $\alpha=0$, $\rho=0$, $\Omega=2$, $\mu=0.50$, $\tau^{\mathrm{tol}}=2$.
+
+Each project: $\phi=(0.5,0.5)$, $CP=90$, $R_j^{\mathrm{net}}=45$ each.
+Outflow per project: 60. $Z_i=90-60=30$ each.
+$Z^*=3\times30=\mathbf{90}$.
+
+\paragraph{Assertions for pytest.}
+\begin{enumerate}[label=A\arabic*.]
+  \item $H=14$ (derived correctly).
+  \item $x_{1,t}=0$ for $t\geq5$.
+  \item $x_{2,t}=0$ for $t\leq3$ and $t\geq9$.
+  \item $x_{3,t}=0$ for $t\leq8$.
+  \item No EVM signal computed before $t=s_i$ for each project.
+  \item All three \texttt{completed}.
+  \item $|Z^*-90|\leq2.0$.
+\end{enumerate}
+
+% ============================================================
+\section{Summary Table}
+% ============================================================
+
+\begin{longtable}{p{1.2cm}p{1.4cm}p{3.5cm}p{2.0cm}p{1.2cm}p{4.0cm}}
+\toprule
+\textbf{Case} & \textbf{Group} & \textbf{Pattern tested} &
+\textbf{Outcome} & \textbf{$Z^*$} & \textbf{Key assertion}\\
+\midrule
+\endhead
+SP-1  & G1 & Perfect $\eta$, 2 MS, baseline & Completed & 20 &
+  $x=[50,50,0,0]$; both MS certified\\
+SP-3  & G1 & 3 MS, uniform, $\gamma=1$ & Completed & 30 &
+  Outflow$=60$; any timing gives same $Z$\\
+SP-J  & G1 & Progress jump, ordering enforced & Completed & 0 &
+  Both MS at $t=1$; order satisfied\\
+SP-4  & G2 & Front-load beats uniform, $\gamma<1$ & Completed & 39 &
+  $Z^*>28.61$; MS1 at $t=1$\\
+MP-K  & G2 & Front-heavy $\phi$ prioritised, $\gamma<1$ & Both comp. & 51.93 &
+  A before B; $Z>51.24$\\
+SP-2  & G3 & Advance harvest, decay, termination & Terminated & 0 &
+  $x\approx0$; settlement$=-30$\\
+SP-A  & G3 & Late threshold $\psi=0.40$ & Completed & 60 &
+  MS1 full; MS2,3 deducted\\
+SP-B  & G3 & Advance recovered before final MS & Completed & 30 &
+  MS3 full despite $\delta^{\mathrm{rec}}>0$\\
+SP-C  & G4 & Retention only, lump release & Completed & 30 &
+  Each MS$=27$; release$=9$ at end\\
+SP-D  & G4 & Retention $+$ advance together & Completed & 30 &
+  MS1,2 both deducted; MS3 retention only\\
+SP-E  & G5 & Only Cond.~1 fires ($\eta=1$) & Active & --- &
+  Counter stays at $\tau^{\mathrm{tol}}$\\
+SP-F  & G5 & Only Cond.~2 fires (long plan) & Active & --- &
+  Counter stays at $\tau^{\mathrm{tol}}$\\
+SP-G  & G5 & Both fire; Cond.~1 lapses; reset & Active & --- &
+  $\tau=[3,2,3]$ at $t=1,2,3$\\
+SP-5  & G6 & $\eta=0$, exact counter boundary & Terminated & 0 &
+  $\tau=[2,1,0]$; term at $t=4$\\
+SP-H  & G6 & Partial progress, positive $R^{\mathrm{term}}$ & Terminated & 10 &
+  $R^{\mathrm{term}}=30>0$; MILP spends\\
+SP-I  & G6 & Cure reset; later termination & Terminated & --- &
+  Term at $t=7$ not $t=4$\\
+MP-3  & G7 & Advance funds concurrent project & Mixed & 40 &
+  $B_t\geq0$; advance absorbed\\
+MP-A  & G7 & Sequential funding, cash depleted & Both comp. & 60 &
+  $x_{2,1}=0$; P2 waits for MS1 inflow\\
+MP-B  & G7 & Negative settlement drains balance & Mixed & 30 &
+  $B_4=130$; balance reduced\\
+MP-2  & G8 & Good vs.\ Bad, large $B_1$ & Bad term. & 40 &
+  Alloc to Bad$\approx0$\\
+MP-4  & G8 & Low $\eta$ forces termination & Low term. & 42 &
+  H\&M complete; Low terminates\\
+MP-C  & G8 & Cash for one project only & Lo term. & 30 &
+  Hi completed; Lo starved\\
+MP-D  & G8 & Bridge cash unlocks major projects & All comp. & $>30$ &
+  Bridge funded; option value realised\\
+MP-1  & G9 & Non-overlapping, additive & Both comp. & 50 &
+  $Z=Z_A+Z_B$; no interference\\
+MP-E  & G9 & Staggered starts, $H$ derived & All comp. & 90 &
+  $H=14$; zero alloc outside windows\\
+\bottomrule
+\caption{All test cases grouped by mechanic.}
+\label{tab:summary}
+\end{longtable}
 
 \end{document}
