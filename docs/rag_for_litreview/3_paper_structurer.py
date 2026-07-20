@@ -118,6 +118,7 @@ Return ONLY this JSON schema:
   "metadata": {{
     "title_guess": "",
     "year_guess": "",
+    "citation_key": "",
     "problem": "",
     "portfolio level": "",
     "decision type": "",
