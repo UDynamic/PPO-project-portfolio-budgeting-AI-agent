@@ -87,7 +87,10 @@ conditions encountered in practice.
     Levels~2--3.
   \item[$\mathcal{M}_i^{\mathrm{cert}}(t)$]
     Milestones of project $i$ certified by period $t$:
-    $\{j : \theta_{i,j} \leq P_{i,t}^{\mathrm{actual}}\}$.
+    $\{j : \theta_{i,j} \leq P_{i,t}^{\mathrm{actual}}
+    \text{ and } t \geq e_{i,j}\}$,
+    where $e_{i,j} \in \mathcal{T}$ is the contractually specified
+    earliest certification period for milestone $j$.
   \item[$x_{i,t} \geq 0$]
     \textbf{Decision variable}: budget allocated to project $i$ at period
     $t$. The period-$t$ action vector is
@@ -153,7 +156,14 @@ sum to $CP_i$. All EVM performance signals and progress calculations are
 normalised against $\mathrm{BAC}_i$.
 
 Milestone $j$ is certified at the first period $t$ at which
-$P_{i,t}^{\mathrm{actual}} \geq \theta_{i,j}$. The net payment received,
+$P_{i,t}^{\mathrm{actual}} \geq \theta_{i,j}$ \emph{and}
+$t \geq e_{i,j}$, where $e_{i,j}$ is the contractually specified
+earliest certification period. Under FIDIC Sub-Clause~14.3, interim
+payment applications may not be submitted before the intervals stated
+in the Appendix to Tender \citep{FIDIC2017}; $e_{i,j}$ parameterises
+this constraint directly, preventing a portfolio manager from
+accelerating cash inflows beyond the contractual payment schedule
+regardless of how quickly physical progress is achieved. The net payment received,
 after retention withholding at rate $\rho_i$ and advance recovery
 deduction at rate $\delta_i^{\mathrm{rec}}$ (commencing once cumulative
 certified payments exceed threshold $\psi_i$), is:
@@ -546,6 +556,11 @@ balance $B_1$ are portfolio-level parameters shared across all projects.
     Milestone threshold
       & $\theta_{i,j}$ & $(0,1]$
       & Cumulative progress fraction required to certify milestone $j$. \\
+    Earliest certification
+      & $e_{i,j}$ & $\mathbb{Z}^+$
+      & Earliest period at which milestone $j$ may be certified,
+        regardless of progress achieved; enforces FIDIC Sub-Clause~14.3
+        payment interval constraints \citep{FIDIC2017}. \\
     \rowcolor{RowAlt}
     Schedule tolerance
       & $\Omega_i$ & $\mathbb{Z}^+$
@@ -687,6 +702,11 @@ stochastic objective~\eqref{eq:objective} collapses to:
     \quad u_{i,j+1,t} \leq u_{i,j,t},
     && \forall\, i,j,t
   \label{eq:L1_cert_logic} \\
+  u_{i,j,t}
+    &= 0
+    \quad \text{if } t < e_{i,j},
+    && \forall\, i,j,t
+  \label{eq:L1_earliest} \\
   V_t^{\mathrm{det}}
     &= \sum_{i,j} R_{i,j}^{\mathrm{net}}\,(u_{i,j,t} - u_{i,j,t-1})
        + \sum_i R_i^{\mathrm{ret}}\,
@@ -713,7 +733,14 @@ stochastic objective~\eqref{eq:objective} collapses to:
 The big-$M$ constant is $\mathbf{M} = \max_{i,j}\theta_{i,j}$.
 Constraints~\eqref{eq:L1_cert_lb}--\eqref{eq:L1_cert_logic} implement
 exact if-and-only-if certification logic with monotone, ordered binary
-activation. The difference $(u_{i,j,t} - u_{i,j,t-1})$ in
+activation. Constraint~\eqref{eq:L1_earliest} enforces the contractual
+earliest certification date: $u_{i,j,t}$ is fixed to zero for all
+periods prior to $e_{i,j}$, preventing the MILP from certifying a
+milestone before its contractual window opens regardless of how much
+budget has been allocated. This makes the optimal allocation timing
+uniquely determined under $\gamma < 1$: the agent will front-load
+spend to reach $\theta_{i,j}$ exactly at $e_{i,j}$, then hold until
+the window opens. The difference $(u_{i,j,t} - u_{i,j,t-1})$ in
 \eqref{eq:L1_cashflow} equals one in the sole period a milestone is
 first certified, linearising the payment trigger without additional
 binaries.
@@ -1087,8 +1114,9 @@ period:
   \item Evaluate termination conditions
     \eqref{eq:term_cond1}--\eqref{eq:term_cond2} and update counter
     via \eqref{eq:counter}.
-  \item Certify milestones, compute $V_t$ via
-    \eqref{eq:Rnet}--\eqref{eq:Vt}, apply stochastic payment delays
+  \item Certify milestones for which $P_{i,t}^{\mathrm{actual}} \geq
+    \theta_{i,j}$ \emph{and} $t \geq e_{i,j}$; compute $V_t$ via
+    \eqref{eq:Rnet}--\eqref{eq:Vt}; apply stochastic payment delays
     \citep{Aibinu2006}.
   \item Update portfolio cash balance via \eqref{eq:balance}.
   \item Execute termination for any project with

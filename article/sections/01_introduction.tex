@@ -229,9 +229,11 @@ The contract price relates to the budget at completion through the contractor's
 profit margin $\pi_i$ as $ CP_i = (1 + \pi_i)\cdot \mathrm{BAC}_i$, and it 
 serves exclusively as the payment accumulation baseline. All EVM performance signals, 
 progress calculations, and termination conditions are normalised against $\mathrm{BAC}_i$. 
-Because payment is contingent on certified progress, the timing of cash inflows 
-is a function of the contractor's actual performance. and, through the
-portfolio manager's allocation decisions.
+Because payment is contingent on both certified progress and the
+contractual payment window, the timing of cash inflows is a function
+of the contractor's actual performance and the portfolio manager's
+allocation decisions, subject to the floor imposed by the contractual
+earliest certification dates $e_{i,j}$.
 This creates the fundamental linkage between allocation decisions and cash
 inflows that makes the problem non-trivial. A portfolio manager operating
 in a competitive market with a pipeline of future contracts has a direct
