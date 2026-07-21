@@ -20,8 +20,9 @@ Dependencies:
 import math
 import pytest
 
+
 # ── import the module under test ──────────────────────────────────────────────
-from milp import (
+from baselines.milp import (
     generate_portfolio,
     build_and_solve,
     build_records,
