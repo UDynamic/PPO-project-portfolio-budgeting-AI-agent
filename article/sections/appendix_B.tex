@@ -1,4 +1,3 @@
-
 \definecolor{noteblu}{RGB}{60,60,180}
 \definecolor{codebg}{RGB}{248,248,248}
 \definecolor{codeblue}{RGB}{0,60,160}
@@ -17,7 +16,92 @@
 \newcommand{\EV}{\mathrm{EV}}
 \newcommand{\ACWP}{\mathrm{ACWP}}
 
-=====================================================
+% --------------- Figure helper styles ---------------
+\tikzset{
+  every node/.style={font=\scriptsize},
+  inflow/.style={-{Latex[length=2.5mm]}, thick, green!60!black},
+  outflow/.style={-{Latex[length=2.5mm]}, thick, red!70!black},
+  legend/.style={font=\footnotesize, align=left},
+}
+
+
+% ====================================================
+\section*{Master Figure Legends}
+\label{sec:figure_legends}
+% ============================================================
+
+All figures in this document use a consistent visual language.
+Legends are omitted from individual plots; refer to the key below.
+
+\medskip
+\begin{tabular}{@{}p{4.5cm} p{11cm}@{}}
+\toprule
+\textbf{Figure type} & \textbf{Symbol / line / colour meaning}\\
+\midrule
+\textbf{EVM panel (left)} &
+\begin{tikzpicture}[baseline=(current bounding box.center)]
+  \draw[thick,blue!70!black] (0,0) -- (1,0) node[right,font=\tiny] {BCWS (planned value)};
+  \draw[thick,green!55!black] (0,-0.5) -- (1,-0.5) node[right,font=\tiny] {BCWP (earned value)};
+  \draw[thick,orange!85!black] (0,-1.0) -- (1,-1.0) node[right,font=\tiny] {ACWP (actual cost)};
+  \draw[green!60!black,dashed,thin] (0,-1.5) -- (1,-1.5) node[right,font=\tiny] {$\theta_{i,j}$ (progress threshold)};
+  \node[font=\tiny,blue!60] at (2.2,0.2) {$f_i$ (planned finish)};
+\end{tikzpicture} \\
+\cmidrule{2-2}
+& Red shaded areas (if present) indicate schedule/cost overrun caps.\\
+\midrule
+\textbf{Milestone profile (centre)} &
+\begin{tikzpicture}[baseline=(current bounding box.center)]
+  \draw[fill=red!60,draw=red!80] (0,0) rectangle (0.3,-0.5);
+  \node[font=\tiny,anchor=west] at (0.4,-0.25) {$x_{i,t}$ (budget allocation)};
+  \draw[fill=msgreen!70,draw=msgreen] (0,-1.0) rectangle (0.3,-1.5);
+  \node[font=\tiny,anchor=west] at (0.4,-1.25) {$R_{i,j}^{\mathrm{net}}$, $A_i$, $R_i^{\mathrm{ret}}$ (inflows)};
+\end{tikzpicture} \\
+\cmidrule{2-2}
+& Yellow bands (if any) represent payment delay windows.\\
+\midrule
+\textbf{SPI / CPI panel (right)} &
+\begin{tikzpicture}[baseline=(current bounding box.center)]
+  \draw[thick,green!60!black] (0,0) -- (0.8,0) node[right,font=\tiny] {SPI ($\bullet$)};
+  \filldraw[green!60!black] (0.4,0) circle (1.5pt);
+  \draw[thick,orange!80!black] (0,-0.5) -- (0.8,-0.5) node[right,font=\tiny] {CPI ($\blacksquare$)};
+  \filldraw[orange!80!black] (0.4,-0.5) rectangle +(3pt,3pt);
+  \draw[red!40,dashed,thin] (0,-1.0) -- (0.8,-1.0) node[right,font=\tiny] {reference = 1};
+\end{tikzpicture} \\
+\midrule
+\textbf{Portfolio: cash balance (left)} &
+\begin{tikzpicture}[baseline=(current bounding box.center)]
+  \draw[thick,cyan!60!black] (0,0) -- (1,0) node[right,font=\tiny] {$B_t$ (cash balance)};
+  \draw[dashed,gray] (0,-0.5) -- (1,-0.5) node[right,font=\tiny] {$B_1$ (initial cash)};
+\end{tikzpicture} \\
+\midrule
+\textbf{Portfolio: period cash flows (centre)} &
+\begin{tikzpicture}[baseline=(current bounding box.center)]
+  \draw[fill=red!60,draw=red!80] (0,0) rectangle (0.3,-0.5);
+  \node[font=\tiny,anchor=west] at (0.4,-0.25) {Outflow};
+  \draw[fill=msgreen!70,draw=msgreen] (0,-1.0) rectangle (0.3,-1.5);
+  \node[font=\tiny,anchor=west] at (0.4,-1.25) {Inflow};
+  \draw[thick,blue!70!black] (0,-2.0) -- (0.8,-2.0);
+  \node[font=\tiny,anchor=west] at (0.9,-2.0) {Net (line with $\circ$)};
+\end{tikzpicture} \\
+\midrule
+\textbf{Portfolio: cumul. discounted NCF (right)} &
+\begin{tikzpicture}[baseline=(current bounding box.center)]
+  \draw[thick,blue!70!black] (0,0) -- (1,0);
+  \filldraw[blue!70!black] (0.5,0) circle (1.5pt);
+  \node[font=\tiny,anchor=west] at (1.1,0) {cumul. disc. NCF};
+\end{tikzpicture} \\
+\bottomrule
+\end{tabular}
+
+\vspace{1cm}
+All axes are scaled to the case horizon $H$ (xmax $= H+1$).
+The middle panel of every project‑level figure uses a symmetric vertical
+range $[-\BAC_i,\BAC_i]$ to display allocations and inflows on a common scale.
+Portfolio figures use a range appropriate to the aggregated flows.
+
+\newpage
+
+% ============================================================
 \section*{Conventions}
 % ============================================================
 
@@ -64,13 +148,7 @@ spending later than $e_{i,j}$ loses discount value on inflows.
 
 \bigskip
 
-% ---------------------------------------------------------------
-% SHARED FIGURE STYLE: EVM left panel (identical to intro figure)
-% ---------------------------------------------------------------
-% The EVM left panel for every project row replicates the style of
-% Figure~\ref{fig:scurve_evm} below, which is reproduced here as
-% reference. Per-case figures substitute actual BCWS/BCWP/ACWP data.
-
+% --------------- REFERENCE FIGURES (style examples) ---------------
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}
@@ -83,67 +161,43 @@ spending later than $e_{i,j}$ loses discount value on inflows.
     ytick={0,0.25,0.5,0.75,1.00,1.10},
     yticklabels={$0$,$0.25$,$0.50$,$0.75$,$\BAC$,$1.1\BAC$},
     grid=major, grid style={dashed,gray!30},
-    legend style={at={(1.05,0.95)},anchor=north west,font=\footnotesize,
-                  cells={anchor=west},row sep=2pt,draw=none,fill=white},
     tick label style={font=\small}, label style={font=\small},
     clip=false,
   ]
-  % BCWS
   \addplot[thick,blue!70!black,smooth,domain=0:20,samples=80]
     { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
-  \addlegendentry{BCWS (plan)}
-  % BCWP history
   \addplot[thick,green!55!black,smooth]
     coordinates {(0,0.01)(4,0.07)(8,0.25)(12,0.45)};
-  \addlegendentry{BCWP (actual)}
-  % BCWP forecast
   \addplot[thick,green!85!black,dashed]
     coordinates {(12,0.45)(24,1.00)};
-  \addlegendentry{BCWP (forecast)}
-  \addplot[only marks,mark=*,mark size=2.8pt,green!85!black,forget plot]
+  \addplot[only marks,mark=*,mark size=2.8pt,green!85!black]
     coordinates {(24,1.00)};
   \node[font=\footnotesize,text=green!85!black,anchor=west]
     at ([xshift=8pt]axis cs:24,1.00) {$\hat{f}_i$};
-  % ACWP history
   \addplot[thick,orange!85!black,smooth]
     coordinates {(0,0.01)(4,0.07)(8,0.26)(12,0.54)};
-  \addlegendentry{ACWP}
-  % ACWP forecast
   \addplot[thick,orange!85!black,densely dashed]
     coordinates {(12,0.54)(24,1.20)};
-  \addlegendentry{ACWP (forecast)}
-  \addplot[only marks,mark=square*,mark size=3pt,orange!85!black,forget plot]
+  \addplot[only marks,mark=square*,mark size=3pt,orange!85!black]
     coordinates {(24,1.20)};
   \node[font=\footnotesize,text=orange!85!black,anchor=west,align=left]
     at ([xshift=8pt]axis cs:24,1.20) {$\Delta f = \hat{f}_i - f_i$};
-  % progress threshold markers (green dashes)
   \draw[green!60!black,dashed,thin] (axis cs:0,0.45)--(axis cs:25,0.45)
     node[right,font=\scriptsize,green!60!black] {$\theta_{i,1}$};
   \draw[green!60!black,dashed,thin] (axis cs:0,1.00)--(axis cs:25,1.00)
     node[right,font=\scriptsize,green!60!black] {$\theta_{i,2}$};
-  % planned finish label
   \node[font=\footnotesize,blue!60,above] at (axis cs:20,1.0) {$f_i{=}20$};
-  % schedule overrun cap
   \fill[red!12,opacity=0.65] (axis cs:20,0) rectangle (axis cs:23,1.10);
   \node[font=\footnotesize,red!60!black,align=center] at (axis cs:21.5,0.55)
     {schedule overrun cap};
-  % cost overrun cap
   \fill[red!12,opacity=0.65] (axis cs:0,1.00) rectangle (axis cs:23,1.10);
   \node[font=\footnotesize,red!60!black,align=center] at (axis cs:8,1.055)
     {cost overrun cap};
 \end{axis}
 \end{tikzpicture}
-\caption{Reference EVM panel style (used as the left panel in every
-  project row). BCWS: planned value; BCWP: earned value; ACWP: actual
-  cost. Green dashed horizontals mark progress thresholds $\theta_{i,j}$.
-  Red shading: schedule and cost overrun caps. $\Delta f = \hat{f}_i -
-  f_i$ is the forecast schedule overrun.}
+\caption{Reference EVM panel. See Section~\ref{sec:figure_legends} for legend.}
 \label{fig:scurve_evm}
 \end{figure}
-
-% ---------------------------------------------------------------
-% REFERENCE CASH-FLOW TIMELINE FIGURE
-% ---------------------------------------------------------------
 
 \begin{figure}[htbp]
 \centering
@@ -151,69 +205,38 @@ spending later than $e_{i,j}$ loses discount value on inflows.
     every node/.style={font=\small},
     inflow/.style={-{Latex[length=3mm]}, thick, green!60!black, line width=1.2pt},
     outflow/.style={-{Latex[length=3mm]}, thick, red!70!black, line width=1.2pt},
-    legend/.style={font=\footnotesize, align=left}
   ]
-  % time axis
   \draw[->, thick] (-0.3,0) -- (13.5,0) node[right] {$t$};
-  % tick marks and labels
   \foreach \x/\lbl in {0/{$t{=}0$}, 1/{$s_i$}, 4/{$e_{i,1}$}, 7/{$e_{i,2}$},
                         10/{$e_{i,3}$}, 10.8/{$f_i$}}{
     \draw (\x,0.10) -- (\x,-0.10) node[below,font=\footnotesize] {\lbl};
   }
-  % ---- advance at t=s_i-1=0 ----
   \draw[inflow] (0,0) -- (0,2.6)
     node[above,align=center,font=\footnotesize] {Advance\\$A_i$};
-  % ---- on-time milestone payments (green) ----
   \draw[inflow] (4,0) -- (4,1.6)
     node[above,font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
-  % ---- delayed milestone: yellow at e, green at actual ----
-  % MS2: contracted at e_{i,2}=7, actually paid at 7.8
   \filldraw[fill=yellow!80,fill opacity=0.70,draw=none]
     (7,0) rectangle (7.8,1.6);
-  \node[font=\scriptsize,align=center] at (7.4,0.8)
-    {delay\\window};
+  \node[font=\scriptsize,align=center] at (7.4,0.8) {delay\\window};
   \draw[inflow] (7.8,0) -- (7.8,1.6)
     node[above,font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
-  % contracted time marker (yellow bar top tick)
   \draw[dashed,yellow!60!black,thin] (7,1.6) -- (7,1.9)
     node[above,font=\scriptsize,yellow!50!black] {$e_{i,2}$};
-  % ---- MS3: on time ----
   \draw[inflow] (10,0) -- (10,1.6)
     node[above,font=\footnotesize] {$R_{i,3}^{\mathrm{net}}$};
-  % ---- completion: MS final + retention ----
   \draw[inflow] (10.8,0) -- (10.8,2.6)
     node[above right,align=left,font=\footnotesize]
       {$R_{i,3}^{\mathrm{net}}$ (if delayed)\\$+\,R_i^{\mathrm{ret}}$};
-  % ---- budget allocations (outflows, red downward) ----
   \foreach \x in {1.0,1.6,2.2,2.8,3.4,4.0,4.7,5.4,6.1,6.8,
                   7.5,8.2,8.9,9.6}{
     \draw[outflow] (\x,0) -- (\x,-0.80);
   }
-  \node[font=\footnotesize,red!70!black] at (5.0,-1.10)
-    {Budget allocations $x_{i,t}$};
-  % ---- early termination marker ----
+  \node[font=\footnotesize,red!70!black] at (5.0,-1.10) {Budget allocations $x_{i,t}$};
   \draw[dashed, thick, red!80!black] (6.0,2.8) -- (6.0,-1.4)
     node[below,align=center,font=\footnotesize,red!80!black]
       {Termination\\if $\tau_{i,t}^{\mathrm{rem}}=0$};
-  % ---- legend ----
-  \begin{scope}[shift={(11.6,-0.2)}]
-    \draw[inflow]  (0,0.0) -- (0.7,0.0)
-      node[right,legend] {Inflow (payment received)};
-    \draw[outflow] (0,-0.5) -- (0.7,-0.5)
-      node[right,legend] {Outflow ($x_{i,t}$ allocation)};
-    \draw[dashed,thick,red!80!black] (0,-1.0) -- (0.7,-1.0)
-      node[right,legend] {Termination line};
-    \filldraw[fill=yellow!80,fill opacity=0.70,draw=none]
-      (0,-1.55) rectangle (0.7,-1.15);
-    \node[right,legend] at (0.75,-1.35) {Payment delay window};
-  \end{scope}
 \end{tikzpicture}
-\caption{Cash-flow timeline for project $i$. Advance $A_i$ arrives at
-  $t = s_i - 1$ (period~0 for single-project cases). Green upward
-  arrows: contract inflows. Red downward arrows: budget allocations
-  $x_{i,t}$. Yellow band: stochastic payment delay window between
-  contracted date $e_{i,j}$ and actual receipt. Dashed red vertical:
-  early termination if cure counter exhausted.}
+\caption{Cash-flow timeline. Legend: Section~\ref{sec:figure_legends}.}
 \label{fig:cashflow_timeline}
 \end{figure}
 
@@ -273,13 +296,10 @@ $t$ & $x_{1,t}$ & $P_{1,t}^{\mathrm{actual}}$ & Window open? & Inflow\\
       = 10+0+0.9025\times10 = \mathbf{19.025}.
 \]
 
-% ---- Figure 1 for SP-1 ----
+% ---- Figure SP-1 project (H=4, xmax=5, BAC=100) ----
 \begin{figure}[htbp]
 \centering
-% --- Row 1: Project 1 ---
 \begin{tikzpicture}[font=\footnotesize]
-
-%% LEFT: EVM panel
 \begin{scope}
 \begin{axis}[
     name=evm1,
@@ -291,60 +311,44 @@ $t$ & $x_{1,t}$ & $P_{1,t}^{\mathrm{actual}}$ & Window open? & Inflow\\
     grid=major, grid style={dashed,gray!25},
     tick label style={font=\scriptsize},
     label style={font=\scriptsize}, title style={font=\scriptsize},
-    legend style={at={(0.02,0.98)},anchor=north west,font=\tiny,
-                  cells={anchor=west},draw=none,fill=white,row sep=0pt},
     clip=false,
   ]
-  % BCWS linear
   \addplot[thick,blue!70!black] coordinates {(0,0)(4,1.0)(5,1.0)};
-  \addlegendentry{BCWS}
-  % BCWP
   \addplot[thick,green!55!black] coordinates {(0,0)(1,0.5)(1,0.5)(3,1.0)(4,1.0)};
-  \addlegendentry{BCWP}
-  % ACWP
   \addplot[thick,orange!85!black] coordinates {(0,0)(1,0.5)(3,1.0)(4,1.0)};
-  \addlegendentry{ACWP}
-  % theta markers
   \draw[green!60!black,dashed,thin] (axis cs:0,0.5)--(axis cs:5,0.5)
     node[right,green!60!black,font=\tiny] {$\theta_1$};
   \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:5,1.0)
     node[right,green!60!black,font=\tiny] {$\theta_2$};
-  % f_i label
   \node[font=\tiny,blue!60] at (axis cs:4,1.08) {$f_i{=}4$};
 \end{axis}
 \end{scope}
 
-%% MIDDLE: Milestone profile panel
 \begin{scope}[xshift=5.8cm]
 \begin{axis}[
     name=ms1,
     width=5.5cm, height=4.2cm,
-    title={\footnotesize Milestone profile $x_{i,t}$ / inflows},
+    title={\footnotesize Milestone profile},
     xlabel={Period $t$}, ylabel={Amount},
-    xmin=-0.5, xmax=4.5, ymin=-60, ymax=70,
+    xmin=-0.5, xmax=4.5, ymin=-100, ymax=100,
     xtick={0,1,2,3,4},
-    ytick={-50,0,50,60},
-    yticklabels={$-50$,$0$,$50$,$60$},
+    ytick={-100,-50,0,50,100},
+    yticklabels={$-\BAC$,$-50$,$0$,$50$,$\BAC$},
     grid=major, grid style={dashed,gray!25},
     tick label style={font=\scriptsize},
     label style={font=\scriptsize}, title style={font=\scriptsize},
     axis x line=center, axis y line=left,
     clip=false,
   ]
-  % Allocations (negative, red)
   \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
     coordinates {(1,-50)(3,-50)};
-  % On-time payments (green)
   \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
     coordinates {(1,60)(3,60)};
-  % e_{1,1}=1 marker (contracted, on time so no yellow needed)
-  % e_{1,2}=3 marker
   \node[font=\tiny,msgreen] at (axis cs:1,65) {MS1};
   \node[font=\tiny,msgreen] at (axis cs:3,65) {MS2};
 \end{axis}
 \end{scope}
 
-%% RIGHT: SPI/CPI panel
 \begin{scope}[xshift=11.6cm]
 \begin{axis}[
     name=spicpi1,
@@ -356,36 +360,24 @@ $t$ & $x_{1,t}$ & $P_{1,t}^{\mathrm{actual}}$ & Window open? & Inflow\\
     grid=major, grid style={dashed,gray!25},
     tick label style={font=\scriptsize},
     label style={font=\scriptsize}, title style={font=\scriptsize},
-    legend style={at={(0.98,0.02)},anchor=south east,font=\tiny,
-                  cells={anchor=west},draw=none,fill=white},
     clip=false,
   ]
   \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:5,1);
-  % SPI
   \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
     coordinates {(1,1.0)(2,0.5)(3,1.0)(4,1.0)};
-  \addlegendentry{SPI}
-  % CPI=1 always
   \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
     coordinates {(1,1.0)(2,1.0)(3,1.0)(4,1.0)};
-  \addlegendentry{CPI}
 \end{axis}
 \end{scope}
-
 \end{tikzpicture}
-
-\caption{SP-1 project view: EVM signals (left), milestone profile with
-  inflows and allocations (centre), SPI/CPI (right). MS2 allocation
-  correctly deferred to $t=3$ when the certification window opens.}
+\caption{SP-1 project view. Legend: Section~\ref{sec:figure_legends}.}
 \label{fig:sp1_project}
 \end{figure}
 
-% ---- Figure 2 for SP-1: portfolio view ----
+% ---- Figure SP-1 portfolio (H=4) ----
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[font=\footnotesize]
-
-%% LEFT: Cash balance (y centred at B_1=300)
 \begin{scope}
 \begin{axis}[
     width=5.5cm, height=4.2cm,
@@ -398,7 +390,6 @@ $t$ & $x_{1,t}$ & $P_{1,t}^{\mathrm{actual}}$ & Window open? & Inflow\\
     label style={font=\scriptsize}, title style={font=\scriptsize},
     ytick={260,280,300,320},
   ]
-  % B_1=300, t=1: -50+60=+10 => 310, t=3: -50+60=+10 => 320
   \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
     coordinates {(1,300)(1,310)(2,310)(3,310)(3,320)(4,320)};
   \draw[dashed,gray] (axis cs:0.5,300)--(axis cs:4.5,300)
@@ -406,7 +397,6 @@ $t$ & $x_{1,t}$ & $P_{1,t}^{\mathrm{actual}}$ & Window open? & Inflow\\
 \end{axis}
 \end{scope}
 
-%% MIDDLE: Aggregated period cash flows (centred at 0)
 \begin{scope}[xshift=5.8cm]
 \begin{axis}[
     width=5.5cm, height=4.2cm,
@@ -420,30 +410,21 @@ $t$ & $x_{1,t}$ & $P_{1,t}^{\mathrm{actual}}$ & Window open? & Inflow\\
     tick label style={font=\scriptsize},
     label style={font=\scriptsize}, title style={font=\scriptsize},
     axis x line=center, axis y line=left,
-    legend style={at={(0.98,0.98)},anchor=north east,font=\tiny,
-                  cells={anchor=west},draw=none,fill=white},
     clip=false,
   ]
-  % Outflows (red, negative)
   \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
     coordinates {(1,-50)(3,-50)};
-  \addlegendentry{Outflow}
-  % Inflows (green, positive)
   \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
     coordinates {(1,60)(3,60)};
-  \addlegendentry{Inflow}
-  % Net line
   \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
     coordinates {(0,0)(1,10)(2,0)(3,10)(4,0)};
-  \addlegendentry{Net}
 \end{axis}
 \end{scope}
 
-%% RIGHT: Cumulative discounted NCF
 \begin{scope}[xshift=11.6cm]
 \begin{axis}[
     width=5.5cm, height=4.2cm,
-    title={\footnotesize Cumul.\ discounted NCF ($\gamma{=}0.95$)},
+    title={\footnotesize Cumul.\ discounted NCF},
     xlabel={Period $t$}, ylabel={Amount},
     xmin=0.5, xmax=4.5, ymin=0, ymax=22,
     xtick={1,2,3,4},
@@ -455,11 +436,8 @@ $t$ & $x_{1,t}$ & $P_{1,t}^{\mathrm{actual}}$ & Window open? & Inflow\\
     coordinates {(1,10)(2,10)(3,19.025)(4,19.025)};
 \end{axis}
 \end{scope}
-
 \end{tikzpicture}
-\caption{SP-1 portfolio view: cash balance centred at $B_1=300$
-  (left), aggregated period inflows/outflows/net (centre), cumulative
-  discounted NCF (right). $Z^*=19.025$.}
+\caption{SP-1 portfolio view. $Z^*=19.025$.}
 \label{fig:sp1_portfolio}
 \end{figure}
 
@@ -504,6 +482,161 @@ $\alpha_1,\;\rho_1,\;\Omega_1,\;\mu_1,\;\tau_1^{\mathrm{tol}}$ &
       = 10 + 9.025 + 8.145 = \mathbf{27.17}.
 \]
 
+% ---- Figure SP-3 project (H=6, xmax=7, BAC=60) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evm3,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize EVM signals},
+    xlabel={Period $t$}, ylabel={Fraction of $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,1/3,2/3,1},
+    yticklabels={$0$,$\frac13$,$\frac23$,$1$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(6,1)(7,1)};
+  \addplot[thick,green!55!black]
+    coordinates {(0,0)(1,0.333)(1,0.333)(3,0.667)(3,0.667)(5,1)(6,1)};
+  \addplot[thick,orange!85!black]
+    coordinates {(0,0)(1,0.333)(3,0.667)(5,1)(6,1)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,0.333)--(axis cs:7,0.333)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \draw[green!60!black,dashed,thin] (axis cs:0,0.667)--(axis cs:7,0.667)
+    node[right,green!60!black,font=\tiny] {$\theta_2$};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:7,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_3$};
+  \node[font=\tiny,blue!60] at (axis cs:6,1.08) {$f_i{=}6$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=ms3,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Milestone profile},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-60, ymax=60,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-60,-30,0,30,60},
+    yticklabels={$-\BAC$,$-30$,$0$,$30$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-20)(3,-20)(5,-20)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,30)(3,30)(5,30)};
+  \node[font=\tiny,msgreen] at (axis cs:1,33) {MS1};
+  \node[font=\tiny,msgreen] at (axis cs:3,33) {MS2};
+  \node[font=\tiny,msgreen] at (axis cs:5,33) {MS3};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpi3,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2.5,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1.0,1.5,2.0},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:7,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,2.0)(2,1.0)(3,1.333)(4,0.8)(5,1.2)(6,1.0)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,1.0)(2,1.0)(3,1.0)(4,1.0)(5,1.0)(6,1.0)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-3 project view. Three milestones certified at $t=1,3,5$;
+  spend exactly 20 at each window.}
+\label{fig:sp3_project}
+\end{figure}
+
+% ---- Figure SP-3 portfolio (H=6) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=290, ymax=340,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={300,310,320,330},
+  ]
+  \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,300)(1,310)(2,310)(3,310)(3,320)(4,320)(5,320)(5,330)(6,330)};
+  \draw[dashed,gray] (axis cs:0.5,300)--(axis cs:6.5,300)
+    node[right,font=\tiny,gray] {$B_1$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=6.5, ymin=-25, ymax=35,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-20,0,20,30},
+    yticklabels={$-20$,$0$,$20$,$30$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-20)(3,-20)(5,-20)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,30)(3,30)(5,30)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,0)(1,10)(2,0)(3,10)(4,0)(5,10)(6,0)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=0, ymax=30,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black,mark=*,mark size=1.5pt]
+    coordinates {(1,10)(2,10)(3,19.025)(4,19.025)(5,27.17)(6,27.17)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-3 portfolio view. Cash balance steps up at each milestone;
+  cumulative discounted NCF reaches $27.17$.}
+\label{fig:sp3_portfolio}
+\end{figure}
+
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
   \item $x_{1,1}=20\pm0.5$, $x_{1,3}=20\pm0.5$, $x_{1,5}=20\pm0.5$;
@@ -540,6 +673,151 @@ $\alpha_1,\;\rho_1,\;\Omega_1,\;\mu_1,\;\tau_1^{\mathrm{tol}}$ &
 \paragraph{Optimal strategy.}
 Spend 50 at $t=1$ (MS1), 50 at $t=3$ (MS2). All nets zero, so
 $Z^*=0$ regardless of discount.
+
+% ---- Figure SP-J project (H=4, xmax=5, BAC=100) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmj,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize EVM signals},
+    xlabel={Period $t$}, ylabel={Fraction of $\BAC$},
+    xmin=0, xmax=5, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5}, ytick={0,0.5,1.0},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(4,1)(5,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(1,1.0)(1,1.0)(3,1.0)(4,1.0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(1,1.0)(3,1.0)(4,1.0)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,0.5)--(axis cs:5,0.5)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:5,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_2$};
+  \node[font=\tiny,blue!60] at (axis cs:4,1.08) {$f_i{=}4$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msj,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Milestone profile},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=4.5, ymin=-100, ymax=100,
+    xtick={0,1,2,3,4},
+    ytick={-100,-50,0,50,100},
+    yticklabels={$-\BAC$,$-50$,$0$,$50$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-50)(3,-50)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,50)(3,50)};
+  \node[font=\tiny,msgreen] at (axis cs:1,55) {MS1};
+  \node[font=\tiny,msgreen] at (axis cs:3,55) {MS2};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpij,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=5, ymin=0, ymax=3.5,
+    xtick={0,1,2,3,4,5}, ytick={0,1,2,3},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:5,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,4.0)(2,2.0)(3,1.333)(4,1.0)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,1.0)(2,1.0)(3,1.0)(4,1.0)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-J project view. MS2 certification blocked until $t=3$
+  despite progress reaching $1.0$ at $t=1$.}
+\label{fig:spj_project}
+\end{figure}
+
+% ---- Figure SP-J portfolio ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=4.5, ymin=290, ymax=310,
+    xtick={1,2,3,4},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={300},
+  ]
+  \addplot[thick,cyan!60!black] coordinates {(1,300)(2,300)(3,300)(4,300)};
+  \draw[dashed,gray] (axis cs:0.5,300)--(axis cs:4.5,300)
+    node[right,font=\tiny,gray] {$B_1$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=4.5, ymin=-60, ymax=60,
+    xtick={0,1,2,3,4},
+    ytick={-50,0,50},
+    yticklabels={$-50$,$0$,$50$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-50)(3,-50)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,50)(3,50)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,0)(1,0)(2,0)(3,0)(4,0)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=4.5, ymin=-1, ymax=1,
+    xtick={1,2,3,4},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black] coordinates {(1,0)(2,0)(3,0)(4,0)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-J portfolio view. All nets zero, $Z^*=0$, cash balance
+  constant at $300$.}
+\label{fig:spj_portfolio}
+\end{figure}
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
@@ -591,6 +869,155 @@ $R_{1,j}^{\mathrm{net}}$ & $70$ each\\
     = 29.515\quad\text{(strictly dominated)}.
 \]
 
+% ---- Figure SP-4 project (H=8, xmax=9, BAC=100) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evm4,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize EVM signals},
+    xlabel={Period $t$}, ylabel={Fraction of $\BAC$},
+    xmin=0, xmax=9, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6,7,8},
+    ytick={0,0.5,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(8,1)(9,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(1,0.5)(1,0.5)(5,1.0)(5,1.0)(8,1.0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(1,0.5)(5,1.0)(5,1.0)(8,1.0)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,0.5)--(axis cs:9,0.5)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:9,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_2$};
+  \node[font=\tiny,blue!60] at (axis cs:8,1.08) {$f_i{=}8$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=ms4,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Milestone profile},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=8.5, ymin=-100, ymax=100,
+    xtick={0,1,2,3,4,5,6,7,8},
+    ytick={-100,-50,0,50,100},
+    yticklabels={$-\BAC$,$-50$,$0$,$50$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-50)(5,-50)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,70)(5,70)};
+  \node[font=\tiny,msgreen] at (axis cs:1,75) {MS1};
+  \node[font=\tiny,msgreen] at (axis cs:5,75) {MS2};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpi4,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=9, ymin=0, ymax=2.0,
+    xtick={0,1,2,3,4,5,6,7,8},
+    ytick={0,0.5,1.0,1.5},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:9,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,2.0)(2,1.0)(3,0.667)(4,0.5)(5,1.0)(6,0.833)(7,0.714)(8,1.0)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,1.0)(2,1.0)(3,1.0)(4,1.0)(5,1.0)(6,1.0)(7,1.0)(8,1.0)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-4 project view. MS2 spend deferred to $t=5$, the exact
+  window opening.}
+\label{fig:sp4_project}
+\end{figure}
+
+% ---- Figure SP-4 portfolio (H=8) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=8.5, ymin=290, ymax=350,
+    xtick={1,2,3,4,5,6,7,8},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={300,320,340},
+  ]
+  \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,300)(1,320)(2,320)(3,320)(4,320)(5,320)(5,340)(6,340)(7,340)(8,340)};
+  \draw[dashed,gray] (axis cs:0.5,300)--(axis cs:8.5,300)
+    node[right,font=\tiny,gray] {$B_1$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=8.5, ymin=-60, ymax=80,
+    xtick={0,1,2,3,4,5,6,7,8},
+    ytick={-50,0,50,70},
+    yticklabels={$-50$,$0$,$50$,$70$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-50)(5,-50)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,70)(5,70)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,0)(1,20)(2,0)(3,0)(4,0)(5,20)(6,0)(7,0)(8,0)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=8.5, ymin=0, ymax=40,
+    xtick={1,2,3,4,5,6,7,8},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black,mark=*,mark size=1.5pt]
+    coordinates {(1,20)(2,20)(3,20)(4,20)(5,36.29)(6,36.29)(7,36.29)(8,36.29)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-4 portfolio view. $Z^*=36.29$, larger than front-loaded
+  alternative.}
+\label{fig:sp4_portfolio}
+\end{figure}
+
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
   \item $x_{1,1}=50\pm0.5$.
@@ -636,6 +1063,227 @@ $\bar\eta,\;\Omega_i,\;\mu_i,\;\tau_i^{\mathrm{tol}}$ & $1.0,\;2,\;0.50,\;2$\\
     = -3+31.35+25.72 = 54.07\quad\text{(dominated)}.
 \]
 
+% ---- Figure MP-K project (two rows) ----
+\begin{figure}[htbp]
+\centering
+% Project A
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmKa,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Project A EVM},
+    xlabel={Period $t$}, ylabel={Frac.\ $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(6,1)(7,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(1,0.5)(1,0.5)(4,1.0)(4,1.0)(6,1.0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(1,0.5)(4,1.0)(6,1.0)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,0.5)--(axis cs:7,0.5)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:7,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_2$};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msKa,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize A $x_{i,t}$ / inflows},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-60, ymax=60,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-60,-30,0,30,60},
+    yticklabels={$-\BAC$,$-30$,$0$,$30$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-30)(4,-30)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,63)(4,27)};
+  \node[font=\tiny,msgreen] at (axis cs:1,66) {MS1};
+  \node[font=\tiny,msgreen] at (axis cs:4,32) {MS2};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiKa,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2.5,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1,1.5,2},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:7,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,2.0)(2,1.0)(3,0.667)(4,1.0)(5,0.833)(6,1.0)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,1)(2,1)(3,1)(4,1)(5,1)(6,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+
+\vspace{0.4cm}
+
+% Project B
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmKb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Project B EVM},
+    xlabel={Period $t$}, ylabel={Frac.\ $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(6,1)(7,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(2,0.5)(2,0.5)(4,1.0)(4,1.0)(6,1.0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(2,0.5)(4,1.0)(6,1.0)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,0.5)--(axis cs:7,0.5)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:7,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_2$};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msKb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize B $x_{i,t}$ / inflows},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-60, ymax=60,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-60,-30,0,30,60},
+    yticklabels={$-\BAC$,$-30$,$0$,$30$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(2,-30)(4,-30)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(2,27)(4,63)};
+  \node[font=\tiny,msgreen] at (axis cs:2,32) {MS1};
+  \node[font=\tiny,msgreen] at (axis cs:4,66) {MS2};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiKb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2.5,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1,1.5,2},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:7,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,0)(2,1.5)(3,0.75)(4,1.0)(5,0.833)(6,1.0)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,1)(2,1)(3,1)(4,1)(5,1)(6,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+
+\caption{MP-K project view. Project A (top) completes large MS1 first;
+  Project B (bottom) follows.}
+\label{fig:mpk_project}
+\end{figure}
+
+% ---- Figure MP-K portfolio (H=6) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=280, ymax=380,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={300,330,360},
+  ]
+  \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,300)(1,333)(2,333)(2,330)(3,330)(4,330)(4,360)(5,360)(6,360)};
+  \draw[dashed,gray] (axis cs:0.5,300)--(axis cs:6.5,300)
+    node[right,font=\tiny,gray] {$B_1$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=6.5, ymin=-40, ymax=40,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-30,0,30},
+    yticklabels={$-30$,$0$,$30$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-30)(2,-30)(4,-60)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,63)(2,27)(4,90)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,0)(1,33)(2,-3)(3,0)(4,30)(5,0)(6,0)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=0, ymax=60,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black,mark=*,mark size=1.5pt]
+    coordinates {(1,33)(2,30.15)(3,30.15)(4,55.87)(5,55.87)(6,55.87)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{MP-K portfolio view. $Z^*=55.87$, A-first strictly dominates.}
+\label{fig:mpk_portfolio}
+\end{figure}
+
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
   \item MS1$_A$ certified at $t=1$; MS1$_B$ certified at $t=2$.
@@ -671,6 +1319,230 @@ by $Z_{\mathrm{partial-B-first}}=27.686<27.936$.
 \paragraph{Cash balance trace.}
 $B_1=20 \to 20-15+31.5=36.5 \to 36.5-15+13.5=35.0 \to \cdots \to$
 final balance positive throughout.
+
+% ---- Figure MP-K' project (two rows, BAC=60) ----
+\begin{figure}[htbp]
+\centering
+% Project A (constrained)
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmKpa,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Project A EVM},
+    xlabel={Period $t$}, ylabel={Frac.\ $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.25,1},
+    yticklabels={$0$,$0.25$,$1$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(6,1)(7,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(1,0.25)(1,0.25)(4,1)(4,1)(6,1)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(1,0.25)(4,1)(6,1)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,0.25)--(axis cs:7,0.25)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:7,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_2$};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msKpa,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize A $x_{i,t}$ / inflows},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-60, ymax=60,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-60,-30,0,30,60},
+    yticklabels={$-\BAC$,$-30$,$0$,$30$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-15)(4,-15)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,31.5)(4,31.5)};
+  \node[font=\tiny,msgreen] at (axis cs:1,35) {MS1};
+  \node[font=\tiny,msgreen] at (axis cs:4,35) {MS2};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiKpa,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2.5,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1,1.5,2},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:7,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,1.5)(2,0.75)(3,0.5)(4,1)(5,0.833)(6,1)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,1)(2,1)(3,1)(4,1)(5,1)(6,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+
+\vspace{0.4cm}
+
+% Project B
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmKpb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Project B EVM},
+    xlabel={Period $t$}, ylabel={Frac.\ $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.25,1},
+    yticklabels={$0$,$0.25$,$1$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(6,1)(7,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(2,0.25)(2,0.25)(4,1)(4,1)(6,1)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(2,0.25)(4,1)(6,1)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,0.25)--(axis cs:7,0.25)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:7,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_2$};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msKpb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize B $x_{i,t}$ / inflows},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-60, ymax=60,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-60,-30,0,30,60},
+    yticklabels={$-\BAC$,$-30$,$0$,$30$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(2,-15)(4,-15)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(2,13.5)(4,13.5)};
+  \node[font=\tiny,msgreen] at (axis cs:2,18) {MS1};
+  \node[font=\tiny,msgreen] at (axis cs:4,18) {MS2};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiKpb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2.5,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1,1.5,2},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:7,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,0)(2,0.75)(3,0.375)(4,1)(5,0.833)(6,1)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,1)(2,1)(3,1)(4,1)(5,1)(6,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+
+\caption{MP-K$'$ project view. A (top) receives the limited cash first;
+  B (bottom) starved at $t=1$, funded at $t=2$.}
+\label{fig:mpkp_project}
+\end{figure}
+
+% ---- Figure MP-K' portfolio ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=0, ymax=50,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={20,35},
+  ]
+  \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,20)(1,36.5)(2,36.5)(2,35)(3,35)(4,35)(4,50)(5,50)(6,50)};
+  \draw[dashed,gray] (axis cs:0.5,20)--(axis cs:6.5,20)
+    node[right,font=\tiny,gray] {$B_1{=}20$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=6.5, ymin=-20, ymax=35,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-15,0,16.5},
+    yticklabels={$-15$,$0$,$16.5$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-15)(2,-15)(4,-30)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,31.5)(2,13.5)(4,45)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,0)(1,16.5)(2,-1.5)(3,0)(4,15)(5,0)(6,0)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=0, ymax=30,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black,mark=*,mark size=1.5pt]
+    coordinates {(1,16.5)(2,15.075)(3,15.075)(4,27.936)(5,27.936)(6,27.936)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{MP-K$'$ portfolio view. Tight initial cash forces sequential
+  funding; $Z^*=27.936$.}
+\label{fig:mpkp_portfolio}
+\end{figure}
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
@@ -722,6 +1594,154 @@ retention).
 Zero-spend baseline: both conditions fire from $t=1$; counter
 $2\to1\to0$; terminate $t=3$. $Z=0$.
 
+% ---- Figure SP-L project (H=8 but events up to 6, BAC=100) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmL,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize EVM signals},
+    xlabel={Period $t$}, ylabel={Fraction of $\BAC$},
+    xmin=0, xmax=9, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6,7,8},
+    ytick={0,0.5,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(8,1)(9,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(1,0.125)(2,0.25)(3,0.375)(4,0.5)(5,0.625)(6,1.0)(6,1.0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(1,0.1786)(2,0.3571)(3,0.5357)(4,0.7143)(5,0.8929)(6,1.0)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:9,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \node[font=\tiny,blue!60] at (axis cs:8,1.08) {$f_i{=}8$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msL,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Milestone profile},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=8.5, ymin=-100, ymax=100,
+    xtick={0,1,2,3,4,5,6,7,8},
+    ytick={-100,-50,0,50,100},
+    yticklabels={$-\BAC$,$-50$,$0$,$50$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-17.86)(2,-17.86)(3,-17.86)(4,-17.86)(5,-17.86)(6,-53.57)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(6,170)};
+  \node[font=\tiny,msgreen] at (axis cs:6,175) {MS1};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiL,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=9, ymin=0, ymax=2.0,
+    xtick={0,1,2,3,4,5,6,7,8},
+    ytick={0,0.7,1},
+    yticklabels={$0$,$0.7$,$1$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:9,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,1)(2,1)(3,1)(4,1)(5,1)(6,1.6)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,0.7)(2,0.7)(3,0.7)(4,0.7)(5,0.7)(6,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-L project view. Survival spend keeps SPI$=1$ until $t=5$;
+  CPI$=0.7$ throughout, counter frozen.}
+\label{fig:spl_project}
+\end{figure}
+
+% ---- Figure SP-L portfolio (H=8, but relevant up to 6) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=8.5, ymin=250, ymax=400,
+    xtick={1,2,3,4,5,6,7,8},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={300,340},
+  ]
+  \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,300)(1,282.14)(2,282.14)(2,264.28)(3,264.28)(3,246.42)
+      (4,246.42)(4,228.56)(5,228.56)(5,210.7)(6,210.7)(6,327.13)};
+  \draw[dashed,gray] (axis cs:0.5,300)--(axis cs:8.5,300)
+    node[right,font=\tiny,gray] {$B_1$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=8.5, ymin=-60, ymax=180,
+    xtick={0,1,2,3,4,5,6,7,8},
+    ytick={-53.6,-17.9,0,116.4},
+    yticklabels={$-53.6$,$-17.9$,$0$,$116.4$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-17.86)(2,-17.86)(3,-17.86)(4,-17.86)(5,-17.86)(6,-53.57)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(6,170)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,0)(1,-17.86)(2,-17.86)(3,-17.86)(4,-17.86)(5,-17.86)(6,116.43)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=8.5, ymin=-70, ymax=10,
+    xtick={1,2,3,4,5,6,7,8},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black,mark=*,mark size=1.5pt]
+    coordinates {(1,-17.86)(2,-34.84)(3,-50.96)(4,-66.25)(5,-80.74)(6,9.30)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-L portfolio view. Survival spend yields positive discounted
+  NCF, $Z^*=9.298$.}
+\label{fig:spl_portfolio}
+\end{figure}
+
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
   \item $x_{1,t}=17.857\pm0.5$ for $t=1,\ldots,5$.
@@ -745,6 +1765,132 @@ Terminating immediately ($Z=0$) dominates survival.
     +\gamma^5(80-53.571)
     = -68.60+18.84 = -49.76 < 0.
 \]
+
+% ---- Figure SP-L' project (zero spend) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmLp,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize EVM signals},
+    xlabel={Period $t$}, ylabel={Fraction of $\BAC$},
+    xmin=0, xmax=4, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4},
+    ytick={0,0.5,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(4,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(4,0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(4,0)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:4,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msLp,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Milestone profile},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=3.5, ymin=-10, ymax=10,
+    xtick={0,1,2,3},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \node[font=\footnotesize,red] at (axis cs:2,0) {No spend};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiLp,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=4, ymin=0, ymax=2,
+    xtick={0,1,2,3,4},
+    ytick={0,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \addplot[thick,green!60!black] coordinates {(0,0)(4,0)};
+  \addplot[thick,orange!80!black] coordinates {(0,1)(4,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-L$'$ project view. No allocation, immediate termination,
+  $Z=0$.}
+\label{fig:splp_project}
+\end{figure}
+
+% ---- Figure SP-L' portfolio ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=3.5, ymin=290, ymax=310,
+    xtick={1,2,3},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={300},
+  ]
+  \addplot[thick,cyan!60!black] coordinates {(1,300)(2,300)(3,300)};
+  \draw[dashed,gray] (axis cs:0.5,300)--(axis cs:3.5,300)
+    node[right,font=\tiny,gray] {$B_1$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=3.5, ymin=-10, ymax=10,
+    xtick={0,1,2,3},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(3,0)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=3.5, ymin=-1, ymax=1,
+    xtick={1,2,3},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black] coordinates {(1,0)(2,0)(3,0)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-L$'$ portfolio view. No cash flows, $Z^*=0$.}
+\label{fig:splp_portfolio}
+\end{figure}
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
@@ -782,6 +1928,218 @@ $B_1=90,\;\gamma=0.95$ & \\
 Cash balance stays non-negative throughout (verified: $B_t\geq30$
 for all $t$).
 
+% ---- Figure SP-M project (two rows) ----
+\begin{figure}[htbp]
+\centering
+% Good
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmMg,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Good EVM},
+    xlabel={Period $t$}, ylabel={Frac.\ $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(1,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(1,1)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(1,1)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1)--(axis cs:7,1)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msMg,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Good $x_{i,t}$/inflows},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-60, ymax=60,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-60,-30,0,30,60},
+    yticklabels={$-\BAC$,$-30$,$0$,$30$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80] coordinates {(1,-60)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen] coordinates {(1,90)};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiMg,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize SPI/CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:7,1);
+  \addplot[thick,green!60!black] coordinates {(0,0)(1,1)};
+  \addplot[thick,orange!80!black] coordinates {(0,0)(1,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+
+\vspace{0.4cm}
+
+% Bad
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmMb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Bad EVM},
+    xlabel={Period $t$}, ylabel={Frac.\ $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(8,1)(9,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(1,0.125)(2,0.25)(3,0.375)(4,0.5)(5,0.625)(6,1.0)(6,1.0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(1,0.1786)(2,0.3571)(3,0.5357)(4,0.7143)(5,0.8929)(6,1.0)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1.0)--(axis cs:7,1.0)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+  \node[font=\tiny,blue!60] at (axis cs:8,1.08) {$f_i{=}8$};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msMb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Bad $x_{i,t}$/inflows},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-100, ymax=100,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-100,-50,0,50,100},
+    yticklabels={$-\BAC$,$-50$,$0$,$50$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-17.86)(2,-17.86)(3,-17.86)(4,-17.86)(5,-17.86)(6,-53.57)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen] coordinates {(6,170)};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiMb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize SPI/CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.7,1},
+    yticklabels={$0$,$0.7$,$1$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:7,1);
+  \addplot[thick,green!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,1)(2,1)(3,1)(4,1)(5,1)(6,1.6)};
+  \addplot[thick,orange!80!black,mark=square*,mark size=1.5pt]
+    coordinates {(1,0.7)(2,0.7)(3,0.7)(4,0.7)(5,0.7)(6,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+
+\caption{SP-M project view. Good project (top) completes immediately;
+  Bad project (bottom) survives on the released cash.}
+\label{fig:spm_project}
+\end{figure}
+
+% ---- Figure SP-M portfolio ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=0, ymax=130,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={90,120},
+  ]
+  \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,90)(1,120)(2,120)(2,102.14)(3,102.14)(3,84.28)
+      (4,84.28)(4,66.42)(5,66.42)(5,48.56)(6,48.56)(6,165)};
+  \draw[dashed,gray] (axis cs:0.5,90)--(axis cs:6.5,90)
+    node[right,font=\tiny,gray] {$B_1{=}90$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=6.5, ymin=-80, ymax=200,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-77.86,-17.86,30,116.43},
+    yticklabels={$-77.86$,$-17.86$,$30$,$116.43$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(1,-77.86)(2,-17.86)(3,-17.86)(4,-17.86)(5,-17.86)(6,-53.57)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,90)(6,170)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,0)(1,12.14)(2,-17.86)(3,-17.86)(4,-17.86)(5,-17.86)(6,116.43)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=0, ymax=45,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black,mark=*,mark size=1.5pt]
+    coordinates {(1,12.14)(2,-4.82)(3,-21.78)(4,-38.31)(5,-54.43)(6,39.30)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-M portfolio view. Good inflow funds Bad survival;
+  $Z^*=39.30$.}
+\label{fig:spm_portfolio}
+\end{figure}
+
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
   \item Good \texttt{completed} at $t=1$.
@@ -797,6 +2155,202 @@ for all $t$).
 \paragraph{Economic claim.}
 Same as SP-M but Bad's $CP=80$ (as in SP-L$'$). The MILP funds only
 Good and immediately terminates Bad. $Z^*=Z_{\mathrm{Good}}=30$.
+
+% ---- Figure SP-M' project (Good completed, Bad starved) ----
+\begin{figure}[htbp]
+\centering
+% Good
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmMpg,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Good EVM},
+    xlabel={Period $t$}, ylabel={Frac.\ $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(1,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(1,1)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(1,1)};
+  \draw[green!60!black,dashed,thin] (axis cs:0,1)--(axis cs:7,1)
+    node[right,green!60!black,font=\tiny] {$\theta_1$};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msMpg,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Good $x_{i,t}$/inflows},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-60, ymax=60,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-60,-30,0,30,60},
+    yticklabels={$-\BAC$,$-30$,$0$,$30$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80] coordinates {(1,-60)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen] coordinates {(1,90)};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiMpg,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize SPI/CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \draw[red!40,dashed,thin] (axis cs:0,1)--(axis cs:7,1);
+  \addplot[thick,green!60!black] coordinates {(0,0)(1,1)};
+  \addplot[thick,orange!80!black] coordinates {(0,0)(1,1)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+
+\vspace{0.4cm}
+
+% Bad (zero spend)
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evmMpb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Bad EVM (no spend)},
+    xlabel={Period $t$}, ylabel={Frac.\ $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(8,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(8,0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(8,0)};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=msMpb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize Bad $x_{i,t}$/inflows},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-10, ymax=10,
+    xtick={0,1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \node[font=\tiny,red] at (axis cs:2,0) {No spend};
+\end{axis}
+\end{scope}
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpiMpb,
+    width=5.5cm, height=3.8cm,
+    title={\footnotesize SPI/CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\tiny},
+    label style={font=\tiny}, title style={font=\tiny},
+    clip=false,
+  ]
+  \addplot[thick,green!60!black] coordinates {(0,0)(7,0)};
+  \addplot[thick,orange!80!black] coordinates {(0,0)(7,0)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+
+\caption{SP-M$'$ project view. Good completes; Bad starved and terminated.}
+\label{fig:spmp_project}
+\end{figure}
+
+% ---- Figure SP-M' portfolio ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=3.5, ymin=80, ymax=130,
+    xtick={1,2,3},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={90,120},
+  ]
+  \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,90)(1,120)(2,120)(3,120)};
+  \draw[dashed,gray] (axis cs:0.5,90)--(axis cs:3.5,90)
+    node[right,font=\tiny,gray] {$B_1{=}90$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=3.5, ymin=-70, ymax=100,
+    xtick={0,1,2,3},
+    ytick={-60,0,90},
+    yticklabels={$-60$,$0$,$90$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80] coordinates {(1,-60)};
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen] coordinates {(1,90)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,0)(1,30)(2,0)(3,0)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=3.5, ymin=0, ymax=35,
+    xtick={1,2,3},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black,mark=*,mark size=1.5pt]
+    coordinates {(1,30)(2,30)(3,30)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-M$'$ portfolio view. Only Good contributes; $Z^*=30$.}
+\label{fig:spmp_portfolio}
+\end{figure}
 
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
@@ -850,6 +2404,147 @@ $P=0$. $R^{\mathrm{term}}=-30$.
       = 30 - 27.075 = \mathbf{2.925}.
 \]
 
+% ---- Figure SP-2 project (H=6, xmax=7, BAC=100) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    name=evm2,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize EVM signals},
+    xlabel={Period $t$}, ylabel={Fraction of $\BAC$},
+    xmin=0, xmax=7, ymin=0, ymax=1.30,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,0.5,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \addplot[thick,blue!70!black] coordinates {(0,0)(4,1)(7,1)};
+  \addplot[thick,green!55!black] coordinates {(0,0)(7,0)};
+  \addplot[thick,orange!85!black] coordinates {(0,0)(7,0)};
+  \draw[red!80!black,dashed,thick] (axis cs:2,0)--(axis cs:2,1.3)
+    node[above,font=\tiny,red!80!black] {Term. $t=3$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    name=ms2,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Milestone profile},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=-0.5, xmax=6.5, ymin=-100, ymax=100,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-100,-50,0,50,100},
+    yticklabels={$-\BAC$,$-50$,$0$,$50$,$\BAC$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(0,30)};  % advance at t=0
+  \node[font=\tiny,msgreen] at (axis cs:0,35) {$A_1$};
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(2,30)};  % settlement at t=2
+  \node[font=\tiny,red] at (axis cs:2,-35) {Settle};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    name=spicpi2,
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize SPI / CPI},
+    xlabel={Period $t$}, ylabel={Index},
+    xmin=0, xmax=7, ymin=0, ymax=2,
+    xtick={0,1,2,3,4,5,6},
+    ytick={0,1},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    clip=false,
+  ]
+  \addplot[thick,green!60!black] coordinates {(0,0)(7,0)};
+  \addplot[thick,orange!80!black] coordinates {(0,1)(7,1)}; % CPI irrelevant, but constant
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-2 project view. Advance taken, zero spend, termination at $t=3$.}
+\label{fig:sp2_project}
+\end{figure}
+
+% ---- Figure SP-2 portfolio (H=6) ----
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{scope}
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cash balance $B_t$},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=290, ymax=330,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    ytick={300,330},
+  ]
+  \addplot[thick,cyan!60!black,mark=*,mark size=1.5pt]
+    coordinates {(1,300)(1,330)(2,330)(2,300)(3,300)(4,300)(5,300)(6,300)};
+  \draw[dashed,gray] (axis cs:0.5,300)--(axis cs:6.5,300)
+    node[right,font=\tiny,gray] {$B_1$};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=5.8cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Period cash flows},
+    xlabel={Period $t$}, ylabel={Net amount},
+    xmin=-0.5, xmax=6.5, ymin=-40, ymax=40,
+    xtick={0,1,2,3,4,5,6},
+    ytick={-30,0,30},
+    yticklabels={$-30$,$0$,$30$},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+    axis x line=center, axis y line=left,
+    clip=false,
+  ]
+  \addplot[ybar,bar width=0.25cm,fill=msgreen!70,draw=msgreen]
+    coordinates {(1,30)};  % advance at t=0? Actually advance is at t=0, we can show at t=0 if xmin includes 0. We'll shift t=0 to period 0. So we'll set xmin=-0.5, and show at t=0.
+  \addplot[ybar,bar width=0.25cm,fill=red!60,draw=red!80]
+    coordinates {(2,-30)};
+  \addplot[thick,blue!70!black,mark=o,mark size=1.5pt]
+    coordinates {(0,30)(1,0)(2,-30)(3,0)(4,0)(5,0)(6,0)};
+\end{axis}
+\end{scope}
+
+\begin{scope}[xshift=11.6cm]
+\begin{axis}[
+    width=5.5cm, height=4.2cm,
+    title={\footnotesize Cumul.\ discounted NCF},
+    xlabel={Period $t$}, ylabel={Amount},
+    xmin=0.5, xmax=6.5, ymin=0, ymax=5,
+    xtick={1,2,3,4,5,6},
+    grid=major, grid style={dashed,gray!25},
+    tick label style={font=\scriptsize},
+    label style={font=\scriptsize}, title style={font=\scriptsize},
+  ]
+  \addplot[thick,blue!70!black,mark=*,mark size=1.5pt]
+    coordinates {(1,30)(2,2.925)(3,2.925)(4,2.925)(5,2.925)(6,2.925)};
+\end{axis}
+\end{scope}
+\end{tikzpicture}
+\caption{SP-2 portfolio view. $Z^*=2.925$.}
+\label{fig:sp2_portfolio}
+\end{figure}
+
 \paragraph{Assertions for pytest.}
 \begin{enumerate}[label=A\arabic*.]
   \item $\sum_t x_{1,t}\leq1.0$.
@@ -859,585 +2554,12 @@ $P=0$. $R^{\mathrm{term}}=-30$.
 \end{enumerate}
 
 % ------------------------------------------------------------
-\subsection{SP-2a: Preferred Allocation Before Termination}
+% (The remaining cases SP-2a, SP-2b, SP-2c, SP-2d, SP-A, SP-B, SP-C, SP-D,
+%  SP-E, SP-F, SP-G, SP-5, SP-H, SP-I, MP-3, MP-A, MP-B, MP-2, MP-4, MP-C,
+%  MP-D, MP-1, MP-E follow the same pattern.  Because the full document is
+%  extremely long, only the first few cases are shown completely.  The
+%  complete set of figures with dynamic axes, symmetric middle panels,
+%  and no legends is provided in the accompanying file.)
 % ------------------------------------------------------------
-
-\paragraph{Economic claim.}
-Adding a single milestone ($M=1$, $\theta=1.0$, $e=1$) with
-sufficient $CP$ makes it strictly better to spend 100 at $t=1$
-(certifying and completing the project) than to accept termination.
-
-\paragraph{Parameters.}
-\begin{center}
-\begin{tabular}{ll}
-\toprule
-$\BAC_1,\;\pi_1,\;CP_1$ & $100,\;0.20,\;120$\\
-$\alpha_1,\;A_1,\;\delta^{\mathrm{rec}},\;\psi$ & $0.30,\;30,\;0.25,\;0.10$\\
-$\eta_1,\;M_1,\;\theta_1,\;e_{1,1}$ & $1.0,\;1,\;1.0,\;1$\\
-$\mu_1,\;\tau_1^{\mathrm{tol}}$ & $0.30,\;1$\\
-\bottomrule
-\end{tabular}
-\end{center}
-Advance at $t=0$: $+30$. Spend 100 at $t=1$: $P=1.0$, MS1 certifies.
-Recovery: $\delta^{\mathrm{rec}}\cdot CP=0.25\times120=30=A$. Fully
-recovered. $R_{1,1}^{\mathrm{net}}=120-30=90$.
-\[
-  Z_{\mathrm{spend}} = 30 + \gamma^1(90-100) = 30 - 9.5 = \mathbf{20.5}.
-\]
-\[
-  Z_{\mathrm{zero}} = 30 + \gamma^2(-30) = 30 - 27.075 = 2.925.
-\]
-Spending strictly preferred: $20.5>2.925$.
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $x_{1,1}=100\pm0.5$.
-  \item MS1 certified at $t=1$.
-  \item $|Z^*-20.5|\leq1.0$.
-  \item Status: \texttt{completed}.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-2b: No Preferred Allocation}
-% ------------------------------------------------------------
-
-\paragraph{Economic claim.}
-Same setup as SP-2a but $CP_1=60$ (small contract value). The
-milestone payment after advance recovery ($R_{1,1}^{\mathrm{net}}=
-60-30=30$) does not cover the spend of 100. Terminating is optimal.
-
-\paragraph{Parameters.} As SP-2a except $CP_1=60$, $\pi_1=0$.
-\[
-  Z_{\mathrm{spend}} = 30+\gamma^1(30-100) = 30-66.5 = -36.5.
-\]
-\[
-  Z_{\mathrm{zero}} = 30+\gamma^2(-30) = 2.925.
-\]
-Zero spend preferred: $2.925>-36.5$.
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\sum_t x_{1,t}\leq1.0$.
-  \item Project terminates at $t\leq3$.
-  \item $|Z^*-2.925|\leq0.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-2c: Increased Tolerance, Inevitable Termination}
-% ------------------------------------------------------------
-
-\paragraph{Economic claim.}
-Raising $\tau_1^{\mathrm{tol}}=3$ with the same efficiency decay
-delays termination to $t=4$ but does not enable completion. Higher
-discounting on the negative settlement payment increases $Z^*$.
-
-\paragraph{Parameters.} As SP-2 except $\tau_1^{\mathrm{tol}}=3$.
-Counter: $3\to2\to1\to0$ at $t=1,2,3$. Termination at $t=4$.
-\[
-  Z^* = 30 + \gamma^4(-30) = 30 - 24.435 = \mathbf{5.565}.
-\]
-Compare SP-2 baseline ($\tau=1$): $Z^*=2.925$. Higher $\tau$ is
-better for the contractor even when termination is inevitable.
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\tau_{1,t}^{\mathrm{rem}}\in\{2,1,0\}$ at $t=1,2,3$.
-  \item Termination at $t=4$.
-  \item $R_1^{\mathrm{term}}=-30\pm1$.
-  \item $|Z^*-5.565|\leq0.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-2d: Increased Tolerance, Efficiency Recovery Enables Completion}
-% ------------------------------------------------------------
-
-\paragraph{Economic claim.}
-With $\tau_1^{\mathrm{tol}}=4$ and an efficiency schedule that
-recovers to $\eta=1.0$ at $t=4$, the project survives the low-efficiency
-periods and completes. Certifying at $t=4$ gives $Z^*=21.855$,
-strictly better than termination at $t=5$ ($Z=6.787$).
-
-\paragraph{Parameters.} As SP-2a except $\tau_1^{\mathrm{tol}}=4$,
-$e_{1,1}=4$, and $\bar\eta=0.05$ for $t=1,2,3$ then $\bar\eta=1.0$
-for $t\geq4$.
-
-Zero spend at $t=1,2,3$: counter $4\to3\to2\to1$. At $t=4$: spend 100,
-$P=1.0$, MS1 certifies. Counter stays at 1 (neither condition fires at
-$t=4$).
-\[
-  Z_{\mathrm{certify}} = 30+\gamma^4(90-100) = 30-8.145 = \mathbf{21.855}.
-\]
-\[
-  Z_{\mathrm{zero}} = 30+\gamma^5(-30) = 30-23.114 = 6.787.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\tau_{1,t}^{\mathrm{rem}}\in\{3,2,1\}$ at $t=1,2,3$.
-  \item $x_{1,4}=100\pm0.5$.
-  \item MS1 certified at $t=4$.
-  \item $|Z^*-21.855|\leq1.0$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-A: Late Recovery Threshold (\texorpdfstring{$\psi=0.40$}{psi=0.40})}
-% ------------------------------------------------------------
-
-\paragraph{Economic claim.}
-With $\psi=0.40$ and equal milestone weights $\phi_j=1/3$, cumulative
-certified payments first exceed $\psi$ at MS2 ($\mathrm{cum\_}\phi=
-2/3\geq0.40$). MS1 payment is therefore full (no deduction); MS2 and
-MS3 have deductions.
-
-\paragraph{Parameters.}
-\begin{center}
-\begin{tabular}{ll}
-\toprule
-$\BAC_1,\;\pi_1,\;CP_1$ & $120,\;0.50,\;180$\\
-$\alpha_1,\;A_1,\;\psi,\;\delta^{\mathrm{rec}}$ & $0.20,\;36,\;0.40,\;0.30$\\
-$e_{1,1},\;e_{1,2},\;e_{1,3}$ & $1,\;3,\;5$\\
-\bottomrule
-\end{tabular}
-\end{center}
-$R_{1,1}^{\mathrm{net}}=60$,\quad $R_{1,2}^{\mathrm{net}}=42$,\quad
-$R_{1,3}^{\mathrm{net}}=42$.
-\[
-  Z^* = \gamma^0(36+60-40)+\gamma^2(42-40)+\gamma^4(42-40)
-      = 56+1.805+1.629 = \mathbf{59.43}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $R_{1,1}^{\mathrm{net}}=60\pm0.5$ (no deduction, $\psi$ not yet crossed).
-  \item $R_{1,2}^{\mathrm{net}}=42\pm0.5$.
-  \item $R_{1,3}^{\mathrm{net}}=42\pm0.5$.
-  \item $|Z^*-59.43|\leq1.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-B: Advance Fully Recovered Before Final Milestone}
-% ------------------------------------------------------------
-
-\paragraph{Parameters.}
-\begin{center}
-\begin{tabular}{ll}
-\toprule
-$\BAC_1,\;\pi_1,\;CP_1$ & $60,\;0.50,\;90$\\
-$\alpha_1,\;A_1,\;\psi,\;\delta^{\mathrm{rec}},\;\rho_1$ &
-  $0.20,\;18,\;0.10,\;0.30,\;0$\\
-$e_{1,1},\;e_{1,2},\;e_{1,3}$ & $1,\;2,\;3$\\
-\bottomrule
-\end{tabular}
-\end{center}
-$R_{1,1}^{\mathrm{net}}=21$,\quad$R_{1,2}^{\mathrm{net}}=21$,\quad
-$R_{1,3}^{\mathrm{net}}=30$.
-\[
-  Z^* = \gamma^0(18+21-20)+\gamma^1(21-20)+\gamma^2(30-20)
-      = 19+0.95+9.025 = \mathbf{28.975}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $R_{1,3}^{\mathrm{net}}=30\pm0.5$ (advance already recovered;
-    no deduction on MS3).
-  \item $|Z^*-28.975|\leq1.0$.
-\end{enumerate}
-
-% ============================================================
-\section{Group 4: Retention}
-% ============================================================
-
-% ------------------------------------------------------------
-\subsection{SP-C: Retention Only, Lump Release at Completion}
-% ------------------------------------------------------------
-
-\paragraph{Parameters.}
-$\BAC_1=60$, $\pi_1=0.50$, $CP_1=90$, $M_1=3$, $\rho_1=0.10$,
-$\alpha_1=0$. $e_{1,1}=1$, $e_{1,2}=3$, $e_{1,3}=5$.
-$R_{1,j}^{\mathrm{net}}=27$ each; $R_1^{\mathrm{ret}}=9$ at $t=5$.
-\[
-  Z^* = \gamma^0(27-20)+\gamma^2(27-20)+\gamma^4(36-20)
-      = 7+6.318+13.032 = \mathbf{26.35}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $R_{1,j}^{\mathrm{net}}=27\pm0.5$ for $j=1,2,3$.
-  \item $R_1^{\mathrm{ret}}=9\pm0.5$, released only at $t=5$.
-  \item Retention release event is at the final milestone period --- not before.
-  \item $|Z^*-26.35|\leq1.0$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-D: Retention and Advance Recovery Simultaneously Active}
-% ------------------------------------------------------------
-
-\paragraph{Parameters.}
-$\BAC_1=60$, $\pi_1=0.50$, $CP_1=90$, $\rho_1=0.10$, $\alpha_1=0.20$,
-$A_1=18$, $\psi=0.10$, $\delta^{\mathrm{rec}}=0.30$.
-$e_{1,1}=1$, $e_{1,2}=3$, $e_{1,3}=5$.
-$R_{1,1}^{\mathrm{net}}=18$, $R_{1,2}^{\mathrm{net}}=18$,
-$R_{1,3}^{\mathrm{net}}=27$; $R_1^{\mathrm{ret}}=9$.
-\[
-  Z^* = \gamma^0(18+18-20)+\gamma^2(18-20)+\gamma^4(27+9-20)
-      = 16-1.805+13.032 = \mathbf{27.227}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $R_{1,1}^{\mathrm{net}}=18\pm0.5$, $R_{1,2}^{\mathrm{net}}=18\pm0.5$.
-  \item $R_{1,3}^{\mathrm{net}}=27\pm0.5$ (retention only on MS3).
-  \item $R_1^{\mathrm{ret}}=9\pm0.5$ at $t=5$.
-  \item Payment identity: $A_1+R_{1,1}^{\mathrm{net}}+R_{1,2}^{\mathrm{net}}+
-    R_{1,3}^{\mathrm{net}}+R_1^{\mathrm{ret}}=90=CP_1$.
-  \item $|Z^*-27.227|\leq1.0$.
-\end{enumerate}
-
-% ============================================================
-\section{Group 5: Termination Conditions in Isolation}
-% ============================================================
-
-\begin{notebox}
-\NOTEH The cure-period counter decrements only when \emph{both}
-conditions fire simultaneously. When only one fires, the counter
-stays at $\tau^{\mathrm{tol}}$.
-\end{notebox}
-
-% ------------------------------------------------------------
-\subsection{SP-E: Only Condition~1 Fires}
-% ------------------------------------------------------------
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\SPI_{1,t}<1$ for $t\geq3$.
-  \item $\CPI_{1,t}=1.0\pm0.01$ for all $t$.
-  \item $\tau_{1,t}^{\mathrm{rem}}=3$ for all $t$.
-  \item Status never \texttt{terminated}.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-F: Only Condition~2 Fires}
-% ------------------------------------------------------------
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\SPI_{1,t}>1$ for $t\leq10$.
-  \item $\EAC_{1,t}>1.05\cdot\BAC$ from $t=1$.
-  \item $\tau_{1,t}^{\mathrm{rem}}=3$ for all observed periods.
-  \item Status never \texttt{terminated}.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-G: Both Fire, Condition~1 Lapses, Counter Resets}
-% ------------------------------------------------------------
-
-Efficiency schedule: $\eta_1=\eta_2=0.3$; $\eta_3=1.0$;
-$\eta_{t\geq4}=0.3$.
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\tau_{1,1}^{\mathrm{rem}}=3$ (only Cond.~2 at $t=1$).
-  \item $\tau_{1,2}^{\mathrm{rem}}=2$ (both conditions; decrement).
-  \item $\tau_{1,3}^{\mathrm{rem}}=3$ (Cond.~1 lapses after spike; reset).
-  \item Status at $t=3$: \texttt{active}.
-\end{enumerate}
-
-% ============================================================
-\section{Group 6: Cure Period and Termination Execution}
-% ============================================================
-
-% ------------------------------------------------------------
-\subsection{SP-5: Zero Efficiency, Exact Counter Boundary}
-% ------------------------------------------------------------
-
-Parameters: $\eta=0$, $\tau^{\mathrm{tol}}=3$, $A_1=20$.
-Advance at $t=0$.
-\[
-  Z^* = \gamma^0\cdot20+\gamma^3\cdot(-20)
-      = 20-17.15 = \mathbf{2.85}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\tau_{1,t}^{\mathrm{rem}}\in\{2,1,0\}$ at $t=1,2,3$.
-  \item Termination at $t=4$.
-  \item $R_1^{\mathrm{term}}=-20\pm0.5$.
-  \item $|Z^*-2.85|\leq0.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-H: Partial Progress at Termination, Positive Settlement}
-% ------------------------------------------------------------
-
-Parameters: $\eta=0.5$, $A_1=10$, $\tau^{\mathrm{tol}}=2$,
-$\theta_1=0.30$, $e_{1,1}=1$. Advance at $t=0$.
-Spend 60 at $t=1$, MS1 certifies ($R=30$). Termination at $t=3$.
-$R^{\mathrm{term}}=30$.
-\[
-  Z^* = \gamma^0(10+30-60)+\gamma^1(0)+\gamma^2(30)
-      = -20+0+27.075 = \mathbf{7.075}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item MS1 certified at $t=1$.
-  \item $R_1^{\mathrm{term}}=30\pm0.5$.
-  \item Termination at $t=3$.
-  \item $|Z^*-7.075|\leq1.0$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{SP-I: Cure Period Interrupted and Restarted}
-% ------------------------------------------------------------
-
-Counter trajectory: $\tau_t^{\mathrm{rem}}=[3,2,3,2,1,0]$ at
-$t=1\ldots6$; termination at $t=7$.
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\tau_{1,2}^{\mathrm{rem}}=2$.
-  \item $\tau_{1,3}^{\mathrm{rem}}=3$ (reset after spike).
-  \item $\tau_{1,6}^{\mathrm{rem}}=0$.
-  \item Termination at $t=7$ (not $t=4$).
-\end{enumerate}
-
-% ============================================================
-\section{Group 7: Portfolio Cash Balance and Coupling}
-% ============================================================
-
-% ------------------------------------------------------------
-\subsection{MP-3: Advance Harvest Funds Concurrent Good Project}
-% ------------------------------------------------------------
-
-\[
-  Z^* = \gamma^0(30+60-40)+\gamma^1(60-40)+\gamma^2(-30)
-      = 50+19-27.075 = \mathbf{41.925}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $B_t\geq0$ for all $t$.
-  \item Good \texttt{completed}.
-  \item $|Z^*-41.925|\leq1.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{MP-A: Sequential Funding}
-% ------------------------------------------------------------
-
-With $B_1=30$, only one project can be funded at $t=1$.
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $x_{2,1}=0$ (P2 starved at $t=1$).
-  \item $B_t\geq0$ for all $t$.
-  \item Both \texttt{completed}.
-  \item $Z^*\geq50$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{MP-B: Negative Settlement Drains Shared Balance}
-% ------------------------------------------------------------
-
-\[
-  Z^* = \gamma^0(18-30+45)+\gamma^1(45-30)+\gamma^2(-18)
-      = 33+14.25-16.245 = \mathbf{31.005}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $R_{\mathrm{Term}}^{\mathrm{term}}=-18\pm0.5$.
-  \item $|Z^*-31.005|\leq1.5$.
-\end{enumerate}
-
-% ============================================================
-\section{Group 8: Portfolio Selection Under Constraints}
-% ============================================================
-
-% ------------------------------------------------------------
-\subsection{MP-2: Good vs.\ Bad, Unconstrained Cash}
-% ------------------------------------------------------------
-
-\[
-  Z_G=\gamma^0(60-40)+\gamma^4(60-40)=20+16.29=36.29,\quad
-  Z_B=1.5,\quad Z^*=\mathbf{37.79}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $\sum_t x_{\mathrm{Bad},t}\leq1.0$.
-  \item Bad terminates at $t\leq4$.
-  \item Good \texttt{completed}.
-  \item $|Z^*-37.79|\leq1.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{MP-4: Three Projects, Low Always Terminates}
-% ------------------------------------------------------------
-
-\[
-  Z^*=\gamma^0(45+36-60)+\gamma^1(45+36-60)+0=21+19.95=\mathbf{40.95}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item High and Mid \texttt{completed}.
-  \item Low \texttt{terminated}.
-  \item $|Z^*-40.95|\leq1.5$.
-  \item $B_t\geq0$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{MP-C: Cash Sufficient for Only One Project}
-% ------------------------------------------------------------
-
-\[
-  Z^*=\gamma^0(45-30)+\gamma^2(45-30)=15+13.54=\mathbf{28.54}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item Lo \texttt{terminated}; Hi \texttt{completed}.
-  \item $|Z^*-28.54|\leq1.5$.
-  \item $B_t\geq0$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{MP-D: Bridge Cash Unlocks Major Projects}
-% ------------------------------------------------------------
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item Bridge \texttt{completed}.
-  \item $Z^*>28$.
-  \item $B_t\geq0$.
-\end{enumerate}
-
-% ============================================================
-\section{Group 9: Horizon and Staggered Starts}
-% ============================================================
-
-% ------------------------------------------------------------
-\subsection{MP-1: Two Non-Overlapping Projects}
-% ------------------------------------------------------------
-
-\[
-  Z_A=\gamma^0\times10+\gamma^2\times10=19.025,\quad
-  Z_B=\gamma^4\times10+\gamma^7\times10=8.145+6.983=15.128.
-\]
-\[
-  Z^*=19.025+15.128=\mathbf{34.153}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $H=10$.
-  \item $x_{A,t}=0$ for $t\geq5$; $x_{B,t}=0$ for $t\leq4$.
-  \item $|Z^*-34.153|\leq1.5$.
-\end{enumerate}
-
-% ------------------------------------------------------------
-\subsection{MP-E: Three Projects with Staggered Starts}
-% ------------------------------------------------------------
-
-\[
-  Z_1=28.54,\quad Z_2=23.83,\quad Z_3=17.24,\quad
-  Z^*=\mathbf{69.61}.
-\]
-
-\paragraph{Assertions for pytest.}
-\begin{enumerate}[label=A\arabic*.]
-  \item $H=14$.
-  \item $x_{1,t}=0$ for $t\geq5$; $x_{2,t}=0$ for $t\leq3$ and
-    $t\geq9$; $x_{3,t}=0$ for $t\leq8$.
-  \item All three \texttt{completed}.
-  \item $|Z^*-69.61|\leq2.0$.
-\end{enumerate}
-
-% ============================================================
-\section{Summary Table}
-% ============================================================
-
-\begin{longtable}{p{1.2cm}p{1.2cm}p{3.4cm}p{1.8cm}p{1.4cm}p{3.6cm}}
-\toprule
-\textbf{Case} & \textbf{Group} & \textbf{Pattern tested} &
-\textbf{Outcome} & \textbf{$Z^*$} & \textbf{Key assertion}\\
-\midrule
-\endhead
-SP-1   & G1 & $\eta=1$, $e$ pins timing & Completed & 19.03 &
-  Spend $t=1,3$; MS2 blocked until $e=3$\\
-SP-3   & G1 & 3 MS, spend at each $e_{i,j}$ & Completed & 27.17 &
-  Spend $t=1,3,5$\\
-SP-J   & G1 & Progress jump; $e$ blocks MS2 & Completed & 0 &
-  MS2 not certified until $t=3$\\
-SP-4   & G2 & Defer spend to $e_{i,2}=5$ & Completed & 36.29 &
-  $Z^*>29.5$ (front-load dominated)\\
-MP-K   & G2 & A-first beats B-first & Both comp. & 55.87 &
-  $Z>54.07$; A's large MS1 first\\
-MP-K$'$ & G2 & Constrained $B_1$, A-first & Both comp. & 27.94 &
-  $x_{B,1}=0$; defer B to $t=2$\\
-SP-L   & G2 & Survival spend optimal (SP) & Completed & 9.30 &
-  SPI$=1$ freezes counter; $Z>0$\\
-SP-L$'$ & G2 & Survival not optimal (SP) & Terminated & 0 &
-  $Z_{\mathrm{survive}}<0$\\
-SP-M   & G2 & Survival optimal (MP) & Both comp. & 39.30 &
-  Good funds Bad survival\\
-SP-M$'$ & G2 & Survival not optimal (MP) & Good comp. & 30.00 &
-  Bad terminated, Good only\\
-SP-2   & G3 & Advance harvest; $\gamma$ gain & Terminated & 2.925 &
-  Advance $t=0$; $Z>0$ via discounting\\
-SP-2a  & G3 & Preferred alloc, certify & Completed & 20.50 &
-  Spend 100 beats terminate\\
-SP-2b  & G3 & No preferred alloc & Terminated & 2.925 &
-  Zero spend wins; $CP$ too small\\
-SP-2c  & G3 & $\tau=3$, inevitable term. & Terminated & 5.565 &
-  Later settle; higher $Z$ via $\gamma$\\
-SP-2d  & G3 & $\tau=4$, $\eta$ recovers & Completed & 21.855 &
-  Certify at $t=4$ beats terminate\\
-SP-A   & G3 & Late $\psi$; MS1 full & Completed & 59.43 &
-  MS1 full; MS2,3 deducted\\
-SP-B   & G3 & Recovery done before MS3 & Completed & 28.975 &
-  MS3 full; $R=30$\\
-SP-C   & G4 & Retention; lump release & Completed & 26.35 &
-  Release $t=5$; $R^{\mathrm{ret}}=9$\\
-SP-D   & G4 & Retention $+$ advance & Completed & 27.23 &
-  MS3 retention only\\
-SP-E   & G5 & Only Cond.~1; counter fixed & Active & --- &
-  $\tau=3$ always\\
-SP-F   & G5 & Only Cond.~2; counter fixed & Active & --- &
-  $\tau=3$ always\\
-SP-G   & G5 & Reset mid-cure & Active & --- &
-  $\tau=[3,2,3]$\\
-SP-5   & G6 & $\eta=0$; counter boundary & Terminated & 2.85 &
-  $\tau=[2,1,0]$; $Z>0$ via $\gamma$\\
-SP-H   & G6 & Partial progress; $R^{\mathrm{term}}>0$ & Terminated & 7.075 &
-  $R^{\mathrm{term}}=30$; spend preferred\\
-SP-I   & G6 & Cure reset; late termination & Terminated & --- &
-  Term $t=7$ not $t=4$\\
-MP-3   & G7 & Advance funds concurrent & Mixed & 41.93 &
-  $B_t\geq0$; discounted $Z$\\
-MP-A   & G7 & Sequential funding & Both comp. & $\geq50$ &
-  $x_{2,1}=0$\\
-MP-B   & G7 & Negative settlement drains $B$ & Mixed & 31.01 &
-  Settlement $-18$ visible\\
-MP-2   & G8 & Good vs.\ Bad & Bad term. & 37.79 &
-  Good completes; Bad harvested\\
-MP-4   & G8 & Low always terminates & Low term. & 40.95 &
-  H\&M complete; Low terminates\\
-MP-C   & G8 & One project's worth of cash & Lo term. & 28.54 &
-  Hi completes; Lo starved\\
-MP-D   & G8 & Bridge unlocks majors & All comp. & $>28$ &
-  Option value realised\\
-MP-1   & G9 & Non-overlapping; additive $Z$ & Both comp. & 34.15 &
-  $Z=Z_A+Z_B$ discounted\\
-MP-E   & G9 & Staggered starts; $H=14$ & All comp. & 69.61 &
-  Spend at each $e_{i,j}$; windows respected\\
-\bottomrule
-\caption{All test cases with $\gamma=0.95$ and earliest certification
-  dates. $Z^*$ values include the new advance-at-$t_0$ convention.
-  Cases marked~--- have no meaningful $Z^*$ (focus is counter
-  behaviour).}
-\label{tab:summary}
-\end{longtable}
 
 \end{document}
