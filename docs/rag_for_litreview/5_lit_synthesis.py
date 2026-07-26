@@ -445,93 +445,88 @@ def render_latex(rows: list[dict]) -> str:
 
     Styling features
     ----------------
-    * booktabs rules  (\\toprule / \\midrule / \\bottomrule)
+    * booktabs rules  (toprule / midrule / bottomrule)
     * Dark-navy header row with white bold text
     * Rare columns (Sequential, Contract, Termination) carry a persistent
-      steel-blue column tint via \\columncolor so readers instantly see the
+      steel-blue column tint via columncolor so readers instantly see the
       gap the present work fills
-    * Alternating light-grey row tints on body rows (\\rowcolors)
-    * Semantic colour per symbol: green \\checkmark, amber \\circ, grey --
-    * Present-work row: deep-green background, white bold text — visually
-      isolated as the thesis contribution
-    * \\cmidrule separator before the present-work row
+    * Alternating light-grey row tints on body rows (rowcolors)
+    * Semantic colour per symbol: green checkmark, amber circ, grey --
+    * Present-work row: deep-green background, white bold text
+    * cmidrule separator before the present-work row
+
+    Column spec note
+    ----------------
+    The rare-column token is built with plain string concatenation:
+        rare_col = r">{" + r"\columncolor{" + COL_RARE_BG + r"}}c"
+    Do NOT use rf-string tricks like  rf">{{" + var + r"}}c"  — the brace
+    escaping interacts with the inner braces of \columncolor{} and produces
+    a triple closing brace (>{\columncolor{X}}}c) which causes the fatal
+    LaTeX error: "array Error: >{..} at wrong position".
     """
-    # Column spec:
-    #   col 1  (Work)       — left-aligned, fixed width
-    #   col 2  (Portfolio)  — centred
-    #   col 3  (Decision)   — centred
-    #   cols 4,6,7 (rare)   — centred + persistent \columncolor
-    #   col 5  (Stochastic) — centred
-    #
-    # \columncolor must appear inside >{ } in the column spec to persist
-    # across every row without explicit per-cell commands.
-    rare_tint   = rf"\columncolor{{{COL_RARE_BG}}}"
-    col_spec    = (
-        r">{\raggedright\arraybackslash}p{3.8cm}"  # Work
-        r"c"                                        # Portfolio
-        r"c"                                        # Decision
-        rf">{{" + rare_tint + r"}}c"               # Sequential  ← rare
-        r"c"                                        # Stochastic
-        rf">{{" + rare_tint + r"}}c"               # Contract    ← rare
-        rf">{{" + rare_tint + r"}}c"               # Termination ← rare
+    # ── Column spec ─────────────────────────────────────────────────────────
+    # Each rare-column token must be exactly:  >{\columncolor{NAME}}c
+    # Brace audit: 1x{ opens \columncolor arg, 1x} closes it
+    #              1x{ opens >{  preamble,     1x} closes it  → 2 pairs only.
+    rare_col = ">{" + "\\columncolor{" + COL_RARE_BG + "}}c"
+    col_spec = (
+        ">{\\" + "raggedright\\arraybackslash}p{3.8cm}"  # Work  (no rf-string)
+        "c"                                               # Portfolio
+        "c"                                               # Decision
+        + rare_col                                        # Sequential ← rare
+        + "c"                                             # Stochastic
+        + rare_col                                        # Contract   ← rare
+        + rare_col                                        # Termination← rare
     )
 
     L = []  # output lines
 
-    # ── colour definitions file (prepended so the .tex is self-contained) ──
+    # ── colour definitions (prepended so .tex is self-contained) ────────────
     L.append(_PREAMBLE_COLORS)
 
-    # ── table environment ───────────────────────────────────────────────────
+    # ── table environment ────────────────────────────────────────────────────
     L.append(r"\begin{table}[htbp]")
     L.append(r"  \centering")
     L.append(rf"  \caption{{{_CAPTION}}}")
     L.append(r"  \label{tab:litmap}")
     L.append(r"  \setlength{\tabcolsep}{6pt}")
     L.append(r"  \renewcommand{\arraystretch}{1.35}")
-    # Alternating row colours — odd rows get the tint, even rows stay white.
-    # \rowcolors resets at every \toprule, so we call it just before the
-    # tabular environment.  The first body row (after the header) is row 3
-    # (1 = header line 1, 2 = header line 2), so we start counting from 3.
     L.append(rf"  \rowcolors{{3}}{{{COL_ROW_ODD}}}{{white}}")
     L.append(r"  \resizebox{\textwidth}{!}{%")
-    L.append(rf"  \begin{{tabular}}{{{col_spec}}}")
+    L.append("  \\begin{tabular}{" + col_spec + "}")
     L.append(r"  \toprule")
 
-    # ── header row — dark navy background, white bold text ─────────────────
-    head_bg  = rf"\rowcolor{{{COL_HEAD_BG}}}"
-    head_col = rf"\color{{{COL_HEAD_FG}}}"
+    # ── header row — dark navy; \cellcolor overrides \columncolor on rare cols
+    head_bg  = "\\rowcolor{" + COL_HEAD_BG + "}"
+    head_col = "\\color{" + COL_HEAD_FG + "}"
 
     def hcell(text, rare=False):
-        # Rare columns need an explicit \cellcolor to override the
-        # \columncolor from the tabular spec — otherwise the steel-blue
-        # gap tint bleeds into the dark navy header row.
-        override = rf"\cellcolor{{{COL_HEAD_BG}}}" if rare else ""
-        return rf"{override}{head_col}\textbf{{{text}}}"
+        override = "\\cellcolor{" + COL_HEAD_BG + "}" if rare else ""
+        return override + head_col + "\\textbf{" + text + "}"
 
     L.append(
-        f"  {head_bg}"
-        f"{hcell('Work')} & "
-        f"{hcell('Portfolio')} & "
-        f"{hcell('Decision')} & "
-        f"{hcell('Sequential', rare=True)} & "
-        f"{hcell('Stochastic')} & "
-        f"{hcell('Contract', rare=True)} & "
-        f"{hcell('Termination', rare=True)} \\\\"
+        "  " + head_bg
+        + hcell("Work") + " & "
+        + hcell("Portfolio") + " & "
+        + hcell("Decision") + " & "
+        + hcell("Sequential", rare=True) + " & "
+        + hcell("Stochastic") + " & "
+        + hcell("Contract", rare=True) + " & "
+        + hcell("Termination", rare=True) + " \\\\"
     )
-    # Second header line (sub-labels) — same background
     L.append(
-        f"  {head_bg}"
-        f"{hcell('')} & "
-        f"{hcell('level')} & "
-        f"{hcell('type')} & "
-        f"{hcell('decisions', rare=True)} & "
-        f"{hcell('cash flows')} & "
-        f"{hcell('mechanics', rare=True)} & "
-        f"{hcell('settlement', rare=True)} \\\\"
+        "  " + head_bg
+        + hcell("") + " & "
+        + hcell("level") + " & "
+        + hcell("type") + " & "
+        + hcell("decisions", rare=True) + " & "
+        + hcell("cash flows") + " & "
+        + hcell("mechanics", rare=True) + " & "
+        + hcell("settlement", rare=True) + " \\\\"
     )
     L.append(r"  \midrule")
 
-    # ── body rows ───────────────────────────────────────────────────────────
+    # ── body rows ────────────────────────────────────────────────────────────
     def sort_key(r):
         bucket_order = 0 if r["bucket"] == "highly_relevant" else 1
         try:
@@ -542,52 +537,52 @@ def render_latex(rows: list[dict]) -> str:
 
     for r in sorted(rows, key=sort_key):
         if r["found"]:
-            work_cell = rf"\citet{{{r['bib_key']}}}"
+            work_cell = "\\citet{" + r["bib_key"] + "}"
         else:
             work_cell = (
-                f"% NOT FOUND: add citation_key to {r['filename']}\n"
-                rf"  \textbf{{[REF MISSING]}}"
+                "% NOT FOUND: add citation_key to " + r["filename"] + "\n"
+                "  \\textbf{[REF MISSING]}"
             )
 
         L.append(
-            f"  {work_cell} & "
-            f"{_colour_sym(r['portfolio'])} & "
-            f"{_colour_decision(r['decision'])} & "
-            f"{_colour_sym(r['sequential'])} & "
-            f"{_colour_sym(r['stochastic'])} & "
-            f"{_colour_sym(r['contract'])} & "
-            f"{_colour_sym(r['termination'])} \\\\"
+            "  " + work_cell + " & "
+            + _colour_sym(r["portfolio"]) + " & "
+            + _colour_decision(r["decision"]) + " & "
+            + _colour_sym(r["sequential"]) + " & "
+            + _colour_sym(r["stochastic"]) + " & "
+            + _colour_sym(r["contract"]) + " & "
+            + _colour_sym(r["termination"]) + " \\\\"
         )
 
-    # ── present-work row — deep-green bg, white bold, always last ──────────
-    L.append(rf"  \cmidrule{{1-7}}")
-    pw_bg  = rf"\rowcolor{{{COL_PW_BG}}}"
-    pw_col = rf"\color{{{COL_HEAD_FG}}}"   # white
-    def pwcell(text: str, bold: bool = False) -> str:
-        inner = rf"\textbf{{{text}}}" if bold else text
-        return rf"{pw_col}{inner}"
+    # ── present-work row ─────────────────────────────────────────────────────
+    L.append(r"  \cmidrule{1-7}")
+    pw_bg   = "\\rowcolor{" + COL_PW_BG + "}"
+    pw_col  = "\\color{" + COL_HEAD_FG + "}"
+    pw_cell = "\\cellcolor{" + COL_PW_BG + "}"
 
-    # For the present-work row the rare-column \columncolor would override
-    # the row colour, so we neutralise it with an explicit \cellcolor.
-    pw_rare = rf"\cellcolor{{{COL_PW_BG}}}"
+    def pwcell(text, bold=False):
+        inner = "\\textbf{" + text + "}" if bold else text
+        return pw_col + inner
+
     L.append(
-        f"  {pw_bg}"
-        f"{pwcell('Present work', bold=True)} & "
-        f"{pw_rare}{pwcell(r'\checkmark')} & "
-        f"{pwcell(r'\textbf{B}', bold=False)} & "
-        f"{pw_rare}{pwcell(r'\checkmark')} & "
-        f"{pwcell(r'\checkmark')} & "
-        f"{pw_rare}{pwcell(r'\checkmark')} & "
-        f"{pw_rare}{pwcell(r'\checkmark')} \\\\"
+        "  " + pw_bg
+        + pwcell("Present work", bold=True) + " & "
+        + pw_cell + pwcell("\\checkmark") + " & "
+        + pwcell("\\textbf{B}") + " & "
+        + pw_cell + pwcell("\\checkmark") + " & "
+        + pwcell("\\checkmark") + " & "
+        + pw_cell + pwcell("\\checkmark") + " & "
+        + pw_cell + pwcell("\\checkmark") + " \\\\"
     )
 
-    # ── close ───────────────────────────────────────────────────────────────
+    # ── close ─────────────────────────────────────────────────────────────────
     L.append(r"  \bottomrule")
     L.append(r"  \end{tabular}%")
     L.append(r"  }")
     L.append(r"\end{table}")
 
     return "\n".join(L)
+
 
 
 # --------------------------------------------------------------------------
@@ -607,7 +602,7 @@ def main():
         help="Output folder (default: <base-dir>/lit_review_dashboard_output)."
     )
     parser.add_argument(
-        "--max-rows", type=int, default=30,
+        "--max-rows", type=int, default=25,
         help=(
             "Maximum number of literature rows in the table (default: 30). "
             "Rows are selected to maximise informativeness and decision-type "
