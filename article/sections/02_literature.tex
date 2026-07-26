@@ -79,7 +79,7 @@ calibration of uncertainty distributions in the present model and the
 benchmarks against which synthetic environment parameters are validated.
 Complementary empirical benchmarks are drawn from AACE International and
 Construction Industry Institute cost-engineering databases
-\citep{christensen1993empirical}.
+\citep{christensen1993cost}.
 
 Contract governance structures --- particularly FIDIC forms (Red, Yellow, and
 Silver Books) --- prescribe the financial interaction between owner and
@@ -87,7 +87,7 @@ contractor through milestone payment schedules, advance payment and recovery
 mechanisms, and retention clauses \citep{FIDIC2017}. The Estimate at
 Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
 \mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ extends CPI into a forward-looking
-cost trajectory signal; \citet{Christensen1993} established across 155
+cost trajectory signal; \citet{christensen1993cost} established across 155
 contracts that this formulation produces the most accurate and stable
 cost-at-completion forecasts, with reliability increasing beyond the 20\%
 completion mark \citep{Lipke2003}. The present model adopts EAC as the
@@ -255,7 +255,7 @@ exceeded the project-specific maximum tolerable cost overrun
 $(1+\mu_i)\cdot\mathrm{BAC}_i$ (Condition~2). Both conditions are
 forward-looking trajectory estimates symmetric in structure: remaining planned
 work divided by current performance rate, projected forward to completion
-\citep{Fleming2010, Christensen1993}. Rather than executing immediately, the environment decrements a
+\citep{Fleming2010, christensen1993est}. Rather than executing immediately, the environment decrements a
 project-specific tolerance counter $\tau_{i,t}^{\mathrm{rem}}$, which
 represents the remaining cure period. Termination executes only when the counter
 reaches zero; if either condition lapses before then, the counter resets to its
@@ -263,7 +263,7 @@ project-specific maximum $\tau_i^{\mathrm{tol}}$. This mechanic is grounded
 simultaneously in FIDIC contract law \citep{FIDIC2017, Ndekugri2008}, the real
 options framing of the abandonment threshold \citep{Dixit1994,
 Huchzermeier2001}, the EVM literature's validation of EAC as a stable
-forward cost signal \citep{Christensen1993, Lipke2003}, and the
+forward cost signal \citep{christensen1993est, Lipke2003}, and the
 escalation-of-commitment literature's evidence that observable performance
 signals must be sustained --- not transient --- before termination is
 justified \citep{Staw1987}. The tolerance counter is part of the observable portfolio state, giving the
@@ -290,7 +290,7 @@ Reinforcement learning provides a principled framework for sequential
 decision-making under uncertainty \citep{Sutton2018}. The MDP
 formalisation --- state, action, transition, reward --- maps naturally onto the
 portfolio budget allocation problem, and the constrained MDP extension
-\citep{Altman1999} accommodates the hard budget feasibility constraints that
+\citep{altman1999constrained} accommodates the hard budget feasibility constraints that
 the portfolio manager must satisfy at every period.
 
 RL has been applied to project scheduling \citep{Peng2021, Liu2023},
@@ -439,44 +439,53 @@ primary methodological contribution. The PPO agent demonstrates its utility and
 provides the basis for empirical evaluation against classical OR baselines in
 Section~\ref{sec:experiments}.
 
+
 \begin{table}[htbp]
-\centering
-\caption{Representative literature mapped against modelling dimensions of the
-  present framework. \textit{Decision type}: S\,=\,selection,
-  Sc\,=\,scheduling, B\,=\,budgeting.
-  \checkmark~=~fully addressed;\; $\circ$~=~partially addressed;\;
-  {--}~=~not addressed.}
-\label{tab:litmap}
-\renewcommand{\arraystretch}{1.3}
-\setlength{\tabcolsep}{4pt}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccccc}
-\hline
-\textbf{Work} &
-  \textbf{Portfolio} &
-  \textbf{Decision} &
-  \textbf{Sequential} &
-  \textbf{Stochastic} &
-  \textbf{Contract} &
-  \textbf{Termination} \\
-  &
-  \textbf{level} &
-  \textbf{type} &
-  \textbf{decisions} &
-  \textbf{cash flows} &
-  \textbf{mechanics} &
-  \textbf{settlement} \\
-\hline
-\citet{Eilat2006}         & \checkmark & S  & --         & --         & --         & -- \\
-\citet{klerides2019stochastic} & \checkmark & S  & --         & $\circ$    & --         & -- \\
-\citet{Huchzermeier2001}  & $\circ$    & S  & \checkmark & \checkmark & --         & \checkmark \\
-\citet{Kenley2009}        & --         & B  & --         & $\circ$    & $\circ$    & -- \\
-\citet{Acebes2015}        & --         & B  & $\circ$    & \checkmark & --         & -- \\
-\citet{Lova2000}          & \checkmark & Sc & --         & --         & --         & -- \\
-\citet{Peng2021}          & --         & Sc & \checkmark & $\circ$    & --         & -- \\
-\citet{Tassel2023}        & --         & Sc & \checkmark & --         & --         & -- \\
-\textbf{Present work}     & \checkmark & \textbf{B}  & \checkmark & \checkmark & \checkmark & \checkmark \\
-\hline
-\end{tabular}%
-}
+  \centering
+  \caption{Representative literature mapped against modelling dimensions of the present framework. \textit{Decision type}: S\,=\,selection, Sc\,=\,scheduling, B\,=\,budgeting. \checkmark~=~fully addressed;\; $\circ$~=~partially addressed;\; {--}~=~not addressed.}
+  \label{tab:litmap}
+  \setlength{\tabcolsep}{6pt}
+  \renewcommand{\arraystretch}{1.35}
+  \rowcolors{3}{rowodd}{white}
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{>{\raggedright\arraybackslash}p{3.8cm}cc>{\columncolor{rarebg}}}cc>{\columncolor{rarebg}}}c>{\columncolor{rarebg}}}c}
+  \toprule
+  \rowcolor{headbg}\color{headfg}\textbf{Work} & \color{headfg}\textbf{Portfolio} & \color{headfg}\textbf{Decision} & \cellcolor{headbg}\color{headfg}\textbf{Sequential} & \color{headfg}\textbf{Stochastic} & \cellcolor{headbg}\color{headfg}\textbf{Contract} & \cellcolor{headbg}\color{headfg}\textbf{Termination} \\
+  \rowcolor{headbg}\color{headfg}\textbf{} & \color{headfg}\textbf{level} & \color{headfg}\textbf{type} & \cellcolor{headbg}\color{headfg}\textbf{decisions} & \color{headfg}\textbf{cash flows} & \cellcolor{headbg}\color{headfg}\textbf{mechanics} & \cellcolor{headbg}\color{headfg}\textbf{settlement} \\
+  \midrule
+  \citet{Yamakawa2019} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{KOSZTYAN2022} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{Cooper2001} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{touran2006mathematical} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc/B} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{touran2010probabilistic} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc/B} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{GHAPANCHI2012791} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{PETIT2012539} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{gutjahr2013project} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{pourahmadi2015scenario} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{elsabek2018coordination} & \textcolor{symgrey}{--} & \textsc{\small B} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} \\
+  \citet{baqeri2019multi} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{MOHAGHEGHI2020113007} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{beseiso2021} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{karimi2021scenario} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{bahroun2023artificial} & \textcolor{symgrey}{--} & \textsc{\small Sc} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{ekenberg2021prob} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{arratia2021project} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{RANJBAR2022116134} & \textcolor{symgreen}{\checkmark} & \textsc{\small S/Sc} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} \\
+  \citet{szwarcfiter2023balancing} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{asghari2023} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{BAI2023106779} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{pappert2023modern} & \textcolor{symgreen}{\checkmark} & \textsc{\small S/B} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{mogbojuri2023project} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{mazhari2024} & \textcolor{symgreen}{\checkmark} & \textsc{\small S/B} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{JIANG2024101016} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{ebnerasoul2023} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{noroozi2016probabilistic} & \textcolor{symgreen}{\checkmark} & \textsc{\small B} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{JIANG2023104817} & \textcolor{symgrey}{--} & \textsc{\small B} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{shou2010combinatorial} & \textcolor{symgreen}{\checkmark} & \textsc{\small S/Sc} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \citet{altman1999constrained} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
+  \cmidrule{1-7}
+  \rowcolor{pwbg}\color{headfg}\textbf{Present work} & \cellcolor{pwbg}\color{headfg}\checkmark & \color{headfg}\textbf{B} & \cellcolor{pwbg}\color{headfg}\checkmark & \color{headfg}\checkmark & \cellcolor{pwbg}\color{headfg}\checkmark & \cellcolor{pwbg}\color{headfg}\checkmark \\
+  \bottomrule
+  \end{tabular}%
+  }
 \end{table}

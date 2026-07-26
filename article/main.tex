@@ -12,7 +12,6 @@
 \usepackage[T1]{fontenc}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{graphicx}
-\usepackage{booktabs}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{hyperref}
@@ -28,14 +27,13 @@
 \usepackage{fancyhdr}
 \usepackage{mathtools}
 \usepackage{mdframed}
-
+\usepackage{colortbl}
 
 
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 
 \usepackage{longtable}
-\usepackage{booktabs}
 \usepackage{enumitem}
 
 \usepackage{placeins}
@@ -101,6 +99,14 @@
 \definecolor{prismaOrange}{RGB}{214,39,40}
 \definecolor{prismaLightOrange}{RGB}{255,205,210}
 
+\definecolor{symgreen}{HTML}{1A7A4A}   % full \checkmark
+\definecolor{symamber}{HTML}{B45309}   % partial \circ
+\definecolor{symgrey}{HTML}{9CA3AF}    % not addressed --
+\definecolor{rarebg}{HTML}{EFF6FF}     % rare-column header tint (blue-50)
+\definecolor{headbg}{HTML}{1E3A5F}     % header row background (dark navy)
+\definecolor{headfg}{HTML}{FFFFFF}     % header row text (white)
+\definecolor{pwbg}{HTML}{14532D}       % present-work row background (deep green)
+\definecolor{rowodd}{HTML}{F8FAFC}     % alternating odd-row tint
 
 % Per-category tag macros
 \newcommand{\tagschedule}{%
@@ -177,11 +183,12 @@ The first step is well served by existing literature --- contract mechanics,
 earned value management, S-curve profiles, and portfolio selection models are
 mature --- and the third remains future work. This paper occupies the second
 step through a relaxation hierarchy applied to a problem absent from the formal
-literature: \textit{given a fixed amount of capital and a committed portfolio of contracted projects, how should a
-governing board allocate budget across projects at each discrete period to
+literature: \textit{given a fixed amount of capital and a committed portfolio of contracted projects, we solve 
+for the optimal budget allocation across projects at each discrete period to
 maximise discounted net cash flow while satisfying hard liquidity constraints
-and respecting FIDIC contract mechanics??} 
+and respecting FIDIC contract mechanics.} 
 
+In order to represent such solution we propose a Three level solution Arc.
 \textbf{Level~1} formulates
 the problem as a deterministic full-foresight Mixed-Integer Linear Program whose
 optimum constitutes a provable upper bound no causal policy under uncertainty
