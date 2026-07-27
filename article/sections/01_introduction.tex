@@ -233,7 +233,14 @@ Because payment is contingent on both certified progress and the
 contractual payment window, the timing of cash inflows is a function
 of the contractor's actual performance and the portfolio manager's
 allocation decisions, subject to the floor imposed by the contractual
-earliest certification dates $e_{i,j}$.
+earliest certification dates $e_{i,j}$. Beyond this contractual floor,
+a second independent uncertainty operates: even after a milestone is
+certified, actual receipt of the payment is delayed by a stochastic number
+of periods (empirically zero to three, per \citealt{Aibinu2006}), driven
+by client approval cycles, invoice processing, and banking procedures.
+This payment timing uncertainty is structurally distinct from performance
+uncertainty --- it affects \emph{when} a fixed, contractually determined
+amount is received, not \emph{whether} or \emph{how much}.
 This creates the fundamental linkage between allocation decisions and cash
 inflows that makes the problem non-trivial. A portfolio manager operating
 in a competitive market with a pipeline of future contracts has a direct
@@ -253,12 +260,17 @@ certificates, with the deduction rate $\delta_i^{\mathrm{rec}}$ and
 commencement threshold $\psi_i$ specified as project-specific contract
 parameters \citep{FIDIC2017}. The advance payment creates an immediate cash inflow at project start and a
 series of reduced inflows at each certified milestone, both of which must be
-tracked in the portfolio cash balance. Interim milestone payments are
-additionally subject to stochastic timing delays between certification and
-receipt, consistent with observed payment practices in international EPC
-contracting \citep{Aibinu2006, Odeh2002}; the amount transferred equals the
-contractually fixed net milestone value, but the period of receipt is a random
-variable.
+tracked in the portfolio cash balance. Interim milestone payments are additionally subject to stochastic timing delays
+between certification and receipt --- the second independent source of
+uncertainty in the model, alongside the budget-to-progress efficiency
+$\eta_{i,t}$. Consistent with observed payment practices in international EPC
+contracting \citep{Aibinu2006, Odeh2002}, the amount transferred equals the
+contractually fixed net milestone value but the period of receipt is a random
+variable drawn from a project-specific delay distribution over
+$\{0, 1, \ldots, d_i^{\max}\}$ periods. In the scenario sets supplied to the
+optimisation program, each possible delay realisation is a discrete scenario;
+the Level~1 MILP receives one fixed delay per milestone, while Levels~2
+and~3 treat the delay as a random variable resolved only after certification.
 
 \paragraph{Retention.}
 A fraction $\rho_i$ of each milestone payment is withheld by the client as a
@@ -657,13 +669,21 @@ roadmap; each level is developed formally in its corresponding subsection.
 \paragraph{Level~1: Deterministic full-foresight MILP.}
 The natural starting point for any optimisation problem is its deterministic
 version: assume all uncertain parameters are known, and find the optimal
-decision sequence. In the portfolio budget allocation problem, the key
-uncertain parameter is the budget-to-progress efficiency $\eta_{i,t}$ ---
-the scalar that determines how much physical progress a given budget allocation
-yields in each period. If $\eta_{i,t}$ is treated as a known constant
-$\bar{\eta}_{i,t}$, the progress recursion becomes a deterministic linear map
-from budget allocations to physical outcomes, and the entire optimisation
-problem collapses to a Mixed-Integer Linear Program (MILP).
+decision sequence. In the portfolio budget allocation problem, two independent sources of
+uncertainty govern the mapping from allocation decisions to cash inflows.
+The first is the budget-to-progress efficiency $\eta_{i,t}$ --- the scalar
+that determines how much physical progress a given budget allocation yields
+in each period. The second is milestone payment timing: once a milestone is
+certified as complete, the corresponding net payment $R_{i,j}^{\mathrm{net}}$
+is not received in the same period but after a stochastic delay of zero to
+several periods, consistent with documented practices in international EPC
+contracting \citep{Aibinu2006, Odeh2002}. Reaching the progress threshold on
+time does not guarantee cash inflow on time; the payment window is a separate
+random variable. If both $\eta_{i,t}$ and the payment delay for each milestone
+are treated as known constants --- replacing each by a fixed scenario value ---
+the progress recursion becomes a deterministic linear map from budget
+allocations to physical outcomes and payment timings, and the entire
+optimisation problem collapses to a Mixed-Integer Linear Program (MILP).
 
 The MILP is not proposed as a practical solution method --- no real portfolio
 manager has advance knowledge of contractor efficiency trajectories. Rather,
@@ -703,11 +723,16 @@ Levels~2 and~3, where termination timing is endogenous to the stochastic
 trajectory.
 
 \paragraph{Level~2: Stochastic extension and intractability.}
-When $\eta_{i,t}$ is replaced by a random variable --- as it must be to reflect
-reality --- the MILP becomes a multi-stage stochastic program
-\citep{Birge2011}. The scenario-tree representation of this program grows
-exponentially: if $\eta_{i,t}$ takes $K$ discrete values at each of $H$
-periods for each of $n$ projects, the scenario tree has $K^{nH}$ leaf nodes.
+When both $\eta_{i,t}$ and the milestone payment delay are replaced by random
+variables --- as they must be to reflect reality --- the MILP becomes a
+multi-stage stochastic program \citep{Birge2011}. Two independent
+uncertainty sources now branch the scenario tree at every period: the
+budget-to-progress efficiency $\eta_{i,t}$, which determines whether a
+milestone threshold is reached, and the payment timing delay, which determines
+in which future period a certified milestone payment actually enters the
+portfolio cash balance. The scenario-tree representation grows exponentially:
+if $\eta_{i,t}$ takes $K$ discrete values at each of $H$ periods for each of
+$n$ projects, the efficiency component alone produces $K^{nH}$ leaf nodes.
 For a portfolio of ten projects over a 24-month horizon with five efficiency
 scenarios per project per period, this is $5^{240}$ leaf nodes --- a number
 that renders exact stochastic programming computationally intractable. This is

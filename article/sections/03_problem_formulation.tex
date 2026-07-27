@@ -12,8 +12,11 @@ program, establishing exponential scenario-tree growth. \textbf{Level~3}
 (Section~\ref{subsec:level3}) reformulates the intractable stochastic program
 as a Constrained Markov Decision Process, yielding the Gymnasium-compatible
 environment on which the PPO agent is trained. The three levels form a coherent
-arc --- Level~1 defines the performance ceiling, Level~2 explains why it is
-unreachable by causal policies, Level~3 provides the tractable path.
+arc --- Level~1 defines the performance ceiling by fixing both uncertain
+primitives (budget-to-progress efficiency $\eta_{i,t}$ and milestone
+payment timing delay $\lambda_{i,j}$) to known scenario values,
+Level~2 explains why the resulting stochastic program is unreachable
+by causal policies, Level~3 provides the tractable path.
 
 % ------------------------------------------------------------
 \subsection{Problem Statement and Scope}
@@ -42,7 +45,13 @@ with standard EPC contracting practice.
 (ii)~\emph{Budget as the sole control}: the contractor's internal resource
 decisions are absorbed into a stochastic efficiency parameter $\eta_{i,t}$;
 the portfolio manager observes how much physical progress a budget allocation
-yields, not how it is achieved. The timing of that allocation --- specifically
+yields, not how it is achieved. A second independent stochastic primitive,
+the milestone payment timing delay $\lambda_{i,j} \in \{0,1,\ldots,d_i^{\max}\}$,
+governs when the contractually fixed net payment $R_{i,j}^{\mathrm{net}}$ is
+actually received after milestone $j$ is certified. Both $\eta_{i,t}$ and
+$\lambda_{i,j}$ are unobservable at the time the relevant decision must be
+committed: $\eta_{i,t}$ is unknown when $x_{i,t}$ is committed;
+$\lambda_{i,j}$ is unknown at the period of certification. The timing of that allocation --- specifically
 how quickly milestones are certified --- determines the discounted value of
 inflows under $\gamma < 1$, making the scheduling of spend, not just its
 total magnitude, the operative decision variable for a return-maximising
@@ -188,13 +197,22 @@ $A_i + \sum_j R_{i,j}^{\mathrm{net}} + R_i^{\mathrm{ret}} = CP_i$
 holds exactly.
 
 Milestone payments are subject to stochastic timing delays between
-certification and receipt at Levels~2--3 \citep{Aibinu2006, Odeh2002};
-the amount is fixed at the contractual net value but the period of receipt
-is a random variable. Aggregate period inflow is:
+certification and receipt at Levels~2--3 \citep{Aibinu2006, Odeh2002}.
+The amount is fixed at the contractual net value $R_{i,j}^{\mathrm{net}}$,
+but the period of receipt is determined by a random delay
+$\lambda_{i,j} \in \{0,1,\ldots,d_i^{\max}\}$ drawn at certification:
+payment for milestone $j$ certified at period $\tau_{i,j}^{\mathrm{cert}}$
+is received at period $\tau_{i,j}^{\mathrm{cert}} + \lambda_{i,j}$.
+At Level~1, $\lambda_{i,j}$ is replaced by a known deterministic value
+$\bar{\lambda}_{i,j}$; at Levels~2--3 it is a stochastic primitive
+realised only after the milestone is certified.
+Aggregate period inflow is:
 \begin{equation}
   V_t
     = \sum_{i,j} R_{i,j}^{\mathrm{net}}
-        \cdot \mathbf{1}\{\text{$(i,j)$ newly certified at $t$}\}
+        \cdot \mathbf{1}\!\left\{
+          \tau_{i,j}^{\mathrm{cert}} + \lambda_{i,j} = t
+        \right\}
       + \sum_{i \in \mathcal{P}_t^{\mathrm{term}}} R_i^{\mathrm{term}},
   \label{eq:Vt}
 \end{equation}
@@ -630,11 +648,22 @@ balance $B_1$ are portfolio-level parameters shared across all projects.
       & $B_1$ & $\mathbb{R}^+$
       & Portfolio cash balance at horizon start. \\
     \rowcolor{RowAlt}
-      Planning horizon
+    Planning horizon
       & $H$ & $\mathbb{Z}^+$
       & Derived as $\max_i f_i- \min_i s_i + 1$; $t=1$
       aligns with $\min_i s_i$. Not a fixed input. \\
-    \bottomrule
+    \midrule
+    \multicolumn{4}{l}{\textit{Stochastic Primitives}} \\
+    \midrule
+    \rowcolor{RowAlt}
+    Payment delay support
+      & $d_i^{\max}$ & $\mathbb{Z}^+_0$
+      & Maximum periods between milestone certification and payment
+        receipt; default 3 per \citet{Aibinu2006, Assaf1995}.
+        At Level~1, replaced by deterministic $\bar{\lambda}_{i,j}$;
+        at Levels~2--3, $\lambda_{i,j} \sim G_i$ over
+        $\{0,1,\ldots,d_i^{\max}\}$. \\
+  \bottomrule
   \end{tabular}
   \caption{All project and portfolio parameters fixed at commitment,
     grouped by function. Parameters introduced inline in
@@ -767,35 +796,56 @@ replaced by a random variable $\eta_{i,t}$ defined on a probability
 space $(\Omega, \mathcal{F}, \mathbb{P})$. The efficiency realisations
 are assumed to satisfy:
 \begin{assumption}[Efficiency structure]
-\label{ass:eta}
-For each project $i \in \mathcal{P}$ and period $t \in \mathcal{T}$:
-\begin{enumerate}[label=(\roman*)]
-  \item $\eta_{i,t} > 0$ almost surely;
-  \item $\{\eta_{i,t}\}_{t \in \mathcal{T}}$ are independent across
-    periods given project $i$;
-  \item $\eta_{i,t}$ are independent across projects $i \in \mathcal{P}$;
-  \item the marginal distribution of $\eta_{i,t}$ is project-specific
-    and calibrated from empirical EVM datasets
-    \citep{Acebes2015, Batselier2017}.
-\end{enumerate}
-\end{assumption}
-
-The realisation $\eta_{i,t}(\omega)$ for scenario $\omega \in \Omega$ is
-revealed to neither the portfolio manager nor the environment until
-\emph{after} the allocation $x_{i,t}$ is committed. This timing
-assumption is the defining structural difference from Level~1: the
-manager must act under genuine uncertainty about the period's
-productivity before observing its outcome.
+  \label{ass:eta}
+  For each project $i \in \mathcal{P}$ and period $t \in \mathcal{T}$:
+  \begin{enumerate}[label=(\roman*)]
+    \item $\eta_{i,t} > 0$ almost surely;
+    \item $\{\eta_{i,t}\}_{t \in \mathcal{T}}$ are independent across
+      periods given project $i$;
+    \item $\eta_{i,t}$ are independent across projects $i \in \mathcal{P}$;
+    \item the marginal distribution of $\eta_{i,t}$ is project-specific
+      and calibrated from empirical EVM datasets
+      \citep{Acebes2015, Batselier2017}.
+  \end{enumerate}
+  \end{assumption}
+  
+  \begin{assumption}[Payment delay structure]
+  \label{ass:lambda}
+  For each project $i \in \mathcal{P}$ and milestone $j \in \mathcal{M}_i$:
+  \begin{enumerate}[label=(\roman*)]
+    \item $\lambda_{i,j} \in \{0,1,\ldots,d_i^{\max}\}$ with $d_i^{\max} \geq 0$;
+    \item $\lambda_{i,j}$ are independent across milestones $j$ and projects $i$;
+    \item $\lambda_{i,j}$ is independent of $\{\eta_{i,t}\}_{i,t}$;
+    \item the distribution of $\lambda_{i,j}$ is project-specific and
+      calibrated from empirical payment practice studies
+      \citep{Aibinu2006, Assaf1995, Odeh2002}, with support
+      $\{0,1,2,3\}$ as the default consistent with the literature.
+  \end{enumerate}
+  \end{assumption}
+  
+  The realisation $\eta_{i,t}(\omega)$ is revealed only after allocation
+  $x_{i,t}$ is committed; the realisation $\lambda_{i,j}(\omega)$ is
+  revealed only after milestone $j$ is certified. These two timing
+  constraints define the two distinct decision points at which the portfolio
+  manager faces irreducible uncertainty: the allocation decision under unknown
+  productivity, and the cash-flow realisation under unknown payment timing.
 
 \subsubsection{Information Structure and Non-Anticipativity}
 \label{subsubsec:l2_filtration}
 
 Let $\mathcal{F}_t$ denote the $\sigma$-algebra generated by all
-efficiency realisations and resulting state transitions up to and
+efficiency realisations, all payment delay realisations for milestones
+certified by period $t$, and the resulting state transitions, up to and
 including period $t$:
 \begin{equation}
   \mathcal{F}_t = \sigma\!\bigl(
     \eta_{i,\tau}(\omega) : i \in \mathcal{P},\; \tau \leq t
+  \bigr)
+  \;\vee\;
+  \sigma\!\bigl(
+    \lambda_{i,j}(\omega) : i \in \mathcal{P},\;
+    j \in \mathcal{M}_i,\;
+    \tau_{i,j}^{\mathrm{cert}} \leq t
   \bigr),
   \qquad \mathcal{F}_0 = \{\emptyset, \Omega\}.
   \label{eq:filtration}
@@ -1056,8 +1106,12 @@ $\mathrm{status}_{i,t} \in \{0,1,2\}$ encoding
 $\{\texttt{active}, \texttt{completed}, \texttt{terminated}\}$, and
 cure-period counter $\tau_{i,t}^{\mathrm{rem}} \in \mathbb{Z}_{\geq 0}$;
 together with the portfolio cash balance $B_t \in \mathbb{R}_{\geq 0}$.
-The state dimension is $8n + 1$. The sole unobservable primitive is
-$\eta_{i,t}$, realised only after $\mathbf{x}_t$ is committed.
+The state dimension is $8n + 1$ per period. All components are observable.
+Two primitives are unobservable at decision time: $\eta_{i,t}$, realised
+only after allocation $x_{i,t}$ is committed, and $\lambda_{i,j}$, realised
+only after milestone $j$ is certified. Neither is part of the state vector;
+both are environment-internal draws that the policy must act without
+knowing in advance.
 
 \paragraph{Action space $\mathcal{A}$ and feasible set.}
 The raw action space is:
@@ -1115,9 +1169,14 @@ period:
     \eqref{eq:term_cond1}--\eqref{eq:term_cond2} and update counter
     via \eqref{eq:counter}.
   \item Certify milestones for which $P_{i,t}^{\mathrm{actual}} \geq
-    \theta_{i,j}$ \emph{and} $t \geq e_{i,j}$; compute $V_t$ via
-    \eqref{eq:Rnet}--\eqref{eq:Vt}; apply stochastic payment delays
-    \citep{Aibinu2006}.
+    \theta_{i,j}$ \emph{and} $t \geq e_{i,j}$. For each newly certified
+    milestone $(i,j)$, draw the payment delay independently:
+    $\lambda_{i,j} \sim G_i$ where $G_i$ is the project-specific delay
+    distribution over $\{0,1,\ldots,d_i^{\max}\}$ calibrated from
+    \citet{Aibinu2006, Assaf1995}; record that $R_{i,j}^{\mathrm{net}}$
+    will enter $V_{t + \lambda_{i,j}}$. Compute $V_t$ via
+    \eqref{eq:Rnet}--\eqref{eq:Vt} as the sum of all net payments
+    whose scheduled receipt period equals $t$.
   \item Update portfolio cash balance via \eqref{eq:balance}.
   \item Execute termination for any project with
     $\tau_{i,t}^{\mathrm{rem}} = 0$, compute
