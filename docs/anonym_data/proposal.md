@@ -2,6 +2,9 @@ This is a different kind of task — less technical, more professional and diplo
 
 ---
 
+the benefit for our colaboration is the naming of the data provider in the acknowledgement section
+
+---
 ## The Core Reality First
 
 Contractors are **extremely** protective of project data. Your approach needs to answer their unspoken question immediately:
