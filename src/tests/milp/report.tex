@@ -1,3 +1,31 @@
+% !TEX root = report.tex
+\documentclass[12pt, a4paper]{article}
+
+% ── Core ──────────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% ── Math ──────────────────────────────────────────────────────────────────────
+\usepackage{amsmath, amssymb}
+
+% ── Tables ────────────────────────────────────────────────────────────────────
+\usepackage{booktabs}        % \toprule, \midrule, \bottomrule
+\usepackage{longtable}       % multi-page tables
+\usepackage{rotating}        % \rotatebox
+
+% ── Graphics & Color ──────────────────────────────────────────────────────────
+\usepackage{xcolor}          % \definecolor
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta} % Latex tip in tikzset
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% ── Symbols ───────────────────────────────────────────────────────────────────
+\usepackage{pifont}          % \ding{55}
+\usepackage{amssymb}         % \checkmark
+
 \definecolor{noteblu}{RGB}{60,60,180}
 \definecolor{msgreen}{RGB}{0,140,60}
 \definecolor{allocblue}{RGB}{100,160,220}
@@ -10,6 +38,9 @@
 
 \newcommand{\BAC}{\mathrm{BAC}}
 \newcommand{\EAC}{\mathrm{EAC}}
+
+
+\begin{document}
 
 \section*{Test Verification Summary}
 The table below shows pass (\checkmark), fail (\ding{55}), skip ($\circ$), or not-applicable (---) for each of the 11 test categories across all cases. Results are produced by \texttt{test\_milp.py} calling \texttt{baselines/milp.py}.
@@ -910,7 +941,7 @@ $\BAC_i$ & $(60, 60)$ \\
 $CP_i$   & $(90, 90)$ \\
 $B_1,\;\gamma$ & $300,\;0.95$ \\
 $Z^*$ & $55.87$ \\
-Outcome & \texttt{both_completed} \\
+Outcome & \texttt{both\_completed} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -7927,3 +7958,5 @@ $t$ & $B_t$ & $\Sigma\mathrm{In}$ & $\Sigma\mathrm{Out}$ & $\Sigma\mathrm{Net}$ 
 \end{figure}
 
 \newpage
+
+\end{document}
