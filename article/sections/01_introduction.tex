@@ -452,7 +452,6 @@ partially completed works as resources whose ownership and value must be
 accounted for at contract close \citep{FIDIC2017}. This grounding means the
 model's financial signals reflect real asset values, not arbitrary penalty
 weights.
-
 \begin{figure}[htbp]
   \centering
   \resizebox{\textwidth}{!}{%
@@ -463,7 +462,7 @@ weights.
       xlabel={Period $t$},
       ylabel={Normalized value (fraction of BAC)},
       xmin=0,
-      xmax=25,
+      xmax=27,
       ymin=0,
       ymax=1.30,
       xtick={0,4,8,12,16,20,23,24},
@@ -494,6 +493,38 @@ weights.
       clip=false,
     ]
 
+        %-------------------------------------------------
+    % Schedule overrun region
+    %-------------------------------------------------
+    \fill[red!12,opacity=0.65]
+      (axis cs:20,0)
+      rectangle
+      (axis cs:23,1.10);
+
+    \node[
+      font=\footnotesize,
+      red!60!black,
+      align=center
+    ]
+    at (axis cs:21.5,0.40)
+    {$\Omega_i$};
+
+    %-------------------------------------------------
+    % Cost overrun region
+    %-------------------------------------------------
+    \fill[red!12,opacity=0.65]
+      (axis cs:0,1.00)
+      rectangle
+      (axis cs:23,1.10);
+
+    \node[
+      font=\footnotesize,
+      red!60!black,
+      align=center
+    ]
+    at (axis cs:10,1.05)
+    {$\mu_i$};
+
     %-------------------------------------------------
     % BCWS
     %-------------------------------------------------
@@ -523,36 +554,49 @@ weights.
     \addlegendentry{BCWP}
 
     %-------------------------------------------------
-    % Forecast BCWP
+    % Forecast BCWP — with terminal circle marker + label at left
     %-------------------------------------------------
     \addplot[
       thick,
       green!85!black,
-      dashed
+      dashed,
+      mark=*,
+      mark size=2.8pt,
+      mark options={solid, mark indices={2}}
     ] coordinates {
       (12,0.45)
       (24,1.00)
     };
     \addlegendentry{BCWP extended}
 
-    % Forecast finish marker
-    \addplot[
-      only marks,
-      mark=*,
-      mark size=2.8pt,
-      green!85!black,
-      forget plot
-    ] coordinates {
-      (24,1.00)
-    };
-
     \node[
       font=\footnotesize,
       text=green!85!black,
       anchor=west
     ]
-    at ([xshift=12pt]axis cs:24,1.00)
+    at ([xshift=0pt]axis cs:24,1.00)
     {$\hat{f}_{i,t}=24$};
+
+    %-------------------------------------------------
+    % BCWS planned finish marker — circle at (20, BAC) + label at left
+    %-------------------------------------------------
+    \addplot[
+      only marks,
+      mark=*,
+      mark size=2.8pt,
+      blue!70!black,
+      forget plot
+    ] coordinates {
+      (20,1.00)
+    };
+
+    \node[
+      font=\footnotesize,
+      text=blue,
+      anchor=south
+    ]
+    at ([xshift=-6pt]axis cs:20,1.00)
+    {$f_i=20$};
 
     %-------------------------------------------------
     % ACWP history
@@ -570,89 +614,150 @@ weights.
     \addlegendentry{ACWP}
 
     %-------------------------------------------------
-    % Forecast ACWP
+    % Forecast ACWP — with terminal circle marker + label at left
     %-------------------------------------------------
     \addplot[
       thick,
       orange!85!black,
-      densely dashed
+      densely dashed,
+      mark=*,
+      mark size=2.8pt,
+      mark options={solid, mark indices={2}}
     ] coordinates {
       (12,0.54)
       (24,1.20)
     };
     \addlegendentry{ACWP extended}
 
-    % EAC marker
-    \addplot[
-      only marks,
-      mark=square*,
-      mark size=3pt,
-      orange!85!black
-    ] coordinates {
-      (24,1.20)
-    };
-
     \node[
       font=\footnotesize,
       text=orange!85!black,
       anchor=west,
-      align=left
+      align=right
     ]
-    at ([xshift=12pt]axis cs:24,1.20)
+    at ([xshift=0pt]axis cs:24,1.20)
     {$\mathrm{EAC}_{i,t}=1.2\,\mathrm{BAC}$};
 
     %-------------------------------------------------
-    % Schedule overrun region
+    % Triangle: Delta f_{i,t} — horizontal double arrow at y=1.00
+    % between (20, 1.00) and (24, 1.00)
     %-------------------------------------------------
-    \fill[red!12,opacity=0.65]
-      (axis cs:20,0)
-      rectangle
-      (axis cs:23,1.10);
+    \draw[
+      black,
+      <->,
+      >=stealth,
+      thick
+    ]
+    (axis cs:20,1.00) -- (axis cs:24,1.00);
 
     \node[
       font=\footnotesize,
-      red!60!black,
+      black,
+      anchor=north,
       align=center
     ]
-    at (axis cs:21.5,0.40)
-    {schedule\\overrun\\cap};
+    at (axis cs:22,1.00)
+    {$\Delta f_{i,t}$};
 
     %-------------------------------------------------
-    % Cost overrun region
+    % Triangle: Delta AC_{i,t} — vertical double arrow at x=24
+    % between (24, 1.00) and (24, 1.20)
     %-------------------------------------------------
-    \fill[red!12,opacity=0.65]
-      (axis cs:0,1.00)
-      rectangle
-      (axis cs:23,1.10);
+    \draw[
+      black,
+      <->,
+      >=stealth,
+      thick
+    ]
+    (axis cs:24,1.00) -- (axis cs:24,1.20);
 
     \node[
       font=\footnotesize,
-      red!60!black,
-      align=center
+      black,
+      anchor=west,
+      align=left
     ]
-    at (axis cs:10,1.05)
-    {cost overrun cap};
+    at ([xshift=6pt]axis cs:24,1.10)
+    {$\Delta AC_{i,t}$};
 
     %-------------------------------------------------
-    % Status date
+    % Illustration 1: schedule overrun cap width
+    % double arrow at y=0.10, x from 20 to 23
     %-------------------------------------------------
-
-    % Planned finish
+    \draw[
+      black,
+      <->,
+      >=stealth
+    ]
+    (axis cs:20,0.10) -- (axis cs:23,0.10);
 
     \node[
       font=\footnotesize,
-      blue!60,
-      above
+      black,
+      anchor=north
     ]
-    at (axis cs:20,1.0)
-    {$f_i=20$};
+    at (axis cs:21.5,0.10)
+    {$\Delta f_{i,t} \leq \Omega_i$};
+
+    %-------------------------------------------------
+    % Illustration 2: beyond cap — right arrow from 23 to right edge
+    %-------------------------------------------------
+    \draw[
+      black,
+      ->,
+      >=stealth
+    ]
+    (axis cs:23,0.10) -- (axis cs:27,0.10);
+
+    \node[
+      font=\footnotesize,
+      black,
+      anchor=south
+    ]
+    at (axis cs:25,0.10)
+    {$\Delta f_{i,t} \geq \Omega_i$};
+
+    %-------------------------------------------------
+    % Illustration 3: cost overrun cap height
+    % double arrow at x=2, y from BAC (1.00) to 1.10
+    %-------------------------------------------------
+    \draw[
+      black,
+      <->,
+      >=stealth
+    ]
+    (axis cs:2,1.00) -- (axis cs:2,1.10);
+
+    \node[
+      font=\footnotesize,
+      black,
+      anchor=west
+    ]
+    at ([xshift=4pt]axis cs:2,1.05)
+    {$\Delta AC_{i,t} \leq \mu_i$};
+
+    %-------------------------------------------------
+    % Illustration 4: beyond cap — upward arrow from 1.10 to top edge
+    %-------------------------------------------------
+    \draw[
+      black,
+      ->,
+      >=stealth
+    ]
+    (axis cs:2,1.10) -- (axis cs:2,1.30);
+
+    \node[
+      font=\footnotesize,
+      black,
+      anchor=west
+    ]
+    at ([xshift=4pt]axis cs:2,1.20)
+    {$\Delta AC_{i,t} \geq \mu_i$};
 
   \end{axis}
-
   \end{tikzpicture}
   }
   \caption{Illustration of EVM-based project termination conditions.}
-
   \label{fig:scurve_evm}
 \end{figure}
 
