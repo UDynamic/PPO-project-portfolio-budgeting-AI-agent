@@ -452,27 +452,48 @@ partially completed works as resources whose ownership and value must be
 accounted for at contract close \citep{FIDIC2017}. This grounding means the
 model's financial signals reflect real asset values, not arbitrary penalty
 weights.
+%-------------------------------------------------
+% COLOR OPTION C — Colorblind-safe Okabe-Ito
+%-------------------------------------------------
+\definecolor{FigBCWS}{HTML}{0072B2}
+\definecolor{FigBCWP}{HTML}{CC79A7}
+\definecolor{FigACWP}{HTML}{D55E00}
+\definecolor{FigPayExp}{HTML}{E69F00}
+\definecolor{FigPayRec}{HTML}{009E73}
+\definecolor{FigCap}{HTML}{D55E00}
+\definecolor{FigNCF}{HTML}{0072B2}
 
 %-------------------------------------------------
-% Figure-local color aliases (EVM S-curve figure)
-%-------------------------------------------------
-\colorlet{FigBCWS}{prismaBlue}          % vivid blue     — planned baseline
-\definecolor{FigBCWP}{HTML}{7B2FBE}     % vivid purple   — schedule performance
-\definecolor{FigACWP}{HTML}{D62728}     % vivid red      — cost performance
-\definecolor{FigBars}{HTML}{1F77B4}     % medium blue    — budgeted allocation
-\definecolor{FigPayExp}{HTML}{E6A817}   % vivid amber    — expected payments
-\definecolor{FigPayRec}{HTML}{2CA02C}   % vivid green    — received payments
-\definecolor{FigCap}{HTML}{D62728}      % vivid red      — cap/termination regions
-
-%-------------------------------------------------
-% Bar legend fix — forces a filled rectangle in legend
+% Bar legend styles for bottom panel
+% Place in PREAMBLE before \begin{document}
 %-------------------------------------------------
 \pgfplotsset{
-  bar legend/.style={
+  alloc bar legend/.style={
     /pgfplots/legend image code/.code={
-      \draw[##1,/tikz/.cd,fill=FigBars!25,draw=FigBars]
+      \draw[/tikz/.cd, fill=FigACWP!30, draw=FigACWP]
         (0cm,-0.1cm) rectangle (0.4cm,0.2cm);
     }
+  },
+  payexp bar legend/.style={
+    /pgfplots/legend image code/.code={
+      \draw[/tikz/.cd, fill=FigPayExp!40, draw=FigPayExp]
+        (0cm,-0.1cm) rectangle (0.4cm,0.2cm);
+    }
+  },
+  payrec bar legend/.style={
+    /pgfplots/legend image code/.code={
+      \draw[/tikz/.cd, fill=FigPayRec!40, draw=FigPayRec]
+        (0cm,-0.1cm) rectangle (0.4cm,0.2cm);
+    }
+  },
+}
+
+%-------------------------------------------------
+% Shared y-label width — forces left-edge alignment
+%-------------------------------------------------
+\pgfplotsset{
+  every axis/.append style={
+    yticklabel style={text width=3.2em, align=right}
   }
 }
 
@@ -525,305 +546,146 @@ weights.
     % Schedule overrun region
     %-------------------------------------------------
     \fill[FigCap,opacity=0.12]
-      (axis cs:20,0)
-      rectangle
-      (axis cs:23,1.10);
-
-    \node[
-      font=\footnotesize,
-      FigCap,
-      align=center
-    ]
-    at (axis cs:21.5,0.40)
-    {$\Omega_i$};
+      (axis cs:20,0) rectangle (axis cs:23,1.10);
+    \node[font=\footnotesize, FigCap, align=center]
+      at (axis cs:21.5,0.40) {$\Omega_i$};
 
     %-------------------------------------------------
     % Cost overrun region
     %-------------------------------------------------
     \fill[FigCap,opacity=0.12]
-      (axis cs:0,1.00)
-      rectangle
-      (axis cs:23,1.10);
-
-    \node[
-      font=\footnotesize,
-      FigCap,
-      align=center
-    ]
-    at (axis cs:10,1.05)
-    {$\mu_i$};
+      (axis cs:0,1.00) rectangle (axis cs:23,1.10);
+    \node[font=\footnotesize, FigCap, align=center]
+      at (axis cs:10,1.05) {$\mu_i$};
 
     %-------------------------------------------------
-    % Bar chart: periodic budgeted allocation
+    % Expected milestone payments — amber step chart
     %-------------------------------------------------
-    \addplot[
-      ybar,
-      bar width=0.4,
-      fill=FigBars!25,
-      draw=FigBars,
-      opacity=0.85,
-      bar legend
-    ] coordinates {
-      (0,  0.010)
-      (1,  0.013)
-      (2,  0.018)
-      (3,  0.025)
-      (4,  0.034)
-      (5,  0.046)
-      (6,  0.061)
-      (7,  0.077)
-      (8,  0.090)
-      (9,  0.098)
-      (10, 0.101)
-      (11, 0.099)
-      (12, 0.093)
+    \addplot[thick, FigPayExp, const plot, no marks] coordinates {
+      (0,0.15)(7,0.45)(10,0.75)(13,1.00)(20,1.10)(20,1.10)
     };
-    \addlegendentry{$x_{i,t}$}
-
-    %-------------------------------------------------
-    % Expected milestone payments (step chart) — amber
-    %-------------------------------------------------
-    \addplot[
-      thick,
-      FigPayExp,
-      const plot,
-      no marks
-    ] coordinates {
-      (0,  0.15)
-      (7,  0.45)
-      (10, 0.75)
-      (13, 1.00)
-      (20, 1.10)
-      (20, 1.10)
-    };
-
-    \addplot[
-      only marks,
-      mark=*,
-      mark size=2.8pt,
-      FigPayExp,
-      forget plot
-    ] coordinates {
-      (20, 1.10)
-    };
-
-    \node[
-      font=\footnotesize,
-      text=FigPayExp,
-      anchor=south west
-    ]
-    at (axis cs:20,1.10)
-    {$CP_i$};
-
+    \addplot[only marks, mark=*, mark size=2.8pt,
+             FigPayExp, forget plot] coordinates { (20,1.10) };
+    \node[font=\footnotesize, text=FigPayExp, anchor=south west]
+      at (axis cs:20,1.10) {$CP_i$};
     \addlegendentry{Expected payments}
 
     %-------------------------------------------------
-    % Received milestone payments (step chart) — deep green
+    % Received milestone payments — green step chart
     %-------------------------------------------------
-    \addplot[
-      thick,
-      FigPayRec,
-      const plot,
-      no marks
-    ] coordinates {
-      (0,  0.15)
-      (8,  0.45)
-      (10, 0.75)
-      (13, 0.75)
+    \addplot[thick, FigPayRec, const plot, no marks] coordinates {
+      (0,0.15)(8,0.45)(10,0.75)(13,0.75)
     };
     \addlegendentry{Received payments}
 
     %-------------------------------------------------
     % Payment delay indicator
     %-------------------------------------------------
-    \draw[
-      black,
-      <->,
-      >=stealth
-    ]
-    (axis cs:7,0.45) -- (axis cs:8,0.45);
-
-    \node[
-      font=\footnotesize,
-      black,
-      anchor=south,
-      align=center
-    ]
-    at (axis cs:7.5,0.45)
-    {payment\\delay};
+    \draw[black, <->, >=stealth]
+      (axis cs:7,0.45) -- (axis cs:8,0.45);
+    \node[font=\footnotesize, black, anchor=south, align=center]
+      at (axis cs:7.5,0.45) {payment\\delay};
 
     %-------------------------------------------------
-    % BCWS — vivid blue
+    % BCWS — blue
     %-------------------------------------------------
-    \addplot[
-      thick,
-      FigBCWS,
-      smooth,
-      domain=0:20,
-      samples=80
-    ]
-    { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
+    \addplot[thick, color=FigBCWS, smooth, domain=0:20, samples=80]
+      { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
     \addlegendentry{BCWS}
 
     %-------------------------------------------------
-    % BCWP history — vivid purple
+    % BCWP history — pink
     %-------------------------------------------------
-    \addplot[
-      thick,
-      FigBCWP,
-      smooth
-    ] coordinates {
-      (0,0.01)
-      (4,0.07)
-      (8,0.25)
-      (12,0.45)
+    \addplot[thick, color=FigBCWP, smooth] coordinates {
+      (0,0.01)(4,0.07)(8,0.25)(12,0.45)
     };
     \addlegendentry{BCWP}
 
     %-------------------------------------------------
-    % Forecast BCWP — vivid purple dashed, terminal circle
+    % Forecast BCWP — pink dashed, terminal circle
     %-------------------------------------------------
-    \addplot[
-      thick,
-      FigBCWP,
-      dashed,
-      mark=*,
-      mark size=2.8pt,
-      mark options={solid, mark indices={2}}
-    ] coordinates {
-      (12,0.45)
-      (24,1.00)
+    \addplot[thick, color=FigBCWP, dashed, mark=*, mark size=2.8pt,
+             mark options={solid, mark indices={2}}] coordinates {
+      (12,0.45)(24,1.00)
     };
     \addlegendentry{BCWP extended}
-
-    \node[
-      font=\footnotesize,
-      text=FigBCWP,
-      anchor=west
-    ]
-    at (axis cs:24,1.00)
-    {$\hat{f}_{i,t}=24$};
+    \node[font=\footnotesize, text=FigBCWP, anchor=west]
+      at (axis cs:24,1.00) {$\hat{f}_{i,t}=24$};
 
     %-------------------------------------------------
     % BCWS planned finish — circle at (20, BAC)
     %-------------------------------------------------
-    \addplot[
-      only marks,
-      mark=*,
-      mark size=2.8pt,
-      FigBCWS,
-      forget plot
-    ] coordinates {
-      (20,1.00)
-    };
-
-    \node[
-      font=\footnotesize,
-      text=FigBCWS,
-      anchor=north
-    ]
-    at ([xshift=-8pt]axis cs:20,1.00)
-    {$f_i=20$};
+    \addplot[only marks, mark=*, mark size=2.8pt,
+             color=FigBCWS, forget plot] coordinates { (20,1.00) };
+    \node[font=\footnotesize, text=FigBCWS, anchor=north]
+      at ([xshift=-8pt]axis cs:20,1.00) {$f_i=20$};
 
     %-------------------------------------------------
-    % ACWP history — vivid red
+    % ACWP history — red-orange
     %-------------------------------------------------
-    \addplot[
-      thick,
-      FigACWP,
-      smooth
-    ] coordinates {
-      (0,0.01)
-      (4,0.07)
-      (8,0.26)
-      (12,0.54)
+    \addplot[thick, color=FigACWP, smooth] coordinates {
+      (0,0.01)(4,0.07)(8,0.26)(12,0.54)
     };
     \addlegendentry{ACWP}
 
     %-------------------------------------------------
-    % Forecast ACWP — vivid red densely dashed, terminal circle
+    % Forecast ACWP — red-orange densely dashed, terminal circle
     %-------------------------------------------------
-    \addplot[
-      thick,
-      FigACWP,
-      densely dashed,
-      mark=*,
-      mark size=2.8pt,
-      mark options={solid, mark indices={2}}
-    ] coordinates {
-      (12,0.54)
-      (24,1.20)
+    \addplot[thick, color=FigACWP, densely dashed, mark=*, mark size=2.8pt,
+             mark options={solid, mark indices={2}}] coordinates {
+      (12,0.54)(24,1.20)
     };
     \addlegendentry{ACWP extended}
-
-    \node[
-      font=\footnotesize,
-      text=FigACWP,
-      anchor=west,
-      align=left
-    ]
-    at (axis cs:24,1.20)
-    {$\mathrm{EAC}_{i,t}=1.2\,\mathrm{BAC}$};
+    \node[font=\footnotesize, text=FigACWP, anchor=west, align=left]
+      at (axis cs:24,1.20) {$\mathrm{EAC}_{i,t}=1.2\,\mathrm{BAC}$};
 
     %-------------------------------------------------
     % Triangle: Delta f_{i,t}
     %-------------------------------------------------
     \draw[black,<->,>=stealth,thick]
       (axis cs:20,1.00) -- (axis cs:24,1.00);
-
-    \node[font=\footnotesize,black,anchor=north]
-      at (axis cs:22,1.00)
-      {$\Delta f_{i,t}$};
+    \node[font=\footnotesize, black, anchor=north]
+      at (axis cs:22,1.00) {$\Delta f_{i,t}$};
 
     %-------------------------------------------------
     % Triangle: Delta AC_{i,t}
     %-------------------------------------------------
     \draw[black,<->,>=stealth,thick]
       (axis cs:24,1.00) -- (axis cs:24,1.20);
-
-    \node[font=\footnotesize,black,anchor=west]
-      at ([xshift=6pt]axis cs:24,1.10)
-      {$\Delta AC_{i,t}$};
+    \node[font=\footnotesize, black, anchor=west]
+      at ([xshift=6pt]axis cs:24,1.10) {$\Delta AC_{i,t}$};
 
     %-------------------------------------------------
     % Illustration 1: schedule cap width
     %-------------------------------------------------
     \draw[black,<->,>=stealth]
       (axis cs:20,0.10) -- (axis cs:23,0.10);
-
-    \node[font=\footnotesize,black,anchor=north]
-      at (axis cs:21.5,0.10)
-      {$\Delta f_{i,t} \leq \Omega_i$};
+    \node[font=\footnotesize, black, anchor=north]
+      at (axis cs:21.5,0.10) {$\Delta f_{i,t} \leq \Omega_i$};
 
     %-------------------------------------------------
     % Illustration 2: beyond schedule cap
     %-------------------------------------------------
     \draw[black,->,>=stealth]
       (axis cs:23,0.10) -- (axis cs:27,0.10);
-
-    \node[font=\footnotesize,black,anchor=south]
-      at (axis cs:25,0.10)
-      {$\Delta f_{i,t} \geq \Omega_i$};
+    \node[font=\footnotesize, black, anchor=south]
+      at (axis cs:25,0.10) {$\Delta f_{i,t} \geq \Omega_i$};
 
     %-------------------------------------------------
     % Illustration 3: cost cap height
     %-------------------------------------------------
     \draw[black,<->,>=stealth]
       (axis cs:2,1.00) -- (axis cs:2,1.10);
-
-    \node[font=\footnotesize,black,anchor=west]
-      at ([xshift=4pt]axis cs:2,1.05)
-      {$\Delta AC_{i,t} \leq \mu_i$};
+    \node[font=\footnotesize, black, anchor=west]
+      at ([xshift=4pt]axis cs:2,1.05) {$\Delta AC_{i,t} \leq \mu_i$};
 
     %-------------------------------------------------
     % Illustration 4: beyond cost cap
     %-------------------------------------------------
     \draw[black,->,>=stealth]
       (axis cs:2,1.10) -- (axis cs:2,1.30);
-
-    \node[font=\footnotesize,black,anchor=west]
-      at ([xshift=4pt]axis cs:2,1.20)
-      {$\Delta AC_{i,t} \geq \mu_i$};
+    \node[font=\footnotesize, black, anchor=west]
+      at ([xshift=4pt]axis cs:2,1.20) {$\Delta AC_{i,t} \geq \mu_i$};
 
   \end{axis}
   \end{tikzpicture}
@@ -832,102 +694,113 @@ weights.
   \vspace{0.5em}
 
   %=================================================
-  % BOTTOM PANEL: Payment profile / cash flow timeline
+  % BOTTOM PANEL: Period cash flows
   %=================================================
   \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}[
-      every node/.style={font=\small},
-      inflow/.style={->, thick, FigPayRec},
-      outflow/.style={->, thick, FigACWP},
-      legendlabel/.style={font=\footnotesize, align=left}
+  \begin{tikzpicture}
+  \begin{axis}[
+      width=13cm,
+      height=4.5cm,
+      xlabel={Period $t$},
+      ylabel={Cash flow (fraction of BAC)},
+      xmin=0,
+      xmax=27,
+      ymin=-0.70,
+      ymax=0.70,
+      xtick={0,4,8,12,16,20,23,24},
+      ytick={-0.60,-0.30,0,0.30,0.60},
+      yticklabels={$-0.6$,$-0.3$,$0$,$0.3$,$0.6$},
+      grid=major,
+      grid style={dashed,gray!30},
+      axis x line=center,
+      axis y line=left,
+      legend style={
+        at={(1.15,0.98)},
+        anchor=north west,
+        font=\footnotesize,
+        cells={anchor=west},
+        row sep=2pt,
+        draw=none,
+        fill=white,
+      },
+      tick label style={font=\small},
+      label style={font=\small},
+      clip=false,
     ]
 
-    % x-axis
-    \draw[->, thick] (0,0) -- (13.0,0) node[right] {$t$};
-
-    % tick marks and labels
-    \foreach \x/\lbl in {
-      1/$s_i$,
-      4/$\theta_{i,1}$,
-      7/$\theta_{i,2}$,
-      10/$\theta_{i,3}$,
-      10.8/$f_i$
-    }{
-      \draw (\x,0.08) -- (\x,-0.08)
-        node[below, font=\footnotesize] {\lbl};
-    }
+    %-------------------------------------------------
+    % Allocations — red bars below zero
+    %-------------------------------------------------
+    \addplot[
+      ybar, bar width=0.35,
+      fill=FigACWP!30, draw=FigACWP,
+      opacity=0.85,
+      alloc bar legend
+    ] coordinates {
+      (0,-0.010)(1,-0.013)(2,-0.018)(3,-0.025)
+      (4,-0.034)(5,-0.046)(6,-0.061)(7,-0.077)
+      (8,-0.090)(9,-0.098)(10,-0.101)(11,-0.099)(12,-0.093)
+    };
+    \addlegendentry{Allocation $x_{i,t}$}
 
     %-------------------------------------------------
-    % Stochastic payment delay windows — amber
+    % Expected payments — amber bars above zero
     %-------------------------------------------------
-    \filldraw[fill=FigPayExp, fill opacity=0.25, draw=none]
-      (4,0) rectangle (4.5,1.4);
-    \filldraw[fill=FigPayExp, fill opacity=0.25, draw=none]
-      (7,0) rectangle (7.5,1.4);
-    \filldraw[fill=FigPayExp, fill opacity=0.25, draw=none]
-      (10,0) rectangle (10.5,1.4);
-
-    %-------------------------------------------------
-    % Inflows — green
-    %-------------------------------------------------
-    \draw[inflow] (1,0) -- (1,2.4)
-      node[above, align=center, font=\footnotesize]
-        {Advance\\payment};
-
-    \draw[inflow] (4,0) -- (4,1.4)
-      node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
-
-    \draw[inflow] (7,0) -- (7,1.4)
-      node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
-
-    \draw[inflow] (10,0) -- (10,1.4)
-      node[above, font=\footnotesize] {$R_{i,3}^{\mathrm{net}}$};
-
-    \draw[inflow] (10.8,0) -- (10.8,2.4)
-      node[right, align=center, font=\footnotesize]
-        {Final payment\\$+\,R_i^{\mathrm{ret}}$};
+    \addplot[
+      ybar, bar width=0.35,
+      fill=FigPayExp!40, draw=FigPayExp,
+      opacity=0.85,
+      payexp bar legend
+    ] coordinates {
+      (0,0.15)(7,0.30)(10,0.30)(13,0.25)(20,0.10)
+    };
+    \addlegendentry{Expected payment}
 
     %-------------------------------------------------
-    % Outflows — red
+    % Received payments — green bars above zero
     %-------------------------------------------------
-    \foreach \x in {1.5,2.2,2.9,3.6,4.3,5.0,5.7,6.4,
-                    7.1,7.8,8.5,9.2,9.9}{
-      \draw[outflow] (\x,0) -- (\x,-0.75);
-    }
-
-    %-------------------------------------------------
-    % Early termination line — FigCap red
-    %-------------------------------------------------
-    \draw[dashed, thick, FigCap] (6.0,2.4) -- (6.0,-1.4)
-      node[below, align=center, font=\footnotesize, FigCap]
-        {Early termination\\{\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
+    \addplot[
+      ybar, bar width=0.35,
+      fill=FigPayRec!40, draw=FigPayRec,
+      opacity=0.85,
+      payrec bar legend
+    ] coordinates {
+      (0,0.15)(8,0.30)(10,0.30)
+    };
+    \addlegendentry{Received payment}
 
     %-------------------------------------------------
-    % Legend
+    % Net cumulative cash flow line
     %-------------------------------------------------
-    \begin{scope}[shift={(11.4,-0.5)}]
+    \addplot[
+      thick, color=FigNCF,
+      mark=o, mark size=1.8pt,
+      mark options={solid}
+    ] coordinates {
+      (0,  0.140)
+      (1,  0.127)
+      (2,  0.109)
+      (3,  0.084)
+      (4,  0.050)
+      (5,  0.004)
+      (6, -0.057)
+      (7, -0.134)
+      (8,  0.076)
+      (9, -0.022)
+      (10, 0.179)
+      (11, 0.080)
+      (12,-0.013)
+      (13,-0.013)
+    };
+    \addlegendentry{Net cum.\ cash flow}
 
-      \draw[inflow] (0,0) -- (0.7,0)
-        node[right, legendlabel] {Inflow (received payments)};
-
-      \draw[outflow] (0,-0.5) -- (0.7,-0.5)
-        node[right, legendlabel] {Outflow (budget allocations $x_{i,t}$)};
-
-      \draw[dashed, thick, FigCap] (0,-1.0) -- (0.7,-1.0)
-        node[right, legendlabel] {Contract termination};
-
-      \filldraw[fill=FigPayExp, fill opacity=0.25, draw=none]
-        (0,-1.6) rectangle (0.7,-1.2);
-      \node[right, legendlabel] at (0.8,-1.4)
-        {Stochastic payment delay window};
-
-    \end{scope}
-
+  \end{axis}
   \end{tikzpicture}
   }
 
-  \caption{EVM-based termination conditions (top) and per-project payment
-           profile under FIDIC contract mechanics (bottom).}
+  \caption{EVM-based termination conditions (top) and periodic project
+           cash flow profile (bottom): payments received above zero,
+           budget allocations below zero, net cumulative cash flow line.}
   \label{fig:scurve_evm}
 \end{figure}
 
