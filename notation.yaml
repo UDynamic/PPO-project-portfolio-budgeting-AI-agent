@@ -1,0 +1,417 @@
+# notation.yaml
+# Mapping between documentation (LaTeX) notation and Python coding notation
+# Model: Portfolio Budget Allocation CMDP — Relaxations A & B applied
+# Relaxation A: kappa >> 1 (liquidity constraint non-binding)
+# Relaxation B: no payment delay (payments received in certification period)
+# Last updated: post-relaxation parameter table
+
+parameters:
+
+  # ── Portfolio-level ────────────────────────────────────────────────────────
+
+  - symbol: "n"
+    latex: "n"
+    python: "n_projects"
+    scope: portfolio
+    type: int
+    description: "Number of active projects in the portfolio."
+
+  - symbol: "H"
+    latex: "H"
+    python: "horizon"
+    scope: portfolio
+    type: int
+    description: >
+      Planning horizon in periods, derived as
+      max(f_i) - min(s_i) + 1 across all projects.
+
+  - symbol: "B_1"
+    latex: "B_1"
+    python: "initial_balance"
+    scope: portfolio
+    type: float
+    description: "Initial portfolio cash balance at period 1."
+
+  - symbol: "kappa"
+    latex: "\\kappa"
+    python: "budget_stress_ratio"
+    scope: portfolio
+    type: float
+    description: >
+      Budget stress ratio: B_1 / sum(BAC_i).
+      kappa >> 1: relaxed regime (liquidity non-binding, Relaxation A);
+      kappa ≈ 1: tight regime;
+      kappa << 1: scarce regime.
+
+  - symbol: "gamma"
+    latex: "\\gamma"
+    python: "discount_factor"
+    scope: portfolio
+    type: float
+    description: "Per-period discount factor (0 < gamma <= 1)."
+
+  # ── Project-level ──────────────────────────────────────────────────────────
+
+  - symbol: "BAC_i"
+    latex: "\\mathrm{BAC}_i"
+    python: "bac"
+    scope: project
+    type: float
+    description: >
+      Budget at completion — EVM cost basis and progress denominator.
+
+  - symbol: "CP_i"
+    latex: "CP_i"
+    python: "contract_price"
+    scope: project
+    type: float
+    description: "Contract price — payment accumulation baseline only."
+
+  - symbol: "pi_i"
+    latex: "\\pi_i"
+    python: "profit_margin"
+    scope: project
+    type: float
+    description: >
+      Profit margin fraction; CP_i = BAC_i * (1 + pi_i).
+
+  - symbol: "s_i"
+    latex: "s_i"
+    python: "start_period"
+    scope: project
+    type: int
+    description: "Planned start period for project i."
+
+  - symbol: "f_i"
+    latex: "f_i"
+    python: "planned_finish"
+    scope: project
+    type: int
+    description: "Planned finish period for project i."
+
+  - symbol: "D_i_plan"
+    latex: "D_i^{\\mathrm{plan}}"
+    python: "planned_duration"
+    scope: project
+    type: int
+    description: "Planned duration: f_i - s_i + 1."
+
+  - symbol: "a_i"
+    latex: "a_i"
+    python: "scurve_a"
+    scope: project
+    type: float
+    description: "Beta CDF shape parameter alpha for planned S-curve expenditure profile."
+
+  - symbol: "b_i"
+    latex: "b_i"
+    python: "scurve_b"
+    scope: project
+    type: float
+    description: "Beta CDF shape parameter beta for planned S-curve expenditure profile."
+
+  - symbol: "theta_ij"
+    latex: "\\theta_{i,j}"
+    python: "milestone_threshold"
+    scope: project
+    type: float
+    description: >
+      Cumulative progress fraction required to certify milestone j
+      of project i.
+
+  - symbol: "e_ij"
+    latex: "e_{i,j}"
+    python: "earliest_cert"
+    scope: project
+    type: int
+    description: >
+      Earliest contractual certification period for milestone j
+      of project i.
+
+  - symbol: "phi_ij"
+    latex: "\\phi_{i,j}"
+    python: "milestone_fraction"
+    scope: project
+    type: float
+    description: >
+      Fraction of CP_i payable at milestone j; sum over j equals 1.
+
+  - symbol: "alpha_i"
+    latex: "\\alpha_i"
+    python: "advance_fraction"
+    scope: project
+    type: float
+    description: "Advance payment as a fraction of CP_i."
+
+  - symbol: "delta_rec_i"
+    latex: "\\delta_i^{\\mathrm{rec}}"
+    python: "advance_recovery_rate"
+    scope: project
+    type: float
+    description: "Advance deduction rate applied per interim milestone payment."
+
+  - symbol: "psi_i"
+    latex: "\\psi_i"
+    python: "recovery_threshold"
+    scope: project
+    type: float
+    description: >
+      Cumulative payment fraction threshold beyond which advance
+      recovery begins.
+
+  - symbol: "rho_i"
+    latex: "\\rho_i"
+    python: "retention_rate"
+    scope: project
+    type: float
+    description: >
+      Retention fraction withheld per milestone payment;
+      released in full at project completion.
+
+  - symbol: "Omega_i"
+    latex: "\\Omega_i"
+    python: "schedule_overrun_cap"
+    scope: project
+    type: int
+    description: >
+      Maximum forecast finish delay (in periods) before
+      Condition 1 (schedule breach) activates.
+
+  - symbol: "mu_i"
+    latex: "\\mu_i"
+    python: "cost_overrun_cap"
+    scope: project
+    type: float
+    description: >
+      Maximum EAC fraction above BAC before Condition 2
+      (cost breach) activates.
+
+  - symbol: "tau_tol_i"
+    latex: "\\tau_i^{\\mathrm{tol}}"
+    python: "cure_period_tolerance"
+    scope: project
+    type: int
+    description: "Cure period length in periods."
+
+  # ── Stochastic primitive ───────────────────────────────────────────────────
+
+  - symbol: "eta_it"
+    latex: "\\eta_{i,t}"
+    python: "productivity"
+    scope: stochastic
+    type: float
+    description: >
+      Sole uncertainty source — budget-to-progress efficiency.
+      Beta-distributed, project-specific, realised after x_{i,t}
+      is committed.
+      At Level 1, replaced by deterministic bar{eta}_{i,t}.
+      (Relaxation B: payment delay lambda_{i,j} removed entirely.)
+
+  # ── Action variables ───────────────────────────────────────────────────────
+
+  - symbol: "x_it"
+    latex: "x_{i,t}"
+    python: "allocation"
+    scope: action
+    type: float
+    description: "Budget allocated to project i at period t."
+
+  - symbol: "x_t"
+    latex: "\\mathbf{x}_t"
+    python: "allocation_vector"
+    scope: action
+    type: "array[float]"
+    description: "Period-t action vector across all active projects."
+
+  # ── State variables ────────────────────────────────────────────────────────
+
+  - symbol: "P_it_actual"
+    latex: "P_{i,t}^{\\mathrm{actual}}"
+    python: "progress"
+    scope: state
+    type: float
+    description: "Cumulative progress fraction for project i at period t."
+
+  - symbol: "ACWP_it"
+    latex: "\\mathrm{ACWP}_{i,t}"
+    python: "acwp"
+    scope: state
+    type: float
+    description: "Actual cost of work performed."
+
+  - symbol: "BCWS_it"
+    latex: "\\mathrm{BCWS}_{i,t}"
+    python: "bcws"
+    scope: state
+    type: float
+    description: "Budgeted cost of work scheduled."
+
+  - symbol: "BCWP_it"
+    latex: "\\mathrm{BCWP}_{i,t}"
+    python: "bcwp"
+    scope: state
+    type: float
+    description: "Budgeted cost of work performed."
+
+  - symbol: "SPI_it"
+    latex: "\\mathrm{SPI}_{i,t}"
+    python: "spi"
+    scope: state
+    type: float
+    description: "Schedule performance index: BCWP / BCWS."
+
+  - symbol: "CPI_it"
+    latex: "\\mathrm{CPI}_{i,t}"
+    python: "cpi"
+    scope: state
+    type: float
+    description: "Cost performance index: BCWP / ACWP."
+
+  - symbol: "EAC_it"
+    latex: "\\mathrm{EAC}_{i,t}"
+    python: "eac"
+    scope: state
+    type: float
+    description: "Estimate at completion."
+
+  - symbol: "Delta_f_it"
+    latex: "\\Delta f_{i,t}"
+    python: "forecast_delay"
+    scope: state
+    type: float
+    description: "Forecast finish deviation from planned finish (periods)."
+
+  - symbol: "Delta_AC_it"
+    latex: "\\Delta AC_{i,t}"
+    python: "cost_overrun_trajectory"
+    scope: state
+    type: float
+    description: >
+      EAC deviation above BAC — mirrors Delta_f_{i,t} in structure
+      but tracks cost overrun trajectory.
+
+  - symbol: "tau_rem_it"
+    latex: "\\tau_{i,t}^{\\mathrm{rem}}"
+    python: "cure_period_remaining"
+    scope: state
+    type: int
+    description: "Remaining cure period for project i at period t."
+
+  - symbol: "status_it"
+    latex: "\\mathrm{status}_{i,t}"
+    python: "project_status"
+    scope: state
+    type: "enum[active, completed, terminated]"
+    description: "Project lifecycle status at period t."
+
+  - symbol: "B_t"
+    latex: "B_t"
+    python: "cash_balance"
+    scope: state
+    type: float
+    description: >
+      Portfolio cash balance at period t.
+      Under Relaxation A (kappa >> 1), the constraint B_t >= 0
+      is non-binding throughout experiments.
+
+  # ── Derived quantities ─────────────────────────────────────────────────────
+
+  - symbol: "P_it_plan"
+    latex: "P_{i,t}^{\\mathrm{plan}}"
+    python: "planned_progress"
+    scope: derived
+    type: float
+    description: "S-curve planned cumulative progress fraction at period t."
+
+  - symbol: "Delta_P_it"
+    latex: "\\Delta P_{i,t}"
+    python: "delta_progress"
+    scope: derived
+    type: float
+    description: "Period progress increment for project i at period t."
+
+  - symbol: "f_hat_it"
+    latex: "\\hat{f}_{i,t}"
+    python: "forecast_finish"
+    scope: derived
+    type: float
+    description: "Projected finish period based on current SPI."
+
+  - symbol: "R_ij_net"
+    latex: "R_{i,j}^{\\mathrm{net}}"
+    python: "net_payment"
+    scope: derived
+    type: float
+    description: >
+      Net milestone payment after retention and advance
+      recovery deduction.
+      Under Relaxation B, received in the certification period
+      (no delay distribution applied).
+
+  - symbol: "R_i_ret"
+    latex: "R_i^{\\mathrm{ret}}"
+    python: "retention_release"
+    scope: derived
+    type: float
+    description: "Retention amount released at project completion."
+
+  - symbol: "R_i_term"
+    latex: "R_i^{\\mathrm{term}}"
+    python: "termination_settlement"
+    scope: derived
+    type: float
+    description: "Net settlement payment upon project termination."
+
+  - symbol: "V_t"
+    latex: "V_t"
+    python: "period_inflow"
+    scope: derived
+    type: float
+    description: >
+      Aggregate cash inflow at period t.
+      Includes: certified milestone net payments (same-period receipt,
+      Relaxation B), advance payments at project start, and
+      termination settlements.
+
+  - symbol: "A_i"
+    latex: "A_i"
+    python: "advance_payment"
+    scope: derived
+    type: float
+    description: "Advance payment at project start; A_i = alpha_i * CP_i."
+
+  # ── Level 1 MILP variables ─────────────────────────────────────────────────
+
+  - symbol: "u_ijt"
+    latex: "u_{i,j,t}"
+    python: "cert_binary"
+    scope: L1_variable
+    type: "binary"
+    description: >
+      Binary variable: 1 if milestone j of project i is certified
+      by period t, 0 otherwise. Used in Level 1 MILP only.
+
+  # ── Evaluation metrics ─────────────────────────────────────────────────────
+
+  - symbol: "Z_L1"
+    latex: "Z^*_{\\mathrm{L1}}"
+    python: "milp_upper_bound"
+    scope: evaluation
+    type: float
+    description: >
+      Level 1 MILP optimal value — performance ceiling (clairvoyant
+      bound). The sole uncertainty source (eta_{i,t}) is fixed to its
+      realised value; no payment delay trajectory is needed
+      (Relaxation B).
+
+# ── Removed parameters (for audit trail) ──────────────────────────────────────
+removed:
+  - symbol: "lambda_ij"
+    latex: "\\lambda_{i,j}"
+    python: "payment_delay"
+    reason: "Eliminated by Relaxation B — payments received in certification period."
+
+  - symbol: "d_i_max"
+    latex: "d_i^{\\mathrm{max}}"
+    python: "max_delay_support"
+    reason: "Eliminated by Relaxation B — no delay distribution support needed."
