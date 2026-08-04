@@ -12,11 +12,10 @@ program, establishing exponential scenario-tree growth. \textbf{Level~3}
 (Section~\ref{subsec:level3}) reformulates the intractable stochastic program
 as a Constrained Markov Decision Process, yielding the Gymnasium-compatible
 environment on which the PPO agent is trained. The three levels form a coherent
-arc --- Level~1 defines the performance ceiling by fixing both uncertain
-primitives (budget-to-progress efficiency $\eta_{i,t}$ and milestone
-payment timing delay $\lambda_{i,j}$) to known scenario values,
-Level~2 explains why the resulting stochastic program is unreachable
-by causal policies, Level~3 provides the tractable path.
+arc --- Level~1 defines the performance ceiling by fixing the sole uncertain
+primitive ($\eta_{i,t}$) to a known scenario value, Level~2 explains why the
+resulting stochastic program is unreachable by causal policies, Level~3
+provides the tractable path.
 
 % ------------------------------------------------------------
 \subsection{Problem Statement and Scope}
@@ -28,7 +27,7 @@ projects is fixed: commitments are signed, start dates are scheduled, and
 contracts are parameterised consistently with FIDIC Red, Yellow, and Silver
 Book forms \citep{FIDIC2017}. The decision-maker --- a portfolio manager,
 board, or programme director --- exercises a single recurring lever at each
-discrete planning period $t \in \mathcal{T} = \{1,\ldots,H\}$: the budget 
+discrete planning period $t \in \mathcal{T} = \{1,\ldots,H\}$: the budget
 $x_{i,t} \geq 0$ directed to each active project $i$.
 The planning horizon $H$ is not a fixed configuration parameter but is
 determined endogenously as $H = \max_i f_i- \min_i s_i + 1$, where $s_i$
@@ -45,21 +44,22 @@ with standard EPC contracting practice.
 (ii)~\emph{Budget as the sole control}: the contractor's internal resource
 decisions are absorbed into a stochastic efficiency parameter $\eta_{i,t}$;
 the portfolio manager observes how much physical progress a budget allocation
-yields, not how it is achieved. A second independent stochastic primitive,
-the milestone payment timing delay $\lambda_{i,j} \in \{0,1,\ldots,d_i^{\max}\}$,
-governs when the contractually fixed net payment $R_{i,j}^{\mathrm{net}}$ is
-actually received after milestone $j$ is certified. Both $\eta_{i,t}$ and
-$\lambda_{i,j}$ are unobservable at the time the relevant decision must be
-committed: $\eta_{i,t}$ is unknown when $x_{i,t}$ is committed;
-$\lambda_{i,j}$ is unknown at the period of certification. The timing of that allocation --- specifically
-how quickly milestones are certified --- determines the discounted value of
-inflows under $\gamma < 1$, making the scheduling of spend, not just its
-total magnitude, the operative decision variable for a return-maximising
-portfolio manager \citep{Damodaran2012}.
+yields, not how it is achieved. $\eta_{i,t}$ is the sole stochastic primitive:
+it is unobservable at the time allocation $x_{i,t}$ is committed, and its
+realisation determines whether and when each milestone threshold is crossed,
+which in turn determines the timing of cash inflows. The timing of that
+allocation --- specifically how quickly milestones are certified --- determines
+the discounted value of inflows under $\gamma < 1$, making the scheduling of
+spend, not just its total magnitude, the operative decision variable for a
+return-maximising portfolio manager \citep{Damodaran2012}.
 (iii)~\emph{Discrete monthly periods}: $\mathcal{T} = \{1,\ldots,H\}$,
 where $H$ is determined dynamically from the portfolio
 (see Section~\ref{subsubsec:sets}), reflects the standard monthly
-governance cycle of portfolio management
+governance cycle of portfolio management. A relaxed budget regime
+($\kappa = B_1 / \sum_i \mathrm{BAC}_i \gg 1$) is adopted throughout,
+so the liquidity constraint is non-binding and the formulation isolates
+allocation timing and performance management as the operative decision
+dimensions.
 (iv)~\emph{FIDIC contract mechanics}: milestone payments, advance payment
 and recovery, retention, and termination settlement are all calibrated
 parameters, not fixed constants, accommodating the full range of particular
@@ -69,8 +69,6 @@ conditions encountered in practice.
 \subsection{Environment Definition}
 \label{subsec:environment}
 % ------------------------------------------------------------
-
-
 
 \begin{figure}[htbp]
   \centering
@@ -91,26 +89,8 @@ conditions encountered in practice.
       }
 
       %-------------------------------------------------
-      % Yellow stochastic payment delay windows
-      % (to the right of net milestone payments only)
-      %-------------------------------------------------
-      \filldraw[
-          fill=yellow,
-          fill opacity=0.65,
-          draw=none
-      ] (4,0) rectangle (4.5,1.4);
-
-      \filldraw[
-          fill=yellow,
-          fill opacity=0.65,
-          draw=none
-      ] (7,0) rectangle (7.5,1.4);
-
-      \filldraw[
-          fill=yellow,
-          fill opacity=0.65,
-          draw=none
-      ] (10,0) rectangle (10.5,1.4);
+      % Payment delay windows removed (Relaxation B:
+      % payments arrive in certification period)
       %-------------------------------------------------
 
       % Contract payments
@@ -143,9 +123,8 @@ conditions encountered in practice.
       node[below, align=center, font=\footnotesize, red]
           {Early termination {\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
 
-
       %-------------------------------------------------
-      % Clean legend
+      % Legend
       %-------------------------------------------------
       \begin{scope}[shift={(11.4,-0.5)}]
 
@@ -161,15 +140,7 @@ conditions encountered in practice.
         \draw[dashed, thick, red] (0,-0.9) -- (0.7,-0.9)
         node[right, legend] {Contract termination};
 
-        % Delay window
-        \filldraw[
-            fill=yellow,
-            fill opacity=0.65,
-            draw=none
-        ] (0,-1.5) rectangle (0.7,-1.1);
-
-        \node[right, legend] at (0.8,-1.35)
-        {Stochastic payment delay window};
+        % (delay window legend entry removed — Relaxation B)
 
       \end{scope}
 
@@ -240,8 +211,8 @@ $\mathrm{BAC}_i$ is the Budget at Completion --- the total planned
 contractor expenditure for project $i$, which serves as the EVM cost
 basis and the normalisation denominator for all progress and performance
 calculations. At Level~1, $\eta_{i,t}$ is replaced by a known
-deterministic value $\bar{\eta}_{i,t}$; at Levels~2--3 it is a
-stochastic primitive realised only after $x_{i,t}$ is committed.
+deterministic value $\bar{\eta}_{i,t}$; at Levels~2--3 it is the
+sole stochastic primitive, realised only after $x_{i,t}$ is committed.
 
 The planned cumulative expenditure fraction follows a normalised S-curve
 \citep{Kenley2009, barraza2004probabilistic} parameterised by shape
@@ -306,23 +277,15 @@ final milestone payment. The payment identity
 $A_i + \sum_j R_{i,j}^{\mathrm{net}} + R_i^{\mathrm{ret}} = CP_i$
 holds exactly.
 
-Milestone payments are subject to stochastic timing delays between
-certification and receipt at Levels~2--3 \citep{Aibinu2006, Odeh2002}.
-The amount is fixed at the contractual net value $R_{i,j}^{\mathrm{net}}$,
-but the period of receipt is determined by a random delay
-$\lambda_{i,j} \in \{0,1,\ldots,d_i^{\max}\}$ drawn at certification:
-payment for milestone $j$ certified at period $\tau_{i,j}^{\mathrm{cert}}$
-is received at period $\tau_{i,j}^{\mathrm{cert}} + \lambda_{i,j}$.
-At Level~1, $\lambda_{i,j}$ is replaced by a known deterministic value
-$\bar{\lambda}_{i,j}$; at Levels~2--3 it is a stochastic primitive
-realised only after the milestone is certified.
-Aggregate period inflow is:
+Milestone payments are received in the same period they are certified
+(Relaxation~B). The aggregate period inflow is:
 \begin{equation}
   V_t
     = \sum_{i,j} R_{i,j}^{\mathrm{net}}
         \cdot \mathbf{1}\!\left\{
-          \tau_{i,j}^{\mathrm{cert}} + \lambda_{i,j} = t
+          \tau_{i,j}^{\mathrm{cert}} = t
         \right\}
+      + \sum_{i} A_i \cdot \mathbf{1}\{t = s_i\}
       + \sum_{i \in \mathcal{P}_t^{\mathrm{term}}} R_i^{\mathrm{term}},
   \label{eq:Vt}
 \end{equation}
@@ -397,17 +360,20 @@ schedule tolerance $\Omega_i$ (expressed in periods):
 \end{equation}
 
 \paragraph{Condition 2 --- Cost overrun trajectory unacceptable.}
-
-% ⚠️ adding the $\delta{AC_{i,t}}$ as the marker for this distance. use similar namings such as the previous conditions
-
-The Estimate at Completion $\mathrm{EAC}_{i,t}$ defined in
-\eqref{eq:EAC} projects the total project cost at the current cost
+The cost deviation trajectory is defined symmetrically to $\Delta f_{i,t}$:
+\begin{equation}
+  \Delta AC_{i,t} = \mathrm{EAC}_{i,t} - \mathrm{BAC}_i,
+  \label{eq:delta_ac}
+\end{equation}
+measuring the projected cost overrun in absolute cost units at the current
+performance rate. The Estimate at Completion $\mathrm{EAC}_{i,t}$ defined
+in \eqref{eq:EAC} projects the total project cost at the current cost
 performance rate, by scaling remaining planned work by the inverse of
 $\mathrm{CPI}_{i,t}$ --- directly analogous to the schedule extrapolation
 in \eqref{eq:fhat}. Condition~2 activates when the projected total cost
 exceeds the project-specific maximum tolerable cost overrun:
 \begin{equation}
-  \mathrm{EAC}_{i,t} \;>\; (1 + \mu_i) \cdot \mathrm{BAC}_i,
+  \Delta AC_{i,t} \;>\; \mu_i \cdot \mathrm{BAC}_i,
   \label{eq:term_cond2}
 \end{equation}
 where $\mu_i \geq 0$ is the contractually set maximum cost overrun ratio
@@ -569,14 +535,16 @@ The portfolio cash balance evolves as:
   B_{t+1}
     = B_t
       - \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
-      + V_t,
-  \qquad B_t \geq 0 \quad \forall\,t \in \mathcal{T}.
+      + V_t.
   \label{eq:balance}
 \end{equation}
-The constraint $B_t \geq 0$ prohibits borrowing; the portfolio operates
-under a fixed capital commitment \citep{kavadias2003resource}. The shared
-balance $B_t$ is the sole coupling across otherwise independent project
-dynamics.
+Under the relaxed budget regime ($\kappa \gg 1$), the liquidity
+constraint $B_t \geq 0$ is non-binding by construction throughout
+all experiments. The shared balance $B_t$ is the sole coupling
+across otherwise independent project dynamics and is retained in
+the formulation for completeness; it becomes binding in the tight
+and scarce regimes ($\kappa \approx 1$ and $\kappa \ll 1$) studied
+in sensitivity analysis.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{Observable State and Shared Objective}
@@ -602,9 +570,11 @@ The portfolio state at period $t$ is:
 \end{equation}
 where $\mathrm{status}_{i,t} \in \{\texttt{active},\,
 \texttt{completed},\, \texttt{terminated}\}$. This gives a state
-dimension of $8n + 1$ per period. All components are observable;
-$\eta_{i,t}$ is the sole unobservable primitive, realised only after
-$x_{i,t}$ is committed.
+dimension of $8n + 1$ per period. All components are observable.
+One primitive is unobservable at decision time: $\eta_{i,t}$, realised
+only after allocation $x_{i,t}$ is committed. It is not part of the
+state vector; it is an environment-internal draw that the policy must
+act without knowing in advance.
 
 The decision-maker maximises discounted net cash flow over the horizon:
 \begin{equation}
@@ -628,7 +598,9 @@ subject to, for all $i \in \mathcal{P}$, $t \in \mathcal{T}$:
     \quad \text{if } \mathrm{status}_{i,t} \neq \texttt{active}.
   \label{eq:inactive}
 \end{align}
-
+Constraint~\eqref{eq:budget} is retained for generality; under the
+relaxed budget regime it is non-binding. It becomes the operative
+constraint in the tight and scarce budget regimes.
 
 There is no terminal sum and no deviation penalty in the objective.
 Completion incentives are embedded structurally: $R_i^{\mathrm{ret}}$
@@ -646,7 +618,7 @@ fixed at contract signing, this discounting effect is the formal
 expression of the capital velocity argument: the annualised return on
 committed capital increases with completion speed, and $\gamma$ encodes
 the opportunity cost of capital that makes this concrete
-\citep{Damodaran2012}.The expectation
+\citep{Damodaran2012}. The expectation
 $\mathbb{E}[\cdot]$ collapses to a deterministic evaluation at Level~1
 and is retained at Levels~2 and~3.
 
@@ -769,13 +741,18 @@ balance $B_1$ are portfolio-level parameters shared across all projects.
     \multicolumn{4}{l}{\textit{Stochastic Primitives}} \\
     \midrule
     \rowcolor{RowAlt}
-    Payment delay support
-      & $d_i^{\max}$ & $\mathbb{Z}^+_0$
-      & Maximum periods between milestone certification and payment
-        receipt; default 3 per \citet{Aibinu2006, Assaf1995}.
-        At Level~1, replaced by deterministic $\bar{\lambda}_{i,j}$;
-        at Levels~2--3, $\lambda_{i,j} \sim G_i$ over
-        $\{0,1,\ldots,d_i^{\max}\}$. \\
+    Budget-to-progress efficiency
+      & $\eta_{i,t}$ & $\mathbb{R}^+$
+      & Sole stochastic primitive. Realised after $x_{i,t}$ is
+        committed; drawn from a project-specific Beta distribution
+        calibrated from empirical EVM datasets
+        \citep{Acebes2015, Batselier2017}. At Level~1, replaced
+        by deterministic $\bar{\eta}_{i,t}$. \\
+    Budget stress ratio
+      & $\kappa$ & $\mathbb{R}^+$
+      & $B_1 / \sum_i \mathrm{BAC}_i$; defines the budget regime.
+        $\kappa \gg 1$: relaxed (liquidity non-binding);
+        $\kappa \approx 1$: tight; $\kappa \ll 1$: scarce. \\
   \bottomrule
   \end{tabular}
   \caption{All project and portfolio parameters fixed at commitment,
@@ -820,7 +797,6 @@ stochastic objective~\eqref{eq:objective} collapses to:
   \text{s.t.} \quad
   B_{t+1}
     &= B_t - \sum_i \mathrm{act}_{i,t}\,x_{i,t} + V_t^{\mathrm{det}},
-    \quad B_t \geq 0,
     && \forall\, t
   \label{eq:L1_balance} \\
   \sum_i \mathrm{act}_{i,t}\, x_{i,t}
@@ -921,44 +897,23 @@ are assumed to satisfy:
       \citep{Acebes2015, Batselier2017}.
   \end{enumerate}
   \end{assumption}
-  
-  \begin{assumption}[Payment delay structure]
-  \label{ass:lambda}
-  For each project $i \in \mathcal{P}$ and milestone $j \in \mathcal{M}_i$:
-  \begin{enumerate}[label=(\roman*)]
-    \item $\lambda_{i,j} \in \{0,1,\ldots,d_i^{\max}\}$ with $d_i^{\max} \geq 0$;
-    \item $\lambda_{i,j}$ are independent across milestones $j$ and projects $i$;
-    \item $\lambda_{i,j}$ is independent of $\{\eta_{i,t}\}_{i,t}$;
-    \item the distribution of $\lambda_{i,j}$ is project-specific and
-      calibrated from empirical payment practice studies
-      \citep{Aibinu2006, Assaf1995, Odeh2002}, with support
-      $\{0,1,2,3\}$ as the default consistent with the literature.
-  \end{enumerate}
-  \end{assumption}
-  
+
   The realisation $\eta_{i,t}(\omega)$ is revealed only after allocation
-  $x_{i,t}$ is committed; the realisation $\lambda_{i,j}(\omega)$ is
-  revealed only after milestone $j$ is certified. These two timing
-  constraints define the two distinct decision points at which the portfolio
-  manager faces irreducible uncertainty: the allocation decision under unknown
-  productivity, and the cash-flow realisation under unknown payment timing.
+  $x_{i,t}$ is committed. This single timing constraint defines the one
+  decision point at which the portfolio manager faces irreducible
+  uncertainty: the allocation decision under unknown productivity.
+  Under Relaxation~B, payments are received in the period of
+  certification, so no second stochastic primitive is required.
 
 \subsubsection{Information Structure and Non-Anticipativity}
 \label{subsubsec:l2_filtration}
 
 Let $\mathcal{F}_t$ denote the $\sigma$-algebra generated by all
-efficiency realisations, all payment delay realisations for milestones
-certified by period $t$, and the resulting state transitions, up to and
+efficiency realisations and the resulting state transitions, up to and
 including period $t$:
 \begin{equation}
   \mathcal{F}_t = \sigma\!\bigl(
     \eta_{i,\tau}(\omega) : i \in \mathcal{P},\; \tau \leq t
-  \bigr)
-  \;\vee\;
-  \sigma\!\bigl(
-    \lambda_{i,j}(\omega) : i \in \mathcal{P},\;
-    j \in \mathcal{M}_i,\;
-    \tau_{i,j}^{\mathrm{cert}} \leq t
   \bigr),
   \qquad \mathcal{F}_0 = \{\emptyset, \Omega\}.
   \label{eq:filtration}
@@ -1017,7 +972,6 @@ all scenario realisations. The program is:
     &= B_t
        - \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
        + V_t,
-    \quad B_t \geq 0,
     && \forall\, t
   \label{eq:L2_balance} \\
   \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
@@ -1082,7 +1036,7 @@ multi-stage stochastic programs with fixed horizons. The planning
 horizon $H = \max_i f_i - \min_i s_i + 1$ is itself a function of the
 committed portfolio; it is not an external configuration parameter.
 Under stochastic efficiency, the effective execution window of each
-project is uncertain — a project with $\mathrm{SPI}_{i,t} < 1$
+project is uncertain --- a project with $\mathrm{SPI}_{i,t} < 1$
 throughout will overrun $f_i$, extending the realised horizon beyond
 $H$. In the worst case, every project overruns simultaneously, and the
 actual number of periods over which decisions must be made grows with
@@ -1098,7 +1052,7 @@ Level~2, the period at which the cure-period counter
 $\mathrm{SPI}_{i,t}$ and $\mathrm{CPI}_{i,t}$ values, which are in
 turn determined by $(\eta_{i,\tau})_{\tau \leq t}$. Each termination
 event removes project $i$ from $\mathcal{P}_t^{\mathrm{active}}$ and
-delivers $R_i^{\mathrm{term}}$ into $V_t$ — a structural change in the
+delivers $R_i^{\mathrm{term}}$ into $V_t$ --- a structural change in the
 active project set that bifurcates the scenario tree at every period
 in which a project's counter is positive. Across $n$ projects each
 with counter depth $\tau_i^{\mathrm{tol}}$, the number of
@@ -1150,9 +1104,11 @@ $\omega$ is a feasible solution to the Level~1 MILP solved on
 $\omega$ (since feasibility constraints \eqref{eq:L1_balance}--
 \eqref{eq:L1_inactive} are identical to
 \eqref{eq:L2_balance}--\eqref{eq:L2_inactive} for fixed
-$\bar{\eta}_{i,t} = \eta_{i,t}(\omega)$). Therefore
-$Z^\pi(\omega) \leq Z^*_{\mathrm{L1}}(\omega)$ for every $\omega$.
-Taking expectations on both sides yields \eqref{eq:upper_bound}.
+$\bar{\eta}_{i,t} = \eta_{i,t}(\omega)$; the single uncertainty
+source means no separate payment delay trajectory need be fixed).
+Therefore $Z^\pi(\omega) \leq Z^*_{\mathrm{L1}}(\omega)$ for
+every $\omega$. Taking expectations on both sides yields
+\eqref{eq:upper_bound}.
 \end{proof}
 
 The gap $Z^*_{\mathrm{L1}} - \mathbb{E}[Z^\pi]$ quantifies the cost
@@ -1165,6 +1121,7 @@ rather than enumerating the scenario tree, the problem is recast as a
 sequential interaction between a policy and an environment, solved
 through sampled trajectory experience rather than exhaustive
 enumeration.
+
 % ------------------------------------------------------------
 \subsection{Level~3: Constrained MDP and RL Agent}
 \label{subsec:level3}
@@ -1220,11 +1177,10 @@ $\{\texttt{active}, \texttt{completed}, \texttt{terminated}\}$, and
 cure-period counter $\tau_{i,t}^{\mathrm{rem}} \in \mathbb{Z}_{\geq 0}$;
 together with the portfolio cash balance $B_t \in \mathbb{R}_{\geq 0}$.
 The state dimension is $8n + 1$ per period. All components are observable.
-Two primitives are unobservable at decision time: $\eta_{i,t}$, realised
-only after allocation $x_{i,t}$ is committed, and $\lambda_{i,j}$, realised
-only after milestone $j$ is certified. Neither is part of the state vector;
-both are environment-internal draws that the policy must act without
-knowing in advance.
+One primitive is unobservable at decision time: $\eta_{i,t}$, realised
+only after allocation $x_{i,t}$ is committed. It is not part of the
+state vector; it is an environment-internal draw that the policy must
+act without knowing in advance.
 
 \paragraph{Action space $\mathcal{A}$ and feasible set.}
 The raw action space is:
@@ -1282,14 +1238,10 @@ period:
     \eqref{eq:term_cond1}--\eqref{eq:term_cond2} and update counter
     via \eqref{eq:counter}.
   \item Certify milestones for which $P_{i,t}^{\mathrm{actual}} \geq
-    \theta_{i,j}$ \emph{and} $t \geq e_{i,j}$. For each newly certified
-    milestone $(i,j)$, draw the payment delay independently:
-    $\lambda_{i,j} \sim G_i$ where $G_i$ is the project-specific delay
-    distribution over $\{0,1,\ldots,d_i^{\max}\}$ calibrated from
-    \citet{Aibinu2006, Assaf1995}; record that $R_{i,j}^{\mathrm{net}}$
-    will enter $V_{t + \lambda_{i,j}}$. Compute $V_t$ via
-    \eqref{eq:Rnet}--\eqref{eq:Vt} as the sum of all net payments
-    whose scheduled receipt period equals $t$.
+    \theta_{i,j}$ \emph{and} $t \geq e_{i,j}$. Each newly certified
+    milestone $(i,j)$ contributes $R_{i,j}^{\mathrm{net}}$ to $V_t$
+    immediately in the certification period (Relaxation~B). Compute
+    $V_t$ via \eqref{eq:Rnet}--\eqref{eq:Vt}.
   \item Update portfolio cash balance via \eqref{eq:balance}.
   \item Execute termination for any project with
     $\tau_{i,t}^{\mathrm{rem}} = 0$, compute
@@ -1395,11 +1347,9 @@ project-specific Beta distribution calibrated from empirical EVM
 datasets \citep{Acebes2015, Batselier2017}; the Beta family
 accommodates the right-skewed, bounded support structure of empirical
 CPI and SPI distributions documented in \citet{Lipke2003} and
-\citet{Batselier2017}. Milestone payment timing delays are drawn from
-project-specific discrete distributions over $\{0, 1, \ldots,
-d_i^{\max}\}$ periods \citep{Aibinu2006}, applied to the net payment
-amount $R_{i,j}^{\mathrm{net}}$ at certification without affecting
-the certified amount itself.
+\citet{Batselier2017}. Under Relaxation~B, milestone payments are
+received in the certification period; no payment delay distribution
+is sampled.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{PPO Agent and Training Protocol}
@@ -1494,7 +1444,7 @@ The trained agent $\hat{\pi}$ is evaluated against three baselines
 that span the tractability-optimality spectrum established by the
 three-level arc.
 
-\paragraph{Baseline 1 — Level~1 MILP oracle.}
+\paragraph{Baseline 1 --- Level~1 MILP oracle.}
 The MILP \eqref{eq:L1} is solved on each test episode's realised
 efficiency trajectory $(\eta_{i,t}(\omega))_{i,t}$ using a
 commercial solver. Its objective value $Z^*_{\mathrm{L1}}(\omega)$
@@ -1502,7 +1452,7 @@ is the per-episode upper bound from Proposition~\ref{prop:upper_bound}.
 The gap $Z^*_{\mathrm{L1}} - J(\hat{\pi})$ is the primary performance
 metric.
 
-\paragraph{Baseline 2 — Two-stage stochastic program.}
+\paragraph{Baseline 2 --- Two-stage stochastic program.}
 A two-stage approximation of \eqref{eq:L2} is solved by fixing
 first-stage decisions $\mathbf{x}_1$ and optimising over the
 expected recourse across $N_s$ sampled scenarios for subsequent
@@ -1511,7 +1461,7 @@ method available within the stochastic programming tradition and
 quantifies the value of the full sequential policy over a rolling
 two-stage approximation.
 
-\paragraph{Baseline 3 — Proportional heuristic.}
+\paragraph{Baseline 3 --- Proportional heuristic.}
 At each period $t$, the available balance $B_t$ is distributed across
 active projects proportionally to their remaining planned expenditure
 $\mathrm{BAC}_i(1 - P_{i,t}^{\mathrm{actual}})$:
