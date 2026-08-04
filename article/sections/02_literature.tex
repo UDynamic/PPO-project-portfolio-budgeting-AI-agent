@@ -61,14 +61,10 @@ inherits directly. Values of $\mathrm{CPI} < 1$ signal cost overrun;
 $\mathrm{SPI} < 1$ signals schedule lag. Stochastic extensions of EVM \citep{Acebes2015, Batselier2017} and Monte Carlo
 simulation frameworks \citep{Kwak2007} have modelled performance uncertainty at
 the project level, establishing that CPI and SPI follow empirically
-characterisable distributions over project life. Separately, empirical studies
-of payment practices in international EPC contracting \citep{Aibinu2006,
-Odeh2002} document systematic delays between milestone certification and actual
-payment receipt, establishing delay distributions that serve as the second
-independent uncertainty source in the present model. These two bodies of
-empirical evidence --- performance variability from EVM datasets, payment delay
-distributions from contracting practice studies --- provide the calibration
-basis for the two distinct scenario sets that parameterise the stochastic
+characterisable distributions over project life. Empirical evidence on
+contractor performance variability from EVM datasets
+\citep{Acebes2015, Batselier2017} provides the calibration basis for the
+stochastic efficiency parameter $\eta_{i,t}$ that parameterises the stochastic
 program at Level~2 and the CMDP environment at Level~3.
 
 S-curve analysis, formalised by \citet{Kenley2009} for construction cash flows,
@@ -169,49 +165,40 @@ multi-project resource levelling \citep{Lova2000, Peteghem2010}. However,
 these contributions treat budgets as deterministic constraints rather than as
 dynamic decision variables subject to portfolio-level sequential optimisation.
 
-Cash-flow uncertainty in construction and engineering projects arises from
-multiple sources, of which the present model isolates two that are
-structurally independent and directly controllable through the allocation
-decision. The first is contractor performance variability: the efficiency
-$\eta_{i,t}$ with which a budget allocation is converted into physical
-progress is uncertain at the time the allocation must be committed, and its
-realisation determines whether and when each milestone threshold is crossed
-\citep{Acebes2015, Batselier2017}. The second is milestone payment timing:
-empirical studies of international construction contracting document systematic
-delays of zero to three periods between milestone certification and actual
-client payment, with delay distributions varying by contract type, jurisdiction,
-and client financial health \citep{Aibinu2006, Assaf1995, Odeh2002}. These two
-uncertainties are structurally distinct: performance uncertainty determines
-\emph{whether} progress converts to a certified milestone, while payment timing
-uncertainty determines \emph{when} the contractually fixed net payment
-$R_{i,j}^{\mathrm{net}}$ is received after certification. Both are modelled as
-discrete scenario sets supplied to the optimisation program: the Level~1 MILP
-receives one fixed realisation per uncertainty source per milestone, while
-Levels~2 and~3 treat both as random variables resolved sequentially --- the
-efficiency after the allocation is committed, and the payment delay after the
-milestone is certified. Other sources of cash-flow uncertainty --- scope
+Cash-flow uncertainty in the present model arises from a single source:
+the budget-to-progress efficiency $\eta_{i,t}$, which governs how much
+physical progress a given budget allocation yields in each period
+\citep{Acebes2015, Batselier2017}. Uncertain productivity determines whether
+and when each milestone threshold is crossed, which in turn determines the
+timing of the contractually fixed payment $R_{i,j}^{\mathrm{net}}$. Payment
+delays between certification and receipt are not modelled as an independent
+uncertainty source. This relaxation is defensible: the performance-driven
+channel is the structurally primary source of cash-flow timing uncertainty
+in milestone-payment contracts, and isolating it yields a cleaner
+identification of the allocation problem without loss of the essential
+uncertainty framing. Other sources of cash-flow uncertainty --- scope
 changes, external market shocks \citep{Doloi2012} --- are treated as exogenous
 and outside the scope of the present formulation. Stochastic programming
 \citep{Birge2011} provides the canonical OR framework for optimisation under
 such uncertainty, and its two-stage variant has been applied to project
-scheduling under resource uncertainty \citep{Lova2000}. However, multi-stage 
+scheduling under resource uncertainty \citep{Lova2000}. However, multi-stage
 stochastic programs for portfolio-level sequential budget
 allocation face scenario-tree explosion as the number of projects and
-periods increases. The effective planning horizon is itself
-portfolio-dependent---determined by the latest project finish---compounding
-the explosion, since $H$ grows with the most delayed project in the
-committed set. Both effects are formalised in Section~\ref{subsec:level2}..
+periods increases. The single uncertainty source $\eta_{i,t}$ now branches the
+scenario tree at every period: if $\eta_{i,t}$ takes $K$ discrete values at
+each of $H$ periods for each of $n$ projects, the tree produces $K^{nH}$ leaf
+nodes. The effective planning horizon is itself portfolio-dependent---determined
+by the latest project finish---compounding the explosion, since $H$ grows with
+the most delayed project in the committed set. Both effects are formalised in
+Section~\ref{subsec:level2}.
 
 The gap in the literature is precise: \emph{no established framework models the
 portfolio-level budget allocation decision as a sequential stochastic
 optimisation problem in which a central decision-maker allocates funds across
-multiple active projects whose cash inflow and outflow trajectories are
-uncertain under two independent uncertainty sources --- stochastic
-budget-to-progress efficiency and stochastic milestone payment timing ---
-coupled through a shared capital constraint, and subject to contractual
-earliest certification windows that bound the speed at which progress can be
-converted into cash inflows, with payment timing uncertainty further
-decoupling the certification event from the actual cash receipt.} The present work
+multiple active projects whose cash inflow trajectories are uncertain through
+stochastic budget-to-progress efficiency, subject to contractual milestone
+certification windows that bound the speed at which progress converts to cash
+inflows.} The present work
 addresses this gap. The objective is pure discounted net cash flow; no deviation penalty enters
 the objective function. This is a deliberate design choice: the consequences
 of sustained deviation --- termination and loss of all future milestone
@@ -347,7 +334,6 @@ learn non-trivial allocation policies in a calibrated synthetic environment.
 %  multi-project resource allocation to be assessed for relevance.]
 
 % ------------------------------------------------------------
-% ------------------------------------------------------------
 \subsection{Synthesis: Positioning the Present Contribution}
 \label{subsec:lr_synthesis}
 % ------------------------------------------------------------
@@ -456,9 +442,9 @@ contingent on the tractable formulation that Step~2 must first provide.
 The present work addresses all three gaps and completes Step~2 of this
 progression through the relaxation hierarchy described above and developed
 formally in Section~\ref{sec:problem_formulation}. The Gymnasium-compatible CMDP environment --- with parameterisable contract
-mechanics, two independent stochastic uncertainty sources (budget-to-progress
-efficiency and milestone payment timing), and an endogenous termination
-mechanic --- constitutes the primary methodological contribution. The PPO agent demonstrates its utility and
+mechanics, stochastic budget-to-progress efficiency as the single uncertainty
+source, and an endogenous termination mechanic --- constitutes the primary
+methodological contribution. The PPO agent demonstrates its utility and
 provides the basis for empirical evaluation against classical OR baselines in
 Section~\ref{sec:experiments}.
 

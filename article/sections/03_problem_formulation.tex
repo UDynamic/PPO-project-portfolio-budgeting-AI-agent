@@ -70,6 +70,116 @@ conditions encountered in practice.
 \label{subsec:environment}
 % ------------------------------------------------------------
 
+
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+      every node/.style={font=\small},
+      inflow/.style={->, thick, green!50!black},
+      outflow/.style={->, thick, orange!70!black},
+      legend/.style={font=\footnotesize, align=left}
+      ]
+  
+      \draw[->, thick] (0,0) -- (13.0,0) node[right] {$t$};
+  
+      \foreach \x/\lbl in {1/$s_i$, 4/$\theta_{i,1}$, 7/$\theta_{i,2}$,
+                          10/$\theta_{i,3}$, 10.8/$f_i$}{
+      \draw (\x,0.08) -- (\x,-0.08)
+          node[below, font=\footnotesize] {\lbl};
+      }
+
+      %-------------------------------------------------
+      % Yellow stochastic payment delay windows
+      % (to the right of net milestone payments only)
+      %-------------------------------------------------
+      \filldraw[
+          fill=yellow,
+          fill opacity=0.65,
+          draw=none
+      ] (4,0) rectangle (4.5,1.4);
+
+      \filldraw[
+          fill=yellow,
+          fill opacity=0.65,
+          draw=none
+      ] (7,0) rectangle (7.5,1.4);
+
+      \filldraw[
+          fill=yellow,
+          fill opacity=0.65,
+          draw=none
+      ] (10,0) rectangle (10.5,1.4);
+      %-------------------------------------------------
+
+      % Contract payments
+      \draw[inflow] (1,0) -- (1,2.4)
+      node[above, align=center, font=\footnotesize]
+          {Advance payment};
+  
+      \draw[inflow] (4,0) -- (4,1.4)
+      node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
+  
+      \draw[inflow] (7,0) -- (7,1.4)
+      node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
+  
+      \draw[inflow] (10,0) -- (10,1.4)
+      node[above, align=center, font=\footnotesize]
+          {$R_{i,3}^{\mathrm{net}}$};
+      
+      \draw[inflow] (10.8,0) -- (10.8,2.4)
+      node[right, align=center, font=\footnotesize]
+          {final payment $+\,R_i^{\mathrm{ret}}$};
+  
+      % Budget allocations (outflows)
+      \foreach \x in {1.5,2.2,2.9,3.6,4.3,5.0,5.7,6.4,
+                      7.1,7.8,8.5,9.2,9.9}{
+      \draw[outflow] (\x,0) -- (\x,-0.75);
+      }
+      
+      % Early termination
+      \draw[dashed, thick, red] (6.0,2.4) -- (6.0,-1.4)
+      node[below, align=center, font=\footnotesize, red]
+          {Early termination {\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
+
+
+      %-------------------------------------------------
+      % Clean legend
+      %-------------------------------------------------
+      \begin{scope}[shift={(11.4,-0.5)}]
+
+        % Inflow
+        \draw[inflow] (0,0) -- (0.7,0)
+        node[right, legend] {Inflow (Received payments)};
+
+        % Outflow
+        \draw[outflow] (0,-0.45) -- (0.7,-0.45)
+        node[right, legend] {Outflow (Budget allocations $x_{i,t}$)};
+
+        % Termination
+        \draw[dashed, thick, red] (0,-0.9) -- (0.7,-0.9)
+        node[right, legend] {Contract termination};
+
+        % Delay window
+        \filldraw[
+            fill=yellow,
+            fill opacity=0.65,
+            draw=none
+        ] (0,-1.5) rectangle (0.7,-1.1);
+
+        \node[right, legend] at (0.8,-1.35)
+        {Stochastic payment delay window};
+
+      \end{scope}
+
+  \end{tikzpicture}
+  }
+  \caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics.}
+  \label{fig:cashflow_timeline}
+\end{figure}
+
+
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{Sets, Indices, and the Decision Variable}
 \label{subsubsec:sets}

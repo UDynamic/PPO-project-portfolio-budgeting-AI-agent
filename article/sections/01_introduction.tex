@@ -1,73 +1,50 @@
 % ============================================================
 %  SECTION 1 — INTRODUCTION
-% ============================================================% ------------------------------------------------------------
+% ============================================================
+
+% ------------------------------------------------------------
 \subsection{Motivation and Problem Context}
 \label{subsec:motivation}
 % ------------------------------------------------------------
 
 Large infrastructure and engineering projects routinely overrun their budgets
-and miss their schedules. Across a database of thousands of projects spanning
-seven decades, \citet{Flyvbjerg2003} document that cost overruns are the norm
-rather than the exception, with mean overruns exceeding 20\% in transportation
-infrastructure and reaching 70\% in large-scale IT systems.
-\citet{Merrow2011} reports that fewer than 40\% of industrial megaprojects
-achieve their approved cost and schedule targets. These figures describe
-individual projects. When a portfolio of such projects is executed
-simultaneously under a single governing body and a shared capital commitment,
-the risks compound: a cash-flow shortfall on one project propagates immediately
-to others, and the decision of how much budget to direct to each project at
-each period can determine whether the portfolio as a whole succeeds or fails.
+and miss their schedules \citep{Flyvbjerg2003, Merrow2011}. When a portfolio
+of such projects executes simultaneously under a shared capital commitment,
+the risks compound: a performance shortfall on one project propagates through
+the shared budget to all others, and the decision of how much to allocate to
+each project at each period can determine whether the portfolio succeeds or fails.
 
-Despite this, the formal treatment of the portfolio-level budget allocation
-problem as a sequential decision-making problem is conspicuously absent from
-the project portfolio management literature. Research attention has been
-concentrated at the \emph{selection} stage --- which projects to include in the
-portfolio --- while the \emph{operational governance} stage --- how to manage
-the portfolio of committed projects through to completion --- has received
-comparatively little analytical treatment
-\citep{Archer1999, Cooper2001, Turner2014}. The present work fills this gap.
+Despite this, the formal treatment of portfolio-level budget allocation as a
+sequential decision problem is absent from the project portfolio management
+literature. Research has concentrated on the \emph{selection} stage --- which
+projects to include --- while the \emph{operational governance} stage --- how
+to manage a committed portfolio through to completion --- has received
+comparatively little analytical treatment \citep{Archer1999, Cooper2001,
+Turner2014}. The present work fills this gap.
 
 We consider a portfolio of $n$ projects, each governed by a bilateral contract
 consistent with FIDIC forms \citep{FIDIC2017}, executing concurrently under a
-fixed capital commitment. A portfolio manager --- a board, investment committee,
-or programme director --- exercises a single recurring decision at each discrete
-planning period: how much budget to allocate to each active project. All
-strategic and operational outcomes of interest flow through this allocation
-decision. The formal problem is to find the allocation policy that maximises
-discounted net cash flow across the portfolio horizon while satisfying hard
-liquidity constraints, respecting contract mechanics.
+relaxed capital commitment. A portfolio manager exercises one recurring
+decision at each discrete planning period: how much budget to allocate to each
+active project. The formal problem is to find the allocation policy that
+maximises discounted net cash flow across the portfolio horizon while
+respecting contract mechanics.
 
 % ------------------------------------------------------------
 \subsection{The Project Management Decision Hierarchy}
 \label{subsec:hierarchy}
 % ------------------------------------------------------------
 
-To situate the present contribution precisely, it is useful to distinguish the
-three nested decision layers that constitute project portfolio management
-\citep{PMI2017}.
-
-\paragraph{Portfolio selection.}
-The selection problem asks: given a candidate set of projects and a capital
-budget, which subset should the organisation commit to? This is a combinatorial
-optimisation problem studied extensively in the literature using mean-variance
-portfolio theory \citep{Markowitz1952, Eilat2006}, multi-criteria decision
-analysis \citep{Martinsuo2007}, and metaheuristic methods \citep{Zhang2020}.
-The present work treats selection as an exogenous input: the portfolio of
-committed projects is fixed at the start of the planning horizon, and contracts
-have already been signed. This decomposition is consistent with the two-stage
-governance model of \citet{Turner2014} and the PMI Standard for Portfolio
-Management \citep{PMI2017}.
-
-\paragraph{Portfolio governance.}
-Once a portfolio is committed, the governing body must monitor and control
-execution. This is the layer at which the present work operates. The governing
-body does not manage individual projects directly --- that is the contractor's
-role --- but it controls the budget directed to each project at each period.
-This single continuous allocation decision is the sole instrument of the
-portfolio manager. Termination is not a discrete agent action but an endogenous environment
-mechanic demonstrating project failure; it is preceded by a cure period modelled
-as a project-specific tolerance counter observable in the portfolio state.
-
+The present contribution operates at the portfolio governance layer of the
+three-tier project management hierarchy \citep{PMI2017}. Portfolio selection
+--- which projects to commit to --- is treated as an exogenous input,
+consistent with the two-stage governance model of \citet{Turner2014}.
+At the governance layer, the portfolio manager does not control project
+execution directly but allocates budget to each project and observes
+earned value outcomes. Termination is not a deliberate agent action but an
+endogenous environment mechanic triggered when a project's forecast
+performance trajectory breaches two conditions simultaneously for a
+project-specific number of consecutive periods.
 
 \begin{figure}[htbp]
     \centering
@@ -96,25 +73,19 @@ as a project-specific tolerance counter observable in the portfolio state.
       int/.style  = {-{Latex[length=6pt]}, thick, teal!60!black, dashed},
       lbl/.style  = {font=\normalsize},
     ]
-    
-      %% ── NODES ──────────────────────────────────────────────────────────────
-    
-      % Agent (left)
+
       \node[agent] (pm) {%
         \textbf{Portfolio Manager}\\[2pt]
         policy $\pi(S_t)\!\to\!\mathbf{x}_t$};
-    
-      % Client (left of contractor, inside environment)
+
       \node[client, right=10cm of pm] (client) {%
         \textbf{Client}\\[2pt]
         milestone approval};
-      
-      % Contractor (right side of environment, placed first)
+
       \node[contr, left=3cm of client] (contractor) {%
         \textbf{Contractor}\\[2pt]
         project execution};
-    
-      % Environment bounding box — drawn BEFORE redrawing inner nodes
+
       \node[
         rectangle, rounded corners=20pt,
         draw=orange!50!black, thick, fill=orange!4,
@@ -123,40 +94,32 @@ as a project-specific tolerance counter observable in the portfolio state.
         label={[font=\footnotesize\itshape, text=orange!60!black]
                above:Environment \textit{(contract)}},
       ] (env) {};
-    
-      % Redraw inner nodes on top of the environment rect
-      % Client (left of contractor, inside environment)
+
       \node[client, right=10cm of pm] (client) {%
         \textbf{Client}\\[2pt]
         milestone approval};
-      
+
       \node[contr, left=3cm of client] (contractor) {%
         \textbf{Contractor}\\[2pt]
         project execution};
-    
-      % Observable state (below, centred)
+
       \node[state,
-            below=3.5cm of $(pm.south)!0.55!(contractor.south)$] (state) 
+            below=3.5cm of $(pm.south)!0.55!(contractor.south)$] (state)
             {\textbf{Observable State} $S_t$:\quad
             $\bigl\{P_{i,t}^{\mathrm{actual}},\;
             \mathrm{CPI}_{i,t},\;\mathrm{SPI}_{i,t},\;
             \mathrm{EAC}_{i,t},\;
             \Delta f_{i,t},\;
             \mathrm{status}_{i,t},\;\tau_{i,t}^{\mathrm{rem}}\bigr\}_{i},\;B_t$};
-    
-      %% ── ARROWS ─────────────────────────────────────────────────────────────
-    
-      % 1. Action: Agent → Contractor (straight horizontal, side to side)
+
       \draw[act]
         (pm.east) -- (contractor.west)
         node[midway, above, lbl, violet!80!black] {allocation $\mathbf{x}_t$};
-    
-      % 2. Internal: Contractor → Client (straight horizontal inside env)
+
       \draw[prog]
         (contractor.east) -- (client.west)
         node[midway, above, lbl, orange!80!red] {progress $\Delta P_{i,t}$};
-    
-      % 3. Reward: Client → Agent (over the top, clean arc)
+
       \draw[rew]
         (client.north)
           -- ++(0, 1.4)
@@ -165,819 +128,129 @@ as a project-specific tolerance counter observable in the portfolio state.
           {payments:\;
            $R_{i,j}^{\mathrm{net}},\;R_i^{\mathrm{ret}},\;R_i^{\mathrm{term}}$
            \quad(reward $r_t$)};
-    
-      % 4. Delta P update: contractor RIGHT side → state RIGHT side (clean vertical)
+
       \draw[prog]
       (contractor.south)
           -- (state.north -| contractor)
           node[midway,right,lbl]{$\Delta P_{i,t}=\eta_{i,t}x_{i,t}/\mathrm{BAC}_i$};
-  
-    
-      % 5. Milestone revenue: Client → State (straight down, side entry)
+
       \draw[int]
-        (client.east) 
+        (client.east)
         -- ++(1.2, 0)
         |- (state.east)
         node[pos=0.25, left, lbl, teal!60!black] {milestone revenue};
-    
-      % 6. Observation: State LEFT side → Agent LEFT side (clean horizontal loop)
+
       \draw[obs]
         (state.west)
           -- ++(-1.2, 0)
           |- (pm.west)
         node[pos=0.25, right, lbl, gray!60!black] {observe $S_t$};
-    
+
     \end{tikzpicture}%
     }
     \caption{Portfolio governance as a reinforcement learning feedback loop.}
     \label{fig:feedback_loop}
-    \end{figure}
-
-\paragraph{Project execution.}
-At the project level, the contractor controls workforce, materials, equipment,
-and subcontracting. The portfolio manager observes the outcomes of these
-decisions --- cumulative progress, earned value, payment certifications ---
-but does not control them. The efficiency with which a budget allocation is
-converted into physical progress is determined at the project level and is
-uncertain from the portfolio manager's perspective.
-
-This hierarchy is central to the modelling architecture: the formulation
-developed in Section~\ref{sec:problem_formulation} lives entirely at the
-portfolio governance layer, with project execution dynamics appearing only as
-parameters (deterministic at Level~1, stochastic at Levels~2 and~3).
+\end{figure}
 
 % ------------------------------------------------------------
 \subsection{Contract Mechanics and Cash-Flow Structure}
 \label{subsec:contract_mechanics}
 % ------------------------------------------------------------
 
-The financial interaction between the portfolio manager (as client) and each
-contractor is governed by the contract. This paper parameterises all contract
-mechanics consistently with FIDIC Red, Yellow, and Silver Book forms
-\citep{FIDIC2017}, which represent the dominant international framework for
-EPC contracting. Understanding the cash-flow structure is essential to
-understanding the optimisation problem; this subsection provides that
-foundation.
+The financial interaction between the portfolio manager and each contractor
+is governed by FIDIC contract forms \citep{FIDIC2017}. Three mechanisms
+determine the cash-flow structure.
 
 \paragraph{Milestone-based payment.}
-Rather than paying contractors on a time-basis, FIDIC contracts structure
-payment around certified milestones: discrete progress thresholds at which the
-client verifies that a specified scope fraction has been physically completed
-and releases the corresponding payment. The gross payment at milestone $j$ is a
-contractually fixed fraction $\phi_{i,j}$ of the contract price $CP_i$.
-The contract price relates to the budget at completion through the contractor's 
-profit margin $\pi_i$ as $ CP_i = (1 + \pi_i)\cdot \mathrm{BAC}_i$, and it 
-serves exclusively as the payment accumulation baseline. All EVM performance signals, 
-progress calculations, and termination conditions are normalised against $\mathrm{BAC}_i$. 
-Because payment is contingent on both certified progress and the
-contractual payment window, the timing of cash inflows is a function
-of the contractor's actual performance and the portfolio manager's
-allocation decisions, subject to the floor imposed by the contractual
-earliest certification dates $e_{i,j}$. Beyond this contractual floor,
-a second independent uncertainty operates: even after a milestone is
-certified, actual receipt of the payment is delayed by a stochastic number
-of periods (empirically zero to three, per \citealt{Aibinu2006}), driven
-by client approval cycles, invoice processing, and banking procedures.
-This payment timing uncertainty is structurally distinct from performance
-uncertainty --- it affects \emph{when} a fixed, contractually determined
-amount is received, not \emph{whether} or \emph{how much}.
-This creates the fundamental linkage between allocation decisions and cash
-inflows that makes the problem non-trivial. A portfolio manager operating
-in a competitive market with a pipeline of future contracts has a direct
-incentive to complete projects early --- not merely on time --- because
-the profit margin $\pi_i$ is fixed at signing and the only variable the
-manager controls is how quickly that margin is realised and capital is
-freed for redeployment. Earlier completion under fixed margin is
-equivalent to a higher annualised return on the capital committed
-\citep{Damodaran2012}.
+Payment is contingent on certified progress thresholds. The gross payment at
+milestone $j$ is a contractually fixed fraction $\phi_{i,j}$ of the contract
+price $CP_i = (1 + \pi_i)\cdot\mathrm{BAC}_i$. Because payment is contingent
+on certified progress, the timing of cash inflows depends on the contractor's
+actual performance and the portfolio manager's allocation decisions.
+Cash-flow uncertainty in the present model arises from a single source:
+the stochastic budget-to-progress efficiency $\eta_{i,t}$, which governs
+how much physical progress a given budget allocation yields in each period.
+Uncertain productivity induces uncertain milestone timing, which in turn induces
+uncertain payment arrival --- without requiring any separate model of payment
+delay. This formulation is sufficient to justify the uncertainty framing
+of the title and admits a cleaner identification of the allocation problem
+structure than models with multiple independent uncertainty sources.
 
 \paragraph{Advance payment and progressive recovery.}
-At project initiation, the client disburses an advance payment $A_i =
-\alpha_i \cdot CP_i$ to the contractor. This is a timing instrument: it
-reduces the contractor's early working-capital burden and is recovered
-progressively through percentage deductions from subsequent interim payment
-certificates, with the deduction rate $\delta_i^{\mathrm{rec}}$ and
-commencement threshold $\psi_i$ specified as project-specific contract
-parameters \citep{FIDIC2017}. The advance payment creates an immediate cash inflow at project start and a
-series of reduced inflows at each certified milestone, both of which must be
-tracked in the portfolio cash balance. Interim milestone payments are additionally subject to stochastic timing delays
-between certification and receipt --- the second independent source of
-uncertainty in the model, alongside the budget-to-progress efficiency
-$\eta_{i,t}$. Consistent with observed payment practices in international EPC
-contracting \citep{Aibinu2006, Odeh2002}, the amount transferred equals the
-contractually fixed net milestone value but the period of receipt is a random
-variable drawn from a project-specific delay distribution over
-$\{0, 1, \ldots, d_i^{\max}\}$ periods. In the scenario sets supplied to the
-optimisation program, each possible delay realisation is a discrete scenario;
-the Level~1 MILP receives one fixed delay per milestone, while Levels~2
-and~3 treat the delay as a random variable resolved only after certification.
+At project initiation, an advance payment $A_i = \alpha_i \cdot CP_i$ is
+disbursed to the contractor. It is recovered through percentage deductions
+from subsequent interim payment certificates, with commencement threshold
+$\psi_i$ and deduction rate $\delta_i^{\mathrm{rec}}$ specified as
+project-specific contract parameters \citep{FIDIC2017}.
 
 \paragraph{Retention.}
-A fraction $\rho_i$ of each milestone payment is withheld by the client as a
-performance bond. The accumulated retention $R_i^{\mathrm{ret}} = \rho_i
-\cdot CP_i$ is released in full upon project completion. Retention creates a
-structural completion incentive embedded in the payment mechanics: the larger
-the retention fraction, the more strongly the cash flow profile rewards
-completion over partial delivery. In the formulation, retention release enters
-the portfolio cash balance as a lump inflow in the period the final milestone
-is certified.
-\begin{figure}[htbp]
-  \centering
-  \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}[
-      every node/.style={font=\small},
-      inflow/.style={->, thick, green!50!black},
-      outflow/.style={->, thick, orange!70!black},
-      legend/.style={font=\footnotesize, align=left}
-      ]
-  
-      \draw[->, thick] (0,0) -- (13.0,0) node[right] {$t$};
-  
-      \foreach \x/\lbl in {1/$s_i$, 4/$\theta_{i,1}$, 7/$\theta_{i,2}$,
-                          10/$\theta_{i,3}$, 10.8/$f_i$}{
-      \draw (\x,0.08) -- (\x,-0.08)
-          node[below, font=\footnotesize] {\lbl};
-      }
+A fraction $\rho_i$ of each milestone payment is withheld as a performance
+bond. The accumulated retention $R_i^{\mathrm{ret}} = \rho_i \cdot CP_i$
+is released in full upon project completion, creating a structural completion
+incentive embedded in the payment mechanics.
 
-      %-------------------------------------------------
-      % Yellow stochastic payment delay windows
-      % (to the right of net milestone payments only)
-      %-------------------------------------------------
-      \filldraw[
-          fill=yellow,
-          fill opacity=0.65,
-          draw=none
-      ] (4,0) rectangle (4.5,1.4);
-
-      \filldraw[
-          fill=yellow,
-          fill opacity=0.65,
-          draw=none
-      ] (7,0) rectangle (7.5,1.4);
-
-      \filldraw[
-          fill=yellow,
-          fill opacity=0.65,
-          draw=none
-      ] (10,0) rectangle (10.5,1.4);
-      %-------------------------------------------------
-
-      % Contract payments
-      \draw[inflow] (1,0) -- (1,2.4)
-      node[above, align=center, font=\footnotesize]
-          {Advance payment};
-  
-      \draw[inflow] (4,0) -- (4,1.4)
-      node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
-  
-      \draw[inflow] (7,0) -- (7,1.4)
-      node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
-  
-      \draw[inflow] (10,0) -- (10,1.4)
-      node[above, align=center, font=\footnotesize]
-          {$R_{i,3}^{\mathrm{net}}$};
-      
-      \draw[inflow] (10.8,0) -- (10.8,2.4)
-      node[right, align=center, font=\footnotesize]
-          {final payment $+\,R_i^{\mathrm{ret}}$};
-  
-      % Budget allocations (outflows)
-      \foreach \x in {1.5,2.2,2.9,3.6,4.3,5.0,5.7,6.4,
-                      7.1,7.8,8.5,9.2,9.9}{
-      \draw[outflow] (\x,0) -- (\x,-0.75);
-      }
-      
-      % Early termination
-      \draw[dashed, thick, red] (6.0,2.4) -- (6.0,-1.4)
-      node[below, align=center, font=\footnotesize, red]
-          {Early termination {\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
-
-
-      %-------------------------------------------------
-      % Clean legend
-      %-------------------------------------------------
-      \begin{scope}[shift={(11.4,-0.5)}]
-
-        % Inflow
-        \draw[inflow] (0,0) -- (0.7,0)
-        node[right, legend] {Inflow (Received payments)};
-
-        % Outflow
-        \draw[outflow] (0,-0.45) -- (0.7,-0.45)
-        node[right, legend] {Outflow (Budget allocations $x_{i,t}$)};
-
-        % Termination
-        \draw[dashed, thick, red] (0,-0.9) -- (0.7,-0.9)
-        node[right, legend] {Contract termination};
-
-        % Delay window
-        \filldraw[
-            fill=yellow,
-            fill opacity=0.65,
-            draw=none
-        ] (0,-1.5) rectangle (0.7,-1.1);
-
-        \node[right, legend] at (0.8,-1.35)
-        {Stochastic payment delay window};
-
-      \end{scope}
-
-  \end{tikzpicture}
-  }
-  \caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics.}
-  \label{fig:cashflow_timeline}
-\end{figure}
-    
-\FloatBarrier
 \paragraph{Earned value management as a performance signal.}
-The Earned Value Management framework \citep{Fleming2010} provides the
-diagnostic vocabulary used to monitor contractor performance. The Cost Performance Index $\mathrm{CPI}_{i,t} = \text{BCWP}_{i,t} /
-\text{ACWP}_{i,t}$ measures how much budgeted value has been earned per unit
-of actual expenditure; values below unity indicate cost overrun. The Schedule
-Performance Index $\mathrm{SPI}_{i,t} = \text{BCWP}_{i,t} /
-\text{BCWS}_{i,t}$ measures actual progress relative to planned progress;
-values below unity indicate schedule lag \citep{Fleming2010}. The Estimate at
-Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
-\mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ projects the total cost of the project
-at the current cost performance rate, directly analogous to the forecast finish
-date computation; \citet{christensen1993cost} established that this formulation
-produces stable and accurate cost-at-completion forecasts beyond the 20\%
-completion mark \citep{Lipke2003}. In the present formulation, all three
-indices are observable state variables; CPI and SPI additionally feed the two
-forward-looking termination conditions, making their stochastic dynamics ---
-calibrated from empirical EVM datasets \citep{Acebes2015, Batselier2017} ---
-directly consequential for termination timing.
-
-\paragraph{S-curve expenditure profiles.}
-The planned expenditure of a construction or engineering project follows a
-characteristic sigmoid profile over its planned duration: slow ramp-up in the
-mobilisation phase, rapid expenditure in the peak execution phase, and tapering
-in the close-out phase \citep{Kenley2009}. This profile is modelled using the
-regularized incomplete Beta function $F_i(\tau) = I_\tau(a_i, b_i)$, whose
-shape parameters $(a_i, b_i)$ are calibrated from project data. The planned
-cumulative expenditure fraction at normalised time $\tau_{i,t}$ provides the
-baseline against which actual progress is measured throughout the formulation.
+The EVM framework \citep{Fleming2010} provides the diagnostic vocabulary
+for monitoring contractor performance. The Cost Performance Index
+$\mathrm{CPI}_{i,t} = \mathrm{BCWP}_{i,t}/\mathrm{ACWP}_{i,t}$ and
+Schedule Performance Index $\mathrm{SPI}_{i,t} =
+\mathrm{BCWP}_{i,t}/\mathrm{BCWS}_{i,t}$ are observable state variables.
+The Estimate at Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} +
+(\mathrm{BAC}_i - \mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ projects total
+cost at the current performance rate and feeds one of the two termination
+conditions.
 
 \paragraph{Termination.}
-FIDIC contracts provide for client-initiated termination when the contractor
-has materially breached the contract --- most commonly through sustained failure
-to meet schedule obligations. Termination triggers a settlement payment based
-on the value of work completed at the termination date, net of any outstanding
-advance recovery obligation. In the present model, termination is an endogenous environment mechanic, not a
-deliberate agent action. It is triggered when two conditions hold simultaneously
-for a project-specific number of consecutive periods --- the termination
-tolerance $\tau_i^{\mathrm{tol}}$. Both conditions are forward-looking
-trajectory estimates symmetric in structure to one another: Condition~1 fires
-when the forecast finish date $\hat{f}_{i,t}$, extrapolated from the current
-schedule performance rate, exceeds the planned finish by more than the
-contractual schedule tolerance; Condition~2 fires when the Estimate at
-Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
-\mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ exceeds the project-specific maximum
-tolerable cost overrun $(1+\mu_i)\cdot\mathrm{BAC}_i$. This joint persistence
-requirement models the FIDIC cure period \citep{FIDIC2017, Ndekugri2008}, the
-contractually prescribed interval during which both parties are obliged to
-attempt performance recovery before the client may formally terminate. the tolerance 
-counter $\tau_{i,t}^{\mathrm{rem}}$ --- periods remaining before
-termination executes --- is part of the observable environment state; the agent
-cannot override its dynamics but observes its value and can influence it
-indirectly through allocation decisions that drive $\mathrm{SPI}_{i,t}$ and
-$\mathrm{CPI}_{i,t}$. When the counter reaches zero, termination executes in
-the following period, and its timing affects the portfolio cash balance through
-the settlement payment $R_i^{\mathrm{term}}$, which may be positive or negative
-depending on the advance recovery position. The settlement formula computes
-value as the fraction of work physically delivered multiplied by the contract
-price --- this is not a penalty construct but a direct valuation of transferred
-productive assets, consistent with how FIDIC termination clauses treat
-partially completed works as resources whose ownership and value must be
-accounted for at contract close \citep{FIDIC2017}. This grounding means the
-model's financial signals reflect real asset values, not arbitrary penalty
-weights.
-%-------------------------------------------------
-% COLOR OPTION C — Colorblind-safe Okabe-Ito
-%-------------------------------------------------
-\definecolor{FigBCWS}{HTML}{0072B2}
-\definecolor{FigBCWP}{HTML}{CC79A7}
-\definecolor{FigACWP}{HTML}{D55E00}
-\definecolor{FigPayExp}{HTML}{E69F00}
-\definecolor{FigPayRec}{HTML}{009E73}
-\definecolor{FigCap}{HTML}{D55E00}
-\definecolor{FigNCF}{HTML}{0072B2}
+Termination is an endogenous environment mechanic triggered when two conditions
+hold simultaneously for $\tau_i^{\mathrm{tol}}$ consecutive periods:
+the forecast finish deviation $\Delta f_{i,t}$ exceeds the contractual
+schedule tolerance $\Omega_i$, and $\mathrm{EAC}_{i,t}$ exceeds
+$(1+\mu_i)\cdot\mathrm{BAC}_i$. The cure period counter
+$\tau_{i,t}^{\mathrm{rem}}$ is observable but not directly controllable
+by the agent. When it reaches zero, termination executes and the settlement
+payment $R_i^{\mathrm{term}}$ enters the portfolio cash balance.
 
-%-------------------------------------------------
-% Bar legend styles for bottom panel
-% Place in PREAMBLE before \begin{document}
-%-------------------------------------------------
-\pgfplotsset{
-  alloc bar legend/.style={
-    /pgfplots/legend image code/.code={
-      \draw[/tikz/.cd, fill=FigACWP!30, draw=FigACWP]
-        (0cm,-0.1cm) rectangle (0.4cm,0.2cm);
-    }
-  },
-  payexp bar legend/.style={
-    /pgfplots/legend image code/.code={
-      \draw[/tikz/.cd, fill=FigPayExp!40, draw=FigPayExp]
-        (0cm,-0.1cm) rectangle (0.4cm,0.2cm);
-    }
-  },
-  payrec bar legend/.style={
-    /pgfplots/legend image code/.code={
-      \draw[/tikz/.cd, fill=FigPayRec!40, draw=FigPayRec]
-        (0cm,-0.1cm) rectangle (0.4cm,0.2cm);
-    }
-  },
-}
-
-%-------------------------------------------------
-% Shared y-label width — forces left-edge alignment
-%-------------------------------------------------
-\pgfplotsset{
-  every axis/.append style={
-    yticklabel style={text width=3.2em, align=right}
-  }
-}
-
-\begin{figure}[htbp]
-  \centering
-
-  %=================================================
-  % TOP PANEL: EVM S-curve
-  %=================================================
-  \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}
-  \begin{axis}[
-      width=13cm,
-      height=7.5cm,
-      xlabel={Period $t$},
-      ylabel={Normalized value (fraction of BAC)},
-      xmin=0,
-      xmax=27,
-      ymin=0,
-      ymax=1.30,
-      xtick={0,4,8,12,16,20,23,24},
-      ytick={0,0.25,0.45,0.54,0.60,0.75,1.00,1.10},
-      yticklabels={
-        $0$,
-        $0.25$,
-        $0.45$,
-        $0.54$,
-        $0.60$,
-        $0.75$,
-        $\mathrm{BAC}$,
-        $1.1\,\mathrm{BAC}$
-      },
-      grid=major,
-      grid style={dashed,gray!30},
-      legend style={
-        at={(1.15,0.98)},
-        anchor=north west,
-        font=\footnotesize,
-        cells={anchor=west},
-        row sep=2pt,
-        draw=none,
-        fill=white,
-      },
-      tick label style={font=\small},
-      label style={font=\small},
-      clip=false,
-    ]
-
-    %-------------------------------------------------
-    % Schedule overrun region
-    %-------------------------------------------------
-    \fill[FigCap,opacity=0.12]
-      (axis cs:20,0) rectangle (axis cs:23,1.10);
-    \node[font=\footnotesize, FigCap, align=center]
-      at (axis cs:21.5,0.40) {$\Omega_i$};
-
-    %-------------------------------------------------
-    % Cost overrun region
-    %-------------------------------------------------
-    \fill[FigCap,opacity=0.12]
-      (axis cs:0,1.00) rectangle (axis cs:23,1.10);
-    \node[font=\footnotesize, FigCap, align=center]
-      at (axis cs:10,1.05) {$\mu_i$};
-
-    %-------------------------------------------------
-    % Expected milestone payments — amber step chart
-    %-------------------------------------------------
-    \addplot[thick, FigPayExp, const plot, no marks] coordinates {
-      (0,0.15)(7,0.45)(10,0.75)(13,1.00)(20,1.10)(20,1.10)
-    };
-    \addplot[only marks, mark=*, mark size=2.8pt,
-             FigPayExp, forget plot] coordinates { (20,1.10) };
-    \node[font=\footnotesize, text=FigPayExp, anchor=south west]
-      at (axis cs:20,1.10) {$CP_i$};
-    \addlegendentry{Expected payments}
-
-    %-------------------------------------------------
-    % Received milestone payments — green step chart
-    %-------------------------------------------------
-    \addplot[thick, FigPayRec, const plot, no marks] coordinates {
-      (0,0.15)(8,0.45)(10,0.75)(13,0.75)
-    };
-    \addlegendentry{Received payments}
-
-    %-------------------------------------------------
-    % Payment delay indicator
-    %-------------------------------------------------
-    \draw[black, <->, >=stealth]
-      (axis cs:7,0.45) -- (axis cs:8,0.45);
-    \node[font=\footnotesize, black, anchor=south, align=center]
-      at (axis cs:7.5,0.45) {payment\\delay};
-
-    %-------------------------------------------------
-    % BCWS — blue
-    %-------------------------------------------------
-    \addplot[thick, color=FigBCWS, smooth, domain=0:20, samples=80]
-      { (1/(1+exp(-0.42*(x-11)))) / 0.9767 };
-    \addlegendentry{BCWS}
-
-    %-------------------------------------------------
-    % BCWP history — pink
-    %-------------------------------------------------
-    \addplot[thick, color=FigBCWP, smooth] coordinates {
-      (0,0.01)(4,0.07)(8,0.25)(12,0.45)
-    };
-    \addlegendentry{BCWP}
-
-    %-------------------------------------------------
-    % Forecast BCWP — pink dashed, terminal circle
-    %-------------------------------------------------
-    \addplot[thick, color=FigBCWP, dashed, mark=*, mark size=2.8pt,
-             mark options={solid, mark indices={2}}] coordinates {
-      (12,0.45)(24,1.00)
-    };
-    \addlegendentry{BCWP extended}
-    \node[font=\footnotesize, text=FigBCWP, anchor=west]
-      at (axis cs:24,1.00) {$\hat{f}_{i,t}=24$};
-
-    %-------------------------------------------------
-    % BCWS planned finish — circle at (20, BAC)
-    %-------------------------------------------------
-    \addplot[only marks, mark=*, mark size=2.8pt,
-             color=FigBCWS, forget plot] coordinates { (20,1.00) };
-    \node[font=\footnotesize, text=FigBCWS, anchor=north]
-      at ([xshift=-8pt]axis cs:20,1.00) {$f_i=20$};
-
-    %-------------------------------------------------
-    % ACWP history — red-orange
-    %-------------------------------------------------
-    \addplot[thick, color=FigACWP, smooth] coordinates {
-      (0,0.01)(4,0.07)(8,0.26)(12,0.54)
-    };
-    \addlegendentry{ACWP}
-
-    %-------------------------------------------------
-    % Forecast ACWP — red-orange densely dashed, terminal circle
-    %-------------------------------------------------
-    \addplot[thick, color=FigACWP, densely dashed, mark=*, mark size=2.8pt,
-             mark options={solid, mark indices={2}}] coordinates {
-      (12,0.54)(24,1.20)
-    };
-    \addlegendentry{ACWP extended}
-    \node[font=\footnotesize, text=FigACWP, anchor=west, align=left]
-      at (axis cs:24,1.20) {$\mathrm{EAC}_{i,t}=1.2\,\mathrm{BAC}$};
-
-    %-------------------------------------------------
-    % Triangle: Delta f_{i,t}
-    %-------------------------------------------------
-    \draw[black,<->,>=stealth,thick]
-      (axis cs:20,1.00) -- (axis cs:24,1.00);
-    \node[font=\footnotesize, black, anchor=north]
-      at (axis cs:22,1.00) {$\Delta f_{i,t}$};
-
-    %-------------------------------------------------
-    % Triangle: Delta AC_{i,t}
-    %-------------------------------------------------
-    \draw[black,<->,>=stealth,thick]
-      (axis cs:24,1.00) -- (axis cs:24,1.20);
-    \node[font=\footnotesize, black, anchor=west]
-      at ([xshift=6pt]axis cs:24,1.10) {$\Delta AC_{i,t}$};
-
-    %-------------------------------------------------
-    % Illustration 1: schedule cap width
-    %-------------------------------------------------
-    \draw[black,<->,>=stealth]
-      (axis cs:20,0.10) -- (axis cs:23,0.10);
-    \node[font=\footnotesize, black, anchor=north]
-      at (axis cs:21.5,0.10) {$\Delta f_{i,t} \leq \Omega_i$};
-
-    %-------------------------------------------------
-    % Illustration 2: beyond schedule cap
-    %-------------------------------------------------
-    \draw[black,->,>=stealth]
-      (axis cs:23,0.10) -- (axis cs:27,0.10);
-    \node[font=\footnotesize, black, anchor=south]
-      at (axis cs:25,0.10) {$\Delta f_{i,t} \geq \Omega_i$};
-
-    %-------------------------------------------------
-    % Illustration 3: cost cap height
-    %-------------------------------------------------
-    \draw[black,<->,>=stealth]
-      (axis cs:2,1.00) -- (axis cs:2,1.10);
-    \node[font=\footnotesize, black, anchor=west]
-      at ([xshift=4pt]axis cs:2,1.05) {$\Delta AC_{i,t} \leq \mu_i$};
-
-    %-------------------------------------------------
-    % Illustration 4: beyond cost cap
-    %-------------------------------------------------
-    \draw[black,->,>=stealth]
-      (axis cs:2,1.10) -- (axis cs:2,1.30);
-    \node[font=\footnotesize, black, anchor=west]
-      at ([xshift=4pt]axis cs:2,1.20) {$\Delta AC_{i,t} \geq \mu_i$};
-
-  \end{axis}
-  \end{tikzpicture}
-  }
-
-  \vspace{0.5em}
-
-  %=================================================
-  % BOTTOM PANEL: Period cash flows
-  %=================================================
-  \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}
-  \begin{axis}[
-      width=13cm,
-      height=4.5cm,
-      xlabel={Period $t$},
-      ylabel={Cash flow (fraction of BAC)},
-      xmin=0,
-      xmax=27,
-      ymin=-0.70,
-      ymax=0.70,
-      xtick={0,4,8,12,16,20,23,24},
-      ytick={-0.60,-0.30,0,0.30,0.60},
-      yticklabels={$-0.6$,$-0.3$,$0$,$0.3$,$0.6$},
-      grid=major,
-      grid style={dashed,gray!30},
-      axis x line=center,
-      axis y line=left,
-      legend style={
-        at={(1.15,0.98)},
-        anchor=north west,
-        font=\footnotesize,
-        cells={anchor=west},
-        row sep=2pt,
-        draw=none,
-        fill=white,
-      },
-      tick label style={font=\small},
-      label style={font=\small},
-      clip=false,
-    ]
-
-    %-------------------------------------------------
-    % Allocations — red bars below zero
-    %-------------------------------------------------
-    \addplot[
-      ybar, bar width=0.35,
-      fill=FigACWP!30, draw=FigACWP,
-      opacity=0.85,
-      alloc bar legend
-    ] coordinates {
-      (0,-0.010)(1,-0.013)(2,-0.018)(3,-0.025)
-      (4,-0.034)(5,-0.046)(6,-0.061)(7,-0.077)
-      (8,-0.090)(9,-0.098)(10,-0.101)(11,-0.099)(12,-0.093)
-    };
-    \addlegendentry{Allocation $x_{i,t}$}
-
-    %-------------------------------------------------
-    % Expected payments — amber bars above zero
-    %-------------------------------------------------
-    \addplot[
-      ybar, bar width=0.35,
-      fill=FigPayExp!40, draw=FigPayExp,
-      opacity=0.85,
-      payexp bar legend
-    ] coordinates {
-      (0,0.15)(7,0.30)(10,0.30)(13,0.25)(20,0.10)
-    };
-    \addlegendentry{Expected payment}
-
-    %-------------------------------------------------
-    % Received payments — green bars above zero
-    %-------------------------------------------------
-    \addplot[
-      ybar, bar width=0.35,
-      fill=FigPayRec!40, draw=FigPayRec,
-      opacity=0.85,
-      payrec bar legend
-    ] coordinates {
-      (0,0.15)(8,0.30)(10,0.30)
-    };
-    \addlegendentry{Received payment}
-
-    %-------------------------------------------------
-    % Net cumulative cash flow line
-    %-------------------------------------------------
-    \addplot[
-      thick, color=FigNCF,
-      mark=o, mark size=1.8pt,
-      mark options={solid}
-    ] coordinates {
-      (0,  0.140)
-      (1,  0.127)
-      (2,  0.109)
-      (3,  0.084)
-      (4,  0.050)
-      (5,  0.004)
-      (6, -0.057)
-      (7, -0.134)
-      (8,  0.076)
-      (9, -0.022)
-      (10, 0.179)
-      (11, 0.080)
-      (12,-0.013)
-      (13,-0.013)
-    };
-    \addlegendentry{Net cum.\ cash flow}
-
-  \end{axis}
-  \end{tikzpicture}
-  }
-
-  \caption{EVM-based termination conditions (top) and periodic project
-           cash flow profile (bottom): payments received above zero,
-           budget allocations below zero, net cumulative cash flow line.}
-  \label{fig:scurve_evm}
-\end{figure}
-
-  \FloatBarrier
 % ------------------------------------------------------------
 \subsection{The Three-Level Modelling Arc}
 \label{subsec:three_levels}
 % ------------------------------------------------------------
 
-The formulation of Section~\ref{sec:problem_formulation} proceeds across three
-levels of increasing generality. This subsection provides the conceptual
-roadmap; each level is developed formally in its corresponding subsection.
-
 \paragraph{Level~1: Deterministic full-foresight MILP.}
-The natural starting point for any optimisation problem is its deterministic
-version: assume all uncertain parameters are known, and find the optimal
-decision sequence. In the portfolio budget allocation problem, two independent sources of
-uncertainty govern the mapping from allocation decisions to cash inflows.
-The first is the budget-to-progress efficiency $\eta_{i,t}$ --- the scalar
-that determines how much physical progress a given budget allocation yields
-in each period. The second is milestone payment timing: once a milestone is
-certified as complete, the corresponding net payment $R_{i,j}^{\mathrm{net}}$
-is not received in the same period but after a stochastic delay of zero to
-several periods, consistent with documented practices in international EPC
-contracting \citep{Aibinu2006, Odeh2002}. Reaching the progress threshold on
-time does not guarantee cash inflow on time; the payment window is a separate
-random variable. If both $\eta_{i,t}$ and the payment delay for each milestone
-are treated as known constants --- replacing each by a fixed scenario value ---
-the progress recursion becomes a deterministic linear map from budget
-allocations to physical outcomes and payment timings, and the entire
-optimisation problem collapses to a Mixed-Integer Linear Program (MILP).
-
-The MILP is not proposed as a practical solution method --- no real portfolio
-manager has advance knowledge of contractor efficiency trajectories. Rather,
-it serves two purposes. First, its optimal value $Z^*_{\mathrm{L1}}$ is a
-provable upper bound on the performance of any causal policy operating under
-uncertainty: since the MILP optimises with perfect foresight, it can do no
-worse than any policy that must make decisions without knowing future outcomes.
-Second, it provides an LP foundation from which the stochastic extensions of
-Levels~2 and~3 are constructed by systematic relaxation of the deterministic
-assumption.
-
-The MILP requires two structural choices that are standard in combinatorial
-optimisation. Milestone certification is a binary event --- a milestone is
-either certified or not --- captured by introducing binary decision variables
-$u_{i,j,t} \in \{0,1\}$. The objective is pure discounted net cash flow:
-inflows minus outflows, discounted at rate $\gamma$.No deviation penalty 
-enters the objective; the deviation state variable $\Delta f_{i,t}$ is tracked 
-solely to feed the termination conditions, whose
-consequences --- loss of all future milestone payments, retention, and a
-potentially negative settlement --- provide sufficient incentive for the agent
-to manage schedule performance without requiring an additional penalty term
-\citep{Ng1999}. The absence of a penalty weight is not merely a modelling
-simplification but reflects the actual structure of FIDIC contracts, which do
-not penalise schedule deviation directly but impose consequences through the
-termination mechanism. A portfolio manager who internalises this structure will
-front-load allocations under discounting not because a penalty pushes them to
-do so, but because earlier milestone certification yields higher discounted
-inflows --- a pure income-maximisation motive requiring no additional
-calibration parameters. A second
-structural feature is the termination mechanic: under deterministic
-$\bar{\eta}_{i,t}$, both termination conditions and the tolerance counter
-trajectory $\tau_{i,t}^{\mathrm{rem}}$ are fully pre-computable, so
-termination periods $t_i^{\mathrm{term}}$ and their settlements
-$R_i^{\mathrm{term}}$ enter the MILP as fixed parameters rather than
-optimisation constraints --- a simplification that does not carry over to
-Levels~2 and~3, where termination timing is endogenous to the stochastic
-trajectory.
+When $\eta_{i,t}$ is replaced by a fixed known value $\bar{\eta}_{i,t}$,
+the progress recursion becomes a deterministic linear map and the problem
+collapses to a Mixed-Integer Linear Program. Its optimal value
+$Z^*_{\mathrm{L1}}$ is a provable upper bound on any causal policy operating
+under uncertainty.
 
 \paragraph{Level~2: Stochastic extension and intractability.}
-When both $\eta_{i,t}$ and the milestone payment delay are replaced by random
-variables --- as they must be to reflect reality --- the MILP becomes a
-multi-stage stochastic program \citep{Birge2011}. Two independent
-uncertainty sources now branch the scenario tree at every period: the
-budget-to-progress efficiency $\eta_{i,t}$, which determines whether a
-milestone threshold is reached, and the payment timing delay, which determines
-in which future period a certified milestone payment actually enters the
-portfolio cash balance. The scenario-tree representation grows exponentially:
-if $\eta_{i,t}$ takes $K$ discrete values at each of $H$ periods for each of
-$n$ projects, the efficiency component alone produces $K^{nH}$ leaf nodes.
-For a portfolio of ten projects over a 24-month horizon with five efficiency
-scenarios per project per period, this is $5^{240}$ leaf nodes --- a number
-that renders exact stochastic programming computationally intractable. This is
-not merely a computational inconvenience; it is the fundamental barrier that
-motivates the Level~3 reformulation.
+When $\eta_{i,t}$ is a random variable, the MILP becomes a multi-stage
+stochastic program. The scenario tree grows as $K^{nH}$ leaf nodes, rendering
+exact solution intractable at realistic portfolio scales.
 
 \paragraph{Level~3: Constrained MDP and RL agent.}
-The Constrained Markov Decision Process \citep{altman1999constrained} provides the
-tractable reformulation. Rather than optimising over all scenario-tree paths
-simultaneously, the CMDP formalises the problem as a sequential interaction
-between a policy and an environment: at each period, the policy observes the
-current portfolio state, selects a budget allocation, and the environment
-transitions stochastically to the next state. The key insight is that the
-CMDP does not require explicit scenario enumeration: the policy is optimised
-through repeated interaction with the environment, using sampled trajectories
-rather than exhaustive scenario trees.
-
-The mapping from MILP to CMDP is exact in structure. The decision variables
-$\{x_{i,t}\}$ become the action space; the state variables $$(P_{i,t}^{\rm actual}, 
-\mathrm{ACWP}_{i,t}, \mathrm{CPI}_{i,t}, \mathrm{SPI}_{i,t},
-\mathrm{EAC}_{i,t}, \Delta f_{i,t},
-\mathrm{status}_{i,t}, \tau_{i,t}^{\mathrm{rem}}, B_t)$$ become the
-observation space; and the objective function --- discounted net cash flow becomes the reward signal.
-The CMDP is implemented as a
-configurable Gymnasium-compatible environment \citep{Towers2024}, and a
-Proximal Policy Optimisation agent \citep{Schulman2017} is trained on it using
-domain randomisation \citep{Tobin2017} to ensure generalisation across project
-types and contract structures.
+The CMDP reformulation \citep{altman1999constrained} provides a tractable
+alternative. The policy is optimised through repeated interaction with the
+environment using sampled trajectories rather than exhaustive scenario
+enumeration. The CMDP is implemented as a Gymnasium-compatible environment
+\citep{Towers2024} and a PPO agent \citep{Schulman2017} is trained and
+evaluated against the Level~1 oracle and rule-based baselines.
 
 % ------------------------------------------------------------
-\subsection{The Operations Research Lineage}
-\label{subsec:or_lineage}
-% ------------------------------------------------------------
-
-The present work is situated squarely within the Industrial Engineering and
-Operations Research tradition. The mathematical tools employed ---
-mixed-integer linear programming, stochastic programming, dynamic programming,
-and Markov decision processes --- share a common intellectual lineage that
-traces directly to Dantzig's simplex method \citep{Dantzig1963}, Bellman's
-principle of optimality \citep{Bellman1957}, and the stochastic programming
-framework of \citet{Dantzig1955}.
-
-The MDP formalisation used in Level~3 is, mathematically, a computationally
-tractable approach to solving a Bellman equation in a high-dimensional state
-space. The state space in the present problem --- $9n + 1$ continuous and
-categorical variables for a portfolio of $n$ projects --- is too large for
-tabular dynamic programming and too structured for model-free value-iteration
-methods, but well-suited to policy-gradient methods that learn a parameterised
-policy directly. PPO \citep{Schulman2017} is the policy-gradient algorithm of
-choice for its stability properties in continuous action spaces and its
-established use in operations management domains \citep{Giannoccaro2002,
-Peng2021}.
-
-The reinforcement learning agent is therefore not presented as a departure from
-the OR tradition, but as its continuation into the regime where the curse of
-dimensionality makes analytical dynamic programming intractable. The Level~1
-MILP and Level~2 stochastic program are not straw men; they are the canonical
-OR solutions to the deterministic and stochastic versions of the problem,
-respectively, and both serve as baselines against which the Level~3 agent is
-evaluated.
-
-% ------------------------------------------------------------
-\subsection{Practical Deployment Context}
-\label{subsec:deployment}
-% ------------------------------------------------------------
-
-Incumbent project management information systems --- most prominently Oracle
-Primavera P6 and Microsoft Project --- provide rich project-level schedule and
-cost tracking but lack a portfolio-level optimisation layer. The portfolio
-manager's recurring budget allocation decision is currently supported, at best,
-by spreadsheet models, earned value dashboards, and expert judgement. The
-environment developed in Level~3 constitutes the analytical engine that such a
-portfolio-level decision-support module would require: it integrates contract
-mechanics, performance uncertainty, and multi-project cash-flow dynamics and a portfolio-derived planning
-horizon in a single configurable framework. This positions the contribution not only as a
-theoretical advance but as a step toward a deployable module for portfolio
-management information systems, a direction explicitly identified as a priority
-in the project management software literature \citep{PMI2017}.
-
-% ------------------------------------------------------------
-\subsection{Paper Organisation}
+\subsection{Contributions and Paper Organisation}
 \label{subsec:organisation}
 % ------------------------------------------------------------
 
-The remainder of the paper is organised as follows.
-Section~\ref{sec:litreview} reviews the four literature streams on which the
-work draws: project management foundations, project portfolio management and
-selection, PPM budgeting and cash-flow modelling, and reinforcement learning
-for sequential resource allocation.
-Section~\ref{sec:problem_formulation} develops the three-level problem
-formulation: the deterministic MILP (Level~1), the stochastic extension and
-intractability argument (Level~2), and the CMDP reformulation and
-Gymnasium-compatible environment (Level~3).
-Section~\ref{sec:experiments} presents the empirical evaluation: calibration
-of environment parameters, training protocol, and comparison of the PPO agent
-against the Level~1 MILP oracle, a two-stage stochastic program, and a
-rule-based heuristic.
-Section~\ref{sec:conclusion} concludes with implications for portfolio
-management practice, limitations of the framework, and directions for future
-research including integration with incumbent PMIS tools.
+The primary contribution is a configurable Gymnasium-compatible CMDP
+environment encoding FIDIC contract mechanics, stochastic budget-to-progress
+efficiency, EVM-based performance signals, and an endogenous termination
+mechanic with a project-specific cure period counter. The PPO agent trained
+on this environment constitutes the secondary contribution, evaluated
+empirically against the Level~1 MILP oracle and rule-based baselines.
+
+Section~\ref{sec:literature} reviews four literature streams: project management
+foundations, portfolio selection and governance, PPM budgeting and cash-flow
+modelling, and reinforcement learning for sequential resource allocation.
+Section~\ref{sec:problem} develops the three-level formulation formally.
+Section~\ref{sec:experiments} presents training protocol and empirical
+evaluation. Section~\ref{sec:conclusion} concludes with implications and
+future directions.
