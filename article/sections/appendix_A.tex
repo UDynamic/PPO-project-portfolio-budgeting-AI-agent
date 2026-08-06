@@ -1,0 +1,128 @@
+% ================================================================
+%  APPENDIX A
+% ================================================================
+% \vspace{0.5cm}
+ 
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+ 
+% ────────────────────────────────────────────────────────────
+%  Row y-positions (generous spacing prevents excl-box overlap)
+%
+%   id1  :  y =   0
+%   id2  :  y =  -3.0
+%   sc1  :  y =  -6.5
+%   sc2  :  y =  -9.5
+%   sc3  :  y = -12.5
+%   sc4  :  y = -15.5
+%   inc1 :  y = -20.0   (extra gap; exc4 has 6 lines ~4 cm tall)
+%
+%  Columns
+%   phase labels : x = -4.5
+%   main flow    : x =  0
+%   excl boxes   : x =  9.0
+% ────────────────────────────────────────────────────────────
+ 
+% ═══════════════════════════════════════════════════════════
+%  IDENTIFICATION  –  phase label spans y=0 to y=-3.0, mid=-1.5
+% ═══════════════════════════════════════════════════════════
+\node[phase, minimum height=4.5cm] (ph-id) at (-4.5, -1.5)
+  {\rotatebox{90}{Identification}};
+ 
+\node[box] (id1) at (1, 0)
+  {Records identified from:\\
+   \textbf{Databases} (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\[1pt]
+   \footnotesize e.g.\ PubMed, Scopus, Web of Science, \ldots};
+ 
+\node[box] (id2) at (1, -2.5)
+  {Records identified from other sources:\\
+   \textbf{Registers / grey literature} (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\[1pt]
+   \footnotesize e.g.\ ClinicalTrials.gov, hand-searching, \ldots};
+ 
+\draw[arr] (id1.south) -- (id2.north);
+ 
+% ═══════════════════════════════════════════════════════════
+%  SCREENING  –  phase label spans y=-6.5 to y=-15.5, mid=-11.0
+%                height = 15.5 - 6.5 + 2.0 (padding) = 11.0 cm
+% ═══════════════════════════════════════════════════════════
+\node[phase, minimum height=8.0cm] (ph-sc) at (-4.5, -8.25)
+  {\rotatebox{90}{Screening}};
+ 
+\node[box] (sc1) at (1, -5.0)
+  {Records after duplicates removed\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\node[excl] (exc1) at (9.0, -4.5)
+  {Records removed before screening:\\
+   Duplicates removed (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\
+   Flagged by automation tools (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\
+   Other reasons (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr]  (id2.south) -- (sc1.north);
+\draw[arr2] (sc1.east)  -- (exc1.west);
+ 
+\node[box] (sc2) at (1, -7.5)
+  {Records screened (title \& abstract)\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\node[excl] (exc2) at (9.0, -7.5)
+  {Records excluded\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr]  (sc1.south) -- (sc2.north);
+\draw[arr2] (sc2.east)  -- (exc2.west);
+ 
+\node[box] (sc3) at (1, -9.5)
+  {Reports sought for retrieval (full text)\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\node[excl] (exc3) at (9.0, -9.5)
+  {Reports not retrieved\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr]  (sc2.south) -- (sc3.north);
+\draw[arr2] (sc3.east)  -- (exc3.west);
+ 
+\node[box] (sc4) at (1, -11.5)
+  {Reports assessed for eligibility\\
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\node[excl] (exc4) at (9.0, -12.5)
+  {Reports excluded:\\[2pt]
+   \quad \textlangle\textit{Reason 1}\textrangle\ (\textit{n}\,=\,\textlangle\textit{N}\textrangle)\\
+   \quad \textlangle\textit{Reason 2}\textrangle\ (\textit{n}\,=\,\textlangle\textit{N}\textrangle)\\
+   \quad \textlangle\textit{Reason 3}\textrangle\ (\textit{n}\,=\,\textlangle\textit{N}\textrangle)\\
+   \quad \ldots\\
+   \quad Total excluded (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr]  (sc3.south) -- (sc4.north);
+\draw[arr2] (sc4.east)  -- (exc4.west);
+ 
+% ═══════════════════════════════════════════════════════════
+%  INCLUDED  –  phase label centred on y=-20.0
+% ═══════════════════════════════════════════════════════════
+\node[phase, minimum height=2.5cm] (ph-inc) at (-4.5, -14.0)
+  {\rotatebox{90}{Included}};
+ 
+\node[incl] (inc1) at (1, -14.0)
+  {Studies included in review
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)\\[2pt]
+   \footnotesize Reports of included studies
+   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+ 
+\draw[arr] (sc4.south) -- (inc1.north);
+ 
+% ── Optional meta-analysis box – uncomment if needed ────────
+%\node[phase, minimum height=2.5cm] at (-4.5, -23.0) {\rotatebox{90}{Included}};
+%\node[incl] (inc2) at (0, -23.0)
+%  {Studies included in meta-analysis\\
+%   (\textit{n}\,=\,\textlangle\textit{NUMBER}\textrangle)};
+%\draw[arr] (inc1.south) -- (inc2.north);
+ 
+\end{tikzpicture}
+ 
+\caption{PRISMA 2020 flow diagram of the literature search and
+         selection process.}
+\label{fig:prisma}
+\end{figure}

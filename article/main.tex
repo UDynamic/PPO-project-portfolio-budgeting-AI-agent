@@ -1,37 +1,143 @@
 \documentclass[11pt,a4paper]{article}
 
-% Essential packages
+% ============================================================
+%  PACKAGES
+% ============================================================
+
+% Encoding & fonts
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{amsmath,amssymb,amsthm}
-\usepackage{graphicx}
+
+% Mathematics
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+
+% Colors & tables
+\usepackage[table]{xcolor}
 \usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{longtable}
+
+% Figures & graphics
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{rotating}
+
+% TikZ & PGF
+\usepackage{tikz}
+\usetikzlibrary{positioning, decorations.pathreplacing, shapes, arrows,
+                backgrounds, fit, patterns, shapes.geometric, arrows.meta, calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Algorithms
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+
+% Layout & formatting
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{mdframed}
+\usepackage{listings}
+\usepackage{placeins}
+\usepackage{appendix}
+
+% References & links
 \usepackage{hyperref}
 \usepackage{cleveref}
 \usepackage{natbib}
-\usepackage{geometry}
-\usepackage{caption}
-\usepackage{subcaption}
-\usepackage{multirow}
-\usepackage{array}
-\usepackage{xcolor}
-\usepackage{tikz}
-\usepackage{pgfplots}
-\pgfplotsset{compat=1.18}
-\usetikzlibrary{shapes,arrows,positioning,patterns}
 
-% Page geometry for single-column format
-\geometry{
-    a4paper,
-    top=3cm,
-    bottom=3cm,
-    left=3cm,
-    right=3cm
+% ============================================================
+%  PAGE GEOMETRY
+% ============================================================
+
+\geometry{a4paper, top=3cm, bottom=3cm, left=3cm, right=3cm}
+
+% ============================================================
+%  COLORS
+% ============================================================
+
+% Category tag colors
+\definecolor{TagScheduleBg}{HTML}{EAF3DE}
+\definecolor{TagScheduleFg}{HTML}{3B6D11}
+\definecolor{TagContractBg}{HTML}{E6F1FB}
+\definecolor{TagContractFg}{HTML}{0C447C}
+\definecolor{TagCostBg}{HTML}{FAEEDA}
+\definecolor{TagCostFg}{HTML}{633806}
+\definecolor{TagPenaltyBg}{HTML}{FCEBEB}
+\definecolor{TagPenaltyFg}{HTML}{791F1F}
+\definecolor{TagTermBg}{HTML}{F0EBFA}
+\definecolor{TagTermFg}{HTML}{4B1F8C}
+\definecolor{RowAlt}{HTML}{F8F7F4}
+
+% PRISMA diagram colors
+\definecolor{prismaBlue}{RGB}{31,119,180}
+\definecolor{prismaLightBlue}{RGB}{174,214,241}
+\definecolor{prismaGreen}{RGB}{44,160,44}
+\definecolor{prismaLightGreen}{RGB}{198,239,206}
+\definecolor{prismaGray}{RGB}{127,127,127}
+\definecolor{prismaOrange}{RGB}{214,39,40}
+\definecolor{prismaLightOrange}{RGB}{255,205,210}
+
+% Literature table colors
+\definecolor{symgreen}{HTML}{1A7A4A}   % full \checkmark
+\definecolor{symamber}{HTML}{B45309}   % partial \circ
+\definecolor{symgrey}{HTML}{9CA3AF}    % not addressed --
+\definecolor{rarebg}{HTML}{EFF6FF}     % rare-column header tint
+\definecolor{headbg}{HTML}{1E3A5F}     % header row background
+\definecolor{headfg}{HTML}{FFFFFF}     % header row text
+\definecolor{pwbg}{HTML}{14532D}       % present-work row background
+\definecolor{rowodd}{HTML}{F8FAFC}     % alternating odd-row tint
+
+% ============================================================
+%  TIKZ STYLES
+% ============================================================
+
+\tikzset{
+  box/.style  = {draw, rectangle, rounded corners=4pt,
+                 text width=7.0cm, align=center,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=white, draw=black!70},
+  excl/.style = {draw, rectangle, rounded corners=4pt,
+                 text width=5.5cm, align=left,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=pink!25, draw=red!50!black},
+  incl/.style = {draw, rectangle, rounded corners=4pt,
+                 text width=7.0cm, align=center,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=green!15, draw=green!60!black},
+  phase/.style= {draw, rectangle, rounded corners=4pt,
+                 text width=1.5cm, align=center,
+                 minimum height=1.2cm, inner sep=5pt,
+                 fill=blue!10, draw=blue!50!black,
+                 font=\bfseries\small},
+  arr/.style  = {->, >=stealth, thick},
+  arr2/.style = {->, >=stealth, dashed, thick},
 }
 
-% Theorem environments
+% ============================================================
+%  CATEGORY TAG MACROS
+% ============================================================
+
+\newcommand{\tagschedule}{%
+  \,\colorbox{TagScheduleBg}{\textcolor{TagScheduleFg}{\scriptsize\textsf{Schedule}}}}
+\newcommand{\tagcontract}{%
+  \,\colorbox{TagContractBg}{\textcolor{TagContractFg}{\scriptsize\textsf{Contract}}}}
+\newcommand{\tagcost}{%
+  \,\colorbox{TagCostBg}{\textcolor{TagCostFg}{\scriptsize\textsf{Cost}}}}
+\newcommand{\tagpenalty}{%
+  \,\colorbox{TagPenaltyBg}{\textcolor{TagPenaltyFg}{\scriptsize\textsf{Penalty}}}}
+\newcommand{\tagterm}{%
+  \,\colorbox{TagTermBg}{\textcolor{TagTermFg}{\scriptsize\textsf{Termination}}}}
+
+% ============================================================
+%  THEOREM ENVIRONMENTS
+% ============================================================
+
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{proposition}[theorem]{Proposition}
@@ -42,7 +148,10 @@
 \theoremstyle{remark}
 \newtheorem{remark}{Remark}
 
-% Custom commands
+% ============================================================
+%  CUSTOM COMMANDS
+% ============================================================
+
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Var}{\text{Var}}
 \newcommand{\Cov}{\text{Cov}}
@@ -51,91 +160,180 @@
 \newcommand{\argmax}{\operatorname{argmax}}
 \newcommand{\argmin}{\operatorname{argmin}}
 
-% Hyperref setup
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    citecolor=blue,
-    urlcolor=blue
-}
+% ============================================================
+%  HYPERREF SETUP
+% ============================================================
 
-% Title and authors
-\title{\textbf{Development of a Deep Reinforcement Learning Agent for Optimal Project Portfolio Budgeting under Uncertain Cash Flows}}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+% ============================================================
+%  TITLE & AUTHORS
+% ============================================================
+
+\title{\textbf{A Constrained MDP Framework for Contractor Project Portfolio
+Budgeting under Performance-Driven Cash Flow Uncertainty}}
 
 \author{
-    \begin{tabular}{c}
-        \textbf{Mahriar Gharaghani}\thanks{Corresponding author: mahriar\_gharaghani@ind.iust.ac.ir} \\
-        \textbf{Seyed Farid Ghannadpour} \\[6pt]
-        \textit{Department of Industrial Engineering, Iran University of Science and Technology} \\
-        \textit{Tehran, Iran}
-    \end{tabular}
+\begin{tabular}{c}
+    \textbf{Mahriar Gharaghani}\thanks{Corresponding author: mahriar\_gharaghani@ind.iust.ac.ir} \\
+    \textbf{Seyed Farid Ghannadpour} \\[6pt]
+    \textit{Department of Industrial Engineering, Iran University of Science and Technology} \\
+    \textit{Tehran, Iran}
+\end{tabular}
 }
 
-
 \date{}
+
+% ============================================================
+%  DOCUMENT
+% ============================================================
 
 \begin{document}
 
 \maketitle
 
-% \tableofcontents
-% \newpage
+% ============================================================
+%  ABSTRACT
+% ============================================================
 
 \begin{abstract}
-Project portfolio budget allocation for EPC contractors in the oil and gas sector is a sequential decision-making problem under uncertain cash inflows, cash outflows, and project performance. Each portfolio consists of multiple projects with heterogeneous attributes, including budget at completion, start and finish dates, contractual S-curves, fixed profit margins, milestone-based payment structures, and uncertain contractor performance represented through Earned Value Management metrics such as cumulative SPI and CPI. The model also captures delayed and uncertain milestone payments, working-capital shortages, credit usage during negative-cashflow periods, and management intervention actions that affect cashflow and performance trajectories.
 
-Despite its practical importance, rigorous mathematical modeling of project portfolio budgeting under joint cashflow and performance uncertainty remains largely absent in recent literature, while most AI/ML-related studies discuss the topic qualitatively. This paper proposes a custom stochastic reinforcement learning environment for learning adaptive budget allocation policies under unknown future uncertainty. A PPO-based agent is trained with a multi-objective reward function to allocate constrained budgets efficiently, prioritize economically viable projects, avoid loss-making allocations, and learn optimal allocation timing. The framework provides a foundational RL model for EPC oil and gas portfolio budgeting, supports future fine-tuning with anonymized industry data, and enables immediate next-period allocation recommendations as well as rolling 12-period trajectory simulation.
+The path toward a deployable decision-support system for project portfolio
+management comprises three steps: establishing domain foundations, formulating
+a tractable decision model, and validating at scale within incumbent systems.
+The first step is well served by existing literature --- contract mechanics,
+earned value management, S-curve profiles, and portfolio selection models are
+mature --- and the third remains future work. This paper occupies the second
+step through a relaxation hierarchy applied to a problem absent from the formal
+literature: \textit{given a fixed amount of capital and a committed portfolio of contracted projects, we solve
+for the optimal budget allocation across projects at each discrete period to
+maximise discounted net cash flow while satisfying hard liquidity constraints
+and respecting FIDIC contract mechanics.}
 
-% Placeholder for future experimental results.
-% Placeholder for anonymized case-study validation details.
-% Placeholder for open-source/reproducibility statement.
+In order to represent such solution we propose a Three level solution Arc.
+\textbf{Level~1} formulates
+the problem as a deterministic full-foresight Mixed-Integer Linear Program whose
+optimum constitutes a provable upper bound no causal policy under uncertainty
+can exceed. \textbf{Level~2} introduces stochastic contractor performance,
+establishing that the resulting multi-stage stochastic program is intractable at
+realistic portfolio scales due to exponential scenario-tree growth.
+\textbf{Level~3} recasts the problem as a Constrained Markov Decision Process
+implemented as a configurable Gymnasium-compatible environment, on which a
+Proximal Policy Optimisation agent is trained and evaluated against the
+Level~1 oracle, a two-stage stochastic program, and a rule-based heuristic.
+The environment --- encoding advance payment recovery, milestone payments,
+retention release, and a two-condition termination gate with a project-specific cure-period counter
+--- constitutes the primary contribution, positioned as the tractable middle
+step between established domain foundations and future large-scale deployment.
 
-\vspace{0.5cm}
-\textbf{Keywords:} Project Portfolio Budgeting, Reinforcement Learning, EPC Contractors, Oil and Gas Projects, Cashflow Uncertainty, Earned Value Management, PPO, Rolling Horizon Control
+\medskip
+\noindent\textbf{Keywords:} project portfolio management; budget allocation
+under performance uncertainty; constrained Markov decision process;
+reinforcement learning; FIDIC contracts; earned value management;
+mixed-integer linear programming; relaxation hierarchy.
+
 \end{abstract}
+
+\FloatBarrier
+
+% ============================================================
+%  INTRODUCTION
+% ============================================================
 
 \section{Introduction}
 \label{sec:introduction}
 \input{sections/01_introduction.tex}
 
+\FloatBarrier
+
+% ============================================================
+%  LITERATURE REVIEW
+% ============================================================
+
 \section{Literature Review}
 \label{sec:literature}
 \input{sections/02_literature.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  PROBLEM FORMULATION
+% ============================================================
 
 \section{Problem Formulation}
 \label{sec:problem}
 \input{sections/03_problem_formulation.tex}
 
-\section{Methodology}
-\label{sec:methodology}
-\input{sections/04_methodology.tex}
+\FloatBarrier
 
-\section{Results and Analysis}
-\label{sec:results}
-\input{sections/05_results.tex}
+% ============================================================
+%  EXPERIMENTS  (uncomment when ready)
+% ============================================================
 
-\section{Conclusion}
-\label{sec:conclusion}
-\input{sections/06_conclusion.tex}
+% \section{Experiments}
+% \label{sec:experiments}
+% \input{sections/04_experiments.tex}
 
+\FloatBarrier
 
-\section*{Acknowledgments}
-This research was supported by [Funding Agency]. The authors thank [Names] for valuable discussions and feedback.
+% ============================================================
+%  CONCLUSION  (uncomment when ready)
+% ============================================================
+
+% \section{Conclusion}
+% \label{sec:conclusion}
+% \input{sections/06_conclusion.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  ACKNOWLEDGMENTS  (uncomment when ready)
+% ============================================================
+
+% \section*{Acknowledgments}
+% This research was supported by [Funding Agency].
+
+\FloatBarrier
+
+% ============================================================
+%  BIBLIOGRAPHY
+% ============================================================
 
 \bibliographystyle{apalike}
 \bibliography{references}
 
+\FloatBarrier
+
+% ============================================================
+%  APPENDIX A — PRISMA 2020 Flow Diagram
+% ============================================================
+
+\newpage
 \appendix
-\section{Mathematical Proofs}
-\label{app:proofs}
-\input{sections/appendix-proofs}
+\section{Appendix A : PRISMA 2020 Flow Diagram}
+\label{app:prisma}
+\input{sections/appendix_A.tex}
 
-\section{Parameter Calibration Details}
-\label{app:calibration}
-\input{sections/appendix-calibration}
+\FloatBarrier
 
-\section{Instance Generator Algorithm}
-\label{app:algorithm}
-\input{sections/appendix-algorithm}
+% ============================================================
+%  APPENDIX B — Environment Verification Suite
+% ============================================================
+
+\newpage
+\appendix
+\section{Appendix B : Environment verification suite}
+\label{app:env_veri_suit}
+\input{sections/appendix_B.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  APPENDIX C — Instance Generator Algorithm  (uncomment when ready)
+% ============================================================
+
+% \section{Instance Generator Algorithm}
+% \label{app:algorithm}
+% \input{sections/appendix-algorithm}
 
 \end{document}

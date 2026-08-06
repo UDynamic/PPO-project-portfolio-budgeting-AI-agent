@@ -35,7 +35,9 @@ src/results/
 deprecated/
 
 # Literature archive
-literatureArchive/
+lit_archive/
+lit_archive_failed/
+lit_archive_passed/
 
 # LaTeX
 *.aux
