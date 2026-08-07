@@ -1,272 +1,381 @@
-# Database Documentation
-## Contractor Portfolio Budgeting — RL Training Database
+# Contractor Project Portfolio Budgeting under Performance-Driven Cash Flow Uncertainty
+
+### A Constrained MDP Framework with Reinforcement Learning
+
+> **Primary output:** English journal article (target: IJPM / EJOR / Automation in Construction)
+> **Secondary output:** Persian Master's thesis (Industrial Engineering, derived from article)
+> **Stack:** Python · Gymnasium · LaTeX · SQLite
 
 ---
 
-## Overview
+## What this is
 
-Single SQLite file (`training.db`) stores everything — environment configuration, episode data, and post-hoc solver results. All components read and write to this one file.
+A reinforcement learning framework for **dynamic budget allocation** across a contractor's active project portfolio. The portfolio manager — a contractor receiving milestone-based payments under FIDIC contract mechanics — must decide how to distribute the available cash balance across projects at each discrete time period, under uncertainty about project execution outcomes.
 
-Seven tables. Two concerns:
+The core contribution is a **Constrained MDP (CMDP) environment** (Gymnasium-compatible) that embeds:
 
-- **Left side** — problem definition (static, written once)
-- **Right side** — solution traces (temporal, written per step)
+- FIDIC Sub-Clause 14.2 advance payment recovery mechanics
+- Endogenous project termination via a cure period counter (τ_{i,t}^{rem})
+- Performance-driven cash flow uncertainty (stochastic productivity η induces uncertain milestone timing and therefore uncertain payment arrival — no separate payment delay model needed)
+- EVM-based state signals (BCWS, BCWP, ACWP, SPI, CPI, EAC)
+
+A **PPO agent** is trained on this environment and benchmarked against classical OR baselines and a deterministic MILP upper bound.
+
+---
+
+## Three-level relaxation hierarchy
+
+| Level  | Model                             | Purpose                                         |
+| ------ | --------------------------------- | ----------------------------------------------- |
+| **L1** | Deterministic full-foresight MILP | Performance upper bound (oracle)                |
+| **L2** | Multi-stage stochastic program    | Establishes intractability of exact solution    |
+| **L3** | Constrained MDP + PPO agent       | Primary contribution — tractable learned policy |
+
+---
+
+## Key design decisions
+
+**Scope:** Portfolio selection is exogenous. The agent governs committed, contracted projects only — it allocates budget, it does not choose which projects to take on.
+
+**Perspective:** The contractor (not the client). The agent receives milestone payments and must manage cash flow to sustain execution.
+
+**Uncertainty source:** Stochastic project productivity η. Uncertain execution pace → uncertain milestone timing → uncertain payment arrival. η is the single source of uncertainty in the system. Its realized value is recorded at every step, so all post-hoc solvers operate on a fully deterministic record.
+
+**Termination:** Endogenous. Projects are terminated by the environment when the cure period counter hits zero, not by the agent directly.
+
+**Budget regime:** Parameterized by κ = B₀ / ΣBAC_i. Three regimes: abundant (κ ≫ 1), tight (κ ≈ 1), scarce (κ ≪ 1). Experiments cover all three.
+
+**Timestep convention:** Timestep t refers to the period between t−1 and t on the timeline. t=0 is the starting point. t=1 is the first period. All state observations and actions are indexed to the end of the period in which they occur.
+
+**Advance payment timing:** The advance payment for project i is received at project timestep zero — that is, at episode timestep t = sᵢ (the project's planned start). For projects with sᵢ = 0 the advance is recorded at the episode reset before any agent action is taken.
+
+**Milestone rule — minimum final payment:** Every project must have at least one milestone at threshold = 1.0 coinciding with the planned finish period. This is the final payment. Single-milestone projects have only this final payment. Intermediate milestones may be added but the final milestone is always mandatory and its earliest certification period is always the planned finish fᵢ.
+
+---
+
+## Pipeline
+
+The system runs in three sequential phases.
+
+**Phase 1 — Training**
+The PPO agent interacts with the generative CMDP environment. Every episode — states, actions, rewards, and the full realized η sequence — is recorded to the database.
+
+**Phase 2 — Post-hoc analysis**
+Run on completed episodes. All solvers read from the database and write their results back to the same episode records.
+
+- **MILP upper bound:** Solves the deterministic full-foresight problem over each episode's realized η sequence. This is a retrospective calculation, not a separate simulation.
+- **Naive baselines (×3):** Each baseline replays the same realized η sequence under its fixed allocation rule.
+
+**Phase 3 — Reporting**
+Reads from the database only. Computes normalized improvement, regime breakdowns, and generates all article figures and tables.
 
 ```
-environment_config ──→ portfolios
-                   ──→ projects_profile ──→ projects_status
-                   ──→ milestones_profile ──→ milestones_status
-                        training_log (standalone)
+Phase 1: env + agent → DB (episodes, steps, realized η)
+Phase 2: DB → MILP solver → DB (upper bounds)
+          DB → baselines   → DB (baseline returns)
+Phase 3: DB → metrics + plots → article/figures/, article/tables/
+```
+
+Entry points: `src/pipeline/train.py` · `src/pipeline/postprocess.py` · `src/pipeline/report.py`
+
+---
+
+## Filing system
+
+```
+PPO-project-portfolio-budgeting-AI-agent/
+│
+├── src/
+│   ├── notation.yaml
+│   │
+│   ├── database/
+│   │   ├── schema.sql
+│   │   ├── db.py
+│   │   ├── models.py
+│   │   └── queries/
+│   │       ├── episodes.py
+│   │       ├── steps.py
+│   │       └── results.py
+│   │
+│   ├── schema/
+│   │   ├── portfolio.py
+│   │   ├── project.py
+│   │   └── episode.py
+│   │
+│   ├── environment/
+│   │   ├── env.py
+│   │   ├── mechanics/
+│   │   │   ├── fidic.py
+│   │   │   ├── evm.py
+│   │   │   ├── cure_period.py
+│   │   │   └── productivity.py
+│   │   ├── recorder.py
+│   │   └── generator.py
+│   │
+│   ├── agent/
+│   │   ├── ppo.py
+│   │   ├── network.py
+│   │   ├── trainer.py
+│   │   └── evaluate.py
+│   │
+│   ├── solvers/
+│   │   ├── base.py
+│   │   ├── milp/
+│   │   │   ├── solver.py
+│   │   │   ├── formulation.py
+│   │   │   └── warmstart.py
+│   │   └── baselines/
+│   │       ├── equal_split.py
+│   │       ├── proportional_spi.py
+│   │       └── greedy_cpi.py
+│   │
+│   ├── pipeline/
+│   │   ├── train.py
+│   │   ├── postprocess.py
+│   │   └── report.py
+│   │
+│   ├── evaluation/
+│   │   ├── metrics.py
+│   │   └── regime.py
+│   │
+│   └── plots/
+│       ├── portfolio_plot.py
+│       ├── convergence.py
+│       └── benchmark.py
+│
+├── tests/
+│   ├── cases/
+│   │   ├── case_data.py
+│   │   └── loader.py
+│   │
+│   ├── environment/
+│   │   ├── test_fidic.py
+│   │   ├── test_evm.py
+│   │   ├── test_cure_period.py
+│   │   └── test_productivity.py
+│   │
+│   ├── solvers/
+│   │   ├── test_milp.py
+│   │   ├── test_equal_split.py
+│   │   ├── test_proportional_spi.py
+│   │   └── test_greedy_cpi.py
+│   │
+│   └── integration/
+│       ├── test_recorder.py
+│       ├── test_postprocess.py
+│       └── test_pipeline.py
+│
+├── experiments/
+│   ├── configs/
+│   │   ├── base.yaml
+│   │   ├── abundant.yaml
+│   │   ├── tight.yaml
+│   │   └── scarce.yaml
+│   ├── results/
+│   │   ├── id_evaluation/
+│   │   ├── ood_evaluation/
+│   │   ├── regime_analysis/
+│   │   └── sensitivity/
+│   └── runs/
+│       ├── checkpoints/
+│       └── logs/
+│
+├── data/
+│   ├── raw/
+│   ├── calibrated/
+│   └── synthetic/
+│
+├── article/
+│   ├── main.tex
+│   ├── sections/
+│   │   ├── 01_introduction.tex
+│   │   ├── 02_literature.tex
+│   │   ├── 03_problem_formulation.tex
+│   │   ├── 04_solution_method.tex
+│   │   ├── 05_experiments.tex
+│   │   ├── 06_conclusion.tex
+│   │   ├── appendix_A.tex
+│   │   ├── appendix_B.tex
+│   │   └── appendix_C.tex
+│   ├── figures/
+│   │   ├── tikz/
+│   │   └── plots/
+│   ├── tables/
+│   ├── submission/
+│   └── build/
+│
+├── thesis/
+│   ├── main.tex
+│   ├── chapters/
+│   └── build/
+│
+├── docs/
+│   ├── notation.md
+│   ├── architecture.md
+│   ├── pipeline.md
+│   ├── testing.md
+│   ├── lit_review/
+│   └── deprecated/
+│
+├── .gitignore
+├── requirements.txt
+├── README.md
+└── pyproject.toml
 ```
 
 ---
 
-## The System in Brief
+## Notation map
 
-An RL agent (PPO) manages cash allocation across a contractor's active project portfolio. At each timestep the agent decides how much budget to allocate to each active project. A stochastic efficiency parameter η resolves after each decision, driving project progress, milestone certification, and cash inflows.
+The file `src/notation.yaml` is the **single source of truth** for all parameter names. It maps LaTeX symbols to Python variable names to database column names. Any new parameter must be registered here first.
 
-After training, three naive baselines and one MILP upper bound replay every recorded episode using the same realized η sequence. All four solvers write their traces into the same tables as the RL agent, distinguished by the `method` column.
+Example entry:
 
-**Methods:** `rl` · `milp` · `equal` · `spi` · `cpi`
-
----
-
-## Table Registry
-
-| Table | Type | Rows |
-|---|---|---|
-| `environment_config` | Static | One per experiment configuration |
-| `portfolios` | Temporal | One per episode × timestep × method |
-| `projects_profile` | Static | One per project per episode |
-| `projects_status` | Temporal | One per project × episode timestep × method |
-| `milestones_profile` | Static | One per milestone per project per episode |
-| `milestones_status` | Event | One per milestone × method |
-| `training_log` | Training | One per PPO update |
-
----
-
-## Table Details
-
----
-
-### environment_config
-
-Defines the parameter distributions the portfolio generator samples from. Each row is one experiment configuration. The generator reads one row at environment reset and produces a portfolio conforming to those distributions.
-
-Different rows enable different experimental regimes — abundant budget, scarce budget, stress tests, calibrated contractor data.
-
-**Identifier columns:** `config_id`, `config_name`, `created_at`
-
-**Parameter columns:** one set of five columns per sampled parameter:
-
-```
-{parameter}_dist    TEXT    distribution family
-{parameter}_p1      REAL    first parameter
-{parameter}_p2      REAL    second parameter
-{parameter}_p3      REAL    third parameter (null if unused)
-{parameter}_p4      REAL    fourth parameter (null if unused)
+```yaml
+cost_overrun_cap:
+  latex: "\\mu_i"
+  python: "cost_overrun_cap"
+  db_column: "mu"
+  description: "Maximum allowable EAC as a fraction of BAC before termination"
+  units: "fraction"
+  scope: "project"
 ```
 
-**Supported distribution families:**
-
-| Family | p1 | p2 | p3 | p4 |
-|---|---|---|---|---|
-| `fixed` | value | — | — | — |
-| `uniform` | min | max | — | — |
-| `normal` | mean | std | — | — |
-| `lognormal` | mean | std | — | — |
-| `triangular` | min | mode | max | — |
-| `truncated_normal` | mean | std | min | max |
-| `categorical` | prob_1 | prob_2 | anchor_1 | anchor_2 |
-| `beta` | alpha | beta | — | — |
-
-**Sampled parameters:**
-
-Portfolio level: `n_projects` · `initial_budget` · `budget_tightness` · `discount`
-
-Project level: `budget` · `margin` · `start` · `duration` · `scurve_a` · `scurve_b` · `advance_percent` · `advance_trigger` · `advance_recovery` · `retention_rate` · `schedule_cap` · `cost_cap` · `cure_length` · `efficiency`
-
-Milestone level: `n_milestones` · `threshold` · `payment_weight`
+The human-readable version is auto-generated at `docs/notation.md`.
 
 ---
 
-### projects_profile
+## Test architecture
 
-Static parameters of each project instance. Written once at episode start by the generator. Never updated.
+Testing is separated into three layers with distinct purposes.
 
-One row per project per episode. The `config_id` link records which environment configuration produced this project.
+**Layer 1 — Environment mechanics** (`tests/environment/`)
+Verifies that the CMDP environment correctly implements the problem mechanics. Given a fixed portfolio, a fixed η sequence, and a fixed action sequence, the environment must produce exact expected state transitions, cash flows, termination events, and EVM signals. Fully deterministic. No agent involved.
 
-**Key columns:** `episode_id` · `config_id` · `i` (project index) · `budget` · `price` · `margin` · `start` · `finish` · `duration` · `scurve_a` · `scurve_b` · `advance_percent` · `advance_trigger` · `advance_recovery` · `retention_rate` · `schedule_cap` · `cost_cap` · `cure_length`
+**Layer 2 — Solver correctness** (`tests/solvers/`)
+Verifies that each solver — MILP and all three baselines — correctly implements its algorithm. Given a hand-built case with a known correct answer, each solver must return the pre-verified result exactly. These are regression tests against `tests/cases/case_data.py`, which is the single source of truth for all hand-built cases.
+
+**Layer 3 — Integration** (`tests/integration/`)
+Verifies that the pipeline phases connect correctly: episodes are recorded completely to the database, the post-hoc pipeline reads and writes correctly, and a full train → postprocess → report smoke test completes without error.
+
+The hand-built cases in `tests/cases/case_data.py` are shared across Layers 1 and 2. `tests/cases/loader.py` provides format conversion for each consumer.
 
 ---
 
-### projects_status
+## Test case taxonomy
 
-Temporal trace of each project at every episode timestep for every method. Written at every timestep during episode execution. Post-hoc solvers append their own rows after the RL episode completes.
+Hand-built cases in `tests/cases/case_data.py` follow a four-category structure:
 
-Every project gets a row at every episode timestep regardless of whether it is active. The `status` column explains the row.
+| Category        | Purpose                                  | Example cases                                   |
+| --------------- | ---------------------------------------- | ----------------------------------------------- |
+| **Sanity**      | Verify fundamental mechanics work at all | SP-1 (single project, abundant budget)          |
+| **Stress**      | Push one parameter to its extreme        | T-X-01 (max cost overrun), S-X-02 (min budget)  |
+| **Interaction** | Two failure modes simultaneously         | MP-K (payment + performance pressure together)  |
+| **Boundary**    | Sit exactly at a threshold               | T-B-01 (EAC exactly at 1.1·BAC cap)             |
 
-**Status values:**
+---
 
-| status | Meaning |
+## Evaluation framework
+
+**In-distribution (ID) test:** 500 fresh portfolios sampled from calibrated contractor distributions. Metric: normalized improvement = (agent score − random baseline) / (MILP − random baseline). Target: ≥ 65%.
+
+**Out-of-distribution (OOD) test:** The hand-built case library. Metric: qualitative case analysis — does the agent behave correctly for each named failure mode?
+
+**Budget regime analysis:** Performance reported separately for κ ≫ 1, κ ≈ 1, κ ≪ 1.
+
+**Convergence criterion:** Mean normalized improvement ≥ 65% with variance ≤ 5% over the last 100 evaluation episodes.
+
+---
+
+## Training strategy
+
+A **generative environment** with a mixture training distribution:
+
+- **75%** of episodes: portfolios sampled from calibrated contractor distributions (realistic)
+- **25%** of episodes: portfolios sampled uniformly from the full parameter space (coverage)
+
+This prevents policy collapse on underrepresented configurations while maintaining fidelity to real-world conditions.
+
+---
+
+## Setup
+
+```bash
+git clone <repo>
+cd PPO-project-portfolio-budgeting-AI-agent
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+pip install -r requirements.txt
+
+# Initialise the database
+python db_init.py
+
+# Seed environment configurations
+python config_seed.py
+
+# Run manual environment interaction (CLI)
+python run_manual.py
+
+# Verify environment mechanics
+pytest tests/environment/
+
+# Verify solver correctness
+pytest tests/solvers/
+
+# Run integration smoke test
+pytest tests/integration/
+
+# Run full pipeline
+python src/pipeline/train.py --config experiments/configs/base.yaml
+python src/pipeline/postprocess.py
+python src/pipeline/report.py
+```
+
+### Current working files (flat structure during development)
+
+All files live in one folder during active development. Package structure under `src/` is applied when the agent is integrated.
+
+| File | Purpose |
 |---|---|
-| `null` | Project not yet started or episode not reached this period |
-| `active` | Project executing normally |
-| `completed` | Project finished successfully |
-| `terminated` | Project stopped due to breach |
-
-Temporal columns are `null` when status is null. Payment columns follow their own null logic — see below.
-
-**Key columns:** `episode_id` · `i` · `t_episode` · `t_project` · `method` · `status` · `allocation` · `efficiency` · `progress` · `progress_plan` · `progress_increment` · `spi` · `cpi` · `eac` · `schedule_slip` · `cost_overrun` · `forecast_finish` · `cure_remaining`
-
-**Payment columns null logic:**
-
-| Column | Zero means | Null means |
-|---|---|---|
-| `advance_amount` | not the start period | — (always zero or nonzero) |
-| `payment_net` | milestone window passed uncertified | before first milestone window |
-| `retention_release` | — | project not yet completed |
-| `settlement` | — | no termination event yet |
+| `db_init.py` | Creates `training.db` and applies `schema.sql` |
+| `schema.sql` | SQLite table definitions |
+| `config_seed.py` | Inserts environment configurations into `environment_config` table |
+| `environment.py` | Portfolio environment — generator, step mechanics, DB recorder |
+| `run_manual.py` | CLI loop for manual human interaction with the environment |
 
 ---
 
-### milestones_profile
+## Article structure
 
-Static definition of each milestone. Written once at episode start. Never updated.
+| Section             | File                                          | Status              |
+| ------------------- | --------------------------------------------- | ------------------- |
+| Introduction        | `article/sections/01_introduction.tex`        | Draft               |
+| Literature Review   | `article/sections/02_literature.tex`          | Draft (PRISMA 2020) |
+| Problem Formulation | `article/sections/03_problem_formulation.tex` | Draft               |
+| Solution Method     | `article/sections/04_solution_method.tex`     | Pending             |
+| Experiments         | `article/sections/05_experiments.tex`         | Pending             |
+| Conclusion          | `article/sections/06_conclusion.tex`          | Pending             |
+| Appendix A          | `article/sections/appendix_A.tex`             | Draft               |
+| Appendix B          | `article/sections/appendix_B.tex`             | Draft               |
+| Appendix C          | `article/sections/appendix_C.tex`             | Draft               |
 
-One row per milestone per project per episode.
+Build:
 
-**Key columns:** `episode_id` · `i` · `j` (milestone index) · `threshold` · `earliest_t` · `payment_weight`
-
-`threshold` — progress fraction required for certification (θᵢⱼ)
-`earliest_t` — earliest episode timestep at which certification is contractually valid (θᵢⱼᵉ)
-`payment_weight` — fraction of contract price Pᵢ released at certification (φᵢⱼ)
-
-Weights across all milestones of one project sum to 1.0.
-
----
-
-### milestones_status
-
-Certification trace per milestone per method. One row per milestone per method. Written at certification or episode end.
-
-Not a timestep table — milestones are events, not continuous observations.
-
-**Key columns:** `episode_id` · `i` · `j` · `method` · `certified` · `certified_t` · `payment_released`
-
-`certified_t` is null if the milestone was never reached. `payment_released` is null if never certified.
-
----
-
-### portfolios
-
-Portfolio-level temporal trace. One row per episode timestep per method. Records the aggregate cash state of the portfolio at each period.
-
-`outflow` is the sum of all project allocations at this timestep. Stored here for reporting convenience — it is derivable from `projects_status` but pre-computed avoids repeated aggregation queries.
-
-**Key columns:** `episode_id` · `config_id` · `t_episode` · `method` · `balance` · `inflow` · `outflow` · `reward` · `done`
-
-`done = 1` marks the final timestep of the episode.
-
----
-
-### training_log
-
-PPO learning metrics recorded per training update. Used for convergence charts and training diagnostics. Not linked to a specific episode — linked to the global training step.
-
-**Key columns:** `update` · `episode_id` · `timestep_global` · `reward_mean` · `reward_std` · `policy_loss` · `value_loss` · `entropy` · `kl_divergence` · `clip_fraction` · `learning_rate`
-
----
-
-## How an Episode Flows Through the Database
-
-```
-RESET
-  generator reads environment_config row
-  writes: projects_profile (N rows)
-          milestones_profile (N × M rows)
-          portfolios row at t=0 (method=rl)
-
-STEP LOOP (t = 1 .. T)
-  agent decides allocation vector
-  environment resolves η, updates state
-  recorder writes:
-      portfolios row at t (method=rl)
-      projects_status rows at t (one per project, method=rl)
-  if milestone certified:
-      milestones_status row updated (method=rl)
-
-EPISODE END
-  portfolios done=1 at final t
-
-POST-HOC (Phase 2)
-  for each solver in [milp, equal, spi, cpi]:
-      reads projects_status (method=rl) for η sequence
-      replays episode deterministically
-      writes portfolios rows (method=solver)
-      writes projects_status rows (method=solver)
-      writes milestones_status rows (method=solver)
-
-REPORTING (Phase 3)
-  reads all methods from portfolios, projects_status, milestones_status
-  computes normalized improvement per episode
-  generates figures and tables
+```bash
+cd article
+latexmk -pdf main.tex
 ```
 
 ---
 
-## Connections Between Tables
+## Target venues
 
-```
-environment_config.config_id
-    → portfolios.config_id
-    → projects_profile.config_id
+IJPM · EJOR · Automation in Construction
 
-projects_profile (episode_id, i)
-    → projects_status (episode_id, i)
-    → milestones_profile (episode_id, i)
-
-milestones_profile (episode_id, i, j)
-    → milestones_status (episode_id, i, j)
-
-portfolios (episode_id, t_episode)
-    → projects_status (episode_id, t_episode)
-```
+Positioning: OR/applied engineering venues. The primary contribution is the CMDP environment formulation and the three-level relaxation hierarchy, not the RL algorithm itself.
 
 ---
 
-## Post-hoc Solvers
+## Acknowledgements
 
-All three solvers run after the RL episode is fully recorded.
-
-**MILP** — full foresight deterministic upper bound. Reads the complete realized η sequence from `projects_status` (method=rl). Solves the deterministic allocation problem with perfect knowledge of all future η values. Writes optimal allocations as method=milp rows. This is Z* — the performance ceiling no online policy can exceed.
-
-**Equal split** — divides available budget equally across all active projects at each timestep regardless of their state.
-
-**SPI baseline** — allocates budget proportional to each project's Schedule Performance Index. Projects falling behind schedule receive more budget.
-
-**CPI baseline** — allocates budget proportional to each project's Cost Performance Index. Projects with better cost efficiency receive more budget.
-
-All baselines use the same realized η from the RL trace. They are deterministic replays, not new environment runs.
-
----
-
-## Evaluation Metrics
-
-**Normalized improvement** — where the agent sits between random and optimal:
-
-```
-normalized_improvement = (agent_return - random_return) / (milp_return - random_return)
-```
-
-Target: ≥ 65% across in-distribution test episodes.
-
-**Budget regime** — reported separately for three κ regimes:
-
-```
-κ ≫ 1   abundant   budget far exceeds total project cost
-κ ≈ 1   tight      budget roughly matches total project cost
-κ ≪ 1   scarce     budget insufficient to fund all projects simultaneously
-```
-
-κ is computed from `environment_config` and stored in `portfolios` at t=0.
+*Contractor project data provided under anonymization agreement. Acknowledgement language to be confirmed following data verification sign-off.*
