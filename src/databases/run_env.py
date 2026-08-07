@@ -8,7 +8,7 @@ def print_state(state: dict):
     print()
     print("=" * 60)
     print(f"  EPISODE TIMESTEP : {state['t_episode']}")
-    print(f"  CASH BALANCE     : {state['balance']:,.2f}")
+    print(f"  BUDGET           : {state['budget']:,.2f}")
     print(f"  HORIZON          : {state['horizon']}")
     print("=" * 60)
 
@@ -42,7 +42,7 @@ def get_allocations(state: dict) -> list:
         print("  No active projects to allocate to.")
         return [0.0] * n
 
-    print(f"  Available balance: {state['balance']:,.2f}")
+    print(f"  Available budget : {state['budget']:,.2f}")
     print(f"  Active projects  : {[p['i'] for p in allocatable]}")
     print()
 
@@ -50,7 +50,7 @@ def get_allocations(state: dict) -> list:
 
     while True:
         raw = input(f"  Enter allocations for projects {[p['i'] for p in allocatable]}"
-                    f" (space-separated, total <= {state['balance']:,.2f}): ")
+                    f" (space-separated, total <= {state['budget']:,.2f}): ")
         try:
             values = [float(v) for v in raw.strip().split()]
             if len(values) != len(allocatable):
@@ -59,8 +59,8 @@ def get_allocations(state: dict) -> list:
             if any(v < 0 for v in values):
                 print("  Allocations must be >= 0. Try again.")
                 continue
-            if sum(values) > state["balance"] + 1e-6:
-                print(f"  Total {sum(values):,.2f} exceeds balance {state['balance']:,.2f}. Try again.")
+            if sum(values) > state["budget"] + 1e-6:
+                print(f"  Total {sum(values):,.2f} exceeds budget {state['budget']:,.2f}. Try again.")
                 continue
             for idx, p in enumerate(allocatable):
                 allocations[p["i"]] = values[idx]
@@ -81,12 +81,12 @@ def run():
     print()
 
     state = env.reset()
-    print_state(state)
 
     total_reward = 0.0
     step = 0
 
     while True:
+        print_state(state)
         allocations = get_allocations(state)
         state, reward, done, _ = env.step(allocations)
 
@@ -96,9 +96,9 @@ def run():
         print()
         print(f"  Reward this step : {reward:.4f}")
         print(f"  Cumulative reward: {total_reward:.4f}")
-        print_state(state)
 
         if done:
+            print_state(state)
             print("=" * 60)
             print("  EPISODE COMPLETE")
             print(f"  Total reward : {total_reward:.4f}")

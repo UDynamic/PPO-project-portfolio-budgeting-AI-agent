@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS portfolios (
     t_episode           INTEGER NOT NULL,
     method              TEXT NOT NULL,
 
-    balance             REAL NOT NULL,
+    budget              REAL NOT NULL,
     inflow              REAL NOT NULL,
     outflow             REAL NOT NULL,
     reward              REAL NOT NULL,

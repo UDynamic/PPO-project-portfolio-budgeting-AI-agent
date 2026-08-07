@@ -122,11 +122,11 @@ def seed_single_project(conn: sqlite3.Connection) -> str:
 
             'uniform', 0.8, 1.2, NULL, NULL,
 
-            'fixed', 3, NULL, NULL, NULL,
+            'fixed', 1, NULL, NULL, NULL,
 
-            'fixed', 0.5, NULL, NULL, NULL,
+            'fixed', 1.0, NULL, NULL, NULL,
 
-            'fixed', 0.5, NULL, NULL, NULL
+            'fixed', 1.0, NULL, NULL, NULL
         )
     """, (config_id, "single_project_baseline", datetime.utcnow().isoformat()))
 
@@ -135,7 +135,7 @@ def seed_single_project(conn: sqlite3.Connection) -> str:
     print()
     print("  Portfolio : 1 project, budget=200, initial_balance=200")
     print("  Project   : budget=100, price=115, duration=12, start=0")
-    print("  Milestones: 3 evenly spaced (33%, 67%, 100%)")
+    print("  Milestones: 1 (final payment only)")
     print("  Efficiency: uniform(0.8, 1.2)")
     print("  Discount  : 0.97 per period")
     return config_id

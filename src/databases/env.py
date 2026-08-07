@@ -92,7 +92,7 @@ class PortfolioEnv:
 
         # evolving state
         self.t = 0
-        self.balance = 0.0
+        self.budget = 0.0
         self.discount = 1.0
         self.proj_state = []     # list of mutable state dicts per project
 
@@ -126,7 +126,7 @@ class PortfolioEnv:
             cfg["initial_budget_dist"], cfg["initial_budget_p1"],
             cfg["initial_budget_p2"], cfg["initial_budget_p3"], cfg["initial_budget_p4"]
         )
-        self.balance = max(0.0, initial_budget)
+        self.budget = max(0.0, initial_budget)
 
         # 3. Generate projects
         self.projects = []
@@ -149,15 +149,8 @@ class PortfolioEnv:
         self.proj_state = [self._init_proj_state(p, ms)
                            for p, ms in zip(self.projects, self.milestones)]
 
-        # 7. Write t=0 portfolio row
-        self._write_portfolio_row(inflow=0.0, outflow=0.0, reward=0.0, done=0)
-
-        # 8. Write t=0 project rows (all null/pre-start)
-        for i, (p, ps) in enumerate(zip(self.projects, self.proj_state)):
-            self._write_project_row(i, p, ps, allocation=0.0, efficiency=None,
-                                    advance_amount=0.0, payment_net=None,
-                                    retention_release=None, settlement=None)
-
+        # 7. Return initial state — no DB writes here.
+        #    The first step() call handles t=0 (allocations, advances, progress).
         return self._get_state()
 
     # ── STEP ─────────────────────────────────────────────────
@@ -166,17 +159,16 @@ class PortfolioEnv:
         """
         allocations: list of floats, one per project.
         Returns (state, reward, done, info)
+        t=0 is the first period. step() is called starting at t=0.
         """
-        self.t += 1
-
-        # Clip allocations — cannot exceed balance, cannot be negative
+        # Clip allocations — cannot exceed budget, cannot be negative
         allocations = [max(0.0, a) for a in allocations]
         total_alloc = sum(
             allocations[i] for i in range(len(self.projects))
             if self.proj_state[i]["status"] == "active"
         )
-        if total_alloc > self.balance:
-            scale = self.balance / total_alloc if total_alloc > 0 else 0.0
+        if total_alloc > self.budget:
+            scale = self.budget / total_alloc if total_alloc > 0 else 0.0
             allocations = [a * scale for a in allocations]
 
         total_inflow = 0.0
@@ -201,6 +193,7 @@ class PortfolioEnv:
                 continue
 
             # ── Advance payment at project start ──
+            # Paid at the step where t_episode == proj["start"]
             if self.t == proj["start"]:
                 ps["status"] = "active"
                 ps["t_project"] = 0
@@ -310,7 +303,7 @@ class PortfolioEnv:
                                     retention_release, settlement)
 
         # ── Portfolio update ──
-        self.balance = self.balance - total_outflow + total_inflow
+        self.budget = self.budget - total_outflow + total_inflow
 
         # Reward: discounted inflow (NPV)
         reward = discount_factor * total_inflow
@@ -330,6 +323,7 @@ class PortfolioEnv:
         if done:
             self.conn.commit()
 
+        self.t += 1
         return self._get_state(), reward, done, {}
 
     # ── STATE ────────────────────────────────────────────────
@@ -337,7 +331,7 @@ class PortfolioEnv:
     def _get_state(self) -> dict:
         state = {
             "t_episode": self.t,
-            "balance": self.balance,
+            "budget": self.budget,
             "horizon": self.horizon,
             "projects": []
         }
@@ -438,7 +432,7 @@ class PortfolioEnv:
                           cfg["n_milestones_p4"])
         n_ms = max(1, n_ms)
 
-        # Evenly spaced thresholds
+        # Evenly spaced thresholds — last is always 1.0 (final payment rule)
         thresholds = sorted([round((j + 1) / n_ms, 4) for j in range(n_ms)])
         thresholds[-1] = 1.0
 
@@ -448,7 +442,13 @@ class PortfolioEnv:
 
         milestones = []
         for j in range(n_ms):
-            earliest_t = proj["start"] + max(0, round(thresholds[j] * proj["duration"] * 0.5))
+            is_final = (j == n_ms - 1)
+            if is_final:
+                # Final milestone: earliest certification is the planned finish
+                earliest_t = proj["finish"]
+            else:
+                # Intermediate: earliest is 50% of the way to that threshold
+                earliest_t = proj["start"] + max(0, round(thresholds[j] * proj["duration"] * 0.5))
             milestones.append({
                 "j": j,
                 "threshold": thresholds[j],
@@ -518,11 +518,11 @@ class PortfolioEnv:
         self.conn.execute("""
             INSERT INTO portfolios
                 (episode_id, config_id, t_episode, method,
-                 balance, inflow, outflow, reward, done)
+                 budget, inflow, outflow, reward, done)
             VALUES (?,?,?,?,?,?,?,?,?)
         """, (
             self.episode_id, self.config_id, self.t, self.method,
-            self.balance, inflow, outflow, reward, done
+            self.budget, inflow, outflow, reward, done
         ))
 
     def _write_project_row(self, i, proj, ps, allocation, efficiency,
