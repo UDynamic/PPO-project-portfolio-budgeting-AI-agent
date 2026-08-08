@@ -170,8 +170,10 @@ class PortfolioEnv:
             self.projects.append(proj)
             self.milestones.append(self._sample_milestones(i, proj))
 
-        # 4. Derive horizon
-        self.horizon = max(p["finish"] for p in self.projects)
+        # 4. Derive horizon — latest possible finish across all projects.
+        #    A project can slip up to schedule_cap periods before termination fires,
+        #    so the episode cannot end before finish + schedule_cap for every project.
+        self.horizon = max(p["finish"] + p["schedule_cap"] for p in self.projects)
 
         # 5. Write static tables (profiles + milestones)
         self._write_profiles()
@@ -360,10 +362,17 @@ class PortfolioEnv:
         # ── 4. Write portfolio row ───────────────────────────
         reward = discount_factor * total_inflow
 
-        done = self.t >= self.horizon or all(
+        all_terminal = all(
             ps["status"] in ("completed", "terminated")
             for ps in self.proj_state
         )
+        # Budget exhausted: no cash left and at least one project still active —
+        # those projects can never receive allocation and will never complete.
+        budget_exhausted = self.budget <= 0 and any(
+            ps["status"] == "active" for ps in self.proj_state
+        )
+
+        done = self.t >= self.horizon or all_terminal or budget_exhausted
 
         self._write_portfolio_row(
             inflow=total_inflow,
@@ -431,8 +440,8 @@ class PortfolioEnv:
                                  cfg["margin_p2"], cfg["margin_p3"], cfg["margin_p4"]))
         price = budget * (1 + margin)
 
-        start = max(0, sample_int(cfg["start_dist"], cfg["start_p1"],
-                                  cfg["start_p2"], cfg["start_p3"], cfg["start_p4"]))
+        start = max(0, int(round(sample(cfg["start_dist"], cfg["start_p1"],
+                                       cfg["start_p2"], cfg["start_p3"], cfg["start_p4"]))))
         duration = max(1, sample_int(cfg["duration_dist"], cfg["duration_p1"],
                                      cfg["duration_p2"], cfg["duration_p3"], cfg["duration_p4"]))
         finish = start + duration
