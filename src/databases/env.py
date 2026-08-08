@@ -28,15 +28,13 @@ def sample(dist: str, p1, p2=None, p3=None, p4=None) -> float:
     elif dist == "beta":
         return random.betavariate(p1, p2)
     elif dist == "categorical":
-        # p1=prob of anchor1, p2=prob of anchor2, p3=anchor1, p4=anchor2
-        # remainder goes uniform over integers in [0, max_t] excluding anchors
         r = random.random()
         if r < p1:
             return int(p3)
         elif r < p1 + p2:
             return int(p4)
         else:
-            return int(p3)  # fallback — override in generator if needed
+            return int(p3)
     else:
         raise ValueError(f"Unknown distribution: {dist}")
 
@@ -61,14 +59,13 @@ def beta_cdf(x: float, a: float, b: float) -> float:
     for k in range(steps):
         t = (k + 0.5) * dx
         total += (t ** (a - 1)) * ((1 - t) ** (b - 1)) * dx
-    # normalize by B(a,b) approximation
     import math
     B = math.exp(math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b))
     return min(1.0, total / B)
 
 
 def planned_progress(t_project: int, duration: int, a: float, b: float) -> float:
-    """S-curve planned cumulative progress at project timestep t_project."""
+    """S-curve planned cumulative progress at end of project period t_project."""
     x = t_project / duration
     return beta_cdf(x, a, b)
 
@@ -78,27 +75,63 @@ def planned_progress(t_project: int, duration: int, a: float, b: float) -> float
 # ─────────────────────────────────────────────────────────────
 
 class PortfolioEnv:
+    """
+    Timestep convention
+    ───────────────────
+    t counts completed periods.  t=0 is "before any period has elapsed."
+
+    reset() → returns the observation at t=0:
+        - Portfolio generated, advance payments received for start=0 projects.
+        - progress_plan set to planned_progress(t_project=1, ...) — what the
+          plan says should be complete by the end of the coming period.
+        - progress / acwp are 0.0 — no work has been done yet.
+        - DB is NOT written yet. The agent/human observes this state and
+          chooses allocations for period 0.
+
+    step(alloc) → executes the current period t, then increments t:
+        - Draws η, advances progress, runs EVM, checks milestones/completion.
+        - Writes the t row to portfolios and projects_status.
+        - Increments self.t.
+        - Returns observation for period t+1 (next decision point).
+
+    So the sequence is:
+        obs₀          = reset()          # plan shown, no work done, t=0
+        obs₁, r₀, …  = step(alloc₀)     # period 0 executed, stored; t→1
+        obs₂, r₁, …  = step(alloc₁)     # period 1 executed, stored; t→2
+        …
+    """
 
     def __init__(self, conn: sqlite3.Connection, config_id: str, method: str = "rl"):
         self.conn = conn
         self.config_id = config_id
         self.method = method
 
-        # loaded at reset
         self.episode_id = None
         self.cfg = None
-        self.projects = []       # list of project dicts (static profile)
-        self.milestones = []     # list of milestone dicts per project
+        self.projects = []
+        self.milestones = []
 
-        # evolving state
         self.t = 0
         self.budget = 0.0
         self.discount = 1.0
-        self.proj_state = []     # list of mutable state dicts per project
+        self.proj_state = []
 
     # ── RESET ────────────────────────────────────────────────
 
     def reset(self) -> dict:
+        """
+        Generate the portfolio and return the t=0 observation.
+
+        For projects starting at episode t=0:
+          - status set to "active"
+          - advance payment credited to self.budget
+          - progress_plan set to planned_progress(t_project=1) so the agent
+            can see the planned target for the coming period
+          - progress / acwp remain 0.0 (no work executed yet)
+
+        No DB rows are written here. The DB row for t=0 is written by the
+        first step() call after the agent has chosen allocations.
+        """
         self.episode_id = str(uuid.uuid4())
         self.t = 0
 
@@ -135,33 +168,56 @@ class PortfolioEnv:
         for i in range(n_projects):
             proj = self._sample_project(i)
             self.projects.append(proj)
-
-            ms = self._sample_milestones(i, proj)
-            self.milestones.append(ms)
+            self.milestones.append(self._sample_milestones(i, proj))
 
         # 4. Derive horizon
         self.horizon = max(p["finish"] for p in self.projects)
 
-        # 5. Write static tables
+        # 5. Write static tables (profiles + milestones)
         self._write_profiles()
 
-        # 6. Initialize mutable project states
-        self.proj_state = [self._init_proj_state(p, ms)
-                           for p, ms in zip(self.projects, self.milestones)]
+        # 6. Initialise mutable project states
+        self.proj_state = [
+            self._init_proj_state(p, ms)
+            for p, ms in zip(self.projects, self.milestones)
+        ]
 
-        # 7. Return initial state — no DB writes here.
-        #    The first step() call handles t=0 (allocations, advances, progress).
+        # 7. Pre-step initialisation for projects that start at t=0:
+        #    - credit advance payment to budget
+        #    - set status + t_project so the observation is meaningful
+        #    - set progress_plan to the plan target for the coming period
+        for ps, proj in zip(self.proj_state, self.projects):
+            if proj["start"] == 0:
+                ps["status"] = "active"
+                ps["t_project"] = 1          # period 1 is the coming period
+                ps["progress_plan"] = planned_progress(
+                    1, proj["duration"], proj["scurve_a"], proj["scurve_b"]
+                )
+                advance = proj["advance_percent"] * proj["price"]
+                self.budget += advance
+
+        # 8. Return the pre-action observation. No DB writes yet.
         return self._get_state()
 
     # ── STEP ─────────────────────────────────────────────────
 
     def step(self, allocations: list) -> tuple:
         """
-        allocations: list of floats, one per project.
-        Returns (state, reward, done, info)
-        t=0 is the first period. step() is called starting at t=0.
+        Execute period self.t with the given allocations.
+
+        Flow per call:
+          1. Clip allocations to available budget.
+          2. For each project active this period: draw η, advance progress,
+             update EVM, check milestones, check completion/termination.
+          3. Update self.budget.
+          4. Write portfolios and projects_status rows for self.t.
+          5. Increment self.t.
+          6. Return next observation (pre-action state for period t+1).
+
+        t_project counts periods of work elapsed at the END of this step.
+        Period self.t is the (self.t - proj.start + 1)-th period of project i.
         """
-        # Clip allocations — cannot exceed budget, cannot be negative
+        # ── 1. Clip allocations ──────────────────────────────
         allocations = [max(0.0, a) for a in allocations]
         total_alloc = sum(
             allocations[i] for i in range(len(self.projects))
@@ -175,6 +231,7 @@ class PortfolioEnv:
         total_outflow = 0.0
         discount_factor = self.discount ** self.t
 
+        # ── 2. Per-project update ────────────────────────────
         for i, (proj, ps) in enumerate(zip(self.projects, self.proj_state)):
 
             alloc = allocations[i] if i < len(allocations) else 0.0
@@ -184,7 +241,7 @@ class PortfolioEnv:
             settlement = None
             eta = None
 
-            # ── Not yet started ──
+            # ── Not yet started ──────────────────────────────
             if self.t < proj["start"]:
                 ps["status"] = None
                 self._write_project_row(i, proj, ps, alloc, eta,
@@ -192,21 +249,22 @@ class PortfolioEnv:
                                         retention_release, settlement)
                 continue
 
-            # ── Advance payment at project start ──
-            # Paid at the step where t_episode == proj["start"]
-            if self.t == proj["start"]:
+            # ── Project start: credit advance (start > 0 only) ──
+            # Projects with start=0 already received their advance in reset().
+            if self.t == proj["start"] and proj["start"] > 0:
                 ps["status"] = "active"
-                ps["t_project"] = 0
+                ps["t_project"] = 1
                 advance_amount = proj["advance_percent"] * proj["price"]
                 total_inflow += advance_amount
 
-            # ── Already done ──
+            # ── Already done ─────────────────────────────────
             if ps["status"] in ("completed", "terminated"):
                 self._write_project_row(i, proj, ps, 0.0, None,
                                         0.0, None, None, None)
                 continue
 
-            # ── Active project ──
+            # ── Active: execute this period ──────────────────
+            # t_project = number of periods elapsed at end of this step
             ps["t_project"] = self.t - proj["start"] + 1
 
             # Draw efficiency
@@ -218,14 +276,11 @@ class PortfolioEnv:
             eta = max(0.01, eta)
 
             # Progress increment
-            if proj["budget"] > 0:
-                increment = (alloc / proj["budget"]) * eta
-            else:
-                increment = 0.0
+            increment = (alloc / proj["budget"]) * eta if proj["budget"] > 0 else 0.0
             ps["progress"] = min(1.0, ps["progress"] + increment)
             ps["progress_increment"] = increment
 
-            # Planned progress at this project timestep
+            # Planned progress at end of this period
             ps["progress_plan"] = planned_progress(
                 ps["t_project"], proj["duration"],
                 proj["scurve_a"], proj["scurve_b"]
@@ -242,29 +297,28 @@ class PortfolioEnv:
 
             ps["spi"] = bcwp / bcws if bcws > 1e-9 else 1.0
             ps["cpi"] = bcwp / acwp if acwp > 1e-9 else 1.0
-            ps["eac"] = proj["budget"] / ps["cpi"] if ps["cpi"] > 1e-9 else proj["budget"] * proj["cost_cap"]
+            ps["eac"] = (proj["budget"] / ps["cpi"]
+                         if ps["cpi"] > 1e-9
+                         else proj["budget"] * proj["cost_cap"])
 
             # Forecast finish
-            if ps["spi"] > 1e-9:
-                ps["forecast_finish"] = proj["start"] + proj["duration"] / ps["spi"]
-            else:
-                ps["forecast_finish"] = proj["finish"] + proj["schedule_cap"] + 1
-
+            ps["forecast_finish"] = (
+                proj["start"] + proj["duration"] / ps["spi"]
+                if ps["spi"] > 1e-9
+                else proj["finish"] + proj["schedule_cap"] + 1
+            )
             ps["schedule_slip"] = ps["forecast_finish"] - proj["finish"]
             ps["cost_overrun"] = ps["eac"] - proj["budget"]
 
-            # ── Milestone check ──
+            # ── Milestone check ──────────────────────────────
             for j, ms in enumerate(self.milestones[i]):
                 if ms["certified"]:
                     continue
-                if (ps["progress"] >= ms["threshold"]
-                        and self.t >= ms["earliest_t"]):
+                if ps["progress"] >= ms["threshold"] and self.t >= ms["earliest_t"]:
                     ms["certified"] = True
                     ms["certified_t"] = self.t
                     gross = ms["payment_weight"] * proj["price"]
-                    # deduct advance recovery
                     recovery = gross * proj["advance_recovery"]
-                    # deduct retention
                     retention_held = gross * proj["retention_rate"]
                     net = gross - recovery - retention_held
                     ms["payment_released"] = net
@@ -272,40 +326,38 @@ class PortfolioEnv:
                     ps["advance_recovered"] += recovery
                     ps["retention_held"] += retention_held
                     total_inflow += net
-
-                    # write milestone_status
                     self._write_milestone_status(i, j, ms)
                     self.conn.commit()
 
-            # ── Completion check ──
+            # ── Completion ───────────────────────────────────
             if ps["progress"] >= 1.0 and ps["status"] == "active":
                 ps["status"] = "completed"
                 retention_release = ps["retention_held"]
                 total_inflow += retention_release
                 ps["retention_released"] = True
 
-            # ── Breach and cure check ──
+            # ── Breach and cure ──────────────────────────────
             schedule_breach = ps["schedule_slip"] > proj["schedule_cap"]
             cost_breach = ps["eac"] > proj["cost_cap"] * proj["budget"]
 
             if (schedule_breach or cost_breach) and ps["status"] == "active":
                 ps["cure_remaining"] -= 1
             else:
-                ps["cure_remaining"] = proj["cure_length"]  # reset if no breach
+                ps["cure_remaining"] = proj["cure_length"]
 
             if ps["cure_remaining"] <= 0 and ps["status"] == "active":
                 ps["status"] = "terminated"
-                settlement = -(ps["acwp"] * 0.05)   # 5% penalty on actual cost
+                settlement = -(ps["acwp"] * 0.05)
                 total_inflow += settlement
 
             self._write_project_row(i, proj, ps, alloc, eta,
                                     advance_amount, payment_net,
                                     retention_release, settlement)
 
-        # ── Portfolio update ──
+        # ── 3. Portfolio update ──────────────────────────────
         self.budget = self.budget - total_outflow + total_inflow
 
-        # Reward: discounted inflow (NPV)
+        # ── 4. Write portfolio row ───────────────────────────
         reward = discount_factor * total_inflow
 
         done = self.t >= self.horizon or all(
@@ -323,7 +375,21 @@ class PortfolioEnv:
         if done:
             self.conn.commit()
 
+        # ── 5. Advance clock ─────────────────────────────────
         self.t += 1
+
+        # ── 6. Pre-arm progress_plan for the next period ─────
+        # So the returned state shows where the plan expects you to be
+        # by the end of the next period — useful signal for allocation.
+        for ps, proj in zip(self.proj_state, self.projects):
+            if ps["status"] == "active":
+                next_t_project = self.t - proj["start"] + 1
+                if next_t_project <= proj["duration"]:
+                    ps["progress_plan"] = planned_progress(
+                        next_t_project, proj["duration"],
+                        proj["scurve_a"], proj["scurve_b"]
+                    )
+
         return self._get_state(), reward, done, {}
 
     # ── STATE ────────────────────────────────────────────────
@@ -335,13 +401,13 @@ class PortfolioEnv:
             "horizon": self.horizon,
             "projects": []
         }
-        for i, (proj, ps) in enumerate(zip(self.projects, self.proj_state)):
+        for proj, ps in zip(self.projects, self.proj_state):
             state["projects"].append({
-                "i": i,
+                "i": proj["i"],
                 "status": ps["status"],
                 "budget": proj["budget"],
-                "finish": proj["finish"],
                 "start": proj["start"],
+                "finish": proj["finish"],
                 "progress": ps["progress"],
                 "progress_plan": ps["progress_plan"],
                 "spi": ps["spi"],
@@ -358,32 +424,23 @@ class PortfolioEnv:
 
     def _sample_project(self, i: int) -> dict:
         cfg = self.cfg
-        budget = sample(cfg["budget_dist"], cfg["budget_p1"],
-                        cfg["budget_p2"], cfg["budget_p3"], cfg["budget_p4"])
-        budget = max(1.0, budget)
 
-        margin = sample(cfg["margin_dist"], cfg["margin_p1"],
-                        cfg["margin_p2"], cfg["margin_p3"], cfg["margin_p4"])
-        margin = max(0.0, margin)
-
+        budget = max(1.0, sample(cfg["budget_dist"], cfg["budget_p1"],
+                                 cfg["budget_p2"], cfg["budget_p3"], cfg["budget_p4"]))
+        margin = max(0.0, sample(cfg["margin_dist"], cfg["margin_p1"],
+                                 cfg["margin_p2"], cfg["margin_p3"], cfg["margin_p4"]))
         price = budget * (1 + margin)
 
-        start = sample_int(cfg["start_dist"], cfg["start_p1"],
-                           cfg["start_p2"], cfg["start_p3"], cfg["start_p4"])
-        start = max(0, start)
-
-        duration = sample_int(cfg["duration_dist"], cfg["duration_p1"],
-                              cfg["duration_p2"], cfg["duration_p3"], cfg["duration_p4"])
-        duration = max(1, duration)
-
+        start = max(0, sample_int(cfg["start_dist"], cfg["start_p1"],
+                                  cfg["start_p2"], cfg["start_p3"], cfg["start_p4"]))
+        duration = max(1, sample_int(cfg["duration_dist"], cfg["duration_p1"],
+                                     cfg["duration_p2"], cfg["duration_p3"], cfg["duration_p4"]))
         finish = start + duration
 
-        scurve_a = sample(cfg["scurve_a_dist"], cfg["scurve_a_p1"],
-                          cfg["scurve_a_p2"], cfg["scurve_a_p3"], cfg["scurve_a_p4"])
-        scurve_b = sample(cfg["scurve_b_dist"], cfg["scurve_b_p1"],
-                          cfg["scurve_b_p2"], cfg["scurve_b_p3"], cfg["scurve_b_p4"])
-        scurve_a = max(0.5, scurve_a)
-        scurve_b = max(0.5, scurve_b)
+        scurve_a = max(0.5, sample(cfg["scurve_a_dist"], cfg["scurve_a_p1"],
+                                   cfg["scurve_a_p2"], cfg["scurve_a_p3"], cfg["scurve_a_p4"]))
+        scurve_b = max(0.5, sample(cfg["scurve_b_dist"], cfg["scurve_b_p1"],
+                                   cfg["scurve_b_p2"], cfg["scurve_b_p3"], cfg["scurve_b_p4"]))
 
         advance_percent = sample(cfg["advance_percent_dist"], cfg["advance_percent_p1"],
                                  cfg["advance_percent_p2"], cfg["advance_percent_p3"],
@@ -397,14 +454,14 @@ class PortfolioEnv:
         retention_rate = sample(cfg["retention_rate_dist"], cfg["retention_rate_p1"],
                                 cfg["retention_rate_p2"], cfg["retention_rate_p3"],
                                 cfg["retention_rate_p4"])
-        schedule_cap = sample_int(cfg["schedule_cap_dist"], cfg["schedule_cap_p1"],
-                                  cfg["schedule_cap_p2"], cfg["schedule_cap_p3"],
-                                  cfg["schedule_cap_p4"])
-        cost_cap = sample(cfg["cost_cap_dist"], cfg["cost_cap_p1"],
-                          cfg["cost_cap_p2"], cfg["cost_cap_p3"], cfg["cost_cap_p4"])
-        cure_length = sample_int(cfg["cure_length_dist"], cfg["cure_length_p1"],
-                                 cfg["cure_length_p2"], cfg["cure_length_p3"],
-                                 cfg["cure_length_p4"])
+        schedule_cap = max(1, sample_int(cfg["schedule_cap_dist"], cfg["schedule_cap_p1"],
+                                         cfg["schedule_cap_p2"], cfg["schedule_cap_p3"],
+                                         cfg["schedule_cap_p4"]))
+        cost_cap = max(1.0, sample(cfg["cost_cap_dist"], cfg["cost_cap_p1"],
+                                   cfg["cost_cap_p2"], cfg["cost_cap_p3"], cfg["cost_cap_p4"]))
+        cure_length = max(1, sample_int(cfg["cure_length_dist"], cfg["cure_length_p1"],
+                                        cfg["cure_length_p2"], cfg["cure_length_p3"],
+                                        cfg["cure_length_p4"]))
 
         return {
             "i": i,
@@ -420,23 +477,20 @@ class PortfolioEnv:
             "advance_trigger": max(0.0, min(1.0, advance_trigger)),
             "advance_recovery": max(0.0, min(1.0, advance_recovery)),
             "retention_rate": max(0.0, min(0.1, retention_rate)),
-            "schedule_cap": max(1, schedule_cap),
-            "cost_cap": max(1.0, cost_cap),
-            "cure_length": max(1, cure_length),
+            "schedule_cap": schedule_cap,
+            "cost_cap": cost_cap,
+            "cure_length": cure_length,
         }
 
     def _sample_milestones(self, i: int, proj: dict) -> list:
         cfg = self.cfg
-        n_ms = sample_int(cfg["n_milestones_dist"], cfg["n_milestones_p1"],
-                          cfg["n_milestones_p2"], cfg["n_milestones_p3"],
-                          cfg["n_milestones_p4"])
-        n_ms = max(1, n_ms)
+        n_ms = max(1, sample_int(cfg["n_milestones_dist"], cfg["n_milestones_p1"],
+                                 cfg["n_milestones_p2"], cfg["n_milestones_p3"],
+                                 cfg["n_milestones_p4"]))
 
-        # Evenly spaced thresholds — last is always 1.0 (final payment rule)
-        thresholds = sorted([round((j + 1) / n_ms, 4) for j in range(n_ms)])
+        thresholds = [round((j + 1) / n_ms, 4) for j in range(n_ms)]
         thresholds[-1] = 1.0
 
-        # Even payment weights
         weights = [round(1.0 / n_ms, 6)] * n_ms
         weights[-1] = round(1.0 - sum(weights[:-1]), 6)
 
@@ -444,10 +498,8 @@ class PortfolioEnv:
         for j in range(n_ms):
             is_final = (j == n_ms - 1)
             if is_final:
-                # Final milestone: earliest certification is the planned finish
                 earliest_t = proj["finish"]
             else:
-                # Intermediate: earliest is 50% of the way to that threshold
                 earliest_t = proj["start"] + max(0, round(thresholds[j] * proj["duration"] * 0.5))
             milestones.append({
                 "j": j,
@@ -490,8 +542,7 @@ class PortfolioEnv:
                      start, finish, duration, scurve_a, scurve_b,
                      advance_percent, advance_trigger, advance_recovery,
                      retention_rate, schedule_cap, cost_cap, cure_length)
-                VALUES
-                    (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 self.episode_id, self.config_id, proj["i"],
                 proj["budget"], proj["price"], proj["margin"],
@@ -508,10 +559,8 @@ class PortfolioEnv:
                     INSERT INTO milestones_profile
                         (episode_id, i, j, threshold, earliest_t, payment_weight)
                     VALUES (?,?,?,?,?,?)
-                """, (
-                    self.episode_id, i, ms["j"],
-                    ms["threshold"], ms["earliest_t"], ms["payment_weight"]
-                ))
+                """, (self.episode_id, i, ms["j"],
+                      ms["threshold"], ms["earliest_t"], ms["payment_weight"]))
         self.conn.commit()
 
     def _write_portfolio_row(self, inflow, outflow, reward, done):

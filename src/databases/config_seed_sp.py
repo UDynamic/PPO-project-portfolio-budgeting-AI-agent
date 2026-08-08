@@ -122,22 +122,27 @@ def seed_single_project(conn: sqlite3.Connection) -> str:
 
             'uniform', 0.8, 1.2, NULL, NULL,
 
-            'fixed', 1, NULL, NULL, NULL,
+            'fixed', 4, NULL, NULL, NULL,
 
-            'fixed', 1.0, NULL, NULL, NULL,
+            'fixed', 0.25, NULL, NULL, NULL,
 
-            'fixed', 1.0, NULL, NULL, NULL
+            'fixed', 0.25, NULL, NULL, NULL
         )
     """, (config_id, "single_project_baseline", datetime.utcnow().isoformat()))
 
     conn.commit()
     print(f"Config '{config_id}' inserted.")
     print()
-    print("  Portfolio : 1 project, budget=200, initial_balance=200")
-    print("  Project   : budget=100, price=115, duration=12, start=0")
-    print("  Milestones: 1 (final payment only)")
-    print("  Efficiency: uniform(0.8, 1.2)")
-    print("  Discount  : 0.97 per period")
+    print("  Portfolio  : 1 project")
+    print("  Budget     : initial=200, project BAC=100, price=115 (margin 15%)")
+    print("  Timeline   : start=0, duration=12, finish=12")
+    print("  Advance    : 10% of price (=11.50) credited at t=0")
+    print("  Milestones : 4 evenly spaced (25%/50%/75%/100%)")
+    print("               weights 25% each; final payment at t=12")
+    print("               advance recovery 20% per milestone payment")
+    print("               retention 5% held per milestone, released at completion")
+    print("  Efficiency : uniform(0.8, 1.2) per period")
+    print("  Discount   : 0.97 per period")
     return config_id
 
 
