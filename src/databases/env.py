@@ -1,3 +1,5 @@
+# env.py
+
 import sqlite3
 import random
 import math
@@ -94,6 +96,23 @@ class PortfolioEnv:
         - Increments self.t.
         - Returns observation for period t+1 (next decision point).
 
+    Reward (NPV)
+    ────────────
+    reward = discount_factor^t × (total_inflow − total_outflow)
+
+    Both inflows (advance payments, milestone payments, retention releases)
+    and outflows (budget allocations) are discounted at the same rate.
+    This is the correct NPV formulation: spending early is penalised,
+    earning early is rewarded.  The agent maximises the discounted sum of
+    net cash flows over the episode.
+
+    Advance payment at t=0
+    ──────────────────────
+    For projects with start=0 the advance is credited to self.budget during
+    reset() (before any allocation).  To include it in the period-0 reward
+    it is stored in self._t0_advances and added to total_inflow inside the
+    first step() call so the NPV calculation picks it up correctly.
+
     So the sequence is:
         obs₀          = reset()          # plan shown, no work done, t=0
         obs₁, r₀, …  = step(alloc₀)     # period 0 executed, stored; t→1
@@ -116,6 +135,10 @@ class PortfolioEnv:
         self.discount = 1.0
         self.proj_state = []
 
+        # Advance payments credited in reset() for start=0 projects.
+        # Consumed during the t=0 step so they appear in the reward.
+        self._t0_advances: dict = {}   # {project_index: advance_amount}
+
     # ── RESET ────────────────────────────────────────────────
 
     def reset(self) -> dict:
@@ -124,7 +147,8 @@ class PortfolioEnv:
 
         For projects starting at episode t=0:
           - status set to "active"
-          - advance payment credited to self.budget
+          - advance payment credited to self.budget AND stored in
+            self._t0_advances so step() can include it in the period-0 reward
           - progress_plan set to planned_progress(t_project=1) so the agent
             can see the planned target for the coming period
           - progress / acwp remain 0.0 (no work executed yet)
@@ -134,6 +158,7 @@ class PortfolioEnv:
         """
         self.episode_id = str(uuid.uuid4())
         self.t = 0
+        self._t0_advances = {}
 
         # 1. Load config
         self.cfg = dict(self.conn.execute(
@@ -171,8 +196,6 @@ class PortfolioEnv:
             self.milestones.append(self._sample_milestones(i, proj))
 
         # 4. Derive horizon — latest possible finish across all projects.
-        #    A project can slip up to schedule_cap periods before termination fires,
-        #    so the episode cannot end before finish + schedule_cap for every project.
         self.horizon = max(p["finish"] + p["schedule_cap"] for p in self.projects)
 
         # 5. Write static tables (profiles + milestones)
@@ -185,7 +208,7 @@ class PortfolioEnv:
         ]
 
         # 7. Pre-step initialisation for projects that start at t=0:
-        #    - credit advance payment to budget
+        #    - credit advance payment to budget AND store for step() reward
         #    - set status + t_project so the observation is meaningful
         #    - set progress_plan to the plan target for the coming period
         for ps, proj in zip(self.proj_state, self.projects):
@@ -197,6 +220,7 @@ class PortfolioEnv:
                 )
                 advance = proj["advance_percent"] * proj["price"]
                 self.budget += advance
+                self._t0_advances[proj["i"]] = advance   # ← store for step()
 
         # 8. Return the pre-action observation. No DB writes yet.
         return self._get_state()
@@ -216,8 +240,30 @@ class PortfolioEnv:
           5. Increment self.t.
           6. Return next observation (pre-action state for period t+1).
 
-        t_project counts periods of work elapsed at the END of this step.
-        Period self.t is the (self.t - proj.start + 1)-th period of project i.
+        Reward
+        ------
+        reward = discount^t × (total_inflow − total_outflow)
+
+        Allocations reduce the reward; payments increase it.  This is the
+        correct discounted NPV signal: the agent is penalised for spending
+        early and rewarded for collecting payments early.
+
+        Returns
+        -------
+        (state, reward, done, info)
+
+        info["cashflow"] is a list of per-project dicts:
+            {
+              "i":                int,
+              "allocation":       float,   # outflow (cost spent)
+              "advance":          float,   # advance payment received
+              "milestone_gross":  float,   # sum of gross milestone payments certified this period
+              "milestone_net":    float,   # sum of net milestone payments received
+              "retention_release":float,   # retention released on completion
+              "settlement":       float,   # termination penalty (negative)
+            }
+        info["portfolio_inflow"]:  float
+        info["portfolio_outflow"]: float
         """
         # ── 1. Clip allocations ──────────────────────────────
         allocations = [max(0.0, a) for a in allocations]
@@ -232,6 +278,20 @@ class PortfolioEnv:
         total_inflow = 0.0
         total_outflow = 0.0
         discount_factor = self.discount ** self.t
+
+        # Per-project cash flow tracking for the info dict
+        proj_cashflow = [
+            {
+                "i": proj["i"],
+                "allocation": 0.0,
+                "advance": 0.0,
+                "milestone_gross": 0.0,
+                "milestone_net": 0.0,
+                "retention_release": 0.0,
+                "settlement": 0.0,
+            }
+            for proj in self.projects
+        ]
 
         # ── 2. Per-project update ────────────────────────────
         for i, (proj, ps) in enumerate(zip(self.projects, self.proj_state)):
@@ -252,12 +312,18 @@ class PortfolioEnv:
                 continue
 
             # ── Project start: credit advance (start > 0 only) ──
-            # Projects with start=0 already received their advance in reset().
             if self.t == proj["start"] and proj["start"] > 0:
                 ps["status"] = "active"
                 ps["t_project"] = 1
                 advance_amount = proj["advance_percent"] * proj["price"]
                 total_inflow += advance_amount
+                proj_cashflow[i]["advance"] = advance_amount
+
+            elif self.t == 0 and proj["start"] == 0 and i in self._t0_advances:
+                # Include the t=0 advance in this period's inflow/reward
+                advance_amount = self._t0_advances.pop(i)
+                total_inflow += advance_amount
+                proj_cashflow[i]["advance"] = advance_amount
 
             # ── Already done ─────────────────────────────────
             if ps["status"] in ("completed", "terminated"):
@@ -266,7 +332,6 @@ class PortfolioEnv:
                 continue
 
             # ── Active: execute this period ──────────────────
-            # t_project = number of periods elapsed at end of this step
             ps["t_project"] = self.t - proj["start"] + 1
 
             # Draw efficiency
@@ -291,6 +356,7 @@ class PortfolioEnv:
             # Accumulate actual cost
             ps["acwp"] += alloc
             total_outflow += alloc
+            proj_cashflow[i]["allocation"] = alloc
 
             # EVM
             bcws = ps["progress_plan"] * proj["budget"]
@@ -328,6 +394,8 @@ class PortfolioEnv:
                     ps["advance_recovered"] += recovery
                     ps["retention_held"] += retention_held
                     total_inflow += net
+                    proj_cashflow[i]["milestone_gross"] += gross
+                    proj_cashflow[i]["milestone_net"]   += net
                     self._write_milestone_status(i, j, ms)
                     self.conn.commit()
 
@@ -337,6 +405,7 @@ class PortfolioEnv:
                 retention_release = ps["retention_held"]
                 total_inflow += retention_release
                 ps["retention_released"] = True
+                proj_cashflow[i]["retention_release"] = retention_release
 
             # ── Breach and cure ──────────────────────────────
             schedule_breach = ps["schedule_slip"] > proj["schedule_cap"]
@@ -351,6 +420,7 @@ class PortfolioEnv:
                 ps["status"] = "terminated"
                 settlement = -(ps["acwp"] * 0.05)
                 total_inflow += settlement
+                proj_cashflow[i]["settlement"] = settlement
 
             self._write_project_row(i, proj, ps, alloc, eta,
                                     advance_amount, payment_net,
@@ -359,15 +429,19 @@ class PortfolioEnv:
         # ── 3. Portfolio update ──────────────────────────────
         self.budget = self.budget - total_outflow + total_inflow
 
-        # ── 4. Write portfolio row ───────────────────────────
-        reward = discount_factor * total_inflow
+        # ── 4. Compute reward (NPV of net cash flow) ─────────
+        # reward = δ^t × (inflow − outflow)
+        # Allocations reduce the reward; payments increase it.
+        # This is the correct NPV signal: the agent is penalised for early
+        # spending and rewarded for early payment collection.
+        net_cashflow = total_inflow - total_outflow
+        reward = discount_factor * net_cashflow
 
+        # ── 5. Write portfolio row ───────────────────────────
         all_terminal = all(
             ps["status"] in ("completed", "terminated")
             for ps in self.proj_state
         )
-        # Budget exhausted: no cash left and at least one project still active —
-        # those projects can never receive allocation and will never complete.
         budget_exhausted = self.budget <= 0 and any(
             ps["status"] == "active" for ps in self.proj_state
         )
@@ -384,12 +458,10 @@ class PortfolioEnv:
         if done:
             self.conn.commit()
 
-        # ── 5. Advance clock ─────────────────────────────────
+        # ── 6. Advance clock ─────────────────────────────────
         self.t += 1
 
-        # ── 6. Pre-arm progress_plan for the next period ─────
-        # So the returned state shows where the plan expects you to be
-        # by the end of the next period — useful signal for allocation.
+        # ── 7. Pre-arm progress_plan for the next period ─────
         for ps, proj in zip(self.proj_state, self.projects):
             if ps["status"] == "active":
                 next_t_project = self.t - proj["start"] + 1
@@ -399,9 +471,54 @@ class PortfolioEnv:
                         proj["scurve_a"], proj["scurve_b"]
                     )
 
-        return self._get_state(), reward, done, {}
+        info = {
+            "cashflow": proj_cashflow,
+            "portfolio_inflow":  total_inflow,
+            "portfolio_outflow": total_outflow,
+        }
+
+        return self._get_state(), reward, done, info
 
     # ── STATE ────────────────────────────────────────────────
+
+    def _next_milestone_obs(self, i: int) -> dict:
+        """
+        Return observable fields for the next uncertified milestone of project i.
+        """
+        proj = self.projects[i]
+        ps   = self.proj_state[i]
+
+        retention_held = ps["retention_held"]
+
+        next_ms = None
+        for ms in self.milestones[i]:
+            if not ms["certified"]:
+                next_ms = ms
+                break
+
+        if next_ms is None:
+            return {
+                "next_ms_threshold_gap": 0.0,
+                "next_ms_net_payment":   0.0,
+                "next_ms_earliest_t":    None,
+                "next_ms_is_final":      False,
+                "retention_held":        retention_held,
+            }
+
+        gross         = next_ms["payment_weight"] * proj["price"]
+        recovery      = gross * proj["advance_recovery"]
+        retention     = gross * proj["retention_rate"]
+        net           = gross - recovery - retention
+        threshold_gap = max(0.0, next_ms["threshold"] - ps["progress"])
+        is_final      = next_ms["threshold"] == 1.0
+
+        return {
+            "next_ms_threshold_gap": threshold_gap,
+            "next_ms_net_payment":   net,
+            "next_ms_earliest_t":    next_ms["earliest_t"],
+            "next_ms_is_final":      is_final,
+            "retention_held":        retention_held,
+        }
 
     def _get_state(self) -> dict:
         state = {
@@ -410,7 +527,8 @@ class PortfolioEnv:
             "horizon": self.horizon,
             "projects": []
         }
-        for proj, ps in zip(self.projects, self.proj_state):
+        for i, (proj, ps) in enumerate(zip(self.projects, self.proj_state)):
+            ms_obs = self._next_milestone_obs(i)
             state["projects"].append({
                 "i": proj["i"],
                 "status": ps["status"],
@@ -426,6 +544,11 @@ class PortfolioEnv:
                 "schedule_slip": ps["schedule_slip"],
                 "cure_remaining": ps["cure_remaining"],
                 "t_project": ps["t_project"],
+                "next_ms_threshold_gap": ms_obs["next_ms_threshold_gap"],
+                "next_ms_net_payment":   ms_obs["next_ms_net_payment"],
+                "next_ms_earliest_t":    ms_obs["next_ms_earliest_t"],
+                "next_ms_is_final":      ms_obs["next_ms_is_final"],
+                "retention_held":        ms_obs["retention_held"],
             })
         return state
 

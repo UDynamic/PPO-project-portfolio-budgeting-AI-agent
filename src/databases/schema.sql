@@ -1,3 +1,5 @@
+--  schema.sql
+
 -- =============================================================
 -- PPM Training Database Schema
 -- Contractor Portfolio Budgeting — RL + Baselines + MILP
