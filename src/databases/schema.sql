@@ -146,7 +146,21 @@ CREATE TABLE IF NOT EXISTS environment_config (
     payment_weight_p1       REAL NOT NULL,
     payment_weight_p2       REAL,
     payment_weight_p3       REAL,
-    payment_weight_p4       REAL
+    payment_weight_p4       REAL,
+
+    -- earliest_t_fraction: the fraction of project duration at which each
+    -- intermediate milestone becomes eligible for certification.
+    -- earliest_t[j] = start + round(threshold[j] * duration * fraction)
+    -- fraction = 1.0 → earliest_t aligns exactly with the planned
+    --                   completion date for that progress threshold.
+    -- fraction < 1.0 → allows early certification for high performers.
+    -- The final milestone (threshold = 1.0) always uses proj["finish"]
+    -- regardless of this parameter — that is a contract invariant.
+    earliest_t_fraction_dist    TEXT NOT NULL,
+    earliest_t_fraction_p1      REAL NOT NULL,
+    earliest_t_fraction_p2      REAL,
+    earliest_t_fraction_p3      REAL,
+    earliest_t_fraction_p4      REAL
 );
 
 

@@ -1,13 +1,26 @@
 # run_env.py
 
 import re
+import sys
+import importlib
 import sqlite3
 from db_init import init_db
-from config_seed_sp import seed_single_project
 
 # Pre-compiled ANSI escape stripper — used for box padding calculations
 _ANSI_RE = re.compile(r'\033\[[0-9;]*m')
 from env import PortfolioEnv
+
+
+# ═════════════════════════════════════════════════════════════
+# CONFIG REGISTRY
+# Maps a short label → (module_name, seed_function_name, description)
+# Add a new entry here whenever a new config_seed_*.py is created.
+# ═════════════════════════════════════════════════════════════
+
+CONFIG_REGISTRY = {
+    "1": ("config_seed_sp",  "seed_single_project", "Single project  — CFG-SINGLE-001"),
+    "2": ("config_seed_dp",  "seed_dual_project",   "Dual project    — CFG-DUAL-001"),
+}
 
 
 # ═════════════════════════════════════════════════════════════
@@ -213,10 +226,11 @@ def print_portfolio_profile(env: PortfolioEnv, state: dict):
     total_price = sum(p["price"]  for p in env.projects)
     total_adv   = sum(p["advance_percent"] * p["price"]
                       for p in env.projects if p["start"] == 0)
-    kappa_raw = 200 / total_bac
+    initial_budget = env.cfg["initial_budget_p1"]   # p1 is the fixed/base value
+    kappa_raw = initial_budget / total_bac if total_bac > 0 else 0.0
     kappa_col = C.BGREEN if kappa_raw > 1.2 else C.BYELLOW if kappa_raw > 0.9 else C.BRED
 
-    kv("Initial budget (B₀)",          f"{200:,.2f}",          "monetary units", C.BGREEN)
+    kv("Initial budget (B₀)",          f"{initial_budget:,.2f}", "monetary units", C.BGREEN)
     kv("Portfolio BAC (ΣBAC)",         f"{total_bac:,.2f}",    "monetary units", C.BWHITE)
     kv("Portfolio price (ΣP)",         f"{total_price:,.2f}",  "monetary units", C.BWHITE)
     kv("Budget tightness (κ=B₀/ΣBAC)", f"{kappa_raw:.3f}",    "B₀/ΣBAC",        kappa_col)
@@ -559,12 +573,55 @@ def print_episode_summary(env: PortfolioEnv, total_reward: float, periods_done: 
 
 
 # ═════════════════════════════════════════════════════════════
+# CONFIG SELECTOR
+# ═════════════════════════════════════════════════════════════
+
+def select_config() -> str:
+    """
+    Prompt the user to choose a configuration from CONFIG_REGISTRY.
+    Returns the config_id string produced by the chosen seed function.
+    """
+    blank()
+    ruler("═", C.BMAGENTA)
+    print(c(f"  {'SELECT CONFIGURATION':^{W}}", C.BOLD, C.BMAGENTA))
+    ruler("═", C.BMAGENTA)
+    blank()
+
+    for key, (_, _, description) in CONFIG_REGISTRY.items():
+        print(c(f"    [{key}]  {description}", C.BWHITE))
+
+    blank()
+
+    while True:
+        prompt = (
+            c("  ❯ ", C.PINK, C.BOLD) +
+            c(f"Enter choice [{'/'.join(CONFIG_REGISTRY.keys())}]: ", C.WHITE)
+        )
+        choice = input(prompt).strip()
+        if choice in CONFIG_REGISTRY:
+            break
+        print(c(f"  ✗  Invalid choice. Enter one of: {', '.join(CONFIG_REGISTRY.keys())}", C.BRED))
+
+    module_name, func_name, description = CONFIG_REGISTRY[choice]
+    blank()
+    print(c(f"  ✔  Selected: {description}", C.BGREEN, C.BOLD))
+    blank()
+
+    module = importlib.import_module(module_name)
+    seed_fn = getattr(module, func_name)
+    return seed_fn, description
+
+
+# ═════════════════════════════════════════════════════════════
 # MAIN
 # ═════════════════════════════════════════════════════════════
 
 def run():
     conn = init_db()
-    config_id = seed_single_project(conn)
+
+    seed_fn, _ = select_config()
+    config_id = seed_fn(conn)
+
     env = PortfolioEnv(conn, config_id, method="rl")
 
     state = env.reset()

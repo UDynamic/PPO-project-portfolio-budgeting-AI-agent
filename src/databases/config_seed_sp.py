@@ -83,7 +83,10 @@ def seed_single_project(conn: sqlite3.Connection) -> str:
             threshold_p2, threshold_p3, threshold_p4,
 
             payment_weight_dist, payment_weight_p1,
-            payment_weight_p2, payment_weight_p3, payment_weight_p4
+            payment_weight_p2, payment_weight_p3, payment_weight_p4,
+
+            earliest_t_fraction_dist, earliest_t_fraction_p1,
+            earliest_t_fraction_p2, earliest_t_fraction_p3, earliest_t_fraction_p4
         )
         VALUES (
             ?, ?, ?,
@@ -128,7 +131,9 @@ def seed_single_project(conn: sqlite3.Connection) -> str:
 
             'fixed', 0.25, NULL, NULL, NULL,
 
-            'fixed', 0.25, NULL, NULL, NULL
+            'fixed', 0.25, NULL, NULL, NULL,
+
+            'fixed', 1.0, NULL, NULL, NULL
         )
     """, (config_id, "single_project_baseline", datetime.utcnow().isoformat()))
 
@@ -141,6 +146,7 @@ def seed_single_project(conn: sqlite3.Connection) -> str:
     print("  Advance    : 10% of price (=11.50) credited at t=0")
     print("  Milestones : 4 evenly spaced (25%/50%/75%/100%)")
     print("               weights 25% each; final payment at t=12")
+    print("               earliest_t at 3, 6, 9, 12 (fraction=1.0 of duration)")
     print("               advance recovery 20% per milestone payment")
     print("               retention 5% held per milestone, released at completion")
     print("  Efficiency : uniform(0.8, 1.2) per period")
