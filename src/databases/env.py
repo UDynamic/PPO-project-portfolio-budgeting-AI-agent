@@ -303,7 +303,7 @@ class PortfolioEnv:
             schedule_breach = ps["schedule_slip"] > proj["schedule_cap"]
             cost_breach = ps["eac"] > proj["cost_cap"] * proj["budget"]
 
-            if (schedule_breach or cost_breach) and ps["status"] == "active":
+            if (schedule_breach and cost_breach) and ps["status"] == "active":
                 ps["cure_remaining"] -= 1
             else:
                 ps["cure_remaining"] = proj["cure_length"]
