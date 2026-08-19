@@ -365,8 +365,12 @@ def print_period_state(state: dict):
         blank()
         sub_header(f"Project {p['i']}  [{status_color(status)}]", C.BCYAN)
         kv("Status",         status_color(status), "", C.BWHITE)
-        kv("SPI",            f"{spi:.4f}",         "", spi_col)
+        tcpi     = p.get("tcpi", 1.0)
+        tcpi_col = C.BGREEN if tcpi <= 1.05 else C.BYELLOW if tcpi <= 1.10 else C.BRED
+
+        kv("SPI(t)",         f"{spi:.4f}",         "", spi_col)
         kv("CPI",            f"{cpi:.4f}",         "", cpi_col)
+        kv("TCPI",           f"{tcpi:.4f}",         "", tcpi_col)
         kv("EAC",            f"{eac:,.2f}",         "", eac_col)
         kv("EAC / BAC",      f"{eac_bac:.4f}×",    "", eac_col)
         kv("Schedule slip",  f"{slip:+.2f}",        "periods", slp_col)

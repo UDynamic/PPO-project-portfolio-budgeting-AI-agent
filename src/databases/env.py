@@ -72,6 +72,33 @@ def planned_progress(t_project: int, duration: int, a: float, b: float) -> float
     return beta_cdf(x, a, b)
 
 
+def earned_schedule(progress_actual: float, duration: int,
+                    a: float, b: float) -> float:
+    """
+    Earned Schedule (ES) — the planned time at which the s-curve would
+    have reached the current actual progress level.
+
+    Inverts the Beta CDF numerically by binary search over [0, duration].
+    Returns a value in [0, duration].
+
+    ES / AT gives SPI(t), which keeps degrading as real time passes
+    even when progress is frozen — unlike classical SPI = BCWP/BCWS,
+    which freezes once BCWS reaches BAC at the planned finish.
+    """
+    if progress_actual <= 0.0:
+        return 0.0
+    if progress_actual >= 1.0:
+        return float(duration)
+    lo, hi = 0.0, float(duration)
+    for _ in range(50):   # 50 iterations → precision < duration / 2^50
+        mid = (lo + hi) / 2.0
+        if beta_cdf(mid / duration, a, b) < progress_actual:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2.0
+
+
 # ─────────────────────────────────────────────────────────────
 # ENVIRONMENT
 # ─────────────────────────────────────────────────────────────
@@ -255,23 +282,47 @@ class PortfolioEnv:
             total_outflow += alloc
             proj_cashflow[i]["allocation"] = alloc
 
-            bcws = ps["progress_plan"] * proj["budget"]
             bcwp = ps["progress"] * proj["budget"]
             acwp = ps["acwp"]
 
-            ps["spi"] = bcwp / bcws if bcws > 1e-9 else 1.0
+            # ── Earned Schedule SPI(t) ───────────────────────
+            # ES = planned time at which s-curve reaches actual progress.
+            # SPI(t) = ES / AT degrades continuously as real time passes
+            # even when progress is frozen, correcting the classical SPI
+            # freeze pathology past the planned finish date.
+            es  = earned_schedule(
+                ps["progress"], proj["duration"],
+                proj["scurve_a"], proj["scurve_b"]
+            )
+            at  = ps["t_project"]   # actual time elapsed (project periods)
+            ps["spi"] = es / at if at > 1e-9 else 1.0
+
+            # ── Classical CPI (unchanged) ─────────────────────
             ps["cpi"] = bcwp / acwp if acwp > 1e-9 else 1.0
+
+            # ── EAC via CPI ───────────────────────────────────
             ps["eac"] = (proj["budget"] / ps["cpi"]
                          if ps["cpi"] > 1e-9
                          else proj["budget"] * proj["cost_cap"])
 
+            # ── TCPI — To-Complete Performance Index ──────────
+            # Required cost efficiency on remaining work to finish on budget.
+            # TCPI > 1: must outperform history; > 1.1 widely considered
+            # unrealistic. Complements CPI (historical) with a forward signal.
+            work_remaining   = proj["budget"] - bcwp
+            budget_remaining = proj["budget"] - acwp
+            ps["tcpi"] = (work_remaining / budget_remaining
+                          if budget_remaining > 1e-9
+                          else (0.0 if work_remaining <= 0 else float("inf")))
+
+            # ── Forecast finish and schedule slip via SPI(t) ──
             ps["forecast_finish"] = (
                 proj["start"] + proj["duration"] / ps["spi"]
                 if ps["spi"] > 1e-9
                 else proj["finish"] + proj["schedule_cap"] + 1
             )
             ps["schedule_slip"] = ps["forecast_finish"] - proj["finish"]
-            ps["cost_overrun"] = ps["eac"] - proj["budget"]
+            ps["cost_overrun"]  = ps["eac"] - proj["budget"]
 
             for j, ms in enumerate(self.milestones[i]):
                 if ms["certified"]:
@@ -419,6 +470,7 @@ class PortfolioEnv:
                 "progress_plan": ps["progress_plan"],
                 "spi": ps["spi"],
                 "cpi": ps["cpi"],
+                "tcpi": ps["tcpi"],
                 "eac": ps["eac"],
                 "forecast_finish": ps["forecast_finish"],
                 "schedule_slip": ps["schedule_slip"],
@@ -563,6 +615,7 @@ class PortfolioEnv:
             "acwp": 0.0,
             "spi": 1.0,
             "cpi": 1.0,
+            "tcpi": 1.0,
             "eac": proj["budget"],
             "schedule_slip": 0.0,
             "cost_overrun": 0.0,
@@ -623,16 +676,16 @@ class PortfolioEnv:
                 (episode_id, i, t_episode, t_project, method, status,
                  allocation, efficiency,
                  progress, progress_plan, progress_increment,
-                 spi, cpi, eac,
+                 spi, cpi, tcpi, eac,
                  schedule_slip, cost_overrun, forecast_finish,
                  cure_remaining,
                  advance_amount, payment_net, retention_release, settlement)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             self.episode_id, i, self.t, ps["t_project"], self.method, ps["status"],
             allocation, efficiency,
             ps["progress"], ps["progress_plan"], ps["progress_increment"],
-            ps["spi"], ps["cpi"], ps["eac"],
+            ps["spi"], ps["cpi"], ps["tcpi"], ps["eac"],
             ps["schedule_slip"], ps["cost_overrun"], ps["forecast_finish"],
             ps["cure_remaining"],
             advance_amount, payment_net, retention_release, settlement

@@ -43,7 +43,13 @@ A **PPO agent** is trained on this environment and benchmarked against classical
 
 **Uncertainty source:** Stochastic project productivity η. Uncertain execution pace → uncertain milestone timing → uncertain payment arrival. η is the single source of uncertainty in the system. Its realized value is recorded at every step, so all post-hoc solvers operate on a fully deterministic record.
 
-**Termination:** Endogenous. Projects are terminated by the environment when the cure period counter hits zero, not by the agent directly.
+**Termination:** Endogenous. Projects are terminated by the environment when the cure period counter hits zero, not by the agent directly. The cure counter decrements only when **both** breach conditions hold simultaneously — schedule slip exceeds the schedule cap AND EAC exceeds the cost cap. It resets to full when either condition clears.
+
+**Reward (NPV):** `reward = γᵗ × (total_inflow − total_outflow)`. Both inflows (advance payments, milestone payments, retention releases) and outflows (budget allocations) are discounted at the same rate. Spending early is penalised; collecting payments early is rewarded. The agent maximises the discounted sum of net cash flows over the episode.
+
+**EVM signals:** The environment uses Earned Schedule SPI(t) = ES / AT rather than classical SPI = BCWP / BCWS. ES is the planned time at which the s-curve would have reached the current actual progress. SPI(t) degrades continuously as real time passes even when progress is frozen, correctly penalising zombie projects stalled past their planned finish. Classical SPI is not used. TCPI (To-Complete Performance Index) is added as a forward-looking cost signal alongside CPI: TCPI = (BAC − EV) / (BAC − ACWP), measuring the cost efficiency required on remaining work to finish on budget.
+
+**Milestone earliest certification:** The earliest eligible certification period `e[i][j]` for each intermediate milestone is a contract parameter read from `environment_config` via `earliest_t_fraction`. It is computed as `e[i][j] = start + round(threshold × duration × fraction)`. With `fraction = 1.0` this aligns each milestone's eligibility with its on-plan completion date. The environment derives nothing independently.
 
 **Budget regime:** Parameterized by κ = B₀ / ΣBAC_i. Three regimes: abundant (κ ≫ 1), tight (κ ≈ 1), scarce (κ ≪ 1). Experiments cover all three.
 
@@ -312,11 +318,12 @@ pip install -r requirements.txt
 # Initialise the database
 python db_init.py
 
-# Seed environment configurations
-python config_seed.py
+# Seed environment configurations (run one or both)
+python config_seed_sp.py
+python config_seed_dp.py
 
-# Run manual environment interaction (CLI)
-python run_manual.py
+# Run manual environment interaction (CLI — prompts for config selection)
+python run_env.py
 
 # Verify environment mechanics
 pytest tests/environment/
@@ -339,11 +346,12 @@ All files live in one folder during active development. Package structure under 
 
 | File | Purpose |
 |---|---|
-| `db_init.py` | Creates `training.db` and applies `schema.sql` |
-| `schema.sql` | SQLite table definitions |
-| `config_seed.py` | Inserts environment configurations into `environment_config` table |
-| `environment.py` | Portfolio environment — generator, step mechanics, DB recorder |
-| `run_manual.py` | CLI loop for manual human interaction with the environment |
+| `db_init.py` | Creates `database.db` and applies `schema.sql` |
+| `schema.sql` | SQLite table definitions, including `earliest_t_fraction` and `tcpi` |
+| `config_seed_sp.py` | Seeds `CFG-SINGLE-001` — single project baseline |
+| `config_seed_dp.py` | Seeds `CFG-DUAL-001` — dual project baseline, varied project parameters |
+| `env.py` | Portfolio environment — generator, step mechanics, DB recorder |
+| `run_env.py` | CLI loop for manual interaction; prompts for config selection at startup |
 
 ---
 

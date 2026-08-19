@@ -245,6 +245,7 @@ CREATE TABLE IF NOT EXISTS projects_status (
 
     spi                 REAL,
     cpi                 REAL,
+    tcpi                REAL,
     eac                 REAL,
 
     schedule_slip       REAL,
