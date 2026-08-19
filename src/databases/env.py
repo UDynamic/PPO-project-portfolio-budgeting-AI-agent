@@ -352,7 +352,10 @@ class PortfolioEnv:
                 proj_cashflow[i]["retention_release"] = retention_release
 
             schedule_breach = ps["schedule_slip"] > proj["schedule_cap"]
-            cost_breach = ps["eac"] > proj["cost_cap"] * proj["budget"]
+            if ps["acwp"] < 1e-9 and ps["t_project"] is not None and ps["t_project"] > 0:
+                cost_breach = True
+            else:
+                cost_breach = ps["eac"] > proj["cost_cap"] * proj["budget"]
 
             if (schedule_breach and cost_breach) and ps["status"] == "active":
                 ps["cure_remaining"] -= 1

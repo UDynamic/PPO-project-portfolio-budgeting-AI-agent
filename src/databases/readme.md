@@ -43,7 +43,9 @@ A **PPO agent** is trained on this environment and benchmarked against classical
 
 **Uncertainty source:** Stochastic project productivity η. Uncertain execution pace → uncertain milestone timing → uncertain payment arrival. η is the single source of uncertainty in the system. Its realized value is recorded at every step, so all post-hoc solvers operate on a fully deterministic record.
 
-**Termination:** Endogenous. Projects are terminated by the environment when the cure period counter hits zero, not by the agent directly. The cure counter decrements only when **both** breach conditions hold simultaneously — schedule slip exceeds the schedule cap AND EAC exceeds the cost cap. It resets to full when either condition clears.
+**Termination:** Endogenous. Projects are terminated by the environment when the cure period counter hits zero, not by the agent directly. The cure counter decrements only when **both** breach conditions hold simultaneously — schedule slip exceeds the schedule cap AND the cost condition is breached. It resets to full when either condition clears.
+
+The cost breach condition has two cases. If the project is active but has recorded zero spend (`acwp = 0`) after at least one project period has elapsed, the cost condition is treated as breached — an idle project has no cost performance record, which is itself a breach. Otherwise the cost condition fires when EAC exceeds the cost cap (`eac > cost_cap × BAC`). This prevents a zero-allocation zombie: a project that receives no funding makes zero progress, the EAC formula becomes undefined, and the standard guard fallback would otherwise hold EAC at exactly BAC, permanently suppressing the cost breach and allowing the project to run to the horizon without termination.
 
 **Reward (NPV):** `reward = γᵗ × (total_inflow − total_outflow)`. Both inflows (advance payments, milestone payments, retention releases) and outflows (budget allocations) are discounted at the same rate. Spending early is penalised; collecting payments early is rewarded. The agent maximises the discounted sum of net cash flows over the episode.
 
