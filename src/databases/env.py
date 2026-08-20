@@ -300,9 +300,15 @@ class PortfolioEnv:
             # ── Classical CPI (unchanged) ─────────────────────
             ps["cpi"] = bcwp / acwp if acwp > 1e-9 else 1.0
 
-            # ── EAC via CPI ───────────────────────────────────
-            ps["eac"] = (proj["budget"] / ps["cpi"]
-                         if ps["cpi"] > 1e-9
+            # ── EAC via composite CPI×SPI(t) ──────────────────
+            # Remaining work divided by composite efficiency.
+            # SPI(t) = ES/AT degrades continuously as real time
+            # passes, so idling inflates EAC even when CPI is
+            # healthy. Zombie projects cannot hide behind a
+            # frozen cost signal.
+            composite = ps["cpi"] * ps["spi"]
+            ps["eac"] = (acwp + (proj["budget"] - bcwp) / composite
+                         if composite > 1e-9
                          else proj["budget"] * proj["cost_cap"])
 
             # ── TCPI — To-Complete Performance Index ──────────
@@ -352,7 +358,7 @@ class PortfolioEnv:
                 proj_cashflow[i]["retention_release"] = retention_release
 
             schedule_breach = ps["schedule_slip"] > proj["schedule_cap"]
-            if ps["acwp"] < 1e-9 and ps["t_project"] is not None and ps["t_project"] > 0:
+            if alloc < 1e-9 and ps["status"] == "active":
                 cost_breach = True
             else:
                 cost_breach = ps["eac"] > proj["cost_cap"] * proj["budget"]
@@ -363,6 +369,13 @@ class PortfolioEnv:
                 ps["cure_remaining"] = proj["cure_length"]
 
             if ps["cure_remaining"] <= 0 and ps["status"] == "active":
+                ps["status"] = "terminated"
+                settlement = -(ps["acwp"] * 0.05)
+                total_inflow += settlement
+                proj_cashflow[i]["settlement"] = settlement
+
+            deadline = proj["finish"] + proj["schedule_cap"]
+            if self.t >= deadline and ps["status"] == "active":
                 ps["status"] = "terminated"
                 settlement = -(ps["acwp"] * 0.05)
                 total_inflow += settlement
@@ -463,9 +476,26 @@ class PortfolioEnv:
         }
         for i, (proj, ps) in enumerate(zip(self.projects, self.proj_state)):
             ms_obs = self._next_milestone_obs(i)
+            ms_history = []
+            for ms in self.milestones[i]:
+                gross = ms["payment_weight"] * proj["price"]
+                recovery = gross * proj["advance_recovery"]
+                retention = gross * proj["retention_rate"]
+                net = gross - recovery - retention
+                ms_history.append({
+                    "j":           ms["j"],
+                    "threshold":   ms["threshold"],
+                    "earliest_t":  ms["earliest_t"],
+                    "certified":   ms["certified"],
+                    "certified_t": ms["certified_t"],
+                    "gross":       gross,
+                    "net":         net,
+                    "is_final":    ms["threshold"] == 1.0,
+                })
             state["projects"].append({
                 "i": proj["i"],
                 "status": ps["status"],
+                "ms_history": ms_history,
                 "budget": proj["budget"],
                 "start": proj["start"],
                 "finish": proj["finish"],

@@ -208,16 +208,17 @@ def print_trajectory_box(next_period: int, prog_actual: float,
 # STATIC PROFILE  (printed once after reset)
 # ═════════════════════════════════════════════════════════════
 
-def print_portfolio_profile(env: PortfolioEnv, state: dict):
+def print_portfolio_profile(env: PortfolioEnv, state: dict, episode_number: int = 1):
 
     header("PORTFOLIO ENVIRONMENT — STATIC PROFILE")
 
     # ── EPISODE ──────────────────────────────────────────────
     section("EPISODE")
-    kv("Episode ID",      env.episode_id,            value_color=C.DIM)
-    kv("Config ID",       env.config_id,             value_color=C.BMAGENTA)
-    kv("Method",          env.method,                value_color=C.BYELLOW)
-    kv("Horizon",         state["horizon"],  "periods",      C.BYELLOW)
+    kv("Episode",         f"#{episode_number}",            value_color=C.BWHITE)
+    kv("Episode ID",      env.episode_id,                  value_color=C.DIM)
+    kv("Config ID",       env.config_id,                   value_color=C.BMAGENTA)
+    kv("Method",          env.method,                      value_color=C.BYELLOW)
+    kv("Horizon",         state["horizon"],  "periods",    C.BYELLOW)
     kv("Discount factor", f"{env.discount:.4f}", "per period", C.BWHITE)
 
     # ── PORTFOLIO FINANCIALS ──────────────────────────────────
@@ -226,69 +227,87 @@ def print_portfolio_profile(env: PortfolioEnv, state: dict):
     total_price = sum(p["price"]  for p in env.projects)
     total_adv   = sum(p["advance_percent"] * p["price"]
                       for p in env.projects if p["start"] == 0)
-    initial_budget = env.cfg["initial_budget_p1"]   # p1 is the fixed/base value
+    initial_budget = env.cfg["initial_budget_p1"]
     kappa_raw = initial_budget / total_bac if total_bac > 0 else 0.0
     kappa_col = C.BGREEN if kappa_raw > 1.2 else C.BYELLOW if kappa_raw > 0.9 else C.BRED
 
     kv("Initial budget (B₀)",          f"{initial_budget:,.2f}", "monetary units", C.BGREEN)
-    kv("Portfolio BAC (ΣBAC)",         f"{total_bac:,.2f}",    "monetary units", C.BWHITE)
-    kv("Portfolio price (ΣP)",         f"{total_price:,.2f}",  "monetary units", C.BWHITE)
-    kv("Budget tightness (κ=B₀/ΣBAC)", f"{kappa_raw:.3f}",    "B₀/ΣBAC",        kappa_col)
-    kv("Advance credited (t=0)",       f"{total_adv:,.2f}",    "monetary units", C.BCYAN)
+    kv("Portfolio BAC (ΣBAC)",         f"{total_bac:,.2f}",      "monetary units", C.BWHITE)
+    kv("Portfolio price (ΣP)",         f"{total_price:,.2f}",    "monetary units", C.BWHITE)
+    kv("Budget tightness (κ=B₀/ΣBAC)", f"{kappa_raw:.3f}",      "B₀/ΣBAC",        kappa_col)
+    kv("Advance credited (t=0)",       f"{total_adv:,.2f}",      "monetary units", C.BCYAN)
     kv("Opening budget",               f"{state['budget']:,.2f}", "monetary units", C.BGREEN)
 
-    # ── PROJECTS ─────────────────────────────────────────────
+    # ── PROJECTS  (nested: params → milestones → stochastic) ─
     section(f"PROJECTS  ({len(env.projects)} total)")
 
-    for proj in env.projects:
+    for proj, ms_list in zip(env.projects, env.milestones):
+        # ── Project header ────────────────────────────────────
         blank()
-        sub_header(f"Project {proj['i']}", C.BCYAN)
-        kv("BAC (budget at completion)",  f"{proj['budget']:,.2f}",      "monetary units", C.BWHITE)
-        kv("Price (contract value)",      f"{proj['price']:,.2f}",       "monetary units", C.BGREEN)
-        kv("Margin",                      f"{proj['margin']*100:.1f}%",  "",               C.BYELLOW)
-        kv("Start period",                proj["start"],                  "",               C.WHITE)
-        kv("Planned finish",              proj["finish"],                 "",               C.WHITE)
-        kv("Duration",                    proj["duration"],               "periods",        C.WHITE)
-        kv("Schedule cap (max slip)",     proj["schedule_cap"],           "periods",        C.BYELLOW)
-        kv("Cost cap (max EAC/BAC)",      f"{proj['cost_cap']:.2f}×",    "",               C.BYELLOW)
-        kv("Cure period length",          proj["cure_length"],            "periods",        C.BYELLOW)
+        print(c(f"  ┌─ Project {proj['i']} ", C.BCYAN, C.BOLD) +
+              c("─" * (W - 12 - len(str(proj['i']))), C.BCYAN))
+
+        # ── Contract parameters ───────────────────────────────
+        print(c(f"  │", C.BCYAN))
+        print(c(f"  │  ", C.BCYAN) + c("CONTRACT PARAMETERS", C.DIM))
+        kv("BAC (budget at completion)",  f"{proj['budget']:,.2f}",     "monetary units", C.BWHITE,  indent=6)
+        kv("Price (contract value)",      f"{proj['price']:,.2f}",      "monetary units", C.BGREEN,  indent=6)
+        kv("Margin",                      f"{proj['margin']*100:.1f}%", "",               C.BYELLOW, indent=6)
+        kv("Start period",                proj["start"],                 "",               C.WHITE,   indent=6)
+        kv("Planned finish",              proj["finish"],                "",               C.WHITE,   indent=6)
+        kv("Duration",                    proj["duration"],              "periods",        C.WHITE,   indent=6)
+        kv("Schedule cap (max slip)",     proj["schedule_cap"],          "periods",        C.BYELLOW, indent=6)
+        kv("Cost cap (max EAC/BAC)",      f"{proj['cost_cap']:.2f}×",   "",               C.BYELLOW, indent=6)
+        kv("Cure period length",          proj["cure_length"],           "periods",        C.BYELLOW, indent=6)
         kv("Advance payment",             f"{proj['advance_percent']*100:.0f}%",
-                                          f"= {proj['advance_percent']*proj['price']:.2f}", C.BCYAN)
+                                          f"= {proj['advance_percent']*proj['price']:.2f}",
+                                          C.BCYAN, indent=6)
         kv("Advance recovery rate",       f"{proj['advance_recovery']*100:.0f}%",
-                                          "deducted per milestone gross", C.DIM)
+                                          "deducted per milestone gross", C.DIM, indent=6)
         kv("Retention rate",              f"{proj['retention_rate']*100:.0f}%",
-                                          "held per milestone, released at completion", C.DIM)
-        kv("S-curve α",                   f"{proj['scurve_a']:.3f}",     "",               C.BWHITE)
-        kv("S-curve β",                   f"{proj['scurve_b']:.3f}",     "",               C.BWHITE)
+                                          "held per milestone, released at completion",
+                                          C.DIM, indent=6)
+
+        # ── S-curve ───────────────────────────────────────────
+        print(c(f"  │", C.BCYAN))
+        print(c(f"  │  ", C.BCYAN) + c("S-CURVE", C.DIM))
         a, b = proj["scurve_a"], proj["scurve_b"]
         shape = "front-loaded" if a < b else "back-loaded" if a > b else "symmetric"
-        kv("S-curve shape",               shape,                          "",               C.BMAGENTA)
+        kv("α",          f"{a:.3f}", "", C.BWHITE,   indent=6)
+        kv("β",          f"{b:.3f}", "", C.BWHITE,   indent=6)
+        kv("Shape",      shape,      "", C.BMAGENTA, indent=6)
 
-    # ── MILESTONES ────────────────────────────────────────────
-    section("MILESTONES")
+        # ── Stochastic parameters ─────────────────────────────
+        print(c(f"  │", C.BCYAN))
+        print(c(f"  │  ", C.BCYAN) + c("STOCHASTIC PARAMETERS", C.DIM))
+        kv("Efficiency η distribution", env.cfg["efficiency_dist"], "", C.BMAGENTA, indent=6)
+        kv("η lower bound",             env.cfg["efficiency_p1"],   "", C.BWHITE,   indent=6)
+        kv("η upper bound",             env.cfg["efficiency_p2"],   "", C.BWHITE,   indent=6)
 
-    for i, (proj, ms_list) in enumerate(zip(env.projects, env.milestones)):
-        blank()
-        sub_header(f"Project {i}  —  {len(ms_list)} milestone(s)", C.BCYAN)
+        # ── Milestones ────────────────────────────────────────
+        print(c(f"  │", C.BCYAN))
+        print(c(f"  │  ", C.BCYAN) +
+              c(f"MILESTONES  ({len(ms_list)} total)", C.DIM))
+
         for ms in ms_list:
             gross     = ms["payment_weight"] * proj["price"]
             after_rec = gross * (1 - proj["advance_recovery"])
             after_ret = after_rec * (1 - proj["retention_rate"])
             is_final  = ms["threshold"] == 1.0
 
-            label = f"  MS {ms['j']}  threshold {ms['threshold']*100:.1f}%{'' if not is_final else ' ★'}"
-            print(c(f"    {label}", C.BYELLOW if is_final else C.WHITE))
-            kv("Earliest certification",  ms["earliest_t"],               "period",         C.DIM,    indent=8)
-            kv("Payment weight",          f"{ms['payment_weight']*100:.2f}%", "",            C.WHITE,  indent=8)
-            kv("Gross payment",           f"{gross:.2f}",                 "monetary units", C.BGREEN, indent=8)
-            kv("After advance recovery",  f"{after_rec:.2f}",             "monetary units", C.BYELLOW,indent=8)
-            kv("After retention",         f"{after_ret:.2f}",             "monetary units", C.BCYAN,  indent=8)
+            print(c(f"  │", C.BCYAN))
+            ms_tag = c(" ★ FINAL", C.BYELLOW) if is_final else ""
+            print(c(f"  │    MS {ms['j']}  ", C.BCYAN) +
+                  c(f"threshold {ms['threshold']*100:.1f}%", C.BYELLOW if is_final else C.WHITE) +
+                  ms_tag)
+            kv("Earliest certification", ms["earliest_t"],                  "period",         C.DIM,    indent=10)
+            kv("Payment weight",         f"{ms['payment_weight']*100:.2f}%", "",               C.WHITE,  indent=10)
+            kv("Gross payment",          f"{gross:.2f}",                    "monetary units", C.BGREEN, indent=10)
+            kv("After advance recovery", f"{after_rec:.2f}",               "monetary units", C.BYELLOW,indent=10)
+            kv("After retention",        f"{after_ret:.2f}",               "monetary units", C.BCYAN,  indent=10)
 
-    # ── STOCHASTIC ────────────────────────────────────────────
-    section("STOCHASTIC PARAMETERS")
-    kv("Efficiency η distribution",  env.cfg["efficiency_dist"],  "", C.BMAGENTA)
-    kv("η lower bound",              env.cfg["efficiency_p1"],    "", C.BWHITE)
-    kv("η upper bound",              env.cfg["efficiency_p2"],    "", C.BWHITE)
+        # ── Project footer ────────────────────────────────────
+        print(c(f"  └" + "─" * W, C.BCYAN))
 
     # ── HOW TO PLAY ────────────────────────────────────────────
     blank()
@@ -324,6 +343,64 @@ def print_portfolio_profile(env: PortfolioEnv, state: dict):
     blank()
     ruler("═", C.PINK)
     blank()
+
+def print_milestone_history_box(ms_history: list):
+    BOX_W = 52
+    oc    = C.BCYAN
+
+    top_label = " Milestone History "
+    top_fill  = "─" * (BOX_W - len(top_label) - 1)
+    top_line  = "┌" + "─" + top_label + top_fill + "┐"
+    bot_line  = "└" + "─" * BOX_W + "┘"
+
+    def ms_row(label, value, val_col=C.BWHITE, suffix=""):
+        colored_inner = (
+            c(f"  {label:<28}", oc) +
+            c(str(value), val_col, C.BOLD) +
+            (c(suffix, C.DIM) if suffix else "")
+        )
+        raw_len = len(_ANSI_RE.sub("", colored_inner))
+        pad = max(0, BOX_W - raw_len)
+        left  = c("│", oc)
+        right = c("│", oc)
+        print(f"    {left}{colored_inner}{' ' * pad}{right}")
+
+    print()
+    print("    " + c(top_line, oc))
+
+    for ms in ms_history:
+        certified  = ms["certified"]
+        t_str      = f"t={ms['certified_t']}" if certified else "—"
+        status_str = "CERTIFIED" if certified else "PENDING"
+        status_col = C.BGREEN if certified else C.BYELLOW
+        final_tag  = c("  ★ FINAL", C.BYELLOW) if ms["is_final"] else ""
+        label_str  = (
+            f"  MS {ms['j']}  "
+            f"{ms['threshold']*100:.0f}%  "
+            f"{t_str}"
+        )
+        net_label  = "net received" if certified else "net expected"
+        net_col    = C.BGREEN if certified else C.DIM
+
+        # header row
+        colored_inner = (
+            c(label_str, oc) +
+            c(status_str, status_col, C.BOLD) +
+            final_tag
+        )
+        raw_len = len(_ANSI_RE.sub("", colored_inner))
+        pad = max(0, BOX_W - raw_len)
+        print(f"    {c('│', oc)}{colored_inner}{' ' * pad}{c('│', oc)}")
+
+        # amounts row
+        ms_row(
+            f"    gross {ms['gross']:.2f}",
+            f"{ms['net']:.2f}",
+            net_col,
+            f"  {net_label}"
+        )
+
+    print("    " + c(bot_line, oc))
 
 
 # ═════════════════════════════════════════════════════════════
@@ -384,6 +461,7 @@ def print_period_state(state: dict):
         #         correctly reflects whether the milestone is reachable in
         #         the period the agent is about to execute.
         if status == "active" and tp is not None:
+            print_milestone_history_box(p["ms_history"])
             print_trajectory_box(
                 next_period=t + 1,          # ← FIX 1: was `tp`
                 prog_actual=prog,
@@ -580,11 +658,17 @@ def print_episode_summary(env: PortfolioEnv, total_reward: float, periods_done: 
 # CONFIG SELECTOR
 # ═════════════════════════════════════════════════════════════
 
+METHOD_REGISTRY = {
+    "1": ("manual",     "Manual",      True,  "Interactive manual allocation"),
+    "2": ("rl",         "RL Agent",    False, "Trained PPO model — not yet available"),
+    "3": ("milp",       "MILP",        False, "Deterministic upper bound solver — not yet available"),
+    "4": ("baseline_1", "Baseline 1",  False, "Placeholder — not yet defined"),
+    "5": ("baseline_2", "Baseline 2",  False, "Placeholder — not yet defined"),
+    "6": ("baseline_3", "Baseline 3",  False, "Placeholder — not yet defined"),
+}
+
+
 def select_config() -> str:
-    """
-    Prompt the user to choose a configuration from CONFIG_REGISTRY.
-    Returns the config_id string produced by the chosen seed function.
-    """
     blank()
     ruler("═", C.BMAGENTA)
     print(c(f"  {'SELECT CONFIGURATION':^{W}}", C.BOLD, C.BMAGENTA))
@@ -616,6 +700,50 @@ def select_config() -> str:
     return seed_fn, description
 
 
+def select_method() -> str:
+    blank()
+    ruler("═", C.BMAGENTA)
+    print(c(f"  {'SELECT METHOD':^{W}}", C.BOLD, C.BMAGENTA))
+    ruler("═", C.BMAGENTA)
+    blank()
+
+    selectable = []
+    for key, (method_id, label, available, description) in METHOD_REGISTRY.items():
+        if available:
+            print(c(f"    [{key}]  {label:<14}", C.BWHITE) +
+                  c(f"  {description}", C.DIM))
+            selectable.append(key)
+        else:
+            print(c(f"    [ ]  {label:<14}", C.DIM) +
+                  c(f"  {description}", C.DIM))
+
+    blank()
+
+    while True:
+        prompt = (
+            c("  ❯ ", C.PINK, C.BOLD) +
+            c(f"Enter choice [{'/'.join(selectable)}]: ", C.WHITE)
+        )
+        choice = input(prompt).strip()
+        if choice in selectable:
+            break
+        print(c(f"  ✗  Invalid choice. Enter one of: {', '.join(selectable)}", C.BRED))
+
+    method_id, label, _, _ = METHOD_REGISTRY[choice]
+    blank()
+    print(c(f"  ✔  Method: {label}", C.BGREEN, C.BOLD))
+    blank()
+    return method_id
+
+
+def get_episode_number(conn: sqlite3.Connection, config_id: str) -> int:
+    row = conn.execute(
+        "SELECT COUNT(DISTINCT episode_id) FROM portfolios WHERE config_id = ?",
+        (config_id,)
+    ).fetchone()
+    return (row[0] or 0) + 1
+
+
 # ═════════════════════════════════════════════════════════════
 # MAIN
 # ═════════════════════════════════════════════════════════════
@@ -626,10 +754,13 @@ def run():
     seed_fn, _ = select_config()
     config_id = seed_fn(conn)
 
-    env = PortfolioEnv(conn, config_id, method="rl")
+    method = select_method()
+    episode_number = get_episode_number(conn, config_id)
+
+    env = PortfolioEnv(conn, config_id, method=method)
 
     state = env.reset()
-    print_portfolio_profile(env, state)
+    print_portfolio_profile(env, state, episode_number)
 
     total_reward = 0.0
     periods_done = 0
