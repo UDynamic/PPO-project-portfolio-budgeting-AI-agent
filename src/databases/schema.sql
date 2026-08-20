@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS projects_profile (
     advance_recovery    REAL NOT NULL,
     retention_rate      REAL NOT NULL,
     schedule_cap        INTEGER NOT NULL,
+    plan_deviation_threshold REAL NOT NULL DEFAULT 0.10,
     cost_cap            REAL NOT NULL,
     cure_length         INTEGER NOT NULL,
 
@@ -249,6 +250,7 @@ CREATE TABLE IF NOT EXISTS projects_status (
     eac                 REAL,
 
     schedule_slip       REAL,
+    plan_deviation      REAL,
     cost_overrun        REAL,
     forecast_finish     REAL,
 

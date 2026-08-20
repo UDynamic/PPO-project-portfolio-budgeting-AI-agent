@@ -98,7 +98,21 @@ def earned_schedule(progress_actual: float, duration: int,
             hi = mid
     return (lo + hi) / 2.0
 
+def _termination_settlement(proj: dict, ps: dict) -> float:
+    """
+    R_i^term = (P_actual × CP_i) − cumulative_inflows_received
 
+    The contractor is entitled to CP_i × P_actual for work delivered.
+    Against that, they have already received: the advance payment plus
+    all net milestone payments certified to date.
+    The difference is the settlement — positive means the contractor
+    receives a balancing payment; negative means the contractor owes
+    the difference back.
+    """
+    entitlement        = ps["progress"] * proj["price"]
+    cumulative_inflows = ps["advance_received"] + ps["milestone_inflows"]
+    return entitlement - cumulative_inflows
+    
 # ─────────────────────────────────────────────────────────────
 # ENVIRONMENT
 # ─────────────────────────────────────────────────────────────
@@ -249,11 +263,13 @@ class PortfolioEnv:
                 advance_amount = proj["advance_percent"] * proj["price"]
                 total_inflow += advance_amount
                 proj_cashflow[i]["advance"] = advance_amount
+                ps["advance_received"] = advance_amount
 
             elif self.t == 0 and proj["start"] == 0 and i in self._t0_advances:
                 advance_amount = self._t0_advances.pop(i)
                 total_inflow += advance_amount
                 proj_cashflow[i]["advance"] = advance_amount
+                ps["advance_received"] = advance_amount
 
             if ps["status"] in ("completed", "terminated"):
                 self._write_project_row(i, proj, ps, 0.0, None,
@@ -277,6 +293,8 @@ class PortfolioEnv:
                 ps["t_project"], proj["duration"],
                 proj["scurve_a"], proj["scurve_b"]
             )
+
+            ps["plan_deviation"] = ps["progress_plan"] - ps["progress"]
 
             ps["acwp"] += alloc
             total_outflow += alloc
@@ -343,6 +361,7 @@ class PortfolioEnv:
                     ms["payment_released"] = net
                     payment_net = (payment_net or 0.0) + net
                     ps["advance_recovered"] += recovery
+                    ps["milestone_inflows"] += net
                     ps["retention_held"] += retention_held
                     total_inflow += net
                     proj_cashflow[i]["milestone_gross"] += gross
@@ -357,15 +376,20 @@ class PortfolioEnv:
                 ps["retention_released"] = True
                 proj_cashflow[i]["retention_release"] = retention_release
 
-            schedule_breach = ps["schedule_slip"] > proj["schedule_cap"]
-            if alloc < 1e-9 and ps["status"] == "active":
-                cost_breach = True
-            else:
-                cost_breach = ps["eac"] > proj["cost_cap"] * proj["budget"]
+            idle_breach      = alloc < 1e-9
+            schedule_breach  = ps["schedule_slip"] > proj["schedule_cap"]
+            cost_breach      = ps["eac"] > proj["cost_cap"] * proj["budget"]
+            deviation_breach = ps["plan_deviation"] > self.cfg["plan_deviation_threshold"]
 
-            if (schedule_breach and cost_breach) and ps["status"] == "active":
+            any_breach = (
+                idle_breach
+                or deviation_breach
+                or (schedule_breach and cost_breach)
+            )
+
+            if any_breach and ps["status"] == "active":
                 ps["cure_remaining"] -= 1
-            else:
+            elif ps["status"] == "active" and not any_breach:
                 ps["cure_remaining"] = proj["cure_length"]
 
             if ps["cure_remaining"] <= 0 and ps["status"] == "active":
@@ -501,6 +525,7 @@ class PortfolioEnv:
                 "finish": proj["finish"],
                 "progress": ps["progress"],
                 "progress_plan": ps["progress_plan"],
+                "plan_deviation": ps["plan_deviation"],
                 "spi": ps["spi"],
                 "cpi": ps["cpi"],
                 "tcpi": ps["tcpi"],
@@ -644,6 +669,7 @@ class PortfolioEnv:
             "t_project": None,
             "progress": 0.0,
             "progress_plan": 0.0,
+            "plan_deviation": 0.0,
             "progress_increment": 0.0,
             "acwp": 0.0,
             "spi": 1.0,
@@ -654,7 +680,9 @@ class PortfolioEnv:
             "cost_overrun": 0.0,
             "forecast_finish": float(proj["finish"]),
             "cure_remaining": proj["cure_length"],
+            "advance_received": 0.0,
             "advance_recovered": 0.0,
+            "milestone_inflows": 0.0,
             "retention_held": 0.0,
             "retention_released": False,
         }
@@ -710,16 +738,16 @@ class PortfolioEnv:
                  allocation, efficiency,
                  progress, progress_plan, progress_increment,
                  spi, cpi, tcpi, eac,
-                 schedule_slip, cost_overrun, forecast_finish,
+                 schedule_slip, plan_deviation, cost_overrun, forecast_finish,
                  cure_remaining,
                  advance_amount, payment_net, retention_release, settlement)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             self.episode_id, i, self.t, ps["t_project"], self.method, ps["status"],
             allocation, efficiency,
             ps["progress"], ps["progress_plan"], ps["progress_increment"],
             ps["spi"], ps["cpi"], ps["tcpi"], ps["eac"],
-            ps["schedule_slip"], ps["cost_overrun"], ps["forecast_finish"],
+            ps["schedule_slip"], ps["plan_deviation"], ps["cost_overrun"], ps["forecast_finish"],
             ps["cure_remaining"],
             advance_amount, payment_net, retention_release, settlement
         ))

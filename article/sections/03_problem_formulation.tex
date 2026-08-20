@@ -434,32 +434,37 @@ Upon termination at $t_i^{\mathrm{term}}$, the net settlement payment
 is:
 \begin{equation}
   R_i^{\mathrm{term}}
-    = P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}} \cdot CP_i (1-\rho_i)
-      - \Bigl(A_i
-          - \sum_{j \in \mathcal{M}_i^{\mathrm{cert}}(t_i^{\mathrm{term}})}
-              \delta_i^{\mathrm{rec}} \cdot \phi_{i,j} \cdot CP_i
-              \cdot \mathbf{1}\!\Bigl\{
-                \textstyle\sum_{k \leq j} \phi_{i,k} \geq \psi_i
-              \Bigr\}
-        \Bigr).
+    = P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}} \cdot CP_i
+      \;-\;
+      \Biggl(
+        A_i
+        + \sum_{j \in \mathcal{M}_i^{\mathrm{cert}}(t_i^{\mathrm{term}})}
+            R_{i,j}^{\mathrm{net}}
+      \Biggr).
   \label{eq:term_settlement}
 \end{equation}
-The first term is the value of work delivered net of retention; the
-second is the outstanding advance not yet recovered through milestone
-deductions. Negative $R_i^{\mathrm{term}}$ constitutes a net contractor obligation,
-recovered from portfolio inflows in subsequent periods consistent with
-FIDIC termination clauses \citep{FIDIC2017}. The settlement formula
-values delivered work at $P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}}
-\cdot CP_i(1-\rho_i)$ --- the fraction of contract price attributable
-to physically completed scope, net of retention. This is not a penalty
-construct; it is a direct valuation of productive assets transferred at
-termination \citep{Dixit1994}, grounding the model's financial signals
-in the real asset value of work in place rather than in arbitrarily
-weighted deviation terms. A portfolio manager interpreting a negative
-$R_i^{\mathrm{term}}$ correctly reads it as the cost of having disbursed
-an advance against work that was never delivered --- a capital allocation
-error whose financial consequence is fully determined by the contract
-without requiring external calibration.
+The first term is the contractor's entitlement for work physically
+delivered: the fraction of contract price proportional to actual
+progress at termination. The second term is the cumulative inflows
+already received: the advance payment $A_i$ plus all net milestone
+payments $R_{i,j}^{\mathrm{net}}$ certified up to and including
+$t_i^{\mathrm{term}}$, where $R_{i,j}^{\mathrm{net}}$ is as defined
+in \eqref{eq:Rnet}. The settlement is the difference between what the
+contractor is owed for delivered scope and what they have already
+collected.
+
+Positive $R_i^{\mathrm{term}}$ arises when delivered work exceeds
+cumulative receipts --- typically when termination occurs just below a
+milestone threshold, so the contractor has performed work not yet
+captured in a certified payment. Negative $R_i^{\mathrm{term}}$
+constitutes a net contractor obligation --- typically when a large
+advance has been disbursed against work that was not subsequently
+delivered, or when certified milestone payments have run ahead of
+physical progress. In either case the settlement is fully determined
+by contract parameters and the progress level at termination; no
+penalty term or external calibration is required. This grounds the
+model's financial signals in the real asset value of work in place
+\citep{Dixit1994} rather than in arbitrarily weighted deviation terms.
 
 \begin{figure}[htbp]
   \centering
@@ -530,16 +535,16 @@ without requiring external calibration.
       node[above, font=\normalsize, sloped] {conditions inactive}
       (normal);
 
-    \draw[->, thick, green!60!black]
+      \draw[->, thick, green!60!black]
       (term.east) to[out=30, in=180]
       node[midway, above, font=\normalsize, sloped]
-        {$R_i^{\mathrm{term}} > 0$}
+        {$R_i^{\mathrm{term}} > 0$ (balancing receipt)}
       (posout.west);
 
     \draw[->, thick, blue!60!black]
       (term.east) to[out=-30, in=180]
       node[midway, below, font=\normalsize, sloped]
-        {$R_i^{\mathrm{term}} < 0$}
+        {$R_i^{\mathrm{term}} < 0$ (contractor obligation)}
       (negout.west);
 
   \end{tikzpicture}%
@@ -1279,8 +1284,8 @@ period:
     $V_t$ via \eqref{eq:Rnet}--\eqref{eq:Vt}.
   \item Update portfolio cash balance via \eqref{eq:balance}.
   \item Execute termination for any project with
-    $\tau_{i,t}^{\mathrm{rem}} = 0$, compute
-    $R_i^{\mathrm{term}}$ via \eqref{eq:term_settlement}.
+    $\tau_{i,t}^{\mathrm{rem}} = 0$ or $t \geq f_i + \Omega_i$,
+    compute $R_i^{\mathrm{term}}$ via \eqref{eq:term_settlement}.
 \end{enumerate}
 The transition kernel is Markovian: $S_{t+1}$ depends on
 $(S_t, \mathbf{x}_t, \boldsymbol{\eta}_t)$ only, not on

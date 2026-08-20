@@ -218,10 +218,14 @@ environment where future projects are foregone while current ones remain
 incomplete \citep{Damodaran2012}. This interpretation gives $\gamma$ a
 concrete calibration anchor beyond abstract preference --- it can be estimated
 from the firm's observed pipeline redeployment rates or from prevailing
-cost-of-capital benchmarks. The termination settlement further grounds the
-model in real asset values: the settlement payment computes the liquidation
-value of assets in place at termination \citep{Dixit1994, Huchzermeier2001},
-not an arbitrarily weighted deviation penalty. A consequence is that the learned policy may
+cost-of-capital benchmarks. The termination settlement further grounds the model in real asset values: the
+settlement payment $R_i^{\mathrm{term}} = P_{i,t}^{\mathrm{actual}} \cdot
+CP_i - (A_i + \sum_{j \in \mathcal{M}_i^{\mathrm{cert}}} R_{i,j}^{\mathrm{net}})$
+computes the difference between the contractor's entitlement for work delivered
+and cumulative inflows already received, which can be positive or negative
+depending on progress at termination relative to certified payments
+\citep{Dixit1994, Huchzermeier2001}, rather than an arbitrarily weighted
+deviation penalty. A consequence is that the learned policy may
 produce allocation trajectories that concentrate expenditure around milestone
 certification thresholds, mirroring documented contractor financial strategy
 in milestone-payment contracts \citep{Kenley2009, Kaka1993, Arditi2005}.
@@ -263,20 +267,21 @@ it involves performance signals, contractual obligations, and timing all at
 once.
 
 The present model integrates all three dimensions into a single environment
-mechanic. Termination is triggered when two conditions hold simultaneously: the
-forecast finish deviation has exceeded the contractual schedule tolerance
-(Condition~1), and the Estimate at Completion $\mathrm{EAC}_{i,t} =
-\mathrm{ACWP}_{i,t} + (\mathrm{BAC}_i -
-\mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ has
-exceeded the project-specific maximum tolerable cost overrun
-$(1+\mu_i)\cdot\mathrm{BAC}_i$ (Condition~2). Both conditions are
-forward-looking trajectory estimates symmetric in structure: remaining planned
-work divided by current performance rate, projected forward to completion
-\citep{Fleming2010, christensen1993est}. Rather than executing immediately, the environment decrements a
-project-specific tolerance counter $\tau_{i,t}^{\mathrm{rem}}$, which
-represents the remaining cure period. Termination executes only when the counter
-reaches zero; if either condition lapses before then, the counter resets to its
-project-specific maximum $\tau_i^{\mathrm{tol}}$. This mechanic is grounded
+mechanic. The cure period counter $\tau_{i,t}^{\mathrm{rem}}$ decrements by
+exactly one whenever any of three breach conditions is active: zero allocation
+to an active project; simultaneous breach of the contractual schedule tolerance
+$\Omega_i$ by the forecast finish deviation and of the cost cap
+$(1+\mu_i)\cdot\mathrm{BAC}_i$ by $\mathrm{EAC}_{i,t}$; or plan deviation
+exceeding a contractual threshold, grounded in the FIDIC engineer's authority
+to issue a notice when progress falls materially behind programme
+\citep{FIDIC2017}. The schedule--cost condition is forward-looking and
+symmetric in structure: remaining planned work divided by current performance
+rate, projected forward to completion \citep{Fleming2010, christensen1993est}.
+Multiple simultaneous breaches decrement the counter by exactly one. The
+counter resets to $\tau_i^{\mathrm{tol}}$ only when all three conditions are
+fully clear; partial resolution does not reset it. Termination executes when
+the counter reaches zero, or unconditionally at the hard deadline
+$f_i + \Omega_i$ if the project remains active. This mechanic is grounded
 simultaneously in FIDIC contract law \citep{FIDIC2017, Ndekugri2008}, the real
 options framing of the abandonment threshold \citep{Dixit1994,
 Huchzermeier2001}, the EVM literature's validation of EAC as a stable
