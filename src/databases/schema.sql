@@ -105,6 +105,8 @@ CREATE TABLE IF NOT EXISTS environment_config (
     retention_rate_p3       REAL,
     retention_rate_p4       REAL,
 
+    plan_deviation_threshold REAL NOT NULL DEFAULT 0.10,
+
     schedule_cap_dist       TEXT NOT NULL,
     schedule_cap_p1         REAL NOT NULL,
     schedule_cap_p2         REAL,

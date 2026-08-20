@@ -92,8 +92,9 @@ def seed_dual_project(conn: sqlite3.Connection) -> str:
             retention_rate_dist, retention_rate_p1,
             retention_rate_p2, retention_rate_p3, retention_rate_p4,
 
+            plan_deviation_threshold,
+
             schedule_cap_dist, schedule_cap_p1,
-            plan_deviation_threshold=0.10,
             schedule_cap_p2, schedule_cap_p3, schedule_cap_p4,
 
             cost_cap_dist, cost_cap_p1,
@@ -164,6 +165,9 @@ def seed_dual_project(conn: sqlite3.Connection) -> str:
 
             -- schedule cap: 3 periods
             'fixed', 3, NULL, NULL, NULL,
+
+            -- plan deviation threshold
+            0.10,
 
             -- cost cap: 1.30×
             'fixed', 1.30, NULL, NULL, NULL,
