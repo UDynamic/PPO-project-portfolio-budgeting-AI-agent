@@ -299,14 +299,29 @@ class PortfolioEnv:
                     ms["certified"] = True
                     ms["certified_t"] = self.t
                     gross = ms["payment_weight"] * proj["price"]
-                    recovery = gross * proj["advance_recovery"]
-                    retention_held = gross * proj["retention_rate"]
-                    net = gross - recovery - retention_held
+                    # Cap advance recovery so the cumulative amount recovered
+                    # never exceeds the advance actually received. Once fully
+                    # recovered, later milestones no longer have recovery
+                    # deducted from them.
+                    remaining_advance = max(
+                        0.0, ps["advance_received"] - ps["advance_recovered"]
+                    )
+                    recovery = min(gross * proj["advance_recovery"], remaining_advance)
+                    is_final = ms["threshold"] >= 1.0
+                    if is_final:
+                        # Final milestone: no new retention withheld.
+                        # Net = gross minus advance recovery only.
+                        # All previously held retention is released separately
+                        # via the retention_release path below (ps["status"] == completed).
+                        retention_withheld = 0.0
+                    else:
+                        retention_withheld = gross * proj["retention_rate"]
+                    net = gross - recovery - retention_withheld
                     ms["payment_released"] = net
                     payment_net = (payment_net or 0.0) + net
                     ps["advance_recovered"] += recovery
                     ps["milestone_inflows"] += net
-                    ps["retention_held"] += retention_held
+                    ps["retention_held"] += retention_withheld
                     total_inflow += net
                     proj_cashflow[i]["milestone_gross"] += gross
                     proj_cashflow[i]["milestone_net"]   += net
