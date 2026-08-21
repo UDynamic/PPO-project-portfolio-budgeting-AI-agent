@@ -237,6 +237,8 @@ class PortfolioEnv:
                 "milestone_net": 0.0,
                 "retention_release": 0.0,
                 "settlement": 0.0,
+                "interest_cost": 0.0,
+                "treasury_draw": 0.0,
             }
             for proj in self.projects
         ]
@@ -253,8 +255,9 @@ class PortfolioEnv:
             if self.t < proj["start"]:
                 ps["status"] = None
                 self._write_project_row(i, proj, ps, alloc, eta,
-                                        advance_amount, payment_net,
-                                        retention_release, settlement)
+                                    advance_amount, payment_net,
+                                    retention_release, settlement,
+                                    interest_cost, treasury_draw)
                 continue
 
             if self.t == proj["start"] and proj["start"] > 0:
@@ -285,6 +288,51 @@ class PortfolioEnv:
             )
             eta = max(0.01, eta)
 
+            # ── Milestone certifications (moved up) ───────────
+            # Must happen before interest calculation so that this
+            # period's milestone_inflows are included in
+            # cumulative_inflows before the treasury draw is computed.
+            for j, ms in enumerate(self.milestones[i]):
+                if ms["certified"]:
+                    continue
+                if ps["progress"] >= ms["threshold"] and self.t >= ms["earliest_t"]:
+                    ms["certified"] = True
+                    ms["certified_t"] = self.t
+                    gross = ms["payment_weight"] * proj["price"]
+                    recovery = gross * proj["advance_recovery"]
+                    retention_held = gross * proj["retention_rate"]
+                    net = gross - recovery - retention_held
+                    ms["payment_released"] = net
+                    payment_net = (payment_net or 0.0) + net
+                    ps["advance_recovered"] += recovery
+                    ps["milestone_inflows"] += net
+                    ps["retention_held"] += retention_held
+                    total_inflow += net
+                    proj_cashflow[i]["milestone_gross"] += gross
+                    proj_cashflow[i]["milestone_net"]   += net
+                    self._write_milestone_status(i, j, ms)
+                    self.conn.commit()
+
+            # ── Interest calculation ──────────────────────────
+            # treasury_draw: the portion of (cumulative_cost so far +
+            # this period's allocation) not covered by external inflows
+            # (advance + milestone receipts, already updated above).
+            # interest_cost is charged on top of the allocation and does
+            # not reduce productive progress.
+            monthly_rate = cfg["annual_interest_rate"] / 12.0
+            cumulative_inflows = ps["advance_received"] + ps["milestone_inflows"]
+            treasury_draw = max(
+                0.0,
+                (ps["cumulative_cost"] + alloc) - cumulative_inflows
+            )
+            interest_cost = monthly_rate * treasury_draw
+            ps["treasury_draw"] = treasury_draw
+            proj_cashflow[i]["treasury_draw"] = treasury_draw
+            proj_cashflow[i]["interest_cost"] = interest_cost
+
+            # ── Progress from full allocation ─────────────────
+            # Interest does not reduce productive spend.
+            # x_i(t) drives progress in full.
             increment = (alloc / proj["budget"]) * eta if proj["budget"] > 0 else 0.0
             ps["progress"] = min(1.0, ps["progress"] + increment)
             ps["progress_increment"] = increment
@@ -296,9 +344,14 @@ class PortfolioEnv:
 
             ps["plan_deviation"] = ps["progress_plan"] - ps["progress"]
 
-            ps["acwp"] += alloc
-            total_outflow += alloc
+            # ── Debit treasury: allocation + interest cost ────
+            total_debit = alloc + interest_cost
+            ps["acwp"] += total_debit
+            total_outflow += total_debit
             proj_cashflow[i]["allocation"] = alloc
+
+            # ── Update cumulative cost ────────────────────────
+            ps["cumulative_cost"] += total_debit
 
             bcwp = ps["progress"] * proj["budget"]
             acwp = ps["acwp"]
@@ -348,27 +401,6 @@ class PortfolioEnv:
             ps["schedule_slip"] = ps["forecast_finish"] - proj["finish"]
             ps["cost_overrun"]  = ps["eac"] - proj["budget"]
 
-            for j, ms in enumerate(self.milestones[i]):
-                if ms["certified"]:
-                    continue
-                if ps["progress"] >= ms["threshold"] and self.t >= ms["earliest_t"]:
-                    ms["certified"] = True
-                    ms["certified_t"] = self.t
-                    gross = ms["payment_weight"] * proj["price"]
-                    recovery = gross * proj["advance_recovery"]
-                    retention_held = gross * proj["retention_rate"]
-                    net = gross - recovery - retention_held
-                    ms["payment_released"] = net
-                    payment_net = (payment_net or 0.0) + net
-                    ps["advance_recovered"] += recovery
-                    ps["milestone_inflows"] += net
-                    ps["retention_held"] += retention_held
-                    total_inflow += net
-                    proj_cashflow[i]["milestone_gross"] += gross
-                    proj_cashflow[i]["milestone_net"]   += net
-                    self._write_milestone_status(i, j, ms)
-                    self.conn.commit()
-
             if ps["progress"] >= 1.0 and ps["status"] == "active":
                 ps["status"] = "completed"
                 retention_release = ps["retention_held"]
@@ -394,20 +426,21 @@ class PortfolioEnv:
 
             if ps["cure_remaining"] <= 0 and ps["status"] == "active":
                 ps["status"] = "terminated"
-                settlement = -(ps["acwp"] * 0.05)
+                settlement = _termination_settlement(proj, ps)
                 total_inflow += settlement
                 proj_cashflow[i]["settlement"] = settlement
 
             deadline = proj["finish"] + proj["schedule_cap"]
             if self.t >= deadline and ps["status"] == "active":
                 ps["status"] = "terminated"
-                settlement = -(ps["acwp"] * 0.05)
+                settlement = _termination_settlement(proj, ps)
                 total_inflow += settlement
                 proj_cashflow[i]["settlement"] = settlement
 
             self._write_project_row(i, proj, ps, alloc, eta,
                                     advance_amount, payment_net,
-                                    retention_release, settlement)
+                                    retention_release, settlement,
+                                    interest_cost, treasury_draw)
 
         self.budget = self.budget - total_outflow + total_inflow
 
@@ -685,6 +718,8 @@ class PortfolioEnv:
             "milestone_inflows": 0.0,
             "retention_held": 0.0,
             "retention_released": False,
+            "cumulative_cost": 0.0,
+            "treasury_draw": 0.0,
         }
 
     # ── DB WRITERS ───────────────────────────────────────────
@@ -731,7 +766,8 @@ class PortfolioEnv:
 
     def _write_project_row(self, i, proj, ps, allocation, efficiency,
                            advance_amount, payment_net,
-                           retention_release, settlement):
+                           retention_release, settlement,
+                           interest_cost=0.0, treasury_draw=0.0):
         self.conn.execute("""
             INSERT INTO projects_status
                 (episode_id, i, t_episode, t_project, method, status,
@@ -740,8 +776,9 @@ class PortfolioEnv:
                  spi, cpi, tcpi, eac,
                  schedule_slip, plan_deviation, cost_overrun, forecast_finish,
                  cure_remaining,
-                 advance_amount, payment_net, retention_release, settlement)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 advance_amount, payment_net, retention_release, settlement,
+                 interest_cost, treasury_draw)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             self.episode_id, i, self.t, ps["t_project"], self.method, ps["status"],
             allocation, efficiency,
@@ -749,7 +786,8 @@ class PortfolioEnv:
             ps["spi"], ps["cpi"], ps["tcpi"], ps["eac"],
             ps["schedule_slip"], ps["plan_deviation"], ps["cost_overrun"], ps["forecast_finish"],
             ps["cure_remaining"],
-            advance_amount, payment_net, retention_release, settlement
+            advance_amount, payment_net, retention_release, settlement,
+            interest_cost, treasury_draw
         ))
 
     def _write_milestone_status(self, i, j, ms):

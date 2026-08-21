@@ -162,7 +162,9 @@ CREATE TABLE IF NOT EXISTS environment_config (
     earliest_t_fraction_p1      REAL NOT NULL,
     earliest_t_fraction_p2      REAL,
     earliest_t_fraction_p3      REAL,
-    earliest_t_fraction_p4      REAL
+    earliest_t_fraction_p4      REAL,
+
+    annual_interest_rate        REAL NOT NULL
 );
 
 
@@ -262,6 +264,9 @@ CREATE TABLE IF NOT EXISTS projects_status (
     payment_net         REAL,
     retention_release   REAL,
     settlement          REAL,
+
+    interest_cost       REAL,
+    treasury_draw       REAL,
 
     PRIMARY KEY (episode_id, i, t_episode, method),
     FOREIGN KEY (episode_id, i) REFERENCES projects_profile(episode_id, i)

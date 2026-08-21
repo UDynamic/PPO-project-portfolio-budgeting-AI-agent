@@ -88,7 +88,9 @@ def seed_single_project(conn: sqlite3.Connection) -> str:
             payment_weight_p2, payment_weight_p3, payment_weight_p4,
 
             earliest_t_fraction_dist, earliest_t_fraction_p1,
-            earliest_t_fraction_p2, earliest_t_fraction_p3, earliest_t_fraction_p4
+            earliest_t_fraction_p2, earliest_t_fraction_p3, earliest_t_fraction_p4,
+
+            annual_interest_rate
         )
         VALUES (
             ?, ?, ?,
@@ -138,7 +140,10 @@ def seed_single_project(conn: sqlite3.Connection) -> str:
 
             'fixed', 0.25, NULL, NULL, NULL,
 
-            'fixed', 1.0, NULL, NULL, NULL
+            'fixed', 1.0, NULL, NULL, NULL,
+
+            -- annual interest rate: 12% per year → monthly_rate = 0.01
+            0.12
         )
     """, (config_id, "single_project_baseline", datetime.utcnow().isoformat()))
 

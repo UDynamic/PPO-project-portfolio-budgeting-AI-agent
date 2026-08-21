@@ -4,7 +4,7 @@
 # Run with:  python terminal_ui.py
 #
 # Tab 0  — Portfolio  : period, budget, reward, cash-flow log, allocation input
-# Tab 1+ — Project i  : EVM signals, breach conditions, milestone history, next payment
+# Tab 1+ — Project i  : scrollable DataTable (rows = periods, columns = all signals)
 
 from __future__ import annotations
 
@@ -14,12 +14,12 @@ from typing import Optional
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
+from textual.containers import Container, Horizontal, Vertical
 from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import (
-    Button, Footer, Header, Input,
+    Button, DataTable, Footer, Header, Input,
     Label, RichLog, Static, TabbedContent, TabPane,
 )
 from rich.text import Text
@@ -36,6 +36,75 @@ CONFIG_REGISTRY = {
     "1": ("config_seed_sp", "seed_single_project", "Single project  — CFG-SINGLE-001"),
     "2": ("config_seed_dp", "seed_dual_project",   "Dual project    — CFG-DUAL-001"),
 }
+
+
+# ─────────────────────────────────────────────────────────────
+# COLUMN DEFINITIONS
+# Each entry: (key_in_state, label, width, format_fn)
+# ─────────────────────────────────────────────────────────────
+
+def _fmt_f4(v) -> str:
+    return f"{v:.4f}" if v is not None else "—"
+
+def _fmt_f2(v) -> str:
+    return f"{v:.2f}" if v is not None else "—"
+
+def _fmt_pct(v) -> str:
+    return f"{v*100:.2f}%" if v is not None else "—"
+
+def _fmt_int(v) -> str:
+    return str(int(v)) if v is not None else "—"
+
+def _fmt_mu(v) -> str:
+    return f"{v:,.2f}" if v is not None else "—"
+
+def _fmt_bool_breach(v) -> str:
+    return "✘" if v else "✔"
+
+def _fmt_status(v) -> str:
+    return (v or "—").upper()
+
+# (column_id, header_label, width, format_fn)
+PROJECT_COLUMNS: list[tuple[str, str, int, callable]] = [
+    # ── identity ──────────────────────────────────────────────
+    ("t",                       "t",             4,  _fmt_int),
+    ("status",                  "Status",        12, _fmt_status),
+    # ── progress ──────────────────────────────────────────────
+    ("progress",                "Progress",      10, _fmt_f4),
+    ("progress_plan",           "Plan",          10, _fmt_f4),
+    ("plan_deviation",          "Deviation",     10, _fmt_f4),
+    # ── EVM ───────────────────────────────────────────────────
+    ("spi",                     "SPI(t)",        9,  _fmt_f4),
+    ("cpi",                     "CPI",           9,  _fmt_f4),
+    ("tcpi",                    "TCPI",          9,  _fmt_f4),
+    ("eac",                     "EAC",           12, _fmt_mu),
+    ("eac_bac",                 "EAC/BAC",       10, _fmt_f4),
+    ("schedule_slip",           "SchedSlip",     10, _fmt_f2),
+    ("cure_remaining",          "CureLeft",      9,  _fmt_int),
+    # ── breach flags ──────────────────────────────────────────
+    ("breach_deviation",        "B:Dev",         7,  _fmt_bool_breach),
+    ("breach_schedule",         "B:Sched",       9,  _fmt_bool_breach),
+    ("breach_cost",             "B:Cost",        8,  _fmt_bool_breach),
+    ("breach_both",             "B:Both",        8,  _fmt_bool_breach),
+    # ── cash-flow (for the period just executed) ─────────────
+    ("allocation",              "Alloc",         10, _fmt_mu),
+    ("advance",                 "Advance",       10, _fmt_mu),
+    ("milestone_net",           "MS Net",        10, _fmt_mu),
+    ("retention_release",       "Ret.Rel.",      10, _fmt_mu),
+    ("settlement",              "Settle",        10, _fmt_mu),
+    # ── next milestone ────────────────────────────────────────
+    ("next_ms_threshold_gap",   "NextGap",       10, _fmt_f4),
+    ("next_ms_net_payment",     "NextPay",       10, _fmt_mu),
+    ("next_ms_earliest_t",      "NextEarliest",  13, _fmt_int),
+    ("next_ms_is_final",        "IsFinal",       9,
+     lambda v: "★ yes" if v else "no"),
+    # ── period reward ─────────────────────────────────────────
+    ("period_reward",           "Reward",        10, _fmt_f4),
+]
+
+COLUMN_IDS  = [c[0] for c in PROJECT_COLUMNS]
+COLUMN_HDRS = [c[1] for c in PROJECT_COLUMNS]
+COLUMN_FMTS = {c[0]: c[3] for c in PROJECT_COLUMNS}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -107,36 +176,15 @@ TabPane {
     width: 20;
 }
 
-/* ── project tab — 2×2 CSS grid ── */
-/*
-   Each ProjectTab renders a Container with class proj-grid.
-   CSS grid places children in reading order: evm (0,0), ms (0,1),
-   breach (1,0), next (1,1). We override order below.
-*/
-.proj-grid {
-    layout: grid;
-    grid-size: 2;
-    grid-rows: 1fr 1fr;
-    grid-gutter: 1;
+/* ── project tab — full-height DataTable ── */
+.proj-table-pane {
     height: 1fr;
+    padding: 0;
 }
 
-/* panel base — shared */
-.evm-panel,
-.breach-panel,
-.ms-panel,
-.next-panel {
-    padding: 1;
-    background: $panel;
+DataTable {
     height: 1fr;
 }
-
-/* individual borders */
-.evm-panel    { border: solid $primary-darken-2; }
-.ms-panel     { border: solid $primary-darken-2; }
-.breach-panel { border: solid $warning-darken-1; }
-.next-panel   { border: solid $accent; }
-
 
 /* ── shared helpers ── */
 .panel-title {
@@ -154,26 +202,70 @@ TabPane {
 # ─────────────────────────────────────────────────────────────
 
 def _color(val: float, lo_good: float, hi_warn: float, invert: bool = False) -> str:
-    """Return a Rich color string based on threshold rules."""
     if not invert:
-        if val >= lo_good:
-            return "green"
-        if val >= hi_warn:
-            return "yellow"
+        if val >= lo_good:   return "green"
+        if val >= hi_warn:   return "yellow"
         return "red"
     else:
-        if val <= lo_good:
-            return "green"
-        if val <= hi_warn:
-            return "yellow"
+        if val <= lo_good:   return "green"
+        if val <= hi_warn:   return "yellow"
         return "red"
 
 
-def _tag(breached: bool) -> Text:
-    """Small ✔/✘ status tag."""
-    if breached:
-        return Text(" ✘ BREACH", style="bold red on red")
-    return Text(" ✔ clear", style="bold green on green")
+def _cell_style(col_id: str, value) -> str:
+    """Return a Rich style string for a data cell based on column semantics."""
+    if value is None:
+        return "dim"
+
+    if col_id == "status":
+        return {
+            "ACTIVE":      "bold green",
+            "COMPLETED":   "bold cyan",
+            "TERMINATED":  "bold red",
+            "NOT_STARTED": "dim",
+        }.get(str(value).upper(), "bold yellow")
+
+    if col_id == "spi":
+        return f"bold {_color(value, 0.95, 0.80)}"
+    if col_id == "cpi":
+        return f"bold {_color(value, 0.95, 0.80)}"
+    if col_id == "tcpi":
+        return f"bold {_color(value, 1.05, 1.10, invert=True)}"
+    if col_id == "eac_bac":
+        return f"bold {_color(value, 1.05, 1.20, invert=True)}"
+    if col_id == "schedule_slip":
+        return f"bold {_color(value, 0.0, 2.0, invert=True)}"
+    if col_id == "cure_remaining":
+        return f"bold {_color(value, 2.0, 1.0)}"
+    if col_id == "plan_deviation":
+        return "bold red" if value > 0.10 else ("bold yellow" if value > 0 else "bold green")
+
+    if col_id in ("breach_deviation", "breach_schedule", "breach_cost", "breach_both"):
+        return "bold red" if value else "bold green"
+
+    if col_id in ("allocation", "advance", "milestone_net", "retention_release"):
+        return "green" if (value or 0) > 0 else "dim"
+    if col_id == "settlement":
+        return "red" if (value or 0) < 0 else "dim"
+
+    if col_id == "next_ms_threshold_gap":
+        if value is None:   return "dim"
+        if value <= 0.0:    return "bold green"
+        if value <= 0.10:   return "bold yellow"
+        return "bold red"
+
+    if col_id == "period_reward":
+        if value is None:   return "dim"
+        return "bold green" if value >= 0 else "bold red"
+
+    return ""   # default
+
+
+def _make_cell(col_id: str, value) -> Text:
+    fmt_fn = COLUMN_FMTS[col_id]
+    text   = fmt_fn(value)
+    style  = _cell_style(col_id, value)
+    return Text(text, style=style)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -181,8 +273,6 @@ def _tag(breached: bool) -> Text:
 # ─────────────────────────────────────────────────────────────
 
 class SelectorScreen(Screen):
-    """Config + method selection before the main TUI."""
-
     def __init__(self, conn: sqlite3.Connection):
         super().__init__()
         self.conn = conn
@@ -237,17 +327,14 @@ class PortfolioTab(TabPane):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            # ── inline stats bar ──────────────────────────────
             with Horizontal(id="stats-panel"):
                 yield Static("", id="stat-period")
                 yield Static("", id="stat-budget")
                 yield Static("", id="stat-horizon")
                 yield Static("", id="stat-cumreward")
 
-            # ── scrollable cash-flow log ──────────────────────
             yield RichLog(id="cashflow-log", highlight=True, markup=False)
 
-            # ── allocation input area ─────────────────────────
             with Vertical(id="alloc-panel"):
                 yield Label("Allocations", classes="panel-title")
                 yield Static("", id="alloc-hint")
@@ -260,7 +347,6 @@ class PortfolioTab(TabPane):
                 yield Static("", id="alloc-error", classes="bad")
                 yield Button("Submit", id="submit-btn", variant="primary")
 
-    # ── update top stats bar ──────────────────────────────────
     def update_stats(self, state: dict, total_reward: float) -> None:
         t      = state["t_episode"]
         budget = state["budget"]
@@ -279,14 +365,12 @@ class PortfolioTab(TabPane):
                  "bold green" if total_reward >= 0 else "bold red"),
             ))
 
-        # hint line: active projects
         active = [p for p in state["projects"] if p["status"] == "active"]
         hint   = "  ".join(f"P{p['i']} (BAC {p['budget']:,.0f})" for p in active)
         self.query_one("#alloc-hint", Static).update(
             Text.assemble(("Active: ", "dim"), (hint, "bold cyan"))
         )
 
-        # enable/disable inputs
         for i, p in enumerate(state["projects"]):
             try:
                 inp = self.query_one(f"#alloc-input-{i}", Input)
@@ -296,7 +380,6 @@ class PortfolioTab(TabPane):
             except NoMatches:
                 pass
 
-    # ── append one period block to the cash-flow log ──────────
     def log_cashflow(self, t: int, reward: float, info: dict, budget_after: float) -> None:
         log = self.query_one("#cashflow-log", RichLog)
         log.write(Text(f"─── Period {t} complete ───────────────────", style="bold pink1"))
@@ -331,285 +414,116 @@ class PortfolioTab(TabPane):
 
 
 # ─────────────────────────────────────────────────────────────
-# PROJECT TAB  (Tab 1+)
+# PROJECT TAB  (Tab 1+)  — DataTable, rows=periods
 # ─────────────────────────────────────────────────────────────
 
 class ProjectTab(TabPane):
+    """One tab per project.  Columns = all signals.  Rows = periods (appended)."""
+
     def __init__(self, proj_index: int):
         super().__init__(f"Project {proj_index}", id=f"tab-proj-{proj_index}")
         self.proj_index = proj_index
+        self._row_count = 0
 
     def compose(self) -> ComposeResult:
         i = self.proj_index
-        # proj-grid is a 2-column CSS grid; children placed in DOM order:
-        #   slot 0 (col 0, row 0) → EVM
-        #   slot 1 (col 1, row 0) → Milestone history
-        #   slot 2 (col 0, row 1) → Breach conditions
-        #   slot 3 (col 1, row 1) → Next payment
-        with Container(classes="proj-grid"):
-            with ScrollableContainer(classes="evm-panel"):
-                yield Label("EVM SIGNALS", classes="panel-title")
-                yield Static("", id=f"evm-content-{i}")
-
-            with ScrollableContainer(classes="ms-panel"):
-                yield Label("MILESTONE HISTORY", classes="panel-title")
-                yield Static("", id=f"ms-content-{i}")
-
-            with ScrollableContainer(classes="breach-panel"):
-                yield Label("BREACH CONDITIONS", classes="panel-title")
-                yield Static("", id=f"breach-content-{i}")
-
-            with ScrollableContainer(classes="next-panel"):
-                yield Label("NEXT PAYMENT", classes="panel-title")
-                yield Static("", id=f"next-content-{i}")
-
-    # ── master update entry point ─────────────────────────────
-    def update(self, proj_state: dict, proj_params: dict, cfg: dict) -> None:
-        self._update_evm(proj_state, proj_params)
-        self._update_breach(proj_state, proj_params, cfg)
-        self._update_ms(proj_state)
-        self._update_next(proj_state)
-
-    # ── EVM SIGNALS ───────────────────────────────────────────
-    def _update_evm(self, ps: dict, proj: dict) -> None:
-        i       = self.proj_index
-        status  = ps.get("status") or "not_started"
-        spi     = ps.get("spi",             1.0)
-        cpi     = ps.get("cpi",             1.0)
-        tcpi    = ps.get("tcpi",            1.0)
-        eac     = ps.get("eac",             proj["budget"])
-        slip    = ps.get("schedule_slip",   0.0)
-        cure    = ps.get("cure_remaining",  proj["cure_length"])
-        prog    = ps.get("progress",        0.0)
-        plan    = ps.get("progress_plan",   0.0)
-        dev     = ps.get("plan_deviation",  0.0)
-        eac_bac = eac / proj["budget"] if proj["budget"] > 0 else 1.0
-
-        status_style = {
-            "active":      "bold green",
-            "completed":   "bold cyan",
-            "terminated":  "bold red",
-            "not_started": "dim",
-        }.get(status, "bold yellow")
-
-        spi_s   = _color(spi,     0.95, 0.80)
-        cpi_s   = _color(cpi,     0.95, 0.80)
-        tcpi_s  = _color(tcpi,    1.05, 1.10, invert=True)
-        eac_s   = _color(eac_bac, 1.05, 1.20, invert=True)   # reused for EAC/BAC row
-        slip_s  = _color(slip,    0.0,  2.0,  invert=True)
-        cure_s  = _color(cure,    2.0,  1.0)
-
-        t = Text()
-
-        # Status
-        t.append("Status        ", style="dim")
-        t.append(f"{status.upper()}\n", style=status_style)
-
-        # Progress
-        t.append("Progress      ", style="dim")
-        t.append(f"{prog:.4f}  ", style="bold")
-        t.append(f"plan {plan:.4f}  dev {dev:+.4f}\n", style="dim")
-
-        # SPI(t)
-        t.append("SPI(t)        ", style="dim")
-        t.append(f"{spi:.4f}\n", style=f"bold {spi_s}")
-
-        # CPI
-        t.append("CPI           ", style="dim")
-        t.append(f"{cpi:.4f}\n", style=f"bold {cpi_s}")
-
-        # TCPI
-        t.append("TCPI          ", style="dim")
-        t.append(f"{tcpi:.4f}\n", style=f"bold {tcpi_s}")
-
-        # EAC  (value + ratio dimmed inline)
-        t.append("EAC           ", style="dim")
-        t.append(f"{eac:,.2f}  ", style="bold")
-        t.append(f"({eac_bac:.4f}×)\n", style="dim")
-
-        # EAC/BAC  — own row, inverted thresholds, cap dimmed
-        t.append("EAC/BAC       ", style="dim")
-        t.append(f"{eac_bac:.4f}×  ", style=f"bold {eac_s}")
-        t.append(f"(cap {proj['cost_cap']}×)\n", style="dim")
-
-        # Schedule slip  — inverted, cap dimmed
-        t.append("Schedule slip ", style="dim")
-        t.append(f"{slip:+.2f} p  ", style=f"bold {slip_s}")
-        t.append(f"(cap {proj['schedule_cap']} p)\n", style="dim")
-
-        # Cure left
-        t.append("Cure left     ", style="dim")
-        t.append(f"{cure} / {proj['cure_length']}", style=f"bold {cure_s}")
-
-        try:
-            self.query_one(f"#evm-content-{i}", Static).update(t)
-        except NoMatches:
-            pass
-
-    # ── BREACH CONDITIONS ─────────────────────────────────────
-    def _update_breach(self, ps: dict, proj: dict, cfg: dict) -> None:
-        i         = self.proj_index
-        dev       = ps.get("plan_deviation",  0.0)
-        slip      = ps.get("schedule_slip",   0.0)
-        eac       = ps.get("eac",             proj["budget"])
-        eac_bac   = eac / proj["budget"] if proj["budget"] > 0 else 1.0
-
-        pdt        = cfg.get("plan_deviation_threshold", 0.10)
-        sched_cap  = proj["schedule_cap"]
-        cost_cap   = proj["cost_cap"]
-
-        dev_breach   = dev > pdt
-        sched_breach = slip > sched_cap
-        cost_breach  = eac_bac > cost_cap
-        both_breach  = sched_breach and cost_breach
-
-        # column widths
-        C0, C1, C2 = 22, 16, 14
-
-        t = Text()
-
-        # header — 4 columns, all dimmed
-        t.append(
-            f"{'Condition':<{C0}}{'Current':<{C1}}{'Limit':<{C2}}Status\n",
-            style="dim",
+        yield Label(
+            f"Project {i} — time-series signals  "
+            "| ← → scroll columns  | ↑ ↓ scroll rows",
+            classes="panel-title",
         )
+        yield DataTable(id=f"proj-table-{i}", zebra_stripes=True, cursor_type="row")
 
-        # row 1: Idle (zero alloc) — unknowable per-period
-        t.append(f"{'Idle (zero alloc)':<{C0}}", style="dim")
-        t.append(f"{'—':<{C1}}", style="dim")
-        t.append(f"{'alloc = 0':<{C2}}", style="dim")
-        t.append("(see portfolio tab)\n", style="dim")
+    def on_mount(self) -> None:
+        """Add all column headers once."""
+        table = self.query_one(f"#proj-table-{self.proj_index}", DataTable)
+        for col_id, hdr, width, _ in PROJECT_COLUMNS:
+            table.add_column(hdr, key=col_id, width=width)
 
-        # row 2: Deviation
-        t.append(f"{'Deviation':<{C0}}", style="dim")
-        t.append(f"{dev:<{C1}.4f}")
-        t.append(f"{'> ' + str(pdt):<{C2}}", style="dim")
-        t.append_text(_tag(dev_breach))
-        t.append("\n")
+    # ── called once per period after env.step() ──────────────
+    def append_row(
+        self,
+        t: int,
+        proj_state: dict,       # env.proj_state[i]  (internal state object)
+        state_snapshot: dict,   # state["projects"][i]  (obs snapshot)
+        proj_params: dict,      # env.projects[i]
+        cfg: dict,
+        cashflow: dict,         # single project's cashflow entry from info
+        period_reward: float,
+    ) -> None:
+        table = self.query_one(f"#proj-table-{self.proj_index}", DataTable)
 
-        # row 3: Schedule slip
-        t.append(f"{'Schedule slip':<{C0}}", style="dim")
-        t.append(f"{slip:<{C1}.2f}")
-        t.append(f"{'cap ' + str(sched_cap):<{C2}}", style="dim")
-        t.append_text(_tag(sched_breach))
-        t.append("\n")
+        ps = proj_state
+        snap = state_snapshot
 
-        # row 4: Cost (EAC/BAC)
-        t.append(f"{'Cost (EAC/BAC)':<{C0}}", style="dim")
-        t.append(f"{eac_bac:<{C1}.4f}")
-        t.append(f"{'cap ' + str(cost_cap) + '×':<{C2}}", style="dim")
-        t.append_text(_tag(cost_breach))
-        t.append("\n")
+        # ── compute derived breach flags ──────────────────────
+        eac     = ps.get("eac", proj_params["budget"])
+        eac_bac = eac / proj_params["budget"] if proj_params["budget"] > 0 else 1.0
+        dev     = ps.get("plan_deviation", 0.0)
+        slip    = ps.get("schedule_slip",  0.0)
+        pdt     = cfg.get("plan_deviation_threshold", 0.10)
 
-        # row 5: Sched AND Cost
-        t.append(f"{'Sched AND Cost':<{C0}}", style="dim")
-        t.append(
-            f"{'both' if both_breach else 'not both':<{C1}}",
-            style="bold red" if both_breach else "bold green",
+        b_dev   = dev  > pdt
+        b_sched = slip > proj_params["schedule_cap"]
+        b_cost  = eac_bac > proj_params["cost_cap"]
+        b_both  = b_sched and b_cost
+
+        # ── build row dict ────────────────────────────────────
+        row: dict = {
+            "t":                    t,
+            "status":               ps.get("status") or "not_started",
+            "progress":             ps.get("progress",        0.0),
+            "progress_plan":        ps.get("progress_plan",   0.0),
+            "plan_deviation":       ps.get("plan_deviation",  0.0),
+            "spi":                  ps.get("spi",             1.0),
+            "cpi":                  ps.get("cpi",             1.0),
+            "tcpi":                 ps.get("tcpi",            1.0),
+            "eac":                  eac,
+            "eac_bac":              eac_bac,
+            "schedule_slip":        ps.get("schedule_slip",   0.0),
+            "cure_remaining":       ps.get("cure_remaining",  proj_params.get("cure_length", 0)),
+            "breach_deviation":     b_dev,
+            "breach_schedule":      b_sched,
+            "breach_cost":          b_cost,
+            "breach_both":          b_both,
+            # cashflow — zero-fill if project not in this period's cf
+            "allocation":           cashflow.get("allocation",       0.0),
+            "advance":              cashflow.get("advance",          0.0),
+            "milestone_net":        cashflow.get("milestone_net",    0.0),
+            "retention_release":    cashflow.get("retention_release",0.0),
+            "settlement":           cashflow.get("settlement",       0.0),
+            # next milestone (from snapshot)
+            "next_ms_threshold_gap":  snap.get("next_ms_threshold_gap",  0.0),
+            "next_ms_net_payment":    snap.get("next_ms_net_payment",    0.0),
+            "next_ms_earliest_t":     snap.get("next_ms_earliest_t"),
+            "next_ms_is_final":       snap.get("next_ms_is_final",       False),
+            "period_reward":          period_reward,
+        }
+
+        cells = [_make_cell(col_id, row[col_id]) for col_id in COLUMN_IDS]
+        table.add_row(*cells, key=f"t{t}")
+        self._row_count += 1
+        # scroll to the newest row
+        table.move_cursor(row=self._row_count - 1, animate=False)
+
+    # ── initial row for t=0 (before first step) ──────────────
+    def append_initial_row(
+        self,
+        proj_state: dict,
+        state_snapshot: dict,
+        proj_params: dict,
+        cfg: dict,
+    ) -> None:
+        """Insert the t=0 / pre-action row (no cashflow yet)."""
+        self.append_row(
+            t=0,
+            proj_state=proj_state,
+            state_snapshot=state_snapshot,
+            proj_params=proj_params,
+            cfg=cfg,
+            cashflow={},
+            period_reward=0.0,
         )
-        t.append(f"{'need both':<{C2}}", style="dim")
-        t.append_text(_tag(both_breach))
-
-        try:
-            self.query_one(f"#breach-content-{i}", Static).update(t)
-        except NoMatches:
-            pass
-
-    # ── MILESTONE HISTORY ─────────────────────────────────────
-    def _update_ms(self, ps: dict) -> None:
-        i = self.proj_index
-
-        t = Text()
-        # header
-        t.append(
-            f"{'MS':<5}{'Thresh':<10}{'Status':<14}{'Net MU':<12}{'t≥':<6}Certified\n",
-            style="dim",
-        )
-
-        for ms in ps.get("ms_history", []):
-            certified  = ms.get("certified", False)
-            is_final   = ms.get("is_final",  False)
-            thresh_pct = f"{ms['threshold'] * 100:.0f}%"
-            if is_final:
-                thresh_pct += " ★"
-            status_str   = "CERTIFIED" if certified else "pending"
-            status_style = "bold green" if certified else "dim"
-            cert_t       = f"t={ms['certified_t']}" if certified else "—"
-
-            t.append(f"{ms['j']:<5}", style="dim")
-            t.append(f"{thresh_pct:<10}", style="bold" if is_final else "")
-            t.append(f"{status_str:<14}", style=status_style)
-            t.append(f"{ms['net']:<12.2f}")
-            t.append(f"{ms['earliest_t']:<6}", style="dim")
-            t.append(f"{cert_t}\n", style="dim")
-
-        try:
-            self.query_one(f"#ms-content-{i}", Static).update(t)
-        except NoMatches:
-            pass
-
-    # ── NEXT PAYMENT ──────────────────────────────────────────
-    def _update_next(self, ps: dict) -> None:
-        i        = self.proj_index
-        gap      = ps.get("next_ms_threshold_gap",  0.0)
-        net_pay  = ps.get("next_ms_net_payment",    0.0)
-        earliest = ps.get("next_ms_earliest_t")
-        is_fin   = ps.get("next_ms_is_final",       False)
-        t_ep     = ps.get("t_episode",              ps.get("t_project", 0) or 0)
-        next_t   = (t_ep or 0) + 1
-        plan     = ps.get("progress_plan",          0.0)
-        dev      = ps.get("plan_deviation",         0.0)
-
-        # threshold gap coloring
-        gap_reached = gap <= 0.0
-        if gap_reached:
-            gap_str   = "reached ✔"
-            gap_style = "bold green"
-        elif gap <= 0.10:
-            gap_str   = f"{gap:.4f}"
-            gap_style = "bold yellow"
-        else:
-            gap_str   = f"{gap:.4f}"
-            gap_style = "bold red"
-
-        # period lock
-        if earliest is None:
-            lock_str, lock_style = "—", "dim"
-        elif next_t >= earliest:
-            lock_str  = f"t={earliest}  unlocked ✔"
-            lock_style = "bold green"
-        else:
-            diff      = earliest - next_t
-            lock_str  = f"t={earliest}  ({diff} period{'s' if diff != 1 else ''} away)"
-            lock_style = "bold yellow"
-
-        t = Text()
-
-        if is_fin:
-            t.append("★ FINAL MILESTONE\n", style="bold yellow")
-
-        t.append("Threshold gap   ", style="dim")
-        t.append(f"{gap_str}\n", style=gap_style)
-
-        t.append("Net payment     ", style="dim")
-        t.append(
-            f"{net_pay:,.2f} MU\n",
-            style="bold green" if net_pay > 0 else "dim",
-        )
-
-        t.append("Period lock     ", style="dim")
-        t.append(f"{lock_str}\n", style=lock_style)
-
-        t.append("Plan target nxt ", style="dim")
-        t.append(f"{plan:.4f}\n", style="bold")
-
-        t.append("Δ vs plan       ", style="dim")
-        t.append(f"{dev:+.4f}", style="bold green" if dev <= 0 else "bold red")
-
-        try:
-            self.query_one(f"#next-content-{i}", Static).update(t)
-        except NoMatches:
-            pass
 
 
 # ─────────────────────────────────────────────────────────────
@@ -629,7 +543,6 @@ class MainScreen(Screen):
         self.total_reward = 0.0
         self.done         = False
 
-    # ── compose ───────────────────────────────────────────────
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Static("Initialising…", id="top-bar")
@@ -637,14 +550,14 @@ class MainScreen(Screen):
             pass
         yield Footer()
 
-    # ── on mount ──────────────────────────────────────────────
     def on_mount(self) -> None:
         self.env   = PortfolioEnv(self.conn, self.config_id, method=self.method)
         self.state = self.env.reset()
         self._rebuild_tabs()
-        self._refresh_all()
+        self._refresh_portfolio()
+        self._append_initial_rows()
 
-    # ── rebuild tabs after env reset ──────────────────────────
+    # ── rebuild tabs ──────────────────────────────────────────
     def _rebuild_tabs(self) -> None:
         tabs = self.query_one("#main-tabs", TabbedContent)
         tabs.clear_panes()
@@ -653,14 +566,27 @@ class MainScreen(Screen):
         for i in range(n):
             tabs.add_pane(ProjectTab(i))
 
-    # ── refresh every panel ───────────────────────────────────
-    def _refresh_all(self) -> None:
-        state = self.state
-        env   = self.env
-        t     = state["t_episode"]
-        budget = state["budget"]
+    # ── write the t=0 snapshot into every project table ───────
+    def _append_initial_rows(self) -> None:
+        for i, (proj, ps) in enumerate(zip(self.env.projects, self.env.proj_state)):
+            snap = self.state["projects"][i]
+            try:
+                tab = self.query_one(f"#tab-proj-{i}", ProjectTab)
+                tab.append_initial_row(
+                    proj_state=dict(ps),
+                    state_snapshot=snap,
+                    proj_params=proj,
+                    cfg=dict(self.env.cfg),
+                )
+            except NoMatches:
+                pass
 
-        # top-bar summary
+    # ── refresh portfolio stats bar ───────────────────────────
+    def _refresh_portfolio(self) -> None:
+        state  = self.state
+        budget = state["budget"]
+        t      = state["t_episode"]
+
         self.query_one("#top-bar", Static).update(
             Text.assemble(
                 ("Portfolio Budgeting  ", "bold"),
@@ -672,29 +598,11 @@ class MainScreen(Screen):
             )
         )
 
-        # portfolio tab
         try:
             port = self.query_one("#tab-portfolio", PortfolioTab)
             port.update_stats(state, self.total_reward)
         except NoMatches:
             pass
-
-        # project tabs
-        for i, (proj, ps_dict) in enumerate(zip(env.projects, env.proj_state)):
-            combined = dict(ps_dict)
-            proj_state_snapshot = state["projects"][i]
-            combined["ms_history"]             = proj_state_snapshot.get("ms_history", [])
-            combined["next_ms_threshold_gap"]  = proj_state_snapshot.get("next_ms_threshold_gap", 0.0)
-            combined["next_ms_net_payment"]    = proj_state_snapshot.get("next_ms_net_payment", 0.0)
-            combined["next_ms_earliest_t"]     = proj_state_snapshot.get("next_ms_earliest_t")
-            combined["next_ms_is_final"]       = proj_state_snapshot.get("next_ms_is_final", False)
-            combined["t_episode"]              = state["t_episode"]
-
-            try:
-                proj_tab = self.query_one(f"#tab-proj-{i}", ProjectTab)
-                proj_tab.update(combined, proj, dict(env.cfg))
-            except NoMatches:
-                pass
 
     # ── handle submit ─────────────────────────────────────────
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -725,17 +633,41 @@ class MainScreen(Screen):
 
         error_wg.update("")
 
-        t_executed         = self.state["t_episode"]
-        self.state, reward, self.done, info = self.env.step(allocs)
+        t_executed = self.state["t_episode"]
+
+        # ── step the environment ──────────────────────────────
+        new_state, reward, self.done, info = self.env.step(allocs)
         self.total_reward += reward
 
+        # ── cashflow lookup: index by project i ───────────────
+        cf_by_proj = {cf["i"]: cf for cf in info.get("cashflow", [])}
+
+        # ── append one row to each project table ──────────────
+        for i, (proj, ps) in enumerate(zip(self.env.projects, self.env.proj_state)):
+            snap = new_state["projects"][i]
+            try:
+                tab = self.query_one(f"#tab-proj-{i}", ProjectTab)
+                tab.append_row(
+                    t=t_executed + 1,
+                    proj_state=dict(ps),
+                    state_snapshot=snap,
+                    proj_params=proj,
+                    cfg=dict(self.env.cfg),
+                    cashflow=cf_by_proj.get(i, {}),
+                    period_reward=reward / n,   # approximate per-project share
+                )
+            except NoMatches:
+                pass
+
+        # ── update portfolio tab log + stats ──────────────────
         try:
             port = self.query_one("#tab-portfolio", PortfolioTab)
-            port.log_cashflow(t_executed, reward, info, self.state["budget"])
+            port.log_cashflow(t_executed, reward, info, new_state["budget"])
         except NoMatches:
             pass
 
-        self._refresh_all()
+        self.state = new_state
+        self._refresh_portfolio()
 
         if self.done:
             self._show_done()
@@ -773,10 +705,10 @@ class MainScreen(Screen):
 # ─────────────────────────────────────────────────────────────
 
 class PortfolioApp(App):
-    CSS                   = CSS
-    TITLE                 = "Portfolio Budget Allocator"
-    BINDINGS              = [Binding("q", "quit", "Quit")]
-    DEFAULT_CSS           = ""
+    CSS                    = CSS
+    TITLE                  = "Portfolio Budget Allocator"
+    BINDINGS               = [Binding("q", "quit", "Quit")]
+    DEFAULT_CSS            = ""
     ENABLE_COMMAND_PALETTE = False
 
     def on_ready(self) -> None:
