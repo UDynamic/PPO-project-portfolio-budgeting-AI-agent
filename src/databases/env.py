@@ -208,37 +208,73 @@ class PortfolioEnv:
                 )
                 advance = proj["advance_percent"] * proj["price"]
                 self.budget += advance
-                self._t0_advances[proj["i"]] = advance
+                # Store the advance immediately so the advance-recovery cap
+                # (ps["advance_received"] - ps["advance_recovered"]) is valid
+                # from t=0 onward. This is the t=0 starting-budget adjustment,
+                # not a period-1 cash event, so it is not routed through
+                # total_inflow/reward.
+                ps["advance_received"] = advance
 
         return self._get_state()
 
     # ── STEP ─────────────────────────────────────────────────
 
     def step(self, allocations: list) -> tuple:
+        """
+        Step sequence (executed in order for every active project):
+
+        Phase 1 — INFLOWS
+            1a. Advance payment (if project starts this period)
+            1b. Milestone certification check → net payment received
+            1c. Retention release (if completed last period)
+
+        Phase 2 — INTEREST
+            Computed on treasury draw = cumulative_cost_before_this_alloc
+            minus cumulative_inflows (advance + milestone nets received
+            through end of Phase 1 this period).
+
+        Phase 3 — ALLOCATION & PROGRESS
+            Allocation debited. Progress updated from allocation only
+            (interest does not drive productive work).
+
+        Phase 4 — EVM UPDATE
+            SPI(t), CPI, TCPI, EAC, forecast finish, schedule slip.
+
+        Phase 5 — TERMINATION CHECK
+            Breach flags evaluated. Cure counter updated.
+            Termination (if triggered): settlement computed, status locked.
+            Completion check: retention release queued for next period.
+
+        Phase 6 — RECORD
+            DB writes. Budget updated. Reward computed.
+        """
+
+        # ── clip and scale allocations to budget ──────────────
         allocations = [max(0.0, a) for a in allocations]
         total_alloc = sum(
-            allocations[i] for i in range(len(self.projects))
+            allocations[i]
+            for i in range(len(self.projects))
             if self.proj_state[i]["status"] == "active"
         )
         if total_alloc > self.budget:
             scale = self.budget / total_alloc if total_alloc > 0 else 0.0
             allocations = [a * scale for a in allocations]
 
-        total_inflow = 0.0
-        total_outflow = 0.0
         discount_factor = self.discount ** self.t
+        total_inflow    = 0.0
+        total_outflow   = 0.0
 
         proj_cashflow = [
             {
-                "i": proj["i"],
-                "allocation": 0.0,
-                "advance": 0.0,
-                "milestone_gross": 0.0,
-                "milestone_net": 0.0,
+                "i":                 proj["i"],
+                "allocation":        0.0,
+                "advance":           0.0,
+                "milestone_gross":   0.0,
+                "milestone_net":     0.0,
                 "retention_release": 0.0,
-                "settlement": 0.0,
-                "interest_cost": 0.0,
-                "treasury_draw": 0.0,
+                "settlement":        0.0,
+                "interest_cost":     0.0,
+                "treasury_draw":     0.0,
             }
             for proj in self.projects
         ]
@@ -246,38 +282,107 @@ class PortfolioEnv:
         for i, (proj, ps) in enumerate(zip(self.projects, self.proj_state)):
 
             alloc = allocations[i] if i < len(allocations) else 0.0
-            advance_amount = 0.0
-            payment_net = None
-            retention_release = None
-            settlement = None
-            eta = None
 
+            # ── projects not yet started ──────────────────────
             if self.t < proj["start"]:
                 ps["status"] = None
-                self._write_project_row(i, proj, ps, alloc, eta,
-                                    advance_amount, payment_net,
-                                    retention_release, settlement,
-                                    interest_cost, treasury_draw)
+                self._write_project_row(i, proj, ps, 0.0, None,
+                                        0.0, None, None, None,
+                                        0.0, 0.0)
                 continue
 
-            if self.t == proj["start"] and proj["start"] > 0:
-                ps["status"] = "active"
-                ps["t_project"] = 1
-                advance_amount = proj["advance_percent"] * proj["price"]
-                total_inflow += advance_amount
-                proj_cashflow[i]["advance"] = advance_amount
-                ps["advance_received"] = advance_amount
-
-            elif self.t == 0 and proj["start"] == 0 and i in self._t0_advances:
-                advance_amount = self._t0_advances.pop(i)
-                total_inflow += advance_amount
-                proj_cashflow[i]["advance"] = advance_amount
-                ps["advance_received"] = advance_amount
-
+            # ── already finished projects ─────────────────────
             if ps["status"] in ("completed", "terminated"):
                 self._write_project_row(i, proj, ps, 0.0, None,
-                                        0.0, None, None, None)
+                                        0.0, None, None, None,
+                                        0.0, 0.0)
                 continue
+
+            # ═════════════════════════════════════════════════
+            # PHASE 1 — INFLOWS
+            # ═════════════════════════════════════════════════
+
+            advance_amount     = 0.0
+            payment_net        = None
+            retention_release  = None
+
+            # 1a. Advance payment on project start
+            if self.t == proj["start"] and proj["start"] > 0:
+                ps["status"]          = "active"
+                ps["t_project"]       = 1
+                advance_amount        = proj["advance_percent"] * proj["price"]
+                ps["advance_received"] = advance_amount
+                total_inflow          += advance_amount
+                proj_cashflow[i]["advance"] = advance_amount
+
+            # 1b. Milestone certification
+            for j, ms in enumerate(self.milestones[i]):
+                if ms["certified"]:
+                    continue
+                if ps["progress"] >= ms["threshold"] and self.t >= ms["earliest_t"]:
+                    ms["certified"]   = True
+                    ms["certified_t"] = self.t
+                    gross             = ms["payment_weight"] * proj["price"]
+                    remaining_advance = max(
+                        0.0, ps["advance_received"] - ps["advance_recovered"]
+                    )
+                    recovery          = min(gross * proj["advance_recovery"],
+                                           remaining_advance)
+                    is_final          = ms["threshold"] >= 1.0
+                    retention_withheld = (
+                        0.0 if is_final
+                        else gross * proj["retention_rate"]
+                    )
+                    net = gross - recovery - retention_withheld
+                    ms["payment_released"]      = net
+                    payment_net                  = (payment_net or 0.0) + net
+                    ps["advance_recovered"]     += recovery
+                    ps["milestone_inflows"]     += net
+                    ps["retention_held"]        += retention_withheld
+                    total_inflow                += net
+                    proj_cashflow[i]["milestone_gross"] += gross
+                    proj_cashflow[i]["milestone_net"]   += net
+                    self._write_milestone_status(i, j, ms)
+
+            # 1c. Retention release — fires if project completed previous period
+            #     (status == "completed" is set in Phase 5 of the prior step,
+            #      so this period is the first one where it can be released)
+            if ps.get("_release_retention_next_period", False):
+                ret = ps["retention_held"]
+                if ret > 0:
+                    retention_release              = ret
+                    ps["retention_released"]       = True
+                    ps["_release_retention_next_period"] = False
+                    total_inflow                  += ret
+                    proj_cashflow[i]["retention_release"] = ret
+
+            # ═════════════════════════════════════════════════
+            # PHASE 2 — INTEREST
+            # ═════════════════════════════════════════════════
+
+            # treasury_draw: how much of the cumulative spend to date
+            # has NOT been covered by external inflows (advance + milestones).
+            # Interest is charged on this exposed position BEFORE this
+            # period's allocation is debited, so interest reflects the
+            # carry cost of last period's deficit, not this period's spend.
+            monthly_rate       = self.cfg["annual_interest_rate"] / 12.0
+            cumulative_inflows = ps["advance_received"] + ps["milestone_inflows"]
+            treasury_draw      = max(
+                0.0,
+                ps["cumulative_cost"] - cumulative_inflows
+            )
+            interest_cost      = monthly_rate * treasury_draw
+            ps["treasury_draw"]     = treasury_draw
+            proj_cashflow[i]["treasury_draw"]  = treasury_draw
+            proj_cashflow[i]["interest_cost"]  = interest_cost
+
+            # Interest is a financing cost — debited to the portfolio
+            # but does not drive productive progress.
+            total_outflow += interest_cost
+
+            # ═════════════════════════════════════════════════
+            # PHASE 3 — ALLOCATION & PROGRESS
+            # ═════════════════════════════════════════════════
 
             ps["t_project"] = self.t - proj["start"] + 1
 
@@ -288,126 +393,55 @@ class PortfolioEnv:
             )
             eta = max(0.01, eta)
 
-            # ── Milestone certifications (moved up) ───────────
-            # Must happen before interest calculation so that this
-            # period's milestone_inflows are included in
-            # cumulative_inflows before the treasury draw is computed.
-            for j, ms in enumerate(self.milestones[i]):
-                if ms["certified"]:
-                    continue
-                if ps["progress"] >= ms["threshold"] and self.t >= ms["earliest_t"]:
-                    ms["certified"] = True
-                    ms["certified_t"] = self.t
-                    gross = ms["payment_weight"] * proj["price"]
-                    # Cap advance recovery so the cumulative amount recovered
-                    # never exceeds the advance actually received. Once fully
-                    # recovered, later milestones no longer have recovery
-                    # deducted from them.
-                    remaining_advance = max(
-                        0.0, ps["advance_received"] - ps["advance_recovered"]
-                    )
-                    recovery = min(gross * proj["advance_recovery"], remaining_advance)
-                    is_final = ms["threshold"] >= 1.0
-                    if is_final:
-                        # Final milestone: no new retention withheld.
-                        # Net = gross minus advance recovery only.
-                        # All previously held retention is released separately
-                        # via the retention_release path below (ps["status"] == completed).
-                        retention_withheld = 0.0
-                    else:
-                        retention_withheld = gross * proj["retention_rate"]
-                    net = gross - recovery - retention_withheld
-                    ms["payment_released"] = net
-                    payment_net = (payment_net or 0.0) + net
-                    ps["advance_recovered"] += recovery
-                    ps["milestone_inflows"] += net
-                    ps["retention_held"] += retention_withheld
-                    total_inflow += net
-                    proj_cashflow[i]["milestone_gross"] += gross
-                    proj_cashflow[i]["milestone_net"]   += net
-                    self._write_milestone_status(i, j, ms)
-                    self.conn.commit()
-
-            # ── Interest calculation ──────────────────────────
-            # treasury_draw: the portion of (cumulative_cost so far +
-            # this period's allocation) not covered by external inflows
-            # (advance + milestone receipts, already updated above).
-            # interest_cost is charged on top of the allocation and does
-            # not reduce productive progress.
-            monthly_rate = cfg["annual_interest_rate"] / 12.0
-            cumulative_inflows = ps["advance_received"] + ps["milestone_inflows"]
-            treasury_draw = max(
-                0.0,
-                (ps["cumulative_cost"] + alloc) - cumulative_inflows
-            )
-            interest_cost = monthly_rate * treasury_draw
-            ps["treasury_draw"] = treasury_draw
-            proj_cashflow[i]["treasury_draw"] = treasury_draw
-            proj_cashflow[i]["interest_cost"] = interest_cost
-
-            # ── Progress from full allocation ─────────────────
-            # Interest does not reduce productive spend.
-            # x_i(t) drives progress in full.
-            increment = (alloc / proj["budget"]) * eta if proj["budget"] > 0 else 0.0
+            increment      = (alloc / proj["budget"]) * eta if proj["budget"] > 0 else 0.0
             ps["progress"] = min(1.0, ps["progress"] + increment)
             ps["progress_increment"] = increment
 
-            ps["progress_plan"] = planned_progress(
+            ps["cumulative_cost"] += alloc
+            ps["acwp"]            += alloc + interest_cost
+
+            total_outflow                  += alloc
+            proj_cashflow[i]["allocation"]  = alloc
+
+            # ═════════════════════════════════════════════════
+            # PHASE 4 — EVM UPDATE
+            # ═════════════════════════════════════════════════
+
+            ps["progress_plan"]  = planned_progress(
                 ps["t_project"], proj["duration"],
                 proj["scurve_a"], proj["scurve_b"]
             )
-
             ps["plan_deviation"] = ps["progress_plan"] - ps["progress"]
-
-            # ── Debit treasury: allocation + interest cost ────
-            total_debit = alloc + interest_cost
-            ps["acwp"] += total_debit
-            total_outflow += total_debit
-            proj_cashflow[i]["allocation"] = alloc
-
-            # ── Update cumulative cost ────────────────────────
-            ps["cumulative_cost"] += total_debit
 
             bcwp = ps["progress"] * proj["budget"]
             acwp = ps["acwp"]
 
-            # ── Earned Schedule SPI(t) ───────────────────────
-            # ES = planned time at which s-curve reaches actual progress.
-            # SPI(t) = ES / AT degrades continuously as real time passes
-            # even when progress is frozen, correcting the classical SPI
-            # freeze pathology past the planned finish date.
-            es  = earned_schedule(
+            # SPI(t) via Earned Schedule — degrades continuously past
+            # planned finish, correcting the classical freeze pathology.
+            es       = earned_schedule(
                 ps["progress"], proj["duration"],
                 proj["scurve_a"], proj["scurve_b"]
             )
-            at  = ps["t_project"]   # actual time elapsed (project periods)
+            at       = ps["t_project"]
             ps["spi"] = es / at if at > 1e-9 else 1.0
 
-            # ── Classical CPI (unchanged) ─────────────────────
             ps["cpi"] = bcwp / acwp if acwp > 1e-9 else 1.0
 
-            # ── EAC via composite CPI×SPI(t) ──────────────────
-            # Remaining work divided by composite efficiency.
-            # SPI(t) = ES/AT degrades continuously as real time
-            # passes, so idling inflates EAC even when CPI is
-            # healthy. Zombie projects cannot hide behind a
-            # frozen cost signal.
             composite = ps["cpi"] * ps["spi"]
-            ps["eac"] = (acwp + (proj["budget"] - bcwp) / composite
-                         if composite > 1e-9
-                         else proj["budget"] * proj["cost_cap"])
+            ps["eac"] = (
+                acwp + (proj["budget"] - bcwp) / composite
+                if composite > 1e-9
+                else proj["budget"] * proj["cost_cap"]
+            )
 
-            # ── TCPI — To-Complete Performance Index ──────────
-            # Required cost efficiency on remaining work to finish on budget.
-            # TCPI > 1: must outperform history; > 1.1 widely considered
-            # unrealistic. Complements CPI (historical) with a forward signal.
             work_remaining   = proj["budget"] - bcwp
             budget_remaining = proj["budget"] - acwp
-            ps["tcpi"] = (work_remaining / budget_remaining
-                          if budget_remaining > 1e-9
-                          else (0.0 if work_remaining <= 0 else float("inf")))
+            ps["tcpi"] = (
+                work_remaining / budget_remaining
+                if budget_remaining > 1e-9
+                else (0.0 if work_remaining <= 0 else float("inf"))
+            )
 
-            # ── Forecast finish and schedule slip via SPI(t) ──
             ps["forecast_finish"] = (
                 proj["start"] + proj["duration"] / ps["spi"]
                 if ps["spi"] > 1e-9
@@ -416,52 +450,59 @@ class PortfolioEnv:
             ps["schedule_slip"] = ps["forecast_finish"] - proj["finish"]
             ps["cost_overrun"]  = ps["eac"] - proj["budget"]
 
+            # ═════════════════════════════════════════════════
+            # PHASE 5 — TERMINATION CHECK
+            # ═════════════════════════════════════════════════
+
+            settlement = None
+
+            # Completion: progress reached 1.0 this period
             if ps["progress"] >= 1.0 and ps["status"] == "active":
                 ps["status"] = "completed"
-                retention_release = ps["retention_held"]
-                total_inflow += retention_release
-                ps["retention_released"] = True
-                proj_cashflow[i]["retention_release"] = retention_release
+                # Retention releases next period (Phase 1c above)
+                ps["_release_retention_next_period"] = True
 
-            idle_breach      = alloc < 1e-9
-            schedule_breach  = ps["schedule_slip"] > proj["schedule_cap"]
-            cost_breach      = ps["eac"] > proj["cost_cap"] * proj["budget"]
-            deviation_breach = ps["plan_deviation"] > self.cfg["plan_deviation_threshold"]
+            # Breach evaluation (only for still-active projects)
+            if ps["status"] == "active":
+                idle_breach      = alloc < 1e-9
+                deviation_breach = ps["plan_deviation"] > self.cfg["plan_deviation_threshold"]
+                schedule_breach  = ps["schedule_slip"]  > proj["schedule_cap"]
+                cost_breach      = ps["eac"]             > proj["cost_cap"] * proj["budget"]
+                deadline_breach  = self.t >= proj["finish"] + proj["schedule_cap"]
 
-            any_breach = (
-                idle_breach
-                or deviation_breach
-                or (schedule_breach and cost_breach)
-            )
+                any_breach = (
+                    idle_breach
+                    or deviation_breach
+                    or (schedule_breach and cost_breach)
+                    or deadline_breach
+                )
 
-            if any_breach and ps["status"] == "active":
-                ps["cure_remaining"] -= 1
-            elif ps["status"] == "active" and not any_breach:
-                ps["cure_remaining"] = proj["cure_length"]
+                if any_breach:
+                    ps["cure_remaining"] -= 1
+                else:
+                    ps["cure_remaining"] = proj["cure_length"]
 
-            if ps["cure_remaining"] <= 0 and ps["status"] == "active":
-                ps["status"] = "terminated"
-                settlement = _termination_settlement(proj, ps)
-                total_inflow += settlement
-                proj_cashflow[i]["settlement"] = settlement
+                # Termination: cure exhausted OR hard deadline passed
+                if ps["cure_remaining"] <= 0 or deadline_breach:
+                    ps["status"] = "terminated"
+                    settlement   = _termination_settlement(proj, ps)
+                    total_inflow += settlement
+                    proj_cashflow[i]["settlement"] = settlement
 
-            deadline = proj["finish"] + proj["schedule_cap"]
-            if self.t >= deadline and ps["status"] == "active":
-                ps["status"] = "terminated"
-                settlement = _termination_settlement(proj, ps)
-                total_inflow += settlement
-                proj_cashflow[i]["settlement"] = settlement
+            # ═════════════════════════════════════════════════
+            # PHASE 6 — RECORD
+            # ═════════════════════════════════════════════════
 
             self._write_project_row(i, proj, ps, alloc, eta,
                                     advance_amount, payment_net,
                                     retention_release, settlement,
                                     interest_cost, treasury_draw)
 
+        # ── portfolio close ───────────────────────────────────
         self.budget = self.budget - total_outflow + total_inflow
 
-        # NPV reward: discount net cash flow, not just inflows
         net_cashflow = total_inflow - total_outflow
-        reward = discount_factor * net_cashflow
+        reward       = discount_factor * net_cashflow
 
         all_terminal = all(
             ps["status"] in ("completed", "terminated")
@@ -470,7 +511,6 @@ class PortfolioEnv:
         budget_exhausted = self.budget <= 0 and any(
             ps["status"] == "active" for ps in self.proj_state
         )
-
         done = self.t >= self.horizon or all_terminal or budget_exhausted
 
         self._write_portfolio_row(
@@ -479,12 +519,11 @@ class PortfolioEnv:
             reward=reward,
             done=int(done)
         )
-
-        if done:
-            self.conn.commit()
+        self.conn.commit()
 
         self.t += 1
 
+        # Pre-compute next period's planned progress for display
         for ps, proj in zip(self.proj_state, self.projects):
             if ps["status"] == "active":
                 next_t_project = self.t - proj["start"] + 1
@@ -495,9 +534,9 @@ class PortfolioEnv:
                     )
 
         info = {
-            "cashflow": proj_cashflow,
-            "portfolio_inflow":  total_inflow,
-            "portfolio_outflow": total_outflow,
+            "cashflow":           proj_cashflow,
+            "portfolio_inflow":   total_inflow,
+            "portfolio_outflow":  total_outflow,
         }
 
         return self._get_state(), reward, done, info
@@ -733,6 +772,7 @@ class PortfolioEnv:
             "milestone_inflows": 0.0,
             "retention_held": 0.0,
             "retention_released": False,
+            "_release_retention_next_period": False,
             "cumulative_cost": 0.0,
             "treasury_draw": 0.0,
         }

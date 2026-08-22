@@ -1,7 +1,7 @@
-# terminal_ui.py
+# ui.py
 #
 # Textual TUI for the Portfolio Budgeting Environment.
-# Run with:  python terminal_ui.py
+# Run with:  python ui.py
 
 from __future__ import annotations
 
@@ -72,7 +72,6 @@ def _fmt_status(v) -> str:
 #   "id"      — identity
 #   "alloc"   — allocation & decision  (periodic + cumulative)
 #   "evm"     — EVM metrics
-#   "term"    — termination conditions
 # ─────────────────────────────────────────────────────────────
 
 PROJECT_COLUMNS: list[tuple[str, str, int, callable, str]] = [
@@ -110,15 +109,6 @@ PROJECT_COLUMNS: list[tuple[str, str, int, callable, str]] = [
     ("eac_bac",              "EAC/BAC",     10, _fmt_f4,           "evm"),
     ("schedule_slip",        "SchedSlip",   10, _fmt_f2,           "evm"),
     ("forecast_finish",      "FcstFinish",  11, _fmt_f2,           "evm"),
-
-    # ── Termination conditions ────────────────────────────────
-    ("cure_remaining",       "CureLeft",     9, _fmt_int,          "term"),
-    ("breach_idle",          "B:Idle",       7, _fmt_bool_breach,  "term"),
-    ("breach_deviation",     "B:Dev",        7, _fmt_bool_breach,  "term"),
-    ("breach_schedule",      "B:Sched",      8, _fmt_bool_breach,  "term"),
-    ("breach_cost",          "B:Cost",       8, _fmt_bool_breach,  "term"),
-    ("breach_deadline",      "B:Deadline",  11, _fmt_bool_breach,  "term"),
-    ("any_breach",           "AnyBreach",   10, _fmt_bool_breach,  "term"),
 ]
 
 COLUMN_IDS  = [c[0] for c in PROJECT_COLUMNS]
@@ -126,20 +116,28 @@ COLUMN_HDRS = [c[1] for c in PROJECT_COLUMNS]
 COLUMN_FMTS = {c[0]: c[3] for c in PROJECT_COLUMNS}
 COLUMN_GRP  = {c[0]: c[4] for c in PROJECT_COLUMNS}
 
-# Group header spans (col_id → list of col_ids in the same group)
-_GRP_ORDER  = ["id", "alloc", "evm", "term"]
+_GRP_ORDER  = ["id", "alloc", "evm"]
 _GRP_LABELS = {
     "id":    "Identity",
     "alloc": "Allocation & Decision",
     "evm":   "EVM Metrics",
-    "term":  "Termination Conditions",
 }
 _GRP_COLORS = {
     "id":    "bold white",
     "alloc": "bold cyan",
     "evm":   "bold yellow",
-    "term":  "bold magenta",
 }
+
+# Termination fields rendered in the dedicated status box, not the DataTable
+TERM_FIELDS = [
+    ("cure_remaining",    "Cure Remaining",   _fmt_int,         "bold white"),
+    ("breach_idle",       "Idle Breach",      _fmt_bool_breach, None),
+    ("breach_deviation",  "Deviation Breach", _fmt_bool_breach, None),
+    ("breach_schedule",   "Schedule Breach",  _fmt_bool_breach, None),
+    ("breach_cost",       "Cost Breach",      _fmt_bool_breach, None),
+    ("breach_deadline",   "Deadline Breach",  _fmt_bool_breach, None),
+    ("any_breach",        "Any Breach",       _fmt_bool_breach, None),
+]
 
 
 # ─────────────────────────────────────────────────────────────
@@ -215,16 +213,17 @@ TabPane {
 .proj-tab-container {
     height: 1fr;
     layout: vertical;
+    overflow-y: auto;
 }
 
-/* top two tables side by side */
+/* top two panels side by side */
 .proj-top-row {
     height: auto;
     layout: horizontal;
     margin-bottom: 1;
 }
 
-/* static params table */
+/* static params table — left column */
 .proj-static-panel {
     width: 1fr;
     border: solid $primary-darken-2;
@@ -232,12 +231,34 @@ TabPane {
     padding: 0 1;
 }
 
+/* right column stacks payment profile + termination box */
+.proj-right-col {
+    width: 2fr;
+    layout: vertical;
+}
+
 /* milestone / payment profile table */
 .proj-milestone-panel {
-    width: 2fr;
+    height: auto;
     border: solid $primary-darken-2;
     background: $panel;
     padding: 0 1;
+    margin-bottom: 1;
+}
+
+/* termination / boundary status box */
+.proj-term-panel {
+    height: auto;
+    border: solid $warning-darken-1;
+    background: $panel;
+    padding: 0 1;
+}
+
+/* section title inside a panel */
+.section-title {
+    text-style: bold;
+    color: $text-muted;
+    padding: 0 0 1 0;
 }
 
 /* scrollable static widget for Rich tables */
@@ -255,12 +276,14 @@ TabPane {
 
 /* the main timestep DataTable */
 .proj-datatable-container {
-    height: 1fr;
+    height: auto;
+    min-height: 20;
     border: solid $primary-darken-2;
 }
 
 DataTable {
-    height: 1fr;
+    height: auto;
+    min-height: 20;
 }
 
 /* ── shared helpers ── */
@@ -313,14 +336,8 @@ def _cell_style(col_id: str, value) -> str:
         return f"bold {_color(value, 0.0, 2.0, invert=True)}"
     if col_id == "forecast_finish":
         return "dim"
-    if col_id == "cure_remaining":
-        return f"bold {_color(value, 2.0, 1.0)}"
     if col_id == "plan_deviation":
         return "bold red" if value > 0.10 else ("bold yellow" if value > 0 else "bold green")
-
-    if col_id in ("breach_idle", "breach_deviation", "breach_schedule",
-                  "breach_cost", "breach_deadline", "any_breach"):
-        return "bold red" if value else "bold green"
 
     if col_id in ("inflow_period", "inflow_cum"):
         return "green" if (value or 0) > 0 else "dim"
@@ -348,7 +365,7 @@ def _make_cell(col_id: str, value) -> Text:
 
 
 # ─────────────────────────────────────────────────────────────
-# RICH TABLE BUILDERS  (static params + milestone profile)
+# RICH TABLE BUILDERS
 # ─────────────────────────────────────────────────────────────
 
 def _build_static_params_table(proj: dict) -> Table:
@@ -361,25 +378,25 @@ def _build_static_params_table(proj: dict) -> Table:
         title_style="bold white",
         expand=False,
     )
-    tbl.add_column("Parameter",  style="dim",        no_wrap=True)
-    tbl.add_column("Value",      style="bold white",  no_wrap=True)
+    tbl.add_column("Parameter",  style="dim",       no_wrap=True)
+    tbl.add_column("Value",      style="bold white", no_wrap=True)
 
     rows = [
-        ("Budget (BAC)",          f"{proj['budget']:,.2f}"),
-        ("Contract Price",        f"{proj['price']:,.2f}"),
-        ("Margin",                f"{proj['margin']*100:.1f}%"),
-        ("Start",                 str(proj["start"])),
-        ("Finish (planned)",      str(proj["finish"])),
-        ("Duration",              str(proj["duration"])),
-        ("S-curve α",             f"{proj['scurve_a']:.3f}"),
-        ("S-curve β",             f"{proj['scurve_b']:.3f}"),
-        ("Advance %",             f"{proj['advance_percent']*100:.1f}%"),
-        ("Advance Trigger",       f"{proj['advance_trigger']*100:.1f}%"),
-        ("Advance Recovery Rate", f"{proj['advance_recovery']*100:.1f}%"),
-        ("Retention Rate",        f"{proj['retention_rate']*100:.1f}%"),
-        ("Schedule Cap (periods)",str(proj["schedule_cap"])),
-        ("Cost Cap (×BAC)",       f"{proj['cost_cap']:.2f}×"),
-        ("Cure Length",           str(proj["cure_length"])),
+        ("Budget (BAC)",           f"{proj['budget']:,.2f}"),
+        ("Contract Price",         f"{proj['price']:,.2f}"),
+        ("Margin",                 f"{proj['margin']*100:.1f}%"),
+        ("Start",                  str(proj["start"])),
+        ("Finish (planned)",       str(proj["finish"])),
+        ("Duration",               str(proj["duration"])),
+        ("S-curve α",              f"{proj['scurve_a']:.3f}"),
+        ("S-curve β",              f"{proj['scurve_b']:.3f}"),
+        ("Advance %",              f"{proj['advance_percent']*100:.1f}%"),
+        ("Advance Trigger",        f"{proj['advance_trigger']*100:.1f}%"),
+        ("Advance Recovery Rate",  f"{proj['advance_recovery']*100:.1f}%"),
+        ("Retention Rate",         f"{proj['retention_rate']*100:.1f}%"),
+        ("Schedule Cap (periods)", str(proj["schedule_cap"])),
+        ("Cost Cap (×BAC)",        f"{proj['cost_cap']:.2f}×"),
+        ("Cure Length",            str(proj["cure_length"])),
     ]
     for param, val in rows:
         tbl.add_row(param, val)
@@ -391,19 +408,6 @@ def _build_milestone_table(
     milestones: list,
     proj_state: dict,
 ) -> Table:
-    """
-    Payment profile table.
-
-    Rows
-    ────
-    • Advance Payment           (threshold = 0%)
-    • Interim milestones        (threshold < 100%)
-    • Retention Release         (final row, threshold = 100%)
-
-    Columns
-    ───────
-    Milestone | Threshold | Weight | Gross | Adv.Recovery | Retention | Net | Earliest t | Status
-    """
     tbl = Table(
         title="Payment Profile",
         box=rich_box.SIMPLE_HEAVY,
@@ -413,16 +417,16 @@ def _build_milestone_table(
         expand=True,
     )
 
-    tbl.add_column("Milestone",       style="bold white",  no_wrap=True)
-    tbl.add_column("Threshold",       style="cyan",        no_wrap=True, justify="right")
-    tbl.add_column("Weight",          style="white",       no_wrap=True, justify="right")
-    tbl.add_column("Gross",           style="white",       no_wrap=True, justify="right")
-    tbl.add_column("Adv. Recovery",   style="yellow",      no_wrap=True, justify="right")
-    tbl.add_column("Cum. Recovered",  style="yellow",      no_wrap=True, justify="right")
-    tbl.add_column("Retention",       style="yellow",      no_wrap=True, justify="right")
-    tbl.add_column("Net Payment",     style="bold green",  no_wrap=True, justify="right")
-    tbl.add_column("Earliest t",      style="cyan",        no_wrap=True, justify="center")
-    tbl.add_column("Status",          style="white",       no_wrap=True, justify="center")
+    tbl.add_column("Milestone",      style="bold white", no_wrap=True)
+    tbl.add_column("Threshold",      style="cyan",       no_wrap=True, justify="right")
+    tbl.add_column("Weight",         style="white",      no_wrap=True, justify="right")
+    tbl.add_column("Gross",          style="white",      no_wrap=True, justify="right")
+    tbl.add_column("Adv. Recovery",  style="yellow",     no_wrap=True, justify="right")
+    tbl.add_column("Cum. Recovered", style="yellow",     no_wrap=True, justify="right")
+    tbl.add_column("Retention",      style="yellow",     no_wrap=True, justify="right")
+    tbl.add_column("Net Payment",    style="bold green", no_wrap=True, justify="right")
+    tbl.add_column("Earliest t",     style="cyan",       no_wrap=True, justify="center")
+    tbl.add_column("Status",         style="white",      no_wrap=True, justify="center")
 
     price            = proj["price"]
     advance_pct      = proj["advance_percent"]
@@ -442,19 +446,13 @@ def _build_milestone_table(
         "0%",
         f"{advance_pct*100:.1f}%",
         f"{advance_gross:,.2f}",
-        "—",
-        "—",
-        "—",
+        "—", "—", "—",
         f"{advance_gross:,.2f}",
         f"t={proj['start']}",
         adv_status,
     )
 
     # ── Interim milestone rows ────────────────────────────────
-    # Adv. Recovery is capped so the running cumulative recovered amount
-    # never exceeds the actual advance payment received — mirrors the cap
-    # enforced in env.py's milestone certification logic.
-    total_weight  = advance_pct
     cum_recovered = 0.0
     for ms in milestones:
         is_final         = ms["threshold"] >= 1.0
@@ -463,28 +461,20 @@ def _build_milestone_table(
         remaining_cap    = max(0.0, advance_received - cum_recovered)
         recovery         = min(desired_recovery, remaining_cap)
         cum_recovered   += recovery
-        # Final milestone withholds no retention — retention accumulated
-        # from interim milestones is released as a separate line below.
-        retention = 0.0 if is_final else gross * retention_rt
-        net       = gross - recovery - retention
-        total_weight += ms["payment_weight"]
+        retention        = 0.0 if is_final else gross * retention_rt
+        net              = gross - recovery - retention
 
         if ms["certified"]:
             cert_t   = ms.get("certified_t")
             ms_style = f"[bold cyan]CERTIFIED t={cert_t}[/]"
         else:
-            # check if progress has reached threshold
             progress = proj_state.get("progress", 0.0)
             if progress >= ms["threshold"]:
                 ms_style = "[bold yellow]ELIGIBLE[/]"
             else:
                 ms_style = "[dim]PENDING[/]"
 
-        label = (
-            "Final MS / Completion"
-            if is_final
-            else f"MS {ms['j']+1}"
-        )
+        label = "Final MS / Completion" if is_final else f"MS {ms['j']+1}"
 
         tbl.add_row(
             label,
@@ -500,8 +490,6 @@ def _build_milestone_table(
         )
 
     # ── Retention Release row ─────────────────────────────────
-    # Compute expected total retention from interim milestones only
-    # (mirrors env logic: final milestone withholds nothing).
     expected_retention = sum(
         ms["payment_weight"] * price * retention_rt
         for ms in milestones
@@ -515,12 +503,9 @@ def _build_milestone_table(
     )
     tbl.add_row(
         "Retention Release",
-        "100%",
-        "—",
+        "100%", "—",
         f"{display_ret:,.2f}",
-        "—",
-        "—",
-        "—",
+        "—", "—", "—",
         f"{display_ret:,.2f}",
         f"t={proj['finish']}",
         ret_status,
@@ -530,24 +515,18 @@ def _build_milestone_table(
 
 
 # ─────────────────────────────────────────────────────────────
-# GROUP HEADER ROW  (inserted as a non-data row in the DataTable)
+# GROUP HEADER ROW
 # ─────────────────────────────────────────────────────────────
 
 def _group_header_cells() -> list[Text]:
-    """
-    Build one Text cell per column, containing the group label only for the
-    FIRST column of each group (others are blank). Used as a frozen header row.
-    """
-    cells   = []
-    seen    = set()
-    grp_col = {}   # group → list of col_ids in order
-
+    grp_col: dict[str, list] = {}
     for col_id in COLUMN_IDS:
         g = COLUMN_GRP[col_id]
         grp_col.setdefault(g, []).append(col_id)
 
     first_of_group = {cols[0] for cols in grp_col.values()}
 
+    cells = []
     for col_id in COLUMN_IDS:
         g = COLUMN_GRP[col_id]
         if col_id in first_of_group:
@@ -671,7 +650,7 @@ class PortfolioTab(TabPane):
         log = self.query_one("#cashflow-log", RichLog)
         log.write(Text(f"─── Period {t} complete ───────────────────", style="bold pink1"))
         for cf in info.get("cashflow", []):
-            i    = cf["i"]
+            i     = cf["i"]
             alloc = cf["allocation"]
             adv   = cf["advance"]
             ms    = cf["milestone_net"]
@@ -701,23 +680,23 @@ class PortfolioTab(TabPane):
 # ─────────────────────────────────────────────────────────────
 # PROJECT TAB  (Tab 1+)
 #
-# Layout (top-to-bottom):
+# Layout:
 #   ┌──────────────────────┬──────────────────────────────────┐
-#   │  Static Params Table │  Payment Profile (Milestones)    │
+#   │  Project Identity    │  Payment Profile (top)           │
+#   │  (static params)     │  Boundary & Termination (bottom) │
 #   └──────────────────────┴──────────────────────────────────┘
 #   ┌──────────────────────────────────────────────────────────┐
-#   │  Group header row (non-scrollable label band)            │
-#   │  DataTable  (rows = periods, column groups as above)     │
+#   │  Group header band                                       │
+#   │  DataTable  (rows = periods)                             │
 #   └──────────────────────────────────────────────────────────┘
 # ─────────────────────────────────────────────────────────────
 
 class ProjectTab(TabPane):
     def __init__(self, proj_index: int):
         super().__init__(f"Project {proj_index}", id=f"tab-proj-{proj_index}")
-        self.proj_index  = proj_index
-        self._row_count  = 0
-        # running cumulative accumulators per project
-        self._cum: dict  = {
+        self.proj_index = proj_index
+        self._row_count = 0
+        self._cum: dict = {
             "inflow": 0.0, "outflow": 0.0, "net_cf": 0.0,
             "deficit": 0.0, "alloc": 0.0, "interest": 0.0,
             "budget_draw": 0.0,
@@ -725,13 +704,22 @@ class ProjectTab(TabPane):
 
     def compose(self) -> ComposeResult:
         i = self.proj_index
-        with Vertical(classes="proj-tab-container"):
-            # ── top row: params  +  payment profile ──────────
+        with ScrollableContainer(classes="proj-tab-container"):
+            # ── top row: identity (left)  +  right column ────
             with Horizontal(classes="proj-top-row"):
-                yield Static("", id=f"proj-static-{i}",
-                             classes="rich-static proj-static-panel")
-                yield Static("", id=f"proj-milestone-{i}",
-                             classes="rich-static proj-milestone-panel")
+                # left: project identity / static params
+                with Vertical(classes="proj-static-panel"):
+                    yield Label("Project Identity", classes="section-title")
+                    yield Static("", id=f"proj-static-{i}", classes="rich-static")
+
+                # right: payment profile (top) + termination status (bottom)
+                with Vertical(classes="proj-right-col"):
+                    with Vertical(classes="proj-milestone-panel"):
+                        yield Label("Payment Profile", classes="section-title")
+                        yield Static("", id=f"proj-milestone-{i}", classes="rich-static")
+                    with Vertical(classes="proj-term-panel"):
+                        yield Label("Boundary & Termination Status", classes="section-title")
+                        yield Static("", id=f"proj-term-{i}")
 
             # ── group header band ─────────────────────────────
             yield Static("", id=f"proj-grp-hdr-{i}", classes="group-header")
@@ -744,17 +732,16 @@ class ProjectTab(TabPane):
                     cursor_type="row",
                 )
 
-    # ── render static params (Rich table inside a Static widget) ──
+    # ── render static params ──────────────────────────────────
     def render_static_params(self, proj: dict, proj_state: dict) -> None:
         i   = self.proj_index
         tbl = _build_static_params_table(proj)
         try:
-            wg = self.query_one(f"#proj-static-{i}", Static)
-            wg.update(tbl)
+            self.query_one(f"#proj-static-{i}", Static).update(tbl)
         except NoMatches:
             pass
 
-    # ── render milestone / payment profile ───────────────────
+    # ── render payment profile ────────────────────────────────
     def render_milestone_table(
         self,
         proj: dict,
@@ -764,54 +751,80 @@ class ProjectTab(TabPane):
         i   = self.proj_index
         tbl = _build_milestone_table(proj, milestones, proj_state)
         try:
-            wg = self.query_one(f"#proj-milestone-{i}", Static)
-            wg.update(tbl)
+            self.query_one(f"#proj-milestone-{i}", Static).update(tbl)
         except NoMatches:
             pass
 
-    # ── render the group-header band ─────────────────────────
-    def render_group_header(self) -> None:
+    # ── render termination / boundary status box ─────────────
+    def render_termination_box(self, term_values: dict) -> None:
         i   = self.proj_index
-        # Build a compact one-line description
-        parts = []
-        seen  = set()
+        tbl = Table(
+            box=rich_box.SIMPLE_HEAVY,
+            show_header=True,
+            header_style="bold magenta",
+            expand=True,
+        )
+        tbl.add_column("Condition", style="dim",       no_wrap=True)
+        tbl.add_column("Status",    style="bold white", no_wrap=True, justify="center")
+
+        bool_fields = [
+            ("breach_idle",      "Idle Breach"),
+            ("breach_deviation", "Deviation Breach"),
+            ("breach_schedule",  "Schedule Breach"),
+            ("breach_cost",      "Cost Breach"),
+            ("breach_deadline",  "Deadline Breach"),
+            ("any_breach",       "⚠ Any Breach"),
+        ]
+        for key, label in bool_fields:
+            val    = term_values.get(key, False)
+            status = Text("✘  BREACH", style="bold red") if val else Text("✔  OK", style="bold green")
+            tbl.add_row(label, status)
+
+        tbl.add_section()
+        cure       = term_values.get("cure_remaining")
+        cure_text  = _fmt_int(cure)
+        cure_style = (
+            "bold red"    if (cure is not None and cure <= 1) else
+            "bold yellow" if (cure is not None and cure <= 2) else
+            "bold green"
+        )
+        tbl.add_row("Cure Periods Remaining", Text(cure_text, style=cure_style))
+
+        try:
+            self.query_one(f"#proj-term-{i}", Static).update(tbl)
+        except NoMatches:
+            pass
+
+    # ── render group header band ──────────────────────────────
+    def render_group_header(self) -> None:
+        i        = self.proj_index
         grp_cols: dict[str, list] = {}
         for col_id in COLUMN_IDS:
             g = COLUMN_GRP[col_id]
             grp_cols.setdefault(g, []).append(col_id)
 
+        parts = []
         for g in _GRP_ORDER:
-            cols  = grp_cols.get(g, [])
-            if not cols:
+            if g not in grp_cols:
                 continue
             label = _GRP_LABELS.get(g, g)
             color = _GRP_COLORS.get(g, "bold white")
             parts.append(Text(f"  ◆ {label}  ", style=color))
 
-        hdr_text = Text.assemble(*parts)
         try:
-            wg = self.query_one(f"#proj-grp-hdr-{i}", Static)
-            wg.update(hdr_text)
+            self.query_one(f"#proj-grp-hdr-{i}", Static).update(Text.assemble(*parts))
         except NoMatches:
             pass
 
-    # ── add column headers to DataTable (once) ───────────────
+    # ── ensure DataTable columns exist (called once) ──────────
     def _ensure_columns(self) -> None:
         i     = self.proj_index
         table = self.query_one(f"#proj-table-{i}", DataTable)
         if table.ordered_columns:
             return
-
-        # Insert a special group-header row first (key="__grp__")
         for col_id, hdr, width, _, grp in PROJECT_COLUMNS:
             color = _GRP_COLORS.get(grp, "white")
-            table.add_column(
-                Text(hdr, style=color),
-                key=col_id,
-                width=width,
-            )
-
-        # Add group header as first frozen row
+            table.add_column(Text(hdr, style=color), key=col_id, width=width)
         table.add_row(*_group_header_cells(), key="__grp__")
 
     # ── append one period row ─────────────────────────────────
@@ -830,27 +843,23 @@ class ProjectTab(TabPane):
         table = self.query_one(f"#proj-table-{i}", DataTable)
         self._ensure_columns()
 
-        ps   = proj_state
-        snap = state_snapshot
+        ps = proj_state
 
-        # ── derived flags ─────────────────────────────────────
-        eac      = ps.get("eac", proj_params["budget"])
-        eac_bac  = eac / proj_params["budget"] if proj_params["budget"] > 0 else 1.0
-        alloc    = cashflow.get("allocation", 0.0)
-        interest = cashflow.get("interest_cost", 0.0)
-        draw     = cashflow.get("treasury_draw", 0.0)
+        eac     = ps.get("eac", proj_params["budget"])
+        eac_bac = eac / proj_params["budget"] if proj_params["budget"] > 0 else 1.0
+        alloc   = cashflow.get("allocation",   0.0)
+        interest= cashflow.get("interest_cost", 0.0)
+        draw    = cashflow.get("treasury_draw", 0.0)
 
-        # inflows from cashflow dict
-        adv_in   = cashflow.get("advance", 0.0)
-        ms_in    = cashflow.get("milestone_net", 0.0)
-        ret_in   = cashflow.get("retention_release", 0.0)
-        sett_in  = cashflow.get("settlement", 0.0)
-        inflow_p = adv_in + ms_in + ret_in + max(0.0, sett_in)
+        adv_in   = cashflow.get("advance",           0.0)
+        ms_in    = cashflow.get("milestone_net",      0.0)
+        ret_in   = cashflow.get("retention_release",  0.0)
+        sett_in  = cashflow.get("settlement",         0.0)
+        inflow_p  = adv_in + ms_in + ret_in + max(0.0, sett_in)
         outflow_p = alloc + interest
         net_cf_p  = inflow_p - outflow_p
         deficit_p = max(0.0, -net_cf_p)
 
-        # update cumulatives
         self._cum["inflow"]      += inflow_p
         self._cum["outflow"]     += outflow_p
         self._cum["net_cf"]      += net_cf_p
@@ -859,7 +868,6 @@ class ProjectTab(TabPane):
         self._cum["interest"]    += interest
         self._cum["budget_draw"] += draw
 
-        # breach flags
         dev     = ps.get("plan_deviation", 0.0)
         slip    = ps.get("schedule_slip",  0.0)
         pdt     = cfg.get("plan_deviation_threshold", 0.10)
@@ -872,10 +880,8 @@ class ProjectTab(TabPane):
         b_any   = b_idle or b_dev or (b_sched and b_cost) or b_dl
 
         row: dict = {
-            # identity
             "t":                   t,
             "status":              ps.get("status") or "not_started",
-            # alloc & decision — periodic
             "inflow_period":       inflow_p,
             "outflow_period":      outflow_p,
             "net_cf_period":       net_cf_p,
@@ -883,7 +889,6 @@ class ProjectTab(TabPane):
             "allocation":          alloc,
             "interest_cost":       interest,
             "budget_draw":         draw,
-            # alloc & decision — cumulative
             "inflow_cum":          self._cum["inflow"],
             "outflow_cum":         self._cum["outflow"],
             "net_cf_cum":          self._cum["net_cf"],
@@ -891,7 +896,6 @@ class ProjectTab(TabPane):
             "alloc_cum":           self._cum["alloc"],
             "interest_cum":        self._cum["interest"],
             "budget_draw_cum":     self._cum["budget_draw"],
-            # EVM
             "progress":            ps.get("progress",       0.0),
             "progress_plan":       ps.get("progress_plan",  0.0),
             "plan_deviation":      ps.get("plan_deviation", 0.0),
@@ -902,7 +906,7 @@ class ProjectTab(TabPane):
             "eac_bac":             eac_bac,
             "schedule_slip":       ps.get("schedule_slip",  0.0),
             "forecast_finish":     ps.get("forecast_finish", float(proj_params["finish"])),
-            # termination
+            # termination — used for the status box only, not the DataTable
             "cure_remaining":      ps.get("cure_remaining", proj_params.get("cure_length", 0)),
             "breach_idle":         b_idle,
             "breach_deviation":    b_dev,
@@ -915,10 +919,18 @@ class ProjectTab(TabPane):
         cells = [_make_cell(col_id, row[col_id]) for col_id in COLUMN_IDS]
         table.add_row(*cells, key=f"t{t}")
         self._row_count += 1
-        table.move_cursor(row=self._row_count, animate=False)  # +1 for grp header row
+        table.move_cursor(row=self._row_count, animate=False)
 
-        # refresh the milestone table every period (statuses change)
         self.render_milestone_table(proj_params, milestones, ps)
+        self.render_termination_box({
+            "cure_remaining":   row["cure_remaining"],
+            "breach_idle":      row["breach_idle"],
+            "breach_deviation": row["breach_deviation"],
+            "breach_schedule":  row["breach_schedule"],
+            "breach_cost":      row["breach_cost"],
+            "breach_deadline":  row["breach_deadline"],
+            "any_breach":       row["any_breach"],
+        })
 
     # ── initial snapshot row at t=0 ──────────────────────────
     def append_initial_row(
@@ -932,6 +944,15 @@ class ProjectTab(TabPane):
         self.render_static_params(proj_params, proj_state)
         self.render_milestone_table(proj_params, milestones, proj_state)
         self.render_group_header()
+        self.render_termination_box({
+            "cure_remaining":   proj_params.get("cure_length", 0),
+            "breach_idle":      False,
+            "breach_deviation": False,
+            "breach_schedule":  False,
+            "breach_cost":      False,
+            "breach_deadline":  False,
+            "any_breach":       False,
+        })
         self.append_row(
             t=0,
             proj_state=proj_state,
@@ -949,7 +970,10 @@ class ProjectTab(TabPane):
 # ─────────────────────────────────────────────────────────────
 
 class MainScreen(Screen):
-    BINDINGS = [Binding("q", "quit", "Quit")]
+    BINDINGS = [
+        Binding("q", "quit", "Quit"),
+        Binding("ctrl+p", "command_palette", "Command Palette"),
+    ]
 
     def __init__(self, conn: sqlite3.Connection, config_id: str, method: str):
         super().__init__()
@@ -972,6 +996,10 @@ class MainScreen(Screen):
         self.env   = PortfolioEnv(self.conn, self.config_id, method=self.method)
         self.state = self.env.reset()
         self._rebuild_tabs()
+        # Defer population until after Textual finishes mounting all panes
+        self.call_after_refresh(self._after_mount)
+
+    def _after_mount(self) -> None:
         self._refresh_portfolio()
         self._append_initial_rows()
 
@@ -989,7 +1017,7 @@ class MainScreen(Screen):
         for i, (proj, ps) in enumerate(zip(self.env.projects, self.env.proj_state)):
             snap = self.state["projects"][i]
             try:
-                tab = self.query_one(f"#tab-proj-{i}", ProjectTab)
+                tab = self.query_one(f"ProjectTab#tab-proj-{i}")
                 tab.append_initial_row(
                     proj_state=dict(ps),
                     state_snapshot=snap,
@@ -1017,7 +1045,7 @@ class MainScreen(Screen):
             )
         )
         try:
-            port = self.query_one("#tab-portfolio", PortfolioTab)
+            port = self.query_one(PortfolioTab)
             port.update_stats(state, self.total_reward)
         except NoMatches:
             pass
@@ -1060,7 +1088,7 @@ class MainScreen(Screen):
         for i, (proj, ps) in enumerate(zip(self.env.projects, self.env.proj_state)):
             snap = new_state["projects"][i]
             try:
-                tab = self.query_one(f"#tab-proj-{i}", ProjectTab)
+                tab = self.query_one(f"ProjectTab#tab-proj-{i}")
                 tab.append_row(
                     t=t_executed + 1,
                     proj_state=dict(ps),
@@ -1075,7 +1103,7 @@ class MainScreen(Screen):
                 pass
 
         try:
-            port = self.query_one("#tab-portfolio", PortfolioTab)
+            port = self.query_one(PortfolioTab)
             port.log_cashflow(t_executed, reward, info, new_state["budget"])
         except NoMatches:
             pass
@@ -1089,7 +1117,7 @@ class MainScreen(Screen):
     # ── episode-end summary ───────────────────────────────────
     def _show_done(self) -> None:
         try:
-            port = self.query_one("#tab-portfolio", PortfolioTab)
+            port = self.query_one(PortfolioTab)
             log  = port.query_one("#cashflow-log", RichLog)
             log.write(Text("═══ EPISODE COMPLETE ═══", style="bold green"))
             log.write(Text(
@@ -1144,5 +1172,7 @@ class PortfolioApp(App):
 # ENTRY POINT
 # ─────────────────────────────────────────────────────────────
 
+app = PortfolioApp()
+
 if __name__ == "__main__":
-    PortfolioApp().run()
+    app.run()
