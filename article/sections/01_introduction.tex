@@ -108,6 +108,7 @@ project-specific number of consecutive periods.
             {\textbf{Observable State} $S_t$:\quad
             $\bigl\{P_{i,t}^{\mathrm{actual}},\;
             \mathrm{CPI}_{i,t},\;\mathrm{SPI}_{i,t},\;
+            \mathrm{TCPI}_{i,t},\;
             \mathrm{EAC}_{i,t},\;
             \Delta f_{i,t},\;
             \mathrm{status}_{i,t},\;\tau_{i,t}^{\mathrm{rem}}\bigr\}_{i},\;B_t$};
@@ -200,15 +201,22 @@ The Estimate at Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} +
 cost at the current performance rate and feeds one of the two termination
 conditions.
 
+
 \paragraph{Termination.}
-Termination is an endogenous environment mechanic triggered when two conditions
-hold simultaneously for $\tau_i^{\mathrm{tol}}$ consecutive periods:
-the forecast finish deviation $\Delta f_{i,t}$ exceeds the contractual
-schedule tolerance $\Omega_i$, and $\mathrm{EAC}_{i,t}$ exceeds
-$(1+\mu_i)\cdot\mathrm{BAC}_i$. The cure period counter
-$\tau_{i,t}^{\mathrm{rem}}$ is observable but not directly controllable
-by the agent. When it reaches zero, termination executes and the settlement
-payment $R_i^{\mathrm{term}}$ enters the portfolio cash balance.
+Termination is an endogenous environment mechanic governed by three breach
+conditions, any one of which decrements a project-specific cure period counter
+$\tau_{i,t}^{\mathrm{rem}}$ by one: zero allocation to an active project in a
+given period; simultaneous breach of the schedule tolerance $\Omega_i$ by the
+forecast finish deviation $\Delta f_{i,t}$ and of the cost cap
+$(1+\mu_i)\cdot\mathrm{BAC}_i$ by $\mathrm{EAC}_{i,t}$; and plan deviation
+exceeding the contractual threshold $\delta^{\mathrm{plan}}$. Multiple
+simultaneous breaches decrement the counter by exactly one. The counter resets
+to $\tau_i^{\mathrm{tol}}$ only when all three conditions are clear. When the
+counter reaches zero, or at the hard deadline $f_i + \Omega_i$ if the project
+is still active, termination executes and the settlement payment
+$R_i^{\mathrm{term}} = P_{i,t}^{\mathrm{actual}} \cdot CP_i -
+(A_i + \sum_{j \in \mathcal{M}_i^{\mathrm{cert}}} R_{i,j}^{\mathrm{net}})$
+enters the portfolio cash balance.
 
 % ------------------------------------------------------------
 \subsection{The Three-Level Modelling Arc}

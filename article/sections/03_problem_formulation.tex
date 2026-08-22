@@ -307,7 +307,7 @@ cost units against the $\mathrm{BAC}_i$ baseline. Three derived indices
 are computed each period:
 \begin{align}
   \mathrm{SPI}_{i,t}
-    &= \frac{P_{i,t}^{\mathrm{actual}}}{P_{i,t}^{\mathrm{plan}}},
+    &= \frac{\mathrm{ES}_{i,t}}{t - s_i + 1},
   \label{eq:SPI} \\
   \mathrm{CPI}_{i,t}
     &= \frac{\mathrm{EV}_{i,t}}{\mathrm{ACWP}_{i,t}}
@@ -319,6 +319,20 @@ are computed each period:
        + \frac{\mathrm{BAC}_i - \mathrm{EV}_{i,t}}{\mathrm{CPI}_{i,t}}.
   \label{eq:EAC}
 \end{align}
+The Earned Schedule $\mathrm{ES}_{i,t}$ is the planned time at which the
+s-curve \eqref{eq:scurve} would have reached the current actual progress
+level $P_{i,t}^{\mathrm{actual}}$; formally it is the value
+$\tau^* \in [0, D_i^{\mathrm{plan}}]$ satisfying
+$I_{\tau^*/D_i^{\mathrm{plan}}}(a_i, b_i) = P_{i,t}^{\mathrm{actual}}$,
+computed by binary search over the Beta CDF.
+Unlike classical $\mathrm{SPI} = \mathrm{BCWP}/\mathrm{BCWS}$, which
+freezes once $\mathrm{BCWS}$ reaches $\mathrm{BAC}_i$ at the planned
+finish, $\mathrm{SPI}_{i,t} = \mathrm{ES}_{i,t}/(t - s_i + 1)$ degrades
+continuously as real time passes without progress, correctly distinguishing
+a project one period late from one three periods late \citep{Lipke2003}.
+This correction is adopted throughout the environment; classical SPI is
+not used.
+
 $\mathrm{SPI}_{i,t} < 1$ signals schedule lag;
 $\mathrm{CPI}_{i,t} < 1$ signals cost overrun.
 $\mathrm{EAC}_{i,t}$ is the forward-looking Estimate at Completion: it
@@ -329,8 +343,18 @@ computation used in Condition~1 of the termination mechanic
 (Section~\ref{subsubsec:termination}). \citet{christensen1993est} established
 that this formulation produces the most accurate and stable
 cost-at-completion forecasts, with reliability increasing beyond the 20\%
-completion mark \citep{Lipke2003}. All three indices are observable state
-variables; their stochastic dynamics at Levels~2--3 are calibrated from
+completion mark \citep{Lipke2003}.
+The To-Complete Performance Index $\mathrm{TCPI}_{i,t}$ \eqref{eq:TCPI}
+complements $\mathrm{CPI}_{i,t}$ with a forward-looking cost signal:
+it measures the cost efficiency that must be sustained on remaining work
+to finish within $\mathrm{BAC}_i$. $\mathrm{TCPI}_{i,t} > 1$ indicates
+that future performance must exceed historical performance; values above
+1.10 are widely considered unrecoverable in practice
+\citep{Fleming2010, christensen1993est}. While $\mathrm{CPI}_{i,t}$
+reflects what has happened, $\mathrm{TCPI}_{i,t}$ reflects what must
+happen --- the two together give the agent a complete cost picture at
+each period. All four indices are observable state variables; their
+stochastic dynamics at Levels~2--3 are calibrated from
 empirical EVM datasets \citep{Acebes2015, Batselier2017}.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -410,32 +434,37 @@ Upon termination at $t_i^{\mathrm{term}}$, the net settlement payment
 is:
 \begin{equation}
   R_i^{\mathrm{term}}
-    = P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}} \cdot CP_i (1-\rho_i)
-      - \Bigl(A_i
-          - \sum_{j \in \mathcal{M}_i^{\mathrm{cert}}(t_i^{\mathrm{term}})}
-              \delta_i^{\mathrm{rec}} \cdot \phi_{i,j} \cdot CP_i
-              \cdot \mathbf{1}\!\Bigl\{
-                \textstyle\sum_{k \leq j} \phi_{i,k} \geq \psi_i
-              \Bigr\}
-        \Bigr).
+    = P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}} \cdot CP_i
+      \;-\;
+      \Biggl(
+        A_i
+        + \sum_{j \in \mathcal{M}_i^{\mathrm{cert}}(t_i^{\mathrm{term}})}
+            R_{i,j}^{\mathrm{net}}
+      \Biggr).
   \label{eq:term_settlement}
 \end{equation}
-The first term is the value of work delivered net of retention; the
-second is the outstanding advance not yet recovered through milestone
-deductions. Negative $R_i^{\mathrm{term}}$ constitutes a net contractor obligation,
-recovered from portfolio inflows in subsequent periods consistent with
-FIDIC termination clauses \citep{FIDIC2017}. The settlement formula
-values delivered work at $P_{i,t_i^{\mathrm{term}}}^{\mathrm{actual}}
-\cdot CP_i(1-\rho_i)$ --- the fraction of contract price attributable
-to physically completed scope, net of retention. This is not a penalty
-construct; it is a direct valuation of productive assets transferred at
-termination \citep{Dixit1994}, grounding the model's financial signals
-in the real asset value of work in place rather than in arbitrarily
-weighted deviation terms. A portfolio manager interpreting a negative
-$R_i^{\mathrm{term}}$ correctly reads it as the cost of having disbursed
-an advance against work that was never delivered --- a capital allocation
-error whose financial consequence is fully determined by the contract
-without requiring external calibration.
+The first term is the contractor's entitlement for work physically
+delivered: the fraction of contract price proportional to actual
+progress at termination. The second term is the cumulative inflows
+already received: the advance payment $A_i$ plus all net milestone
+payments $R_{i,j}^{\mathrm{net}}$ certified up to and including
+$t_i^{\mathrm{term}}$, where $R_{i,j}^{\mathrm{net}}$ is as defined
+in \eqref{eq:Rnet}. The settlement is the difference between what the
+contractor is owed for delivered scope and what they have already
+collected.
+
+Positive $R_i^{\mathrm{term}}$ arises when delivered work exceeds
+cumulative receipts --- typically when termination occurs just below a
+milestone threshold, so the contractor has performed work not yet
+captured in a certified payment. Negative $R_i^{\mathrm{term}}$
+constitutes a net contractor obligation --- typically when a large
+advance has been disbursed against work that was not subsequently
+delivered, or when certified milestone payments have run ahead of
+physical progress. In either case the settlement is fully determined
+by contract parameters and the progress level at termination; no
+penalty term or external calibration is required. This grounds the
+model's financial signals in the real asset value of work in place
+\citep{Dixit1994} rather than in arbitrarily weighted deviation terms.
 
 \begin{figure}[htbp]
   \centering
@@ -506,16 +535,16 @@ without requiring external calibration.
       node[above, font=\normalsize, sloped] {conditions inactive}
       (normal);
 
-    \draw[->, thick, green!60!black]
+      \draw[->, thick, green!60!black]
       (term.east) to[out=30, in=180]
       node[midway, above, font=\normalsize, sloped]
-        {$R_i^{\mathrm{term}} > 0$}
+        {$R_i^{\mathrm{term}} > 0$ (balancing receipt)}
       (posout.west);
 
     \draw[->, thick, blue!60!black]
       (term.east) to[out=-30, in=180]
       node[midway, below, font=\normalsize, sloped]
-        {$R_i^{\mathrm{term}} < 0$}
+        {$R_i^{\mathrm{term}} < 0$ (contractor obligation)}
       (negout.west);
 
   \end{tikzpicture}%
@@ -559,6 +588,7 @@ The portfolio state at period $t$ is:
       \mathrm{ACWP}_{i,t},\;
       \mathrm{SPI}_{i,t},\;
       \mathrm{CPI}_{i,t},\;
+      \mathrm{TCPI}_{i,t},\;
       \mathrm{EAC}_{i,t},\;
       \Delta f_{i,t},\;
       \mathrm{status}_{i,t},\;
@@ -570,7 +600,7 @@ The portfolio state at period $t$ is:
 \end{equation}
 where $\mathrm{status}_{i,t} \in \{\texttt{active},\,
 \texttt{completed},\, \texttt{terminated}\}$. This gives a state
-dimension of $8n + 1$ per period. All components are observable.
+dimension of $9n + 1$ per period.. All components are observable.
 One primitive is unobservable at decision time: $\eta_{i,t}$, realised
 only after allocation $x_{i,t}$ is committed. It is not part of the
 state vector; it is an environment-internal draw that the policy must
@@ -666,9 +696,19 @@ balance $B_1$ are portfolio-level parameters shared across all projects.
         payment interval constraints \citep{FIDIC2017}. \\
     \rowcolor{RowAlt}
     Schedule tolerance
-      & $\Omega_i$ & $\mathbb{Z}^+$
-      & Maximum admissible forecast finish overrun in periods before
-        Condition~1 \eqref{eq:term_cond1} activates. \\
+    & $\Omega_i$ & $\mathbb{Z}^+$
+    & Maximum admissible forecast finish overrun in periods before
+      Condition~1 \eqref{eq:term_cond1} activates. \\
+  \rowcolor{RowAlt}
+  To-Complete Performance Index
+    & $\mathrm{TCPI}_{i,t}$ & $\mathbb{R}^+$
+    & Forward-looking cost efficiency required on remaining work to
+      finish within $\mathrm{BAC}_i$; computed as
+      $(\mathrm{BAC}_i - \mathrm{EV}_{i,t}) /
+       (\mathrm{BAC}_i - \mathrm{ACWP}_{i,t})$.
+      Complements $\mathrm{CPI}_{i,t}$ (historical) with a prospective
+      signal; values above 1.10 are widely considered unrecoverable
+      \citep{Fleming2010}. \\
     \midrule
     \multicolumn{4}{l}{\textit{Contract}} \\
     \midrule
@@ -1170,13 +1210,13 @@ The state at period $t$ is the portfolio state $S_t$ defined in
 collecting, for each project $i$: actual progress
 $P_{i,t}^{\mathrm{actual}} \in [0,1]$, cumulative actual cost
 $\mathrm{ACWP}_{i,t} \in \mathbb{R}_{\geq 0}$, performance indices
-$\mathrm{SPI}_{i,t}$, $\mathrm{CPI}_{i,t}$, $\mathrm{EAC}_{i,t}$,
-schedule deviation $\Delta f_{i,t}$, project status
+$\mathrm{SPI}_{i,t}$, $\mathrm{CPI}_{i,t}$, $\mathrm{TCPI}_{i,t}$,
+$\mathrm{EAC}_{i,t}$, schedule deviation $\Delta f_{i,t}$, project status
 $\mathrm{status}_{i,t} \in \{0,1,2\}$ encoding
 $\{\texttt{active}, \texttt{completed}, \texttt{terminated}\}$, and
 cure-period counter $\tau_{i,t}^{\mathrm{rem}} \in \mathbb{Z}_{\geq 0}$;
 together with the portfolio cash balance $B_t \in \mathbb{R}_{\geq 0}$.
-The state dimension is $8n + 1$ per period. All components are observable.
+The state dimension is $9n + 1$ per period. All components are observable.
 One primitive is unobservable at decision time: $\eta_{i,t}$, realised
 only after allocation $x_{i,t}$ is committed. It is not part of the
 state vector; it is an environment-internal draw that the policy must
@@ -1244,8 +1284,8 @@ period:
     $V_t$ via \eqref{eq:Rnet}--\eqref{eq:Vt}.
   \item Update portfolio cash balance via \eqref{eq:balance}.
   \item Execute termination for any project with
-    $\tau_{i,t}^{\mathrm{rem}} = 0$, compute
-    $R_i^{\mathrm{term}}$ via \eqref{eq:term_settlement}.
+    $\tau_{i,t}^{\mathrm{rem}} = 0$ or $t \geq f_i + \Omega_i$,
+    compute $R_i^{\mathrm{term}}$ via \eqref{eq:term_settlement}.
 \end{enumerate}
 The transition kernel is Markovian: $S_{t+1}$ depends on
 $(S_t, \mathbf{x}_t, \boldsymbol{\eta}_t)$ only, not on
