@@ -105,18 +105,21 @@ CREATE TABLE IF NOT EXISTS environment_config (
     retention_rate_p3       REAL,
     retention_rate_p4       REAL,
 
+    -- progress_delay_cap : max tolerated (planned_progress − actual_progress); dimensionless [0, 1]
     progress_delay_cap_dist TEXT NOT NULL,
     progress_delay_cap_p1   REAL NOT NULL,
     progress_delay_cap_p2   REAL,
     progress_delay_cap_p3   REAL,
     progress_delay_cap_p4   REAL,
 
+    -- finish_delay_cap   : max tolerated (projected_finish − planned_finish);  units = periods
     finish_delay_cap_dist   TEXT NOT NULL,
     finish_delay_cap_p1     REAL NOT NULL,
     finish_delay_cap_p2     REAL,
     finish_delay_cap_p3     REAL,
     finish_delay_cap_p4     REAL,
 
+    -- cost_overrun_cap   : max tolerated (EAC / BAC) ratio;     e.g. 1.30 = 30% overrun
     cost_overrun_cap_dist   TEXT NOT NULL,
     cost_overrun_cap_p1     REAL NOT NULL,
     cost_overrun_cap_p2     REAL,
@@ -154,13 +157,6 @@ CREATE TABLE IF NOT EXISTS environment_config (
     payment_weight_p3       REAL,
     payment_weight_p4       REAL,
 
-    -- timestep_threshold_fraction: fraction of project duration at which each
-    -- intermediate milestone becomes eligible for certification.
-    -- earliest_t[j] = start + round(progress_threshold[j] * duration * fraction)
-    -- fraction = 1.0 → eligible exactly at the on-plan completion date for that threshold.
-    -- fraction < 1.0 → allows early certification for high performers.
-    -- The final milestone (progress_threshold = 1.0) always uses proj["finish"] —
-    -- that is a contract invariant, independent of this parameter.
     timestep_threshold_dist TEXT NOT NULL,
     timestep_threshold_p1   REAL NOT NULL,
     timestep_threshold_p2   REAL,
@@ -177,18 +173,22 @@ CREATE TABLE IF NOT EXISTS projects_profile (
     config_id                   TEXT NOT NULL REFERENCES environment_config(config_id),
     i                           INTEGER NOT NULL,
 
+    planned_start               INTEGER NOT NULL,
+    planned_finish              INTEGER NOT NULL,
+    planned_duration            INTEGER NOT NULL,
+    
     bac                         REAL NOT NULL,
-    price                       REAL NOT NULL,
     profit_percent              REAL NOT NULL,
-    start                       INTEGER NOT NULL,
-    finish                      INTEGER NOT NULL,
-    duration                    INTEGER NOT NULL,
+    price                       REAL NOT NULL,
     scurve_a                    REAL NOT NULL,
     scurve_b                    REAL NOT NULL,
+    
     advance_percent             REAL NOT NULL,
     advance_trigger             REAL NOT NULL,
     advance_recovery            REAL NOT NULL,
+    
     retention_rate              REAL NOT NULL,
+    
     progress_delay_cap          REAL NOT NULL,
     finish_delay_cap            INTEGER NOT NULL,
     cost_overrun_cap            REAL NOT NULL,
@@ -227,6 +227,8 @@ CREATE TABLE IF NOT EXISTS portfolios (
     budget_available    REAL NOT NULL,
     inflow              REAL NOT NULL,
     outflow             REAL NOT NULL,
+    net_cashflow        REAL,    -- inflow − outflow
+    
     reward              REAL NOT NULL,
     done                INTEGER NOT NULL,
 
@@ -242,35 +244,71 @@ CREATE TABLE IF NOT EXISTS projects_status (
     t_project                   INTEGER,
     method                      TEXT NOT NULL,
 
+    -- ── lifecycle ────────────────────────────────────────────
     status                      TEXT,
 
+    -- ── cash flow and financing (after and before allocation values are different) ────────────────
+    total_inflow                      REAL,    -- total inflow (advance or milestone payments or retention release)
+    advance_received
+    gross_milestone_payment
+    retention_release                 
+
+    total_outflow                     REAL,    -- total outflow (alloc + interest + settlement but not the retention and advance recovery )
+    retention_withheld
+    advance_recovered
+    interest_cost               REAL,
     allocation                  REAL,
+    
+    net_cashflow                REAL,    -- inflow − outflow
+    
+    deficit                     REAL,    -- max(0, cumulative_cost − cumulative_inflows)
+    treasury_draw               REAL,
+
+    -- ── efficiency ───────────────────────────────
     efficiency                  REAL,
 
+    -- ── progress ─────────────────────────────────────────────
     progress_actual             REAL,
-    progress_plan               REAL,
     progress_actual_periodic    REAL,
+    
+    progress_plan               REAL,
     progress_plan_periodic      REAL,
+    
+    -- planned_progress − actual_progress
+    progress_delay              REAL,    
 
-    spi                         REAL,
-    cpi                         REAL,
-    tcpi                        REAL,
-    eac                         REAL,
+    -- ── evm signals ──────────────────────────────────────────
+    spi                         REAL,    -- earned schedule / actual time
+    cpi                         REAL,    -- BCWP / ACWP
+    tcpi                        REAL,    -- (BAC − BCWP) / (BAC − ACWP)
+    eac                         REAL,    -- estimated cost at completion
+    
+    projected_cost_overrun      REAL,    -- EAC / BAC; compared against cost_overrun_cap
+    
+    projected_finish            REAL,    -- start + duration / SPI(t)
+    projected_finish_delay      REAL,    -- projected_finish − planned_finish
 
-    projected_finish_delay      REAL,
-    progress_delay              REAL,
-    projected_cost_overrun      REAL,
-    projected_finish            REAL,
+    -- ── breach flags and termination ─────────────────────────────────────────
+    abandoned                   INTEGER, -- 1 if allocation < ε while active
+    
+    over_duration_window     INTEGER, -- 1 if t >= finish + finish_delay_cap
+    
+    over_progress_delay         INTEGER, -- 1 if progress_delay > progress_delay_cap
+    
+    over_finish_delay           INTEGER, -- 1 if projected_finish_delay > finish_delay_cap
+    over_cost_overrun           INTEGER, -- 1 if projected_cost_overrun > cost_overrun_cap
+    
+    over_any                    INTEGER, -- 1 if any breach fired this period
 
     tolerance_remain            INTEGER,
 
-    advance_received            REAL,
-    payment_net                 REAL,
-    retention_release           REAL,
-    settlement                  REAL,
+    -- ── payments ─────────────────────────────────────────────
 
-    interest_cost               REAL,
-    treasury_draw               REAL,
+    
+    settlement                  REAL,
+    
+    milestone_net               REAL,
+    
 
     PRIMARY KEY (episode_id, i, t_episode, method),
     FOREIGN KEY (episode_id, i) REFERENCES projects_profile(episode_id, i)
