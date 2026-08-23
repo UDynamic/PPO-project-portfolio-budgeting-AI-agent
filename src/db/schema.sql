@@ -26,11 +26,11 @@ CREATE TABLE IF NOT EXISTS environment_config (
     n_projects_p3           REAL,
     n_projects_p4           REAL,
 
-    initial_budget_dist     TEXT NOT NULL,
-    initial_budget_p1       REAL NOT NULL,
-    initial_budget_p2       REAL,
-    initial_budget_p3       REAL,
-    initial_budget_p4       REAL,
+    budget_available_dist   TEXT NOT NULL,
+    budget_available_p1     REAL NOT NULL,
+    budget_available_p2     REAL,
+    budget_available_p3     REAL,
+    budget_available_p4     REAL,
 
     budget_tightness_dist   TEXT NOT NULL,
     budget_tightness_p1     REAL NOT NULL,
@@ -45,17 +45,17 @@ CREATE TABLE IF NOT EXISTS environment_config (
     discount_p4             REAL,
 
     -- Project level
-    budget_dist             TEXT NOT NULL,
-    budget_p1               REAL NOT NULL,
-    budget_p2               REAL,
-    budget_p3               REAL,
-    budget_p4               REAL,
+    bac_dist                TEXT NOT NULL,
+    bac_p1                  REAL NOT NULL,
+    bac_p2                  REAL,
+    bac_p3                  REAL,
+    bac_p4                  REAL,
 
-    margin_dist             TEXT NOT NULL,
-    margin_p1               REAL NOT NULL,
-    margin_p2               REAL,
-    margin_p3               REAL,
-    margin_p4               REAL,
+    profit_percent_dist     TEXT NOT NULL,
+    profit_percent_p1       REAL NOT NULL,
+    profit_percent_p2       REAL,
+    profit_percent_p3       REAL,
+    profit_percent_p4       REAL,
 
     start_dist              TEXT NOT NULL,
     start_p1                REAL NOT NULL,
@@ -105,25 +105,29 @@ CREATE TABLE IF NOT EXISTS environment_config (
     retention_rate_p3       REAL,
     retention_rate_p4       REAL,
 
-    plan_deviation_threshold REAL NOT NULL DEFAULT 0.10,
+    progress_delay_cap_dist TEXT NOT NULL,
+    progress_delay_cap_p1   REAL NOT NULL,
+    progress_delay_cap_p2   REAL,
+    progress_delay_cap_p3   REAL,
+    progress_delay_cap_p4   REAL,
 
-    schedule_cap_dist       TEXT NOT NULL,
-    schedule_cap_p1         REAL NOT NULL,
-    schedule_cap_p2         REAL,
-    schedule_cap_p3         REAL,
-    schedule_cap_p4         REAL,
+    finish_delay_cap_dist   TEXT NOT NULL,
+    finish_delay_cap_p1     REAL NOT NULL,
+    finish_delay_cap_p2     REAL,
+    finish_delay_cap_p3     REAL,
+    finish_delay_cap_p4     REAL,
 
-    cost_cap_dist           TEXT NOT NULL,
-    cost_cap_p1             REAL NOT NULL,
-    cost_cap_p2             REAL,
-    cost_cap_p3             REAL,
-    cost_cap_p4             REAL,
+    cost_overrun_cap_dist   TEXT NOT NULL,
+    cost_overrun_cap_p1     REAL NOT NULL,
+    cost_overrun_cap_p2     REAL,
+    cost_overrun_cap_p3     REAL,
+    cost_overrun_cap_p4     REAL,
 
-    cure_length_dist        TEXT NOT NULL,
-    cure_length_p1          REAL NOT NULL,
-    cure_length_p2          REAL,
-    cure_length_p3          REAL,
-    cure_length_p4          REAL,
+    termination_tolerance_dist  TEXT NOT NULL,
+    termination_tolerance_p1    REAL NOT NULL,
+    termination_tolerance_p2    REAL,
+    termination_tolerance_p3    REAL,
+    termination_tolerance_p4    REAL,
 
     efficiency_dist         TEXT NOT NULL,
     efficiency_p1           REAL NOT NULL,
@@ -138,11 +142,11 @@ CREATE TABLE IF NOT EXISTS environment_config (
     n_milestones_p3         REAL,
     n_milestones_p4         REAL,
 
-    threshold_dist          TEXT NOT NULL,
-    threshold_p1            REAL NOT NULL,
-    threshold_p2            REAL,
-    threshold_p3            REAL,
-    threshold_p4            REAL,
+    progress_threshold_dist TEXT NOT NULL,
+    progress_threshold_p1   REAL NOT NULL,
+    progress_threshold_p2   REAL,
+    progress_threshold_p3   REAL,
+    progress_threshold_p4   REAL,
 
     payment_weight_dist     TEXT NOT NULL,
     payment_weight_p1       REAL NOT NULL,
@@ -150,46 +154,45 @@ CREATE TABLE IF NOT EXISTS environment_config (
     payment_weight_p3       REAL,
     payment_weight_p4       REAL,
 
-    -- earliest_t_fraction: the fraction of project duration at which each
+    -- timestep_threshold_fraction: fraction of project duration at which each
     -- intermediate milestone becomes eligible for certification.
-    -- earliest_t[j] = start + round(threshold[j] * duration * fraction)
-    -- fraction = 1.0 → earliest_t aligns exactly with the planned
-    --                   completion date for that progress threshold.
+    -- earliest_t[j] = start + round(progress_threshold[j] * duration * fraction)
+    -- fraction = 1.0 → eligible exactly at the on-plan completion date for that threshold.
     -- fraction < 1.0 → allows early certification for high performers.
-    -- The final milestone (threshold = 1.0) always uses proj["finish"]
-    -- regardless of this parameter — that is a contract invariant.
-    earliest_t_fraction_dist    TEXT NOT NULL,
-    earliest_t_fraction_p1      REAL NOT NULL,
-    earliest_t_fraction_p2      REAL,
-    earliest_t_fraction_p3      REAL,
-    earliest_t_fraction_p4      REAL,
+    -- The final milestone (progress_threshold = 1.0) always uses proj["finish"] —
+    -- that is a contract invariant, independent of this parameter.
+    timestep_threshold_dist TEXT NOT NULL,
+    timestep_threshold_p1   REAL NOT NULL,
+    timestep_threshold_p2   REAL,
+    timestep_threshold_p3   REAL,
+    timestep_threshold_p4   REAL,
 
-    annual_interest_rate        REAL NOT NULL
+    annual_interest_rate    REAL NOT NULL
 );
 
 
 CREATE TABLE IF NOT EXISTS projects_profile (
 
-    episode_id          TEXT NOT NULL,
-    config_id           TEXT NOT NULL REFERENCES environment_config(config_id),
-    i                   INTEGER NOT NULL,
+    episode_id                  TEXT NOT NULL,
+    config_id                   TEXT NOT NULL REFERENCES environment_config(config_id),
+    i                           INTEGER NOT NULL,
 
-    budget              REAL NOT NULL,
-    price               REAL NOT NULL,
-    margin              REAL NOT NULL,
-    start               INTEGER NOT NULL,
-    finish              INTEGER NOT NULL,
-    duration            INTEGER NOT NULL,
-    scurve_a            REAL NOT NULL,
-    scurve_b            REAL NOT NULL,
-    advance_percent     REAL NOT NULL,
-    advance_trigger     REAL NOT NULL,
-    advance_recovery    REAL NOT NULL,
-    retention_rate      REAL NOT NULL,
-    schedule_cap        INTEGER NOT NULL,
-    plan_deviation_threshold REAL NOT NULL DEFAULT 0.10,
-    cost_cap            REAL NOT NULL,
-    cure_length         INTEGER NOT NULL,
+    bac                         REAL NOT NULL,
+    price                       REAL NOT NULL,
+    profit_percent              REAL NOT NULL,
+    start                       INTEGER NOT NULL,
+    finish                      INTEGER NOT NULL,
+    duration                    INTEGER NOT NULL,
+    scurve_a                    REAL NOT NULL,
+    scurve_b                    REAL NOT NULL,
+    advance_percent             REAL NOT NULL,
+    advance_trigger             REAL NOT NULL,
+    advance_recovery            REAL NOT NULL,
+    retention_rate              REAL NOT NULL,
+    progress_delay_cap          REAL NOT NULL,
+    finish_delay_cap            INTEGER NOT NULL,
+    cost_overrun_cap            REAL NOT NULL,
+    termination_tolerance       INTEGER NOT NULL,
 
     PRIMARY KEY (episode_id, i)
 );
@@ -197,13 +200,13 @@ CREATE TABLE IF NOT EXISTS projects_profile (
 
 CREATE TABLE IF NOT EXISTS milestones_profile (
 
-    episode_id          TEXT NOT NULL,
-    i                   INTEGER NOT NULL,
-    j                   INTEGER NOT NULL,
+    episode_id                  TEXT NOT NULL,
+    i                           INTEGER NOT NULL,
+    j                           INTEGER NOT NULL,
 
-    threshold           REAL NOT NULL,
-    earliest_t          INTEGER NOT NULL,
-    payment_weight      REAL NOT NULL,
+    progress_threshold          REAL NOT NULL,
+    timestep_threshold          INTEGER NOT NULL,
+    payment_weight              REAL NOT NULL,
 
     PRIMARY KEY (episode_id, i, j),
     FOREIGN KEY (episode_id, i) REFERENCES projects_profile(episode_id, i)
@@ -221,7 +224,7 @@ CREATE TABLE IF NOT EXISTS portfolios (
     t_episode           INTEGER NOT NULL,
     method              TEXT NOT NULL,
 
-    budget              REAL NOT NULL,
+    budget_available    REAL NOT NULL,
     inflow              REAL NOT NULL,
     outflow             REAL NOT NULL,
     reward              REAL NOT NULL,
@@ -233,40 +236,41 @@ CREATE TABLE IF NOT EXISTS portfolios (
 
 CREATE TABLE IF NOT EXISTS projects_status (
 
-    episode_id          TEXT NOT NULL,
-    i                   INTEGER NOT NULL,
-    t_episode           INTEGER NOT NULL,
-    t_project           INTEGER,
-    method              TEXT NOT NULL,
+    episode_id                  TEXT NOT NULL,
+    i                           INTEGER NOT NULL,
+    t_episode                   INTEGER NOT NULL,
+    t_project                   INTEGER,
+    method                      TEXT NOT NULL,
 
-    status              TEXT,
+    status                      TEXT,
 
-    allocation          REAL,
-    efficiency          REAL,
+    allocation                  REAL,
+    efficiency                  REAL,
 
-    progress            REAL,
-    progress_plan       REAL,
-    progress_increment  REAL,
+    progress_actual             REAL,
+    progress_plan               REAL,
+    progress_actual_periodic    REAL,
+    progress_plan_periodic      REAL,
 
-    spi                 REAL,
-    cpi                 REAL,
-    tcpi                REAL,
-    eac                 REAL,
+    spi                         REAL,
+    cpi                         REAL,
+    tcpi                        REAL,
+    eac                         REAL,
 
-    schedule_slip       REAL,
-    plan_deviation      REAL,
-    cost_overrun        REAL,
-    forecast_finish     REAL,
+    projected_finish_delay      REAL,
+    progress_delay              REAL,
+    projected_cost_overrun      REAL,
+    projected_finish            REAL,
 
-    cure_remaining      INTEGER,
+    tolerance_remain            INTEGER,
 
-    advance_amount      REAL,
-    payment_net         REAL,
-    retention_release   REAL,
-    settlement          REAL,
+    advance_received            REAL,
+    payment_net                 REAL,
+    retention_release           REAL,
+    settlement                  REAL,
 
-    interest_cost       REAL,
-    treasury_draw       REAL,
+    interest_cost               REAL,
+    treasury_draw               REAL,
 
     PRIMARY KEY (episode_id, i, t_episode, method),
     FOREIGN KEY (episode_id, i) REFERENCES projects_profile(episode_id, i)
@@ -279,14 +283,26 @@ CREATE TABLE IF NOT EXISTS projects_status (
 
 CREATE TABLE IF NOT EXISTS milestones_status (
 
-    episode_id          TEXT NOT NULL,
-    i                   INTEGER NOT NULL,
-    j                   INTEGER NOT NULL,
-    method              TEXT NOT NULL,
+    episode_id              TEXT NOT NULL,
+    i                       INTEGER NOT NULL,
+    j                       INTEGER NOT NULL,
+    method                  TEXT NOT NULL,
 
-    certified           INTEGER NOT NULL DEFAULT 0,
-    certified_t         INTEGER,
-    payment_released    REAL,
+    -- milestone identity (denormalised for query convenience)
+    progress_threshold      REAL,
+    payment_weight          REAL,
+    timestep_threshold      INTEGER,
+
+    -- payment breakdown (matches payment profile display)
+    gross                   REAL,
+    advance_recovery        REAL,
+    cumulative_recovery     REAL,
+    retention_withheld      REAL,
+    payment_net             REAL,
+
+    -- certification event
+    certified               INTEGER NOT NULL DEFAULT 0,
+    certified_t             INTEGER,
 
     PRIMARY KEY (episode_id, i, j, method),
     FOREIGN KEY (episode_id, i, j) REFERENCES milestones_profile(episode_id, i, j)

@@ -1,17 +1,14 @@
 # src/db/db_init.py
 #
-# Unchanged in behavior from the original db_init.py — same public
-# interface (init_db, verify), same schema-application logic.
-#
-# One deliberate fix made during the move: DB_PATH / SCHEMA_PATH are now
-# resolved relative to this file's own location (via __file__) instead of
+
+# DB_PATH / SCHEMA_PATH are now resolved relative to this file's own location (via __file__) instead of
 # the process's current working directory. This is required because
 # src/env/configs/single_project.py and dual_project.py both import this
 # module via a sys.path insertion and may be invoked from any directory —
 # a CWD-relative path would silently create/read the wrong database.db
 # depending on where the caller was run from.
 #
-# schema.sql lives alongside this file in src/db/ and is not modified.
+# schema.sql lives alongside this file in src/db/
 
 import sqlite3
 import os
