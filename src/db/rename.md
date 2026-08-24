@@ -192,6 +192,7 @@ Reason: `plan_deviation_threshold` was 1 scalar, now 5 columns (dist + p1–p4).
 - `proj["start"]` → `proj["planned_start"]`
 - `proj["finish"]` → `proj["planned_finish"]`
 
+
 ### env.py
 - All proj[], ps[], ms[], cfg[] keys — use all tables above
 - `self.budget` internal name stays; DB write column is `budget_available`
