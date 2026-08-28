@@ -248,7 +248,7 @@ CREATE TABLE IF NOT EXISTS portfolios (
     PRIMARY KEY (episode_id, t_episode, method)
 );
 
-
+-- Includes everything
 CREATE TABLE IF NOT EXISTS projects_status (
 
     episode_id          TEXT NOT NULL,
@@ -275,17 +275,36 @@ CREATE TABLE IF NOT EXISTS projects_status (
     -- efficiency
     efficiency          REAL,                   -- eta drawn each period; applied to allocation_action only
 
-    -- progress
-    progress_actual          REAL,
-    progress_actual_periodic REAL,
-    progress_plan            REAL,
-    progress_plan_periodic   REAL,
-    progress_delay           REAL,              -- progress_plan - progress_actual
-
     -- evm signals
     spi                 REAL,                   -- earned schedule / actual time
     cpi                 REAL,                   -- BCWP / ACWP
     eac                 REAL,                   -- estimated cost at completion
+
+    -- progress
+    -- current period (assuming efficiency=1)
+    progress_plan_t     REAL, -- planned_progress(t_project, duration, a, b)
+    progress_delay_t    REAL, -- progress_plan_t - progress_actual
+    progress_space_t    REAL, -- progress_delay_cap - progress_delay_t
+    min_prog_t          REAL, -- max(0.0, progress_plan_t - progress_delay_cap)
+    progress_needed_t   REAL, -- max(0.0, min_prog_t - progress_actual)
+    catchup_alloc_t     REAL, -- (progress_needed_t) * bac
+
+    progress_plan_next_t        REAL,
+    progress_delay_next_t       REAL,                 -- progress_plan_next_t - progress_actual
+    progress_space_next_t       REAL,
+    min_prog_next_t             REAL, -- max(0.0, progress_plan_next_t - progress_delay_cap)
+    progress_needed_next_t      REAL, -- max(0.0, min_prog_next_t - progress_actual)
+    catchup_alloc_next_t        REAL, -- (progress_needed_next_t) * bac
+
+        -- next milestone target (3 features)
+    target_milestone_j          INTEGER,    -- index only, not in obs vector
+    target_progress_gap         REAL,       -- threshold - progress_actual
+    target_timestep_gap         INTEGER,    -- earliest_t - t_episode
+    target_net_payment          REAL,       -- normalised by initial portfolio budget
+    target_required_alloc       REAL,       -- target_progress_gap x BAC
+    target_payment_rate         REAL,       -- target_net_payment / target_required_alloc
+    target_rate_normalised      REAL,       -- rate_i / sum(rate_j) across active projects
+
 
     -- finish projections
     projected_cost_overrun      REAL,    -- EAC / BAC; compared against cost_overrun_cap
@@ -303,17 +322,45 @@ CREATE TABLE IF NOT EXISTS projects_status (
     -- termination
     tolerance_remain    INTEGER,                -- cure periods remaining before termination fires
 
-    -- next milestone
-    target_milestone        INTEGER,    -- index of next uncertified milestone
-    target_progress         REAL,       -- progress required to unlock it
-    target_timestep         INTEGER,    -- earliest period it can be certified
-    target_net_payment      REAL,       -- net amount to be received
+    PRIMARY KEY (episode_id, i, t_episode, method),
+    FOREIGN KEY (episode_id, i) REFERENCES projects_profile(episode_id, i)
+);
+
+CREATE TABLE IF NOT EXISTS projects_observation (
+
+    episode_id              TEXT NOT NULL,
+    i                       INTEGER NOT NULL,
+    t_episode               INTEGER NOT NULL,
+    method                  TEXT NOT NULL,
+
+    net_cashflow        REAL,
+
+    -- per-project state (8 base features)
+    tolerance_remain        REAL, -- by termination_tolerance
+    catchup_alloc_t         REAL, -- (progress_needed_t) * bac
+    catchup_alloc_next_t    REAL, -- (progress_needed_next_t) * bac
+
+    -- next milestone target (3 features)
+    target_progress_gap         REAL,       -- threshold - progress_actual
+    target_timestep_gap         INTEGER,    -- earliest_t - t_episode
+    target_required_alloc       REAL,       -- target_progress_gap x BAC
+    target_payment_rate         REAL,       -- target_net_payment / target_required_alloc
 
     PRIMARY KEY (episode_id, i, t_episode, method),
     FOREIGN KEY (episode_id, i) REFERENCES projects_profile(episode_id, i)
 );
 
+CREATE TABLE IF NOT EXISTS portfolio_observation (
 
+    episode_id              TEXT NOT NULL,
+    t_episode               INTEGER NOT NULL,
+    method                  TEXT NOT NULL,
+
+    -- portfolio-level state (1 feature)
+    budget_available       REAL,
+
+    PRIMARY KEY (episode_id, t_episode, method)
+);
 -- =============================================================
 -- EVENT -- MILESTONE CERTIFICATION
 -- =============================================================
