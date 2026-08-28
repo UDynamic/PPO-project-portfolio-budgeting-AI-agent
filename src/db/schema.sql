@@ -281,6 +281,8 @@ CREATE TABLE IF NOT EXISTS projects_status (
     eac                       REAL,  -- estimated cost at completion
 
     -- progress
+    progress_actual           REAL,
+
     -- current period (assuming efficiency = 1)
     progress_plan_t           REAL,  -- planned_progress(t_project, duration, a, b)
     progress_delay_t          REAL,  -- progress_plan_t - progress_actual
@@ -289,6 +291,7 @@ CREATE TABLE IF NOT EXISTS projects_status (
     progress_needed_t         REAL,  -- max(0.0, min_prog_t - progress_actual)
     catchup_alloc_t           REAL,  -- (progress_needed_t) * bac
 
+    -- next period (assuming efficiency = 1)
     progress_plan_next_t      REAL,
     progress_delay_next_t     REAL,  -- progress_plan_next_t - progress_actual
     progress_space_next_t     REAL,
@@ -300,10 +303,9 @@ CREATE TABLE IF NOT EXISTS projects_status (
     target_milestone_j        INTEGER,  -- index only, not in obs vector
     target_progress_gap       REAL,     -- threshold - progress_actual
     target_timestep_gap       INTEGER,  -- earliest_t - t_episode
-    target_net_payment        REAL,     -- normalised by initial portfolio budget
+    target_net_payment        REAL,     -- 
     target_required_alloc     REAL,     -- target_progress_gap x BAC
     target_payment_rate       REAL,     -- target_net_payment / target_required_alloc
-    target_rate_normalised    REAL,     -- rate_i / sum(rate_j) across active projects
 
     -- finish projections
     projected_cost_overrun    REAL,     -- EAC / BAC; compared against cost_overrun_cap
