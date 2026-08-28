@@ -297,7 +297,7 @@ CREATE TABLE IF NOT EXISTS projects_status (
     over_duration_window   INTEGER,             -- 1 if t >= planned_finish + finish_delay_cap
     over_progress_delay    INTEGER,             -- 1 if progress_delay > progress_delay_cap
     over_finish_delay      INTEGER,             -- 1 if projected_finish_delay > finish_delay_cap
-    over_cost_overrun      INTEGER,             -- 1 if eac_bac_ratio > cost_overrun_cap
+    over_cost_overrun      INTEGER,             -- 1 if projected_cost_overrun > cost_overrun_cap
     over_any               INTEGER,             -- 1 if any breach fired this period
 
     -- termination
