@@ -563,31 +563,72 @@ Deviation: `δ_i(t) = P̄_i(t) - P_i(t)` (positive = behind plan)
 ### Step phase order
 
 ```
-Phase 1  INFLOWS
-  1a. Advance payment if project starts this period
-  1b. Milestone certification → net payment
-  1c. Retention release if _release_retention_next_period flag set
 
-Phase 2  INTEREST
-  treasury_draw = max(0, cumulative_cost_BEFORE_alloc − cumulative_inflows)
-  interest = (annual_rate / 12) × treasury_draw
+go over each timestep according to the process below:
+at each timestep we are observing the pre-allocation status before allocation.
+this means we see the last periods state transitioned to this period.
+then we allocate for that timestep. meaning we will allocate that budget through the beginning to the end of that period until we see what happened to the allocation at the timestep finish.
 
-Phase 3  ALLOCATION & PROGRESS
-  cumulative_cost += allocation
-  progress += (allocation / BAC) × η
+* payments to be checked for certification at the timestep beginning and to be payed at timestep finish (available at the next timestep).
+    - we have the time line like this : 0 -> 1 -> 2 -> ... -> n
+    - at each timestep we look back, and then look forward and then decide for that timestep.
+    - advanced payment is received at timestep 0 before action for the timestep 0. other timesteps receive payment at the end of the timestep
 
-Phase 4  EVM UPDATE
-  Recompute SPI(t), CPI, TCPI, EAC, forecast_finish, schedule_slip, plan_deviation
+--- 
+Algorithm:
 
-Phase 5  TERMINATION CHECK
-  Evaluate breach flags. Update cure counter.
-  If progress >= 1.0: set _release_retention_next_period = True, status = completed
-  If terminated: compute settlement.
+  <!-- ONLY FOR THE T_0 -->
+  at each timestep (t_0 to t_n):
+    if t_0 : 
+    INITIATION
+      if advance true give advance
 
-Phase 6  RECORD
-  DB write (side-effect, try/except — never load-bearing)
-  budget += total_inflow − total_outflow
-  reward = discount^t × (total_inflow − total_outflow)
+  STEP UPDATE
+    EVM UPDATE : 
+      Recompute SPI(t), CPI, TCPI, EAC, forecast_finish, schedule_slip, plan_deviation
+    
+    PAYMENTS CERTIFICATION CHECK
+
+    Health (termination or completion) check
+      TERMINATION CHECK
+        Evaluate breach flags. Update cure counter.
+        If terminated: compute settlement.
+      COMPLETION CHECK:
+        If progress >= 1.0: set _release_retention_next_period = True, status = completed
+
+  GET OBSERVATION
+
+  TAKE ACTION : action at each timestep will update the project parameters computed before the allocation
+  ALLOCATION & PROGRESS:
+    cumulative_cost += allocation
+    progress += (allocation / BAC) × η
+
+    IF CASH DEFICIT TRUE : INTEREST
+    treasury_draw = max(0, cumulative_cost_BEFORE_alloc − cumulative_inflows)
+    interest = (annual_rate / 12) × treasury_draw
+
+
+  STEP UPDATE
+    EVM UPDATE : 
+      Recompute SPI(t), CPI, TCPI, EAC, forecast_finish, schedule_slip, plan_deviation
+    
+    CERTIFIED PAYMENT DELIVERY
+
+    Health (termination or completion) check
+      TERMINATION CHECK
+        Evaluate breach flags. Update cure counter.
+        If terminated: compute settlement.
+      COMPLETION CHECK:
+        If progress >= 1.0: set _release_retention_next_period = True, status = completed
+
+
+    RECORD
+      DB write (side-effect, try/except — never load-bearing)
+      budget += total_inflow − total_outflow
+      reward = discount^t × (total_inflow − total_outflow)
+
+  STEP TO THE NEXT
+
 ```
 
 ### Termination

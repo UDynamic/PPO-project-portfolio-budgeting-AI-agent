@@ -332,6 +332,7 @@ CREATE TABLE IF NOT EXISTS projects_observation (
     episode_id              TEXT    NOT NULL,
     i                       INTEGER NOT NULL,
     t_episode               INTEGER NOT NULL,
+    t_project               INTEGER,
     method                  TEXT    NOT NULL,
 
     net_cashflow             REAL,
@@ -358,7 +359,8 @@ CREATE TABLE IF NOT EXISTS portfolio_observation (
     method                  TEXT    NOT NULL,
 
     -- portfolio-level state (1 feature)
-    budget_available         REAL,
+    net_cashflow             REAL, -- over all the projects
+    budget_available         REAL, -- budget available from last timestep added net_cashflow of this timestep
 
     PRIMARY KEY (episode_id, t_episode, method)
 );
