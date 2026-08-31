@@ -261,9 +261,9 @@ CREATE TABLE IF NOT EXISTS projects_status (
     status                   TEXT,
 
     -- cash flow (numbers are cumulative)
-    inflow                   REAL,   -- inflows
-    outflow                  REAL,   -- outflows
-    termination_settlement   REAL,
+    inflow                   REAL,   -- inflows (This is the cumulative record of all received payments and other incomes for the projects)
+    outflow                  REAL,   -- outflows (This is the cumulative record of all allocations and other costs for the projects)
+    termination_settlement   REAL,   -- although it's an outflow because of it's special case we track it separately
     net_cashflow             REAL,   -- inflow - outflow + termination_settlement this period
 
     -- allocation & financing

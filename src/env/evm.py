@@ -5,7 +5,7 @@
 # All functions are pure (no state, no randomness, no I/O).
 # They operate on scalar floats and return scalars or a dict.
 #
-# Imported by env.py (Phase 4) only.
+# Imported by env.py only.
 # beta_cdf / earned_schedule are re-exported from sampler to avoid
 # duplicating the numerical code; this module does not redefine them.
 #
@@ -15,8 +15,19 @@
 #   CPI     = BCWP / ACWP
 #   TCPI    = (BAC − BCWP) / (BAC − ACWP)
 #   EAC     = ACWP + (BAC − BCWP) / (CPI × SPI(t))
-#   forecast_finish = start + duration / SPI(t)
+#   forecast_finish = planned_start + planned_duration / SPI(t)
 #   schedule_slip   = forecast_finish − planned_finish
+#
+# Key name conventions (match schema exactly):
+#   proj["bac"]               Budget at Completion
+#   proj["planned_start"]     planned start period
+#   proj["planned_finish"]    planned finish period
+#   proj["planned_duration"]  planned duration in periods
+#   proj["scurve_a/b"]        Beta shape parameters
+#   proj["cost_overrun_cap"]  EAC/BAC fallback ceiling
+#   proj["finish_delay_cap"]  schedule slip fallback ceiling
+#   ps["outflow"]             cumulative cost (ACWP) — schema: outflow
+#   ps["progress_actual"]     cumulative progress (BCWP = progress × BAC)
 
 from __future__ import annotations
 
@@ -56,19 +67,19 @@ def compute_cpi(bcwp: float, acwp: float) -> float:
 
 
 def compute_eac(acwp: float, bac: float, bcwp: float,
-                cpi: float, spi: float, cost_cap: float) -> float:
+                cpi: float, spi: float, cost_overrun_cap: float) -> float:
     """
     Estimate at Completion using the composite CPI × SPI denominator.
 
     EAC = ACWP + (BAC − BCWP) / (CPI × SPI(t))
 
-    Falls back to bac × cost_cap when the composite is effectively zero
-    (degenerate case: no spend and/or no schedule performance).
+    Falls back to bac × cost_overrun_cap when the composite is effectively
+    zero (degenerate case: no spend and/or no schedule performance).
     """
     composite = cpi * spi
     if composite > 1e-9:
         return acwp + (bac - bcwp) / composite
-    return bac * cost_cap
+    return bac * cost_overrun_cap
 
 
 def compute_tcpi(bac: float, bcwp: float, acwp: float) -> float:
@@ -88,20 +99,22 @@ def compute_tcpi(bac: float, bcwp: float, acwp: float) -> float:
     return 0.0 if work_remaining <= 0.0 else float("inf")
 
 
-def compute_forecast_finish(start: int, duration: int,
+def compute_forecast_finish(planned_start: int, planned_duration: int,
                              spi: float,
-                             finish: int, schedule_cap: int) -> float:
+                             planned_finish: int,
+                             finish_delay_cap: int) -> float:
     """
     Forecast completion date.
 
-    forecast_finish = start + duration / SPI(t)
+    forecast_finish = planned_start + planned_duration / SPI(t)
 
-    Falls back to finish + schedule_cap + 1 when SPI is effectively zero
-    (signals terminal delay — further past the deadline than allowed).
+    Falls back to planned_finish + finish_delay_cap + 1 when SPI is
+    effectively zero (signals terminal delay — further past the deadline
+    than the contract allows).
     """
     if spi > 1e-9:
-        return start + duration / spi
-    return float(finish + schedule_cap + 1)
+        return planned_start + planned_duration / spi
+    return float(planned_finish + finish_delay_cap + 1)
 
 
 def compute_schedule_slip(forecast_finish: float, planned_finish: int) -> float:
@@ -115,48 +128,62 @@ def compute_schedule_slip(forecast_finish: float, planned_finish: int) -> float:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# COMPOSITE UPDATE  (called once per active project per step, Phase 4)
+# COMPOSITE UPDATE  (called once per active project per step)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def update_evm(ps: dict, proj: dict) -> None:
     """
-    Recompute all EVM signals in *ps* in-place after Phase 3 has updated
-    progress and cumulative cost.
+    Recompute all EVM signals in *ps* in-place.
 
     Parameters
     ----------
     ps   : project state dict (mutated in-place)
-    proj : project parameter dict (read-only)
+    proj : project parameter dict (read-only; keys match projects_profile)
 
-    Updates
-    -------
+    Reads from ps
+    -------------
+    ps["progress_actual"]   cumulative progress fraction [0, 1]
+    ps["outflow"]           cumulative cost spent (ACWP)
+    ps["t_project"]         elapsed periods on the project clock
+    ps["progress_plan_t"]   planned progress at t (set by caller before this)
+
+    Writes to ps
+    ------------
     ps["spi"], ps["cpi"], ps["tcpi"], ps["eac"],
-    ps["forecast_finish"], ps["schedule_slip"], ps["cost_overrun"]
-    ps["plan_deviation"]  (progress_plan already set by Phase 4 caller)
+    ps["projected_finish"], ps["projected_finish_delay"],
+    ps["projected_cost_overrun"], ps["progress_delay_t"]
     """
-    bac  = proj["budget"]
-    bcwp = ps["progress"] * bac
-    acwp = ps["acwp"]
+    bac  = proj["bac"]
+    bcwp = ps["progress_actual"] * bac
+    acwp = ps["outflow"]
 
     spi = compute_spi(
-        ps["progress"], ps["t_project"],
-        proj["duration"], proj["scurve_a"], proj["scurve_b"]
+        ps["progress_actual"],
+        ps["t_project"],
+        proj["planned_duration"],
+        proj["scurve_a"],
+        proj["scurve_b"],
     )
-    cpi = compute_cpi(bcwp, acwp)
-    eac = compute_eac(acwp, bac, bcwp, cpi, spi, proj["cost_cap"])
+    cpi  = compute_cpi(bcwp, acwp)
+    eac  = compute_eac(acwp, bac, bcwp, cpi, spi, proj["cost_overrun_cap"])
     tcpi = compute_tcpi(bac, bcwp, acwp)
 
-    forecast_finish = compute_forecast_finish(
-        proj["start"], proj["duration"], spi,
-        proj["finish"], proj["schedule_cap"]
+    projected_finish = compute_forecast_finish(
+        proj["planned_start"],
+        proj["planned_duration"],
+        spi,
+        proj["planned_finish"],
+        proj["finish_delay_cap"],
     )
-    schedule_slip = compute_schedule_slip(forecast_finish, proj["finish"])
+    projected_finish_delay = compute_schedule_slip(
+        projected_finish, proj["planned_finish"]
+    )
 
-    ps["spi"]            = spi
-    ps["cpi"]            = cpi
-    ps["eac"]            = eac
-    ps["tcpi"]           = tcpi
-    ps["forecast_finish"]= forecast_finish
-    ps["schedule_slip"]  = schedule_slip
-    ps["cost_overrun"]   = eac - bac
-    ps["plan_deviation"] = ps["progress_plan"] - ps["progress"]
+    ps["spi"]                   = spi
+    ps["cpi"]                   = cpi
+    ps["eac"]                   = eac
+    ps["tcpi"]                  = tcpi
+    ps["projected_finish"]      = projected_finish
+    ps["projected_finish_delay"]= projected_finish_delay
+    ps["projected_cost_overrun"]= eac / bac          # ratio; compared against cost_overrun_cap
+    ps["progress_delay_t"]      = ps["progress_plan_t"] - ps["progress_actual"]
