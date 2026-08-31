@@ -1,158 +1,161 @@
 # src/env/payments.py
 #
 # Payment mechanics for the Portfolio Budgeting environment.
-# All functions are pure (no randomness, no I/O, no state mutation).
-# They receive the relevant dicts and return cash amounts; the caller
-# (env.py Phase 1 / Phase 5) is responsible for writing results back
-# into ps and the cashflow accumulator.
+# All functions are pure (no randomness, no I/O, no state mutation beyond
+# what is explicitly documented).
+#
+# Design:
+#   All payment amounts are precomputed in sampler.sample_milestones() and
+#   stored in the milestone profile. This module reads those values — it
+#   does not recompute gross, recovery, retention, or net.
+#
+#   The milestone profile j-index structure:
+#       j = 0        advance payment (at planned_start)
+#       j = 1..n-1   interim milestones
+#       j = n        final milestone (includes retention_released)
+#
+#   Runtime milestone state (lives in episode state, not profile):
+#       ms["certified"]        bool   — has this milestone been certified
+#       ms["certified_t"]      int    — period when certified; None if not yet
+#       ms["payment_released"] float  — net payment released; None if not yet
+#
+#   Project cashflow is tracked in ps["inflow"] and ps["outflow"] (cumulative)
+#   matching projects_status schema exactly. No other cashflow accumulators.
 #
 # FIDIC 14.2-style mechanics — spec §Payment mechanics:
 #
-#   Advance       advance_percent × price  at project start
-#   Milestone     gross = weight × price
-#                 recovery = min(gross × advance_recovery, remaining_advance)
-#                 retention = gross × retention_rate  (interim only; 0 for final)
-#                 net = gross − recovery − retention
-#   Retention     releases the period AFTER final milestone (one-period lag)
-#   Settlement    progress × price − cumulative_inflows_received
+#   Advance     j=0 — net_payment = advance_percent × price
+#               triggered at t == planned_start (handled in env.py, not here)
+#
+#   Milestone   j=1..n — trigger: progress_actual >= progress_threshold
+#                                  AND t >= timestep_threshold
+#               net_payment read directly from milestone profile
+#
+#   Retention   included in final milestone (j=n) net_payment via
+#               retention_released field — no separate release step needed
+#
+#   Settlement  progress_actual × price − cumulative inflow received
 
 from __future__ import annotations
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ADVANCE  (Phase 1a)
+# MILESTONE CERTIFICATION CHECK  (early phase)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def compute_advance(proj: dict) -> float:
+def check_certifications(t: int, ps: dict, milestones: list[dict]) -> list[int]:
     """
-    Return the advance payment amount for *proj*.
+    Check which uncertified milestones qualify for certification this period.
 
-    advance = advance_percent × price
+    Certification conditions (both must hold):
+        ps["progress_actual"] >= ms["progress_threshold"]
+        t                     >= ms["timestep_threshold"]
 
-    Called when the project starts (t == proj["start"]).
-    """
-    return proj["advance_percent"] * proj["price"]
+    The advance (j=0) is excluded here — it is handled directly in env.py
+    at project start (t == planned_start) and does not go through this check.
 
+    Does NOT mutate any state. Returns the list of qualifying j indices so
+    the caller (env.py early phase) can record which milestones are pending
+    payment delivery in the late phase.
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MILESTONE CERTIFICATION  (Phase 1b)
-# ─────────────────────────────────────────────────────────────────────────────
-
-def certify_milestone(ms: dict, proj: dict, ps: dict) -> dict | None:
-    """
-    Attempt to certify one milestone.
-
-    Returns a result dict if the milestone triggers this period, else None.
-
-    Trigger condition (both must hold):
-        ps["progress"] >= ms["threshold"]
-        t             >= ms["earliest_t"]   ← checked by caller before calling
-
-    The caller is responsible for:
-        - checking that ms["certified"] is False
-        - passing the current t and checking t >= ms["earliest_t"]
-        - writing result values back into ps and the cashflow accumulator
-
-    Returned dict
-    -------------
-    gross       : float   weight × price
-    recovery    : float   advance recovered this milestone
-    retention   : float   withheld (0 for final milestone)
-    net         : float   gross − recovery − retention
-    """
-    gross             = ms["payment_weight"] * proj["price"]
-    remaining_advance = max(0.0, ps["advance_received"] - ps["advance_recovered"])
-    recovery          = min(gross * proj["advance_recovery"], remaining_advance)
-    is_final          = ms["threshold"] >= 1.0
-    retention         = 0.0 if is_final else gross * proj["retention_rate"]
-    net               = gross - recovery - retention
-
-    return {
-        "gross":     gross,
-        "recovery":  recovery,
-        "retention": retention,
-        "net":       net,
-    }
-
-
-def process_milestones(t: int, proj: dict, ps: dict,
-                       milestones: list[dict]) -> tuple[float, float]:
-    """
-    Iterate all uncertified milestones for one project in one period.
-
-    Mutates *ms* dicts in *milestones* (certified, certified_t,
-    payment_released) and *ps* (advance_recovered, milestone_inflows,
-    retention_held) in-place.
+    Parameters
+    ----------
+    t           : current episode timestep
+    ps          : project state dict (read-only here)
+    milestones  : list of milestone dicts (profile + runtime fields)
 
     Returns
     -------
-    payment_net  : total net payment received this period (sum across certified)
-    gross_total  : total gross (informational; used by db_logger)
+    List of j indices certified this period (may be empty).
     """
-    payment_net  = 0.0
-    gross_total  = 0.0
+    certified_this_period = []
 
     for ms in milestones:
+        if ms["j"] == 0:
+            continue                                  # advance handled separately
         if ms["certified"]:
+            continue                                  # already paid
+        if ps["progress_actual"] < ms["progress_threshold"]:
             continue
-        if ps["progress"] < ms["threshold"]:
-            continue
-        if t < ms["earliest_t"]:
+        if t < ms["timestep_threshold"]:
             continue
 
-        result = certify_milestone(ms, proj, ps)
+        certified_this_period.append(ms["j"])
+
+    return certified_this_period
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CERTIFIED PAYMENT DELIVERY  (late phase)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def deliver_payments(certified_js: list[int],
+                     t: int,
+                     ps: dict,
+                     milestones: list[dict]) -> float:
+    """
+    Deliver payments for all milestones certified this period.
+
+    Reads net_payment directly from the milestone profile — no recomputation.
+    Mutates milestone runtime state and ps["inflow"] in-place.
+
+    Parameters
+    ----------
+    certified_js : list of j indices returned by check_certifications()
+    t            : current episode timestep (recorded as certified_t)
+    ps           : project state dict (ps["inflow"] incremented)
+    milestones   : list of milestone dicts (runtime fields mutated)
+
+    Returns
+    -------
+    total_net : total net inflow delivered this period across all certified
+                milestones (for reward and portfolio budget update)
+    """
+    total_net = 0.0
+
+    for ms in milestones:
+        if ms["j"] not in certified_js:
+            continue
+
+        net = ms["net_payment"]
 
         ms["certified"]        = True
         ms["certified_t"]      = t
-        ms["payment_released"] = result["net"]
+        ms["payment_released"] = net
 
-        ps["advance_recovered"] += result["recovery"]
-        ps["milestone_inflows"] += result["net"]
-        ps["retention_held"]    += result["retention"]
+        ps["inflow"] += net
+        total_net    += net
 
-        payment_net += result["net"]
-        gross_total += result["gross"]
-
-    return payment_net, gross_total
+    return total_net
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# RETENTION RELEASE  (Phase 1c)
+# TERMINATION SETTLEMENT  (late phase, on termination only)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def release_retention(ps: dict) -> float:
+def compute_termination_settlement(proj: dict, ps: dict) -> float:
     """
-    Release accumulated retention held for one project.
+    Compute the net settlement amount on contract termination.
 
-    Only called when ps["_release_retention_next_period"] is True (set by
-    Phase 5 of the prior step when progress reached 1.0).
-
-    Mutates *ps* in-place: clears the flag, marks retention_released = True.
-
-    Returns the retention amount released (0.0 if nothing held).
-    """
-    amount = ps["retention_held"]
-    if amount > 0.0:
-        ps["retention_released"]           = True
-        ps["_release_retention_next_period"] = False
-    return amount
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# TERMINATION SETTLEMENT  (Phase 5)
-# ─────────────────────────────────────────────────────────────────────────────
-
-def termination_settlement(proj: dict, ps: dict) -> float:
-    """
-    Compute the settlement amount on contract termination.
-
-    R_i^term = (P_actual × price) − cumulative_inflows_received
+    settlement = (progress_actual × price) − cumulative_inflow
 
     The contractor is entitled to price × progress for work delivered.
-    Against that they have already received: advance + net milestone payments.
-    The settlement is the balancing amount — positive means contractor
-    receives a payment; negative means the contractor owes money back.
+    Against that they have already received all certified payments (inflow).
+    The settlement is the balancing amount:
+        positive → contractor receives a final payment
+        negative → contractor owes money back (rare; signals over-advance)
+
+    Does NOT mutate ps. The caller (env.py late phase) writes the result
+    into ps["termination_settlement"] and updates ps["inflow"] accordingly.
+
+    Parameters
+    ----------
+    proj : project parameter dict (read-only)
+    ps   : project state dict (read-only)
+
+    Returns
+    -------
+    settlement : float
     """
-    entitlement        = ps["progress"] * proj["price"]
-    cumulative_inflows = ps["advance_received"] + ps["milestone_inflows"]
-    return entitlement - cumulative_inflows
+    entitlement = ps["progress_actual"] * proj["price"]
+    return entitlement - ps["inflow"]
