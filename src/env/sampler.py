@@ -10,9 +10,34 @@
 #     sampler.py is the only module that needs them besides evm.py, which
 #     imports them directly.  No circular imports.
 #   - advance_trigger is accepted as a parameter (it is stored in the project
-#     profile for schema completeness) but is NOT sampled in _sample_project;
+#     profile for schema completeness) but is NOT sampled in sample_project;
 #     the caller passes the raw cfg value through.  Wiring it into
-#     certification logic is a planned extension — see Bug #6 fix notes.
+#     certification logic is a planned extension.
+#
+# Milestone profile structure (j index):
+#   j = 0        → advance payment (t=planned_start, no threshold, no weight)
+#   j = 1..n-1   → interim milestones (threshold, weight, retention withheld)
+#   j = n        → final milestone (threshold=1.0, retention withheld + retention released)
+#
+# Payment breakdown per milestone:
+#   advance:
+#     gross = advance_percent × price
+#     advance_recovery = 0, retention_withheld = 0, retention_released = 0
+#     net = gross
+#
+#   interim (j=1..n-1):
+#     gross              = payment_weight × price
+#     advance_recovery   = min(gross × advance_recovery_rate, remaining_advance)
+#     retention_withheld = gross × retention_rate
+#     retention_released = 0
+#     net                = gross - advance_recovery - retention_withheld
+#
+#   final (j=n):
+#     gross              = payment_weight × price
+#     advance_recovery   = min(gross × advance_recovery_rate, remaining_advance)
+#     retention_withheld = gross × retention_rate   ← same rule as interim
+#     retention_released = sum of ALL retention_withheld (j=1..n, including final)
+#     net                = gross - advance_recovery - retention_withheld + retention_released
 
 from __future__ import annotations
 
@@ -154,34 +179,41 @@ def earned_schedule(progress_actual: float, duration: int,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PROJECT & MILESTONE SAMPLERS
+# PROJECT SAMPLER
 # ─────────────────────────────────────────────────────────────────────────────
 
 def sample_project(rng, cfg: dict, i: int) -> dict:
     """
     Draw all project-level parameters from *cfg* distributions.
 
+    Keys match projects_profile schema columns exactly.
+    DB-only columns (episode_id, config_id) are not included here —
+    they are added by db_logger at write time.
+
     advance_trigger is sampled and stored (schema requires it) but is NOT
-    currently used in certification logic.  Bug #6 from the spec: the field
-    is kept rather than removed so the DB profile remains consistent; wiring
-    it into Phase 1b is a planned extension.
+    currently used in certification logic. Wiring it into certification
+    is a planned extension.
     """
-    budget = max(1.0, sample(rng, cfg["budget_dist"],
-                             cfg["budget_p1"], cfg["budget_p2"],
-                             cfg["budget_p3"], cfg["budget_p4"]))
+    bac = max(1.0, sample(rng, cfg["bac_dist"],
+                          cfg["bac_p1"], cfg["bac_p2"],
+                          cfg["bac_p3"], cfg["bac_p4"]))
 
-    margin = max(0.0, sample(rng, cfg["margin_dist"],
-                             cfg["margin_p1"], cfg["margin_p2"],
-                             cfg["margin_p3"], cfg["margin_p4"]))
-    price  = budget * (1.0 + margin)
+    profit_percent = max(0.0, sample(rng, cfg["profit_percent_dist"],
+                                     cfg["profit_percent_p1"], cfg["profit_percent_p2"],
+                                     cfg["profit_percent_p3"], cfg["profit_percent_p4"]))
+    price = bac * (1.0 + profit_percent)
 
-    start    = max(0, int(round(sample(rng, cfg["start_dist"],
-                                       cfg["start_p1"], cfg["start_p2"],
-                                       cfg["start_p3"], cfg["start_p4"]))))
-    duration = max(1, sample_int(rng, cfg["duration_dist"],
-                                 cfg["duration_p1"], cfg["duration_p2"],
-                                 cfg["duration_p3"], cfg["duration_p4"]))
-    finish   = start + duration
+    planned_start    = max(0, int(round(sample(
+        rng, cfg["planned_start_dist"],
+        cfg["planned_start_p1"], cfg["planned_start_p2"],
+        cfg["planned_start_p3"], cfg["planned_start_p4"]
+    ))))
+    planned_duration = max(1, sample_int(
+        rng, cfg["planned_duration_dist"],
+        cfg["planned_duration_p1"], cfg["planned_duration_p2"],
+        cfg["planned_duration_p3"], cfg["planned_duration_p4"]
+    ))
+    planned_finish = planned_start + planned_duration
 
     scurve_a = max(0.5, sample(rng, cfg["scurve_a_dist"],
                                cfg["scurve_a_p1"], cfg["scurve_a_p2"],
@@ -196,7 +228,7 @@ def sample_project(rng, cfg: dict, i: int) -> dict:
         cfg["advance_percent_p3"], cfg["advance_percent_p4"]
     )))
 
-    # Sampled for profile storage; not yet wired into certification (Bug #6).
+    # Sampled for profile storage; not yet wired into certification.
     advance_trigger = max(0.0, min(1.0, sample(
         rng, cfg["advance_trigger_dist"],
         cfg["advance_trigger_p1"], cfg["advance_trigger_p2"],
@@ -215,99 +247,199 @@ def sample_project(rng, cfg: dict, i: int) -> dict:
         cfg["retention_rate_p3"], cfg["retention_rate_p4"]
     )))
 
-    schedule_cap = max(1, sample_int(rng, cfg["schedule_cap_dist"],
-                                     cfg["schedule_cap_p1"], cfg["schedule_cap_p2"],
-                                     cfg["schedule_cap_p3"], cfg["schedule_cap_p4"]))
+    progress_delay_cap = max(0.0, min(1.0, sample(
+        rng, cfg["progress_delay_cap_dist"],
+        cfg["progress_delay_cap_p1"], cfg["progress_delay_cap_p2"],
+        cfg["progress_delay_cap_p3"], cfg["progress_delay_cap_p4"]
+    )))
 
-    cost_cap = max(1.0, sample(rng, cfg["cost_cap_dist"],
-                               cfg["cost_cap_p1"], cfg["cost_cap_p2"],
-                               cfg["cost_cap_p3"], cfg["cost_cap_p4"]))
+    finish_delay_cap = max(1, sample_int(
+        rng, cfg["finish_delay_cap_dist"],
+        cfg["finish_delay_cap_p1"], cfg["finish_delay_cap_p2"],
+        cfg["finish_delay_cap_p3"], cfg["finish_delay_cap_p4"]
+    ))
 
-    cure_length = max(1, sample_int(rng, cfg["cure_length_dist"],
-                                    cfg["cure_length_p1"], cfg["cure_length_p2"],
-                                    cfg["cure_length_p3"], cfg["cure_length_p4"]))
+    cost_overrun_cap = max(1.0, sample(
+        rng, cfg["cost_overrun_cap_dist"],
+        cfg["cost_overrun_cap_p1"], cfg["cost_overrun_cap_p2"],
+        cfg["cost_overrun_cap_p3"], cfg["cost_overrun_cap_p4"]
+    ))
+
+    termination_tolerance = max(1, sample_int(
+        rng, cfg["termination_tolerance_dist"],
+        cfg["termination_tolerance_p1"], cfg["termination_tolerance_p2"],
+        cfg["termination_tolerance_p3"], cfg["termination_tolerance_p4"]
+    ))
 
     return {
-        "i":                i,
-        "budget":           budget,          # BAC
-        "price":            price,           # BAC × (1 + margin)
-        "margin":           margin,
-        "start":            start,
-        "finish":           finish,
-        "duration":         duration,
-        "scurve_a":         scurve_a,
-        "scurve_b":         scurve_b,
-        "advance_percent":  advance_percent,
-        "advance_trigger":  advance_trigger,
-        "advance_recovery": advance_recovery,
-        "retention_rate":   retention_rate,
-        "schedule_cap":     schedule_cap,
-        "plan_deviation_threshold": cfg.get("plan_deviation_threshold", 0.10),
-        "cost_cap":         cost_cap,
-        "cure_length":      cure_length,
+        "i":                      i,
+        "planned_start":          planned_start,
+        "planned_finish":         planned_finish,
+        "planned_duration":       planned_duration,
+        "bac":                    bac,
+        "profit_percent":         profit_percent,
+        "price":                  price,
+        "scurve_a":               scurve_a,
+        "scurve_b":               scurve_b,
+        "advance_percent":        advance_percent,
+        "advance_trigger":        advance_trigger,
+        "advance_recovery":       advance_recovery,
+        "retention_rate":         retention_rate,
+        "progress_delay_cap":     progress_delay_cap,
+        "finish_delay_cap":       finish_delay_cap,
+        "cost_overrun_cap":       cost_overrun_cap,
+        "termination_tolerance":  termination_tolerance,
     }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# MILESTONE SAMPLER
+# ─────────────────────────────────────────────────────────────────────────────
+
 def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
     """
-    Build the milestone schedule for *proj*.
+    Build the full milestone profile for *proj*, including advance (j=0)
+    and the final milestone with retention release (j=n).
 
-    Thresholds are evenly spaced; the final one is pinned to 1.0.
-    Weights are equal; the final one absorbs rounding residual.
+    j index structure
+    -----------------
+    j = 0        advance payment at planned_start
+    j = 1..n-1   interim milestones
+    j = n        final milestone (progress_threshold=1.0)
 
-    earliest_t logic
-    ----------------
-    Intermediate milestones:
-        earliest_t[j] = start + max(1, round(threshold[j] × duration × fraction))
-    Final milestone:
-        earliest_t = proj["finish"]  (contract invariant — never overridden)
+    Payment breakdown
+    -----------------
+    All payment values are precomputed here so db_logger can write
+    milestones_profile without any financial logic.
 
-    fraction = 1.0 → earliest_t aligns with the on-plan date for that threshold.
-    fraction < 1.0 → allows early certification for high performers.
+    advance (j=0):
+      gross_payment           = advance_percent × price
+      advance_recovery        = 0
+      advance_recovery_remain = advance_amount  (full amount outstanding)
+      retention_withheld      = 0
+      retention_released      = 0
+      net_payment             = gross_payment
+
+    interim (j=1..n-1):
+      gross_payment           = payment_weight × price
+      advance_recovery        = min(gross × advance_recovery_rate, remaining_advance)
+      advance_recovery_remain = remaining_advance after this milestone
+      retention_withheld      = gross × retention_rate
+      retention_released      = 0
+      net_payment             = gross - advance_recovery - retention_withheld
+
+    final (j=n):
+      gross_payment           = payment_weight × price
+      advance_recovery        = min(gross × advance_recovery_rate, remaining_advance)
+      advance_recovery_remain = 0  (any residual is forgiven at completion)
+      retention_withheld      = gross × retention_rate  (same rule as interim)
+      retention_released      = sum of ALL retention_withheld (j=1..n, including final)
+      net_payment             = gross - advance_recovery - retention_withheld + retention_released
+
+    Keys match milestones_profile schema columns exactly.
+    Runtime-only fields (certified, certified_t, payment_released) are
+    NOT included — they belong to episode state, not the profile.
     """
     n_ms = max(1, sample_int(rng, cfg["n_milestones_dist"],
                              cfg["n_milestones_p1"], cfg["n_milestones_p2"],
                              cfg["n_milestones_p3"], cfg["n_milestones_p4"]))
 
-    thresholds      = [round((j + 1) / n_ms, 4) for j in range(n_ms)]
-    thresholds[-1]  = 1.0
+    # Evenly spaced thresholds; final pinned to 1.0
+    thresholds     = [round((j + 1) / n_ms, 4) for j in range(n_ms)]
+    thresholds[-1] = 1.0
 
-    weights         = [round(1.0 / n_ms, 6)] * n_ms
-    weights[-1]     = round(1.0 - sum(weights[:-1]), 6)
+    # Equal weights; final absorbs rounding residual
+    weights        = [round(1.0 / n_ms, 6)] * n_ms
+    weights[-1]    = round(1.0 - sum(weights[:-1]), 6)
 
-    # Sample once per project — not per milestone.
+    # Sample earliest_t fraction once per project
     earliest_t_fraction = max(0.0, min(1.0, sample(
         rng, cfg["earliest_t_fraction_dist"],
         cfg["earliest_t_fraction_p1"], cfg["earliest_t_fraction_p2"],
         cfg["earliest_t_fraction_p3"], cfg["earliest_t_fraction_p4"]
     )))
 
+    price            = proj["price"]
+    advance_amount   = proj["advance_percent"] * price
+    advance_rec_rate = proj["advance_recovery"]
+    retention_rate   = proj["retention_rate"]
+
     milestones = []
-    for j in range(n_ms):
-        is_final = (j == n_ms - 1)
+
+    # ── j = 0 : advance ──────────────────────────────────────────────────────
+    milestones.append({
+        "j":                      0,
+        "progress_threshold":     0.0,        # advance has no progress gate
+        "timestep_threshold":     proj["planned_start"],
+        "payment_weight":         0.0,        # advance is not a weight-based payment
+        "gross_payment":          advance_amount,
+        "advance_recovery":       0.0,
+        "advance_recovery_remain": advance_amount,
+        "retention_withheld":     0.0,
+        "retention_released":     0.0,
+        "net_payment":            advance_amount,
+    })
+
+    # ── j = 1..n : milestones ────────────────────────────────────────────────
+    remaining_advance   = advance_amount   # tracks how much is still unrecovered
+    cumulative_retention = 0.0            # accumulates across all milestones
+
+    for idx in range(n_ms):
+        j        = idx + 1               # j=1 is first interim, j=n_ms is final
+        is_final = (idx == n_ms - 1)
+
+        # timestep_threshold
         if is_final:
-            earliest_t = proj["finish"]
+            timestep_threshold = proj["planned_finish"]
         else:
-            earliest_t = proj["start"] + max(1, round(
-                thresholds[j] * proj["duration"] * earliest_t_fraction
+            timestep_threshold = proj["planned_start"] + max(1, round(
+                thresholds[idx] * proj["planned_duration"] * earliest_t_fraction
             ))
 
+        gross = weights[idx] * price
+
+        # advance recovery — residual forgiven at final milestone
+        if is_final:
+            recovery = remaining_advance   # clear whatever remains
+        else:
+            recovery = min(gross * advance_rec_rate, remaining_advance)
+        remaining_advance -= recovery
+
+        retention_withheld = gross * retention_rate
+        cumulative_retention += retention_withheld
+
+        # retention is released only at the final milestone
+        if is_final:
+            retention_released = cumulative_retention   # includes this milestone's withheld
+        else:
+            retention_released = 0.0
+
+        net = gross - recovery - retention_withheld + retention_released
+
         milestones.append({
-            "j":               j,
-            "threshold":       thresholds[j],
-            "earliest_t":      earliest_t,
-            "payment_weight":  weights[j],
-            "certified":       False,
-            "certified_t":     None,
-            "payment_released": None,
+            "j":                      j,
+            "progress_threshold":     thresholds[idx],
+            "timestep_threshold":     timestep_threshold,
+            "payment_weight":         weights[idx],
+            "gross_payment":          gross,
+            "advance_recovery":       recovery,
+            "advance_recovery_remain": remaining_advance,
+            "retention_withheld":     retention_withheld,
+            "retention_released":     retention_released,
+            "net_payment":            net,
         })
 
     return milestones
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# EFFICIENCY SAMPLER
+# ─────────────────────────────────────────────────────────────────────────────
+
 def sample_efficiency(rng, cfg: dict) -> float:
     """
     Draw period efficiency η from config distribution.
+    Called once per active project per period.
     Clamped to a minimum of 0.01 to prevent zero-progress deadlock.
     """
     eta = sample(rng, cfg["efficiency_dist"],

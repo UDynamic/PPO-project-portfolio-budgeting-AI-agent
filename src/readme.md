@@ -575,10 +575,11 @@ then we allocate for that timestep. meaning we will allocate that budget through
     - advanced payment is received at timestep 0 before action for the timestep 0. other timesteps receive payment at the end of the timestep
 
 --- 
-Algorithm:
+The transition behavior for each project:
 
-  <!-- ONLY FOR THE T_0 -->
   at each timestep (t_0 to t_n):
+  
+  <!-- ONLY FOR THE T_0 -->
     if t_0 : 
     INITIATION
       if advance true give advance
@@ -591,10 +592,16 @@ Algorithm:
 
     Health (termination or completion) check
       TERMINATION CHECK
-        Evaluate breach flags. Update cure counter.
-        If terminated: compute settlement.
+        Evaluate breach flags. 
+        Update cure counter.
+        If terminated: 
+          compute settlement.
+      
       COMPLETION CHECK:
-        If progress >= 1.0: set _release_retention_next_period = True, status = completed
+        If progress >= 1.0: 
+        status = completed
+        
+        retention to be released at the end of this period 
 
   GET OBSERVATION
 

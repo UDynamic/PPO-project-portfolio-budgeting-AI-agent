@@ -260,15 +260,15 @@ CREATE TABLE IF NOT EXISTS projects_status (
     -- lifecycle
     status                   TEXT,
 
-    -- cash flow
-    inflow                   REAL,   -- cumulative inflows
-    outflow                  REAL,   -- cumulative outflows
+    -- cash flow (numbers are cumulative)
+    inflow                   REAL,   -- inflows
+    outflow                  REAL,   -- outflows
     termination_settlement   REAL,
     net_cashflow             REAL,   -- inflow - outflow + termination_settlement this period
 
     -- allocation & financing
     allocation_action        REAL,   -- raw allocation input from agent or user
-    deficit                  REAL,   -- max(0, cumulative_outflow - cumulative_inflows)
+    deficit                  REAL,   -- max(0, outflow - inflows)
     interest_cost            REAL,   -- (annual_rate / 12) * deficit
     allocation                REAL,  -- allocation_action + interest_cost; deducted from budget_available
 
