@@ -136,6 +136,10 @@ def render(t: int,
             "catchup_t",      _fmt(ps.get("catchup_alloc_t",      0.0)),
             "catchup_next_t", _fmt(ps.get("catchup_alloc_next_t", 0.0)),
         ))
+        print(_row(
+            "reach_plan_t",      _fmt(ps.get("reach_plan_t",      0.0)),
+            "reach_plan_next_t", _fmt(ps.get("reach_plan_next_t", 0.0)),
+        ))
 
         # ── target milestone ──────────────────────────────────────────────
         print(_sep("─"))

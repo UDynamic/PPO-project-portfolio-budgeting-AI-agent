@@ -290,6 +290,7 @@ CREATE TABLE IF NOT EXISTS projects_status (
     min_prog_t                REAL,  -- max(0.0, progress_plan_t - progress_delay_cap)
     progress_needed_t         REAL,  -- max(0.0, min_prog_t - progress_actual)
     catchup_alloc_t           REAL,  -- (progress_needed_t) * bac
+    reach_plan_t              REAL,  -- max(0.0, progress_plan_t - progress_actual) * bac
 
     -- next period (assuming efficiency = 1)
     progress_plan_next_t      REAL,
@@ -298,6 +299,7 @@ CREATE TABLE IF NOT EXISTS projects_status (
     min_prog_next_t           REAL,  -- max(0.0, progress_plan_next_t - progress_delay_cap)
     progress_needed_next_t    REAL,  -- max(0.0, min_prog_next_t - progress_actual)
     catchup_alloc_next_t      REAL,  -- (progress_needed_next_t) * bac
+    reach_plan_next_t         REAL,  -- max(0.0, progress_plan_next_t - progress_actual) * bac
 
     -- next milestone target (3 features)
     target_milestone_j        INTEGER,  -- index only, not in obs vector
@@ -341,6 +343,8 @@ CREATE TABLE IF NOT EXISTS projects_observation (
     tolerance_remain         REAL,  -- by termination_tolerance
     catchup_alloc_t          REAL,  -- (progress_needed_t) * bac
     catchup_alloc_next_t     REAL,  -- (progress_needed_next_t) * bac
+    reach_plan_t             REAL,  -- max(0, progress_plan_t - progress_actual) * bac
+    reach_plan_next_t        REAL,  -- max(0, progress_plan_next_t - progress_actual) * bac
 
     -- next milestone target (3 features)
     target_progress_gap      REAL,     -- threshold - progress_actual

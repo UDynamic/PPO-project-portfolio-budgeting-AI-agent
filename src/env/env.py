@@ -317,10 +317,11 @@ class PortfolioBudgetingEnv(gym.Env):
             # 4. Breach evaluation (pre-allocation; abandoned always False)
             flags = br.evaluate_breaches(ps, proj, alloc=None)
 
-            # 5. Tolerance update — agent sees degraded tolerance in obs
-            br.update_tolerance(ps, proj, flags)
+            # 5. Hard deadline check — only over_duration_window terminates
+            #    here. Tolerance is NOT updated in early phase — the agent
+            #    must be given the chance to allocate before tolerance is
+            #    decremented and termination can fire on exhaustion.
 
-            # 6. Hard deadline check — only over_duration_window terminates
             #    here. All other breach conditions wait for late phase.
             over_duration_window = (
                 self.t >= proj["planned_finish"] + proj["finish_delay_cap"]
@@ -406,7 +407,7 @@ class PortfolioBudgetingEnv(gym.Env):
             # 14. Breach evaluation (post-allocation)
             flags = br.evaluate_breaches(ps, proj, alloc=alloc)
 
-            # 15. Tolerance update
+            # 15. Tolerance update — only here, after allocation is applied
             br.update_tolerance(ps, proj, flags)
 
             # 16. Termination check
@@ -550,11 +551,14 @@ class PortfolioBudgetingEnv(gym.Env):
         needed_t = max(0.0, min_t - prog)               # progress_needed_t
         catch_t  = needed_t * bac                       # catchup_alloc_t
 
+        reach_t   = max(0.0, plan_t - prog) * bac      # reach_plan_t
+
         ps["progress_delay_t"]    = delay_t             # keep in sync
         ps["progress_space_t"]    = space_t
         ps["min_prog_t"]          = min_t
         ps["progress_needed_t"]   = needed_t
         ps["catchup_alloc_t"]     = catch_t
+        ps["reach_plan_t"]        = reach_t
 
         # ── next period ───────────────────────────────────────────────────────
         plan_nt   = planned_progress(t_proj + 1, duration, a, b)
@@ -563,6 +567,7 @@ class PortfolioBudgetingEnv(gym.Env):
         min_nt    = max(0.0, plan_nt - delay_cap)       # min_prog_next_t
         needed_nt = max(0.0, min_nt - prog)             # progress_needed_next_t
         catch_nt  = needed_nt * bac                     # catchup_alloc_next_t
+        reach_nt  = max(0.0, plan_nt - prog) * bac     # reach_plan_next_t
 
         ps["progress_plan_next_t"]    = plan_nt
         ps["progress_delay_next_t"]   = delay_nt
@@ -570,6 +575,7 @@ class PortfolioBudgetingEnv(gym.Env):
         ps["min_prog_next_t"]         = min_nt
         ps["progress_needed_next_t"]  = needed_nt
         ps["catchup_alloc_next_t"]    = catch_nt
+        ps["reach_plan_next_t"]       = reach_nt
 
         # ── target milestone ──────────────────────────────────────────────────
         target_j              = None
@@ -674,6 +680,8 @@ class PortfolioBudgetingEnv(gym.Env):
                     "outflow":                ps["outflow"],
                     "catchup_alloc_t":        ps["catchup_alloc_t"],
                     "catchup_alloc_next_t":   ps["catchup_alloc_next_t"],
+                    "reach_plan_t":           ps["reach_plan_t"],
+                    "reach_plan_next_t":      ps["reach_plan_next_t"],
                     "target_progress_gap":    ps["target_progress_gap"],
                     "target_timestep_gap":    ps["target_timestep_gap"],
                     "target_required_alloc":  ps["target_required_alloc"],
@@ -725,6 +733,7 @@ class PortfolioBudgetingEnv(gym.Env):
             "min_prog_t":               0.0,
             "progress_needed_t":        0.0,
             "catchup_alloc_t":          0.0,
+            "reach_plan_t":             0.0,
             # next period
             "progress_plan_next_t":     0.0,
             "progress_delay_next_t":    0.0,
@@ -732,6 +741,7 @@ class PortfolioBudgetingEnv(gym.Env):
             "min_prog_next_t":          0.0,
             "progress_needed_next_t":   0.0,
             "catchup_alloc_next_t":     0.0,
+            "reach_plan_next_t":        0.0,
             # target milestone
             "target_milestone_j":       None,
             "target_progress_gap":      0.0,

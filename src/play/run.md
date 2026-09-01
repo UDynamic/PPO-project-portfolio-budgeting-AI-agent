@@ -1,3 +1,4 @@
+clear
 del src\db\database.db
 del src\db\exports
 python src\db\db_init.py

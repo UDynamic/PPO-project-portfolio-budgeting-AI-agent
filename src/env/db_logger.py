@@ -189,11 +189,11 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
 
             progress_plan_t, progress_delay_t,
             progress_space_t, min_prog_t,
-            progress_needed_t, catchup_alloc_t,
+            progress_needed_t, catchup_alloc_t, reach_plan_t,
 
             progress_plan_next_t, progress_delay_next_t,
             progress_space_next_t, min_prog_next_t,
-            progress_needed_next_t, catchup_alloc_next_t,
+            progress_needed_next_t, catchup_alloc_next_t, reach_plan_next_t,
 
             target_milestone_j,
             target_progress_gap, target_timestep_gap,
@@ -215,8 +215,8 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
             ?,
             ?,?,?,
             ?,
-            ?,?,?,?,?,?,
-            ?,?,?,?,?,?,
+            ?,?,?,?,?,?,?,
+            ?,?,?,?,?,?,?,
             ?,
             ?,?,?,?,?,
             ?,?,?,
@@ -261,6 +261,7 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
         ps.get("min_prog_t",         0.0),
         ps.get("progress_needed_t",  0.0),
         ps.get("catchup_alloc_t",    0.0),
+        ps.get("reach_plan_t",       0.0),
 
         # next period catchup fields
         ps.get("progress_plan_next_t",    0.0),
@@ -269,6 +270,7 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
         ps.get("min_prog_next_t",         0.0),
         ps.get("progress_needed_next_t",  0.0),
         ps.get("catchup_alloc_next_t",    0.0),
+        ps.get("reach_plan_next_t",       0.0),
 
         # target milestone
         ps.get("target_milestone_j"),
@@ -310,17 +312,21 @@ def _write_project_observation(conn, episode_id, t, method, proj, ps):
             tolerance_remain,
             catchup_alloc_t,
             catchup_alloc_next_t,
+            reach_plan_t,
+            reach_plan_next_t,
             target_progress_gap,
             target_timestep_gap,
             target_required_alloc,
             target_payment_rate
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         episode_id, proj["i"], t, ps.get("t_project"), method,
         ps.get("inflow", 0.0) - ps.get("outflow", 0.0),
         ps.get("tolerance_remain",       proj["termination_tolerance"]),
         ps.get("catchup_alloc_t",        0.0),
         ps.get("catchup_alloc_next_t",   0.0),
+        ps.get("reach_plan_t",           0.0),
+        ps.get("reach_plan_next_t",      0.0),
         ps.get("target_progress_gap",    0.0),
         ps.get("target_timestep_gap",    0),
         ps.get("target_required_alloc",  0.0),
