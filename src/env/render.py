@@ -3,23 +3,33 @@
 # ANSI render functions for the Portfolio Budgeting environment.
 #
 # All formatting and print logic lives here.  Two consumers:
-#   - env.render()          calls render_episode() / render_step()
-#   - src/play/play.py      imports from here; contains no formatting itself
+#   - env.render()       calls render()
+#   - src/play/play.py   imports render() directly; contains no formatting
 #
 # Four panels per project, printed sequentially:
-#   1. Project Identity       (static params)
-#   2. Payment Profile        (milestone table with advance/recovery/retention/net/status)
-#   3. Boundary & Termination (breach flags + cure counter)
-#   4. Period Timeseries      (Group A: periodic CF, Group B: cumulative CF, Group C: EVM)
+#   1. Project Identity       static params
+#   2. Payment Profile        milestone table (reads precomputed profile values)
+#   3. Boundary & Termination breach flags + tolerance counter
+#   4. Period Timeseries      Group A: periodic CF, Group B: cumulative CF,
+#                             Group C: EVM
 #
 # Preceded by a Portfolio Summary block.
-# Plain f-strings only.  No external dependencies.
+#
+# Key name conventions match schema and module contracts exactly:
+#   proj["bac"], proj["planned_start/finish/duration"]
+#   proj["finish_delay_cap"], proj["cost_overrun_cap"]
+#   proj["termination_tolerance"], proj["profit_percent"]
+#   ps["progress_actual"], ps["progress_delay_t"]
+#   ps["projected_finish_delay"], ps["projected_finish"]
+#   ps["tolerance_remain"], ps["breach_flags"]
+#   ms["progress_threshold"], ms["timestep_threshold"]
+#   ms["gross_payment"], ms["net_payment"], etc.
 #
 # History store
 # -------------
 # The timeseries panel needs rows from all prior periods.  render.py owns
 # a module-level _history dict keyed by (episode_id, proj_index).
-# Call reset_history(episode_id) at the start of each episode.
+# Call reset_history(episode_id, n_projects) at the start of each episode.
 
 from __future__ import annotations
 
@@ -33,7 +43,7 @@ W = 110   # total print width
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# HISTORY STORE  (timeseries accumulation)
+# HISTORY STORE
 # ─────────────────────────────────────────────────────────────────────────────
 
 _history: dict[tuple[str, int], list[dict]] = {}
@@ -42,103 +52,95 @@ _cum:     dict[tuple[str, int], dict]       = {}
 
 def reset_history(episode_id: str, n_projects: int) -> None:
     """
-    Clear history for a new episode and initialise per-project cumulative
-    accumulators.  Call once from env.reset() before the first render.
+    Clear history for a new episode and initialise cumulative accumulators.
+    Call once from env.reset() before the first render.
     """
     for i in range(n_projects):
-        key = (episode_id, i)
+        key           = (episode_id, i)
         _history[key] = []
         _cum[key]     = {
             "inflow": 0.0, "outflow": 0.0, "net_cf": 0.0,
             "deficit": 0.0, "alloc": 0.0, "interest": 0.0,
-            "budget_draw": 0.0,
+            "treasury_draw": 0.0,
         }
 
 
-def record_row(episode_id: str, proj_index: int,
-               t: int, ps: dict, proj: dict, cfg: dict,
-               cashflow: dict) -> dict:
+def _record_row(episode_id: str, proj_index: int,
+                t: int, ps: dict, proj: dict,
+                cf: dict) -> dict:
     """
-    Build one timeseries row for *proj_index* at period *t*, update the
-    cumulative accumulators, append to _history, and return the row.
+    Build one timeseries row, update cumulative accumulators, append to
+    history, and return the row.
 
-    *cashflow* is the proj_cashflow[i] dict from env.step().
+    Breach flags are read from ps["breach_flags"] — not recomputed here.
+    cf is proj_cf[i] from env.step().
     """
     key = (episode_id, proj_index)
     cum = _cum.setdefault(key, {
         "inflow": 0.0, "outflow": 0.0, "net_cf": 0.0,
-        "deficit": 0.0, "alloc": 0.0, "interest": 0.0, "budget_draw": 0.0,
+        "deficit": 0.0, "alloc": 0.0, "interest": 0.0, "treasury_draw": 0.0,
     })
 
-    eac     = ps.get("eac", proj["budget"])
-    eac_bac = eac / proj["budget"] if proj["budget"] > 0 else 1.0
-    alloc   = cashflow.get("allocation",    0.0)
-    interest= cashflow.get("interest_cost", 0.0)
-    draw    = cashflow.get("treasury_draw", 0.0)
+    bac      = proj["bac"]
+    eac      = ps.get("eac", bac)
+    eac_bac  = eac / bac if bac > 0 else 1.0
 
-    adv_in  = cashflow.get("advance",          0.0)
-    ms_in   = cashflow.get("milestone_net",    0.0)
-    ret_in  = cashflow.get("retention_release",0.0)
-    sett_in = cashflow.get("settlement",       0.0)
+    alloc    = cf.get("allocation",   0.0)
+    interest = cf.get("interest",     0.0)
+    draw     = cf.get("treasury_draw",0.0)
+    adv_in   = cf.get("advance",      0.0)
+    ms_in    = cf.get("milestone_net",0.0)
+    sett_in  = cf.get("settlement",   0.0)
 
-    inflow_p  = adv_in + ms_in + ret_in + max(0.0, sett_in)
+    inflow_p  = adv_in + ms_in + max(0.0, sett_in)
     outflow_p = alloc + interest
     net_cf_p  = inflow_p - outflow_p
     deficit_p = max(0.0, -net_cf_p)
 
-    cum["inflow"]      += inflow_p
-    cum["outflow"]     += outflow_p
-    cum["net_cf"]      += net_cf_p
-    cum["deficit"]     += deficit_p
-    cum["alloc"]       += alloc
-    cum["interest"]    += interest
-    cum["budget_draw"] += draw
+    cum["inflow"]        += inflow_p
+    cum["outflow"]       += outflow_p
+    cum["net_cf"]        += net_cf_p
+    cum["deficit"]       += deficit_p
+    cum["alloc"]         += alloc
+    cum["interest"]      += interest
+    cum["treasury_draw"] += draw
 
-    pdt     = cfg.get("plan_deviation_threshold", 0.10)
-    b_idle  = alloc < 1e-9 and ps.get("status") == "active"
-    b_dev   = ps.get("plan_deviation", 0.0) > pdt
-    b_sched = ps.get("schedule_slip",  0.0) > proj["schedule_cap"]
-    b_cost  = eac_bac > proj["cost_cap"]
-    b_dl    = (
-        t >= proj["finish"] + proj["schedule_cap"]
-        and ps.get("status") == "active"
-    )
-    b_any   = b_idle or b_dev or (b_sched and b_cost) or b_dl
+    flags = ps.get("breach_flags", {})
 
     row = {
-        "t":                   t,
-        "status":              ps.get("status") or "not_started",
-        "inflow_period":       inflow_p,
-        "outflow_period":      outflow_p,
-        "net_cf_period":       net_cf_p,
-        "cash_deficit_period": deficit_p,
-        "allocation":          alloc,
-        "interest_cost":       interest,
-        "budget_draw":         draw,
-        "inflow_cum":          cum["inflow"],
-        "outflow_cum":         cum["outflow"],
-        "net_cf_cum":          cum["net_cf"],
-        "cash_deficit_cum":    cum["deficit"],
-        "alloc_cum":           cum["alloc"],
-        "interest_cum":        cum["interest"],
-        "budget_draw_cum":     cum["budget_draw"],
-        "progress":            ps.get("progress",       0.0),
-        "progress_plan":       ps.get("progress_plan",  0.0),
-        "plan_deviation":      ps.get("plan_deviation", 0.0),
-        "spi":                 ps.get("spi",            1.0),
-        "cpi":                 ps.get("cpi",            1.0),
-        "tcpi":                ps.get("tcpi",           1.0),
-        "eac":                 eac,
-        "eac_bac":             eac_bac,
-        "schedule_slip":       ps.get("schedule_slip",  0.0),
-        "forecast_finish":     ps.get("forecast_finish", float(proj["finish"])),
-        "cure_remaining":      ps.get("cure_remaining", proj.get("cure_length", 0)),
-        "breach_idle":         b_idle,
-        "breach_deviation":    b_dev,
-        "breach_schedule":     b_sched,
-        "breach_cost":         b_cost,
-        "breach_deadline":     b_dl,
-        "any_breach":          b_any,
+        "t":                    t,
+        "status":               ps.get("status") or "pending",
+        "inflow_period":        inflow_p,
+        "outflow_period":       outflow_p,
+        "net_cf_period":        net_cf_p,
+        "cash_deficit_period":  deficit_p,
+        "allocation":           alloc,
+        "interest":             interest,
+        "treasury_draw":        draw,
+        "inflow_cum":           cum["inflow"],
+        "outflow_cum":          cum["outflow"],
+        "net_cf_cum":           cum["net_cf"],
+        "cash_deficit_cum":     cum["deficit"],
+        "alloc_cum":            cum["alloc"],
+        "interest_cum":         cum["interest"],
+        "treasury_draw_cum":    cum["treasury_draw"],
+        "progress_actual":      ps.get("progress_actual",   0.0),
+        "progress_plan_t":      ps.get("progress_plan_t",   0.0),
+        "progress_delay_t":     ps.get("progress_delay_t",  0.0),
+        "spi":                  ps.get("spi",               1.0),
+        "cpi":                  ps.get("cpi",               1.0),
+        "tcpi":                 ps.get("tcpi",              1.0),
+        "eac":                  eac,
+        "eac_bac":              eac_bac,
+        "projected_finish_delay": ps.get("projected_finish_delay", 0.0),
+        "projected_finish":     ps.get("projected_finish", float(proj["planned_finish"])),
+        "tolerance_remain":     ps.get("tolerance_remain", proj["termination_tolerance"]),
+        "abandoned":            flags.get("abandoned",           False),
+        "over_progress_delay":  flags.get("over_progress_delay", False),
+        "over_finish_delay":    flags.get("over_finish_delay",   False),
+        "over_cost_overrun":    flags.get("over_cost_overrun",   False),
+        "over_duration_window": flags.get("over_duration_window",False),
+        "over_any":             flags.get("over_any",            False),
     }
 
     _history.setdefault(key, []).append(row)
@@ -146,7 +148,7 @@ def record_row(episode_id: str, proj_index: int,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LOW-LEVEL FORMAT HELPERS
+# FORMAT HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _sep(char: str = "─", width: int = W) -> str:
@@ -164,9 +166,6 @@ def _fmt_mu(v) -> str:
 def _fmt_f4(v) -> str:
     return f"{v:>10.4f}" if v is not None else f"{'—':>10}"
 
-def _fmt_f2(v) -> str:
-    return f"{v:>8.2f}" if v is not None else f"{'—':>8}"
-
 def _fmt_pct(v) -> str:
     return f"{v*100:>7.1f}%" if v is not None else f"{'—':>8}"
 
@@ -177,34 +176,32 @@ def _breach(v: bool) -> str:
     return "X BREACH" if v else "OK      "
 
 def _status_str(v) -> str:
-    return (v or "NOT_STARTED").upper()
+    return (v or "PENDING").upper()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PANEL 1 — PROJECT IDENTITY
 # ─────────────────────────────────────────────────────────────────────────────
 
-def print_project_identity(proj: dict) -> None:
-    """Print static project parameters."""
+def _print_project_identity(proj: dict) -> None:
     print(_header(f"Project {proj['i']}  |  Identity & Parameters"))
+    col_w = 28
     rows = [
-        ("Budget (BAC)",           f"{proj['budget']:,.2f}"),
+        ("BAC",                    f"{proj['bac']:,.2f}"),
         ("Contract Price",         f"{proj['price']:,.2f}"),
-        ("Margin",                 f"{proj['margin']*100:.1f}%"),
-        ("Start",                  str(proj["start"])),
-        ("Finish (planned)",       str(proj["finish"])),
-        ("Duration",               str(proj["duration"])),
+        ("Profit %",               f"{proj['profit_percent']*100:.1f}%"),
+        ("Planned Start",          str(proj["planned_start"])),
+        ("Planned Finish",         str(proj["planned_finish"])),
+        ("Planned Duration",       str(proj["planned_duration"])),
         ("S-curve a",              f"{proj['scurve_a']:.3f}"),
         ("S-curve b",              f"{proj['scurve_b']:.3f}"),
         ("Advance %",              f"{proj['advance_percent']*100:.1f}%"),
-        ("Advance Trigger",        f"{proj['advance_trigger']*100:.1f}%"),
         ("Advance Recovery Rate",  f"{proj['advance_recovery']*100:.1f}%"),
         ("Retention Rate",         f"{proj['retention_rate']*100:.1f}%"),
-        ("Schedule Cap (periods)", str(proj["schedule_cap"])),
-        ("Cost Cap (xBAC)",        f"{proj['cost_cap']:.2f}x"),
-        ("Cure Length",            str(proj["cure_length"])),
+        ("Finish Delay Cap",       str(proj["finish_delay_cap"])),
+        ("Cost Overrun Cap",       f"{proj['cost_overrun_cap']:.2f}x"),
+        ("Termination Tolerance",  str(proj["termination_tolerance"])),
     ]
-    col_w = 28
     for label, val in rows:
         print(f"  {label:<{col_w}} {val}")
     print()
@@ -214,86 +211,70 @@ def print_project_identity(proj: dict) -> None:
 # PANEL 2 — PAYMENT PROFILE
 # ─────────────────────────────────────────────────────────────────────────────
 
-def print_payment_profile(proj: dict, milestones: list, ps: dict) -> None:
+def _print_payment_profile(proj: dict, milestones: list[dict],
+                            ps: dict) -> None:
     """
-    Print the milestone payment table including advance, each milestone,
-    and the deferred retention release row.
+    Print the milestone payment table.
+
+    Reads all payment values from the precomputed milestone profile
+    (gross_payment, advance_recovery, retention_withheld,
+    retention_released, net_payment).  No financial recomputation here.
+
+    j=0  advance
+    j=1..n-1  interim milestones
+    j=n  final milestone (includes retention_released)
     """
     print(_header(f"Project {proj['i']}  |  Payment Profile"))
 
-    price            = proj["price"]
-    advance_pct      = proj["advance_percent"]
-    adv_recovery_rt  = proj["advance_recovery"]
-    retention_rt     = proj["retention_rate"]
-    advance_received = ps.get("advance_received", 0.0)
-
-    # column widths: label, threshold, weight, gross, adv_recov,
-    #                cum_recov, retention, net_pay, earliest, status
-    c = [22, 10, 8, 12, 12, 14, 12, 12, 10, 16]
+    # column widths
+    c = [22, 10, 8, 12, 12, 12, 12, 12, 10, 16]
     hdr = (
         f"  {'Milestone':<{c[0]}} {'Threshold':>{c[1]}} {'Weight':>{c[2]}}"
-        f" {'Gross':>{c[3]}} {'Adv.Recov':>{c[4]}} {'Cum.Recov':>{c[5]}}"
-        f" {'Retention':>{c[6]}} {'Net Pay':>{c[7]}} {'Earliest':>{c[8]}} {'Status':<{c[9]}}"
+        f" {'Gross':>{c[3]}} {'Adv.Rec':>{c[4]}} {'Ret.With':>{c[5]}}"
+        f" {'Ret.Rel':>{c[6]}} {'Net Pay':>{c[7]}} {'EarliestT':>{c[8]}}"
+        f" {'Status':<{c[9]}}"
     )
     print(hdr)
     print("  " + _sep("─", W - 2))
 
-    # Advance row
-    adv_gross  = advance_pct * price
-    adv_status = "PAID" if advance_received > 0 else "PENDING"
-    print(
-        f"  {'Advance':<{c[0]}} {'0%':>{c[1]}} {advance_pct*100:>{c[2]-1}.1f}%"
-        f" {adv_gross:>{c[3]},.2f} {'---':>{c[4]}} {'---':>{c[5]}}"
-        f" {'---':>{c[6]}} {adv_gross:>{c[7]},.2f}"
-        f" {('t='+str(proj['start'])):>{c[8]}} {adv_status:<{c[9]}}"
-    )
-
-    # Milestone rows — recompute recovery caps using cumulative logic
-    cum_recovered = 0.0
     for ms in milestones:
-        is_final         = ms["threshold"] >= 1.0
-        gross            = ms["payment_weight"] * price
-        desired_recovery = gross * adv_recovery_rt
-        remaining_cap    = max(0.0, advance_received - cum_recovered)
-        recovery         = min(desired_recovery, remaining_cap)
-        cum_recovered   += recovery
-        retention        = 0.0 if is_final else gross * retention_rt
-        net              = gross - recovery - retention
+        j        = ms["j"]
+        is_final = ms["progress_threshold"] >= 1.0
+
+        if j == 0:
+            label = "Advance"
+        elif is_final:
+            label = "Final Milestone"
+        else:
+            label = f"Milestone {j}"
 
         if ms["certified"]:
-            ms_status = f"CERTIFIED t={ms.get('certified_t')}"
-        elif ps.get("progress", 0.0) >= ms["threshold"]:
-            ms_status = "ELIGIBLE"
+            status = f"PAID  t={ms['certified_t']}"
+        elif ps.get("progress_actual", 0.0) >= ms["progress_threshold"]:
+            status = "ELIGIBLE"
         else:
-            ms_status = "PENDING"
+            status = "PENDING"
 
-        label = "Final MS / Completion" if is_final else f"MS {ms['j']+1}"
-        print(
-            f"  {label:<{c[0]}} {ms['threshold']*100:>{c[1]-1}.0f}%"
-            f" {ms['payment_weight']*100:>{c[2]-1}.1f}%"
-            f" {gross:>{c[3]},.2f} {recovery:>{c[4]},.2f} {cum_recovered:>{c[5]},.2f}"
-            f" {retention:>{c[6]},.2f} {net:>{c[7]},.2f}"
-            f" {('t='+str(ms['earliest_t'])):>{c[8]}} {ms_status:<{c[9]}}"
+        threshold_str = (
+            "—" if j == 0
+            else f"{ms['progress_threshold']*100:.0f}%"
+        )
+        weight_str = (
+            "—" if j == 0
+            else f"{ms['payment_weight']*100:.1f}%"
         )
 
-    # Retention release row
-    expected_retention = sum(
-        ms["payment_weight"] * price * retention_rt
-        for ms in milestones if ms["threshold"] < 1.0
-    )
-    ret_held     = ps.get("retention_held", 0.0)
-    ret_released = ps.get("retention_released", False)
-    display_ret  = ret_held if ret_held > 0 else expected_retention
-    ret_status   = (
-        "RELEASED" if ret_released
-        else (f"HELD {ret_held:,.2f}" if ret_held > 0 else "PENDING")
-    )
-    print(
-        f"  {'Retention Release':<{c[0]}} {'100%':>{c[1]}} {'---':>{c[2]}}"
-        f" {display_ret:>{c[3]},.2f} {'---':>{c[4]}} {'---':>{c[5]}}"
-        f" {'---':>{c[6]}} {display_ret:>{c[7]},.2f}"
-        f" {('t='+str(proj['finish'])):>{c[8]}} {ret_status:<{c[9]}}"
-    )
+        print(
+            f"  {label:<{c[0]}} {threshold_str:>{c[1]}} {weight_str:>{c[2]}}"
+            f" {ms['gross_payment']:>{c[3]},.2f}"
+            f" {ms['advance_recovery']:>{c[4]},.2f}"
+            f" {ms['retention_withheld']:>{c[5]},.2f}"
+            f" {ms['retention_released']:>{c[6]},.2f}"
+            f" {ms['net_payment']:>{c[7]},.2f}"
+            f" {('t='+str(ms['timestep_threshold'])):>{c[8]}}"
+            f" {status:<{c[9]}}"
+        )
+
     print()
 
 
@@ -301,24 +282,25 @@ def print_payment_profile(proj: dict, milestones: list, ps: dict) -> None:
 # PANEL 3 — BOUNDARY & TERMINATION STATUS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def print_termination_status(proj_index: int, term: dict) -> None:
-    """Print breach flags and cure counter for one project."""
+def _print_termination_status(proj_index: int, ps: dict,
+                               proj: dict) -> None:
     print(_header(f"Project {proj_index}  |  Boundary & Termination Status"))
+    flags = ps.get("breach_flags", {})
+    col_w = 26
     fields = [
-        ("Idle Breach",      term.get("breach_idle",      False)),
-        ("Deviation Breach", term.get("breach_deviation", False)),
-        ("Schedule Breach",  term.get("breach_schedule",  False)),
-        ("Cost Breach",      term.get("breach_cost",      False)),
-        ("Deadline Breach",  term.get("breach_deadline",  False)),
-        ("Any Breach",       term.get("any_breach",       False)),
+        ("Abandoned (idle)",       flags.get("abandoned",           False)),
+        ("Over Progress Delay",    flags.get("over_progress_delay", False)),
+        ("Over Finish Delay",      flags.get("over_finish_delay",   False)),
+        ("Over Cost Overrun",      flags.get("over_cost_overrun",   False)),
+        ("Over Duration Window",   flags.get("over_duration_window",False)),
+        ("Any Breach",             flags.get("over_any",            False)),
     ]
-    col_w = 22
     for label, val in fields:
         print(f"  {label:<{col_w}}  {_breach(val)}")
-    cure     = term.get("cure_remaining")
-    cure_str = _fmt_int(cure)
-    indicator = "  << LOW" if cure is not None and cure <= 2 else ""
-    print(f"  {'Cure Periods Remaining':<{col_w}}  {cure_str}{indicator}")
+
+    tol     = ps.get("tolerance_remain", proj["termination_tolerance"])
+    low_str = "  << LOW" if tol <= 2 else ""
+    print(f"  {'Tolerance Remaining':<{col_w}}  {_fmt_int(tol)}{low_str}")
     print()
 
 
@@ -326,8 +308,7 @@ def print_termination_status(proj_index: int, term: dict) -> None:
 # PANEL 4 — PERIOD TIMESERIES
 # ─────────────────────────────────────────────────────────────────────────────
 
-def print_timeseries(episode_id: str, proj_index: int) -> None:
-    """Print all three sub-tables (periodic CF, cumulative CF, EVM) for one project."""
+def _print_timeseries(episode_id: str, proj_index: int) -> None:
     rows = _history.get((episode_id, proj_index), [])
     if not rows:
         return
@@ -338,7 +319,7 @@ def print_timeseries(episode_id: str, proj_index: int) -> None:
     print(
         f"\n  {'t':>3}  {'Status':<12}"
         f"  {'Inflow':>11}  {'Outflow':>11}  {'Net CF':>11}  {'Deficit':>10}"
-        f"  {'Alloc':>11}  {'Interest':>11}  {'BudgetDraw':>11}"
+        f"  {'Alloc':>11}  {'Interest':>11}  {'Treasury':>11}"
     )
     print("  " + _sep("─", W - 2))
     for r in rows:
@@ -346,15 +327,16 @@ def print_timeseries(episode_id: str, proj_index: int) -> None:
             f"  {r['t']:>3}  {_status_str(r['status']):<12}"
             f"  {r['inflow_period']:>11,.2f}  {r['outflow_period']:>11,.2f}"
             f"  {r['net_cf_period']:>11,.2f}  {r['cash_deficit_period']:>10,.2f}"
-            f"  {r['allocation']:>11,.2f}  {r['interest_cost']:>11,.2f}"
-            f"  {r['budget_draw']:>11,.2f}"
+            f"  {r['allocation']:>11,.2f}  {r['interest']:>11,.2f}"
+            f"  {r['treasury_draw']:>11,.2f}"
         )
 
     # Group B: cumulative cash flow
     print(
         f"\n  {'t':>3}"
-        f"  {'Sum Inflow':>11}  {'Sum Outflow':>11}  {'Sum NetCF':>11}  {'Sum Deficit':>11}"
-        f"  {'Sum Alloc':>11}  {'Sum Interest':>12}  {'Sum BudgDraw':>12}"
+        f"  {'Sum Inflow':>11}  {'Sum Outflow':>11}  {'Sum NetCF':>11}"
+        f"  {'Sum Deficit':>11}  {'Sum Alloc':>11}  {'Sum Int':>11}"
+        f"  {'Sum Treasury':>12}"
     )
     print("  " + _sep("─", W - 2))
     for r in rows:
@@ -362,25 +344,28 @@ def print_timeseries(episode_id: str, proj_index: int) -> None:
             f"  {r['t']:>3}"
             f"  {r['inflow_cum']:>11,.2f}  {r['outflow_cum']:>11,.2f}"
             f"  {r['net_cf_cum']:>11,.2f}  {r['cash_deficit_cum']:>11,.2f}"
-            f"  {r['alloc_cum']:>11,.2f}  {r['interest_cum']:>12,.2f}"
-            f"  {r['budget_draw_cum']:>12,.2f}"
+            f"  {r['alloc_cum']:>11,.2f}  {r['interest_cum']:>11,.2f}"
+            f"  {r['treasury_draw_cum']:>12,.2f}"
         )
 
-    # Group C: EVM metrics
+    # Group C: EVM
     print(
         f"\n  {'t':>3}"
-        f"  {'Progress':>9}  {'Plan':>9}  {'Deviation':>9}"
+        f"  {'Progress':>9}  {'Plan':>9}  {'Delay':>9}"
         f"  {'SPI(t)':>7}  {'CPI':>7}  {'TCPI':>7}"
-        f"  {'EAC':>12}  {'EAC/BAC':>8}  {'SchedSlip':>10}  {'FcstFinish':>11}"
+        f"  {'EAC':>12}  {'EAC/BAC':>8}"
+        f"  {'FinDelay':>9}  {'FcstFinish':>11}"
     )
     print("  " + _sep("─", W - 2))
     for r in rows:
         print(
             f"  {r['t']:>3}"
-            f"  {r['progress']:>9.4f}  {r['progress_plan']:>9.4f}  {r['plan_deviation']:>9.4f}"
+            f"  {r['progress_actual']:>9.4f}  {r['progress_plan_t']:>9.4f}"
+            f"  {r['progress_delay_t']:>9.4f}"
             f"  {r['spi']:>7.4f}  {r['cpi']:>7.4f}  {r['tcpi']:>7.4f}"
             f"  {r['eac']:>12,.2f}  {r['eac_bac']:>8.4f}"
-            f"  {r['schedule_slip']:>10.2f}  {r['forecast_finish']:>11.2f}"
+            f"  {r['projected_finish_delay']:>9.2f}"
+            f"  {r['projected_finish']:>11.2f}"
         )
     print()
 
@@ -389,99 +374,86 @@ def print_timeseries(episode_id: str, proj_index: int) -> None:
 # PORTFOLIO SUMMARY
 # ─────────────────────────────────────────────────────────────────────────────
 
-def print_portfolio_summary(
-    t: int,
-    budget: float,
-    horizon: int,
-    total_reward: float,
-    info: Optional[dict] = None,
-) -> None:
-    """
-    Print the portfolio-level header block, plus per-project cashflow table
-    if *info* is provided (i.e. after a step has executed).
-    """
+def _print_portfolio_summary(t: int, budget: float, initial_budget: float,
+                              horizon: int, proj_cf: list[dict],
+                              period_inflow: float,
+                              period_outflow: float) -> None:
     print()
     print(_sep("="))
+    budget_norm = budget / initial_budget if initial_budget > 0 else 1.0
     print(
         f"  PORTFOLIO"
         f"   Period {t}"
-        f"   Budget {budget:,.2f}"
+        f"   Budget {budget:,.2f}  ({budget_norm:.1%} of initial)"
         f"   Horizon {horizon}"
-        f"   Cumulative Reward {total_reward:+.4f}"
     )
     print(_sep("="))
 
-    if info:
+    if proj_cf:
         print(
-            f"\n  {'P':>2}  {'Alloc':>11}  {'Interest':>11}  {'Advance':>11}"
-            f"  {'Milestone':>11}  {'Retention':>11}  {'Settlement':>11}  {'Net CF':>11}"
+            f"\n  {'P':>2}  {'Alloc':>11}  {'Interest':>11}"
+            f"  {'Advance':>11}  {'Milestone':>11}  {'Settlement':>11}"
+            f"  {'Net CF':>11}"
         )
         print("  " + _sep("─", W - 2))
-        for cf in info.get("cashflow", []):
+        for idx, cf in enumerate(proj_cf):
             inflow  = (
-                cf["advance"] + cf["milestone_net"]
-                + cf["retention_release"] + max(0.0, cf["settlement"])
+                cf.get("advance", 0.0)
+                + cf.get("milestone_net", 0.0)
+                + max(0.0, cf.get("settlement", 0.0))
             )
-            outflow = cf["allocation"] + cf["interest_cost"]
+            outflow = cf.get("allocation", 0.0) + cf.get("interest", 0.0)
             net     = inflow - outflow
             print(
-                f"  {cf['i']:>2}  {cf['allocation']:>11,.2f}  {cf['interest_cost']:>11,.2f}"
-                f"  {cf['advance']:>11,.2f}  {cf['milestone_net']:>11,.2f}"
-                f"  {cf['retention_release']:>11,.2f}  {cf['settlement']:>11,.2f}"
+                f"  {idx:>2}"
+                f"  {cf.get('allocation',    0.0):>11,.2f}"
+                f"  {cf.get('interest',      0.0):>11,.2f}"
+                f"  {cf.get('advance',       0.0):>11,.2f}"
+                f"  {cf.get('milestone_net', 0.0):>11,.2f}"
+                f"  {cf.get('settlement',    0.0):>11,.2f}"
                 f"  {net:>11,.2f}"
             )
-        reward = info.get("_reward", 0.0)
-        print(f"\n  Step reward: {reward:+.4f}   Budget after: {budget:,.2f}")
-
+        print(
+            f"\n  Period inflow: {period_inflow:,.2f}"
+            f"   Period outflow: {period_outflow:,.2f}"
+            f"   Net: {period_inflow - period_outflow:+,.2f}"
+        )
     print()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# COMPOSITE RENDER — all panels for every project in one call
+# PUBLIC RENDER ENTRY POINT
 # ─────────────────────────────────────────────────────────────────────────────
 
-def render_all_projects(
-    episode_id: str,
-    projects: list[dict],
-    proj_states: list[dict],
-    milestones_list: list[list[dict]],
-    cfg: dict,
-    cashflow_by_proj: dict[int, dict],
-    t: int,
-) -> None:
+def render(t: int,
+           budget: float,
+           horizon: int,
+           initial_budget: float,
+           projects: list[dict],
+           proj_state: list[dict],
+           milestones: list[list[dict]],
+           proj_cf: Optional[list[dict]] = None,
+           period_inflow: float = 0.0,
+           period_outflow: float = 0.0,
+           episode_id: str = "") -> None:
     """
-    Record a timeseries row then print all four panels for every project.
+    Full render for one timestep.  Called from env.render() and play.py.
 
-    Parameters
-    ----------
-    episode_id       : current episode UUID (for history keying)
-    projects         : list of project param dicts
-    proj_states      : list of project state dicts (same order)
-    milestones_list  : list of milestone lists (same order)
-    cfg              : environment config dict (for plan_deviation_threshold)
-    cashflow_by_proj : {proj_index: cashflow_dict} from env.step info
-    t                : episode timestep just executed (used for row label)
+    Records a timeseries row for each project then prints all panels.
     """
-    for i, (proj, ps) in enumerate(zip(projects, proj_states)):
-        cashflow = cashflow_by_proj.get(i, {
-            "allocation": 0.0, "advance": 0.0,
-            "milestone_net": 0.0, "retention_release": 0.0,
-            "settlement": 0.0, "interest_cost": 0.0, "treasury_draw": 0.0,
-        })
+    if proj_cf is None:
+        proj_cf = [{} for _ in projects]
 
-        row = record_row(episode_id, i, t, dict(ps), proj, cfg, cashflow)
+    _print_portfolio_summary(
+        t, budget, initial_budget, horizon,
+        proj_cf, period_inflow, period_outflow,
+    )
 
-        term = {
-            "cure_remaining":   row["cure_remaining"],
-            "breach_idle":      row["breach_idle"],
-            "breach_deviation": row["breach_deviation"],
-            "breach_schedule":  row["breach_schedule"],
-            "breach_cost":      row["breach_cost"],
-            "breach_deadline":  row["breach_deadline"],
-            "any_breach":       row["any_breach"],
-        }
-
-        print_project_identity(proj)
-        print_payment_profile(proj, milestones_list[i], ps)
-        print_termination_status(i, term)
-        print_timeseries(episode_id, i)
+    for i, (proj, ps, ms_list, cf) in enumerate(
+        zip(projects, proj_state, milestones, proj_cf)
+    ):
+        _record_row(episode_id, i, t, ps, proj, cf)
+        _print_project_identity(proj)
+        _print_payment_profile(proj, ms_list, ps)
+        _print_termination_status(i, ps, proj)
+        _print_timeseries(episode_id, i)
