@@ -2,6 +2,23 @@
 #
 # PortfolioBudgetingEnv — Gymnasium-compatible environment.
 #
+# Observation vector (matches projects_observation + portfolio_observation):
+#
+#   Per project (7 features each):
+#     tolerance_remain_norm    tolerance_remain / termination_tolerance
+#     catchup_alloc_t          allocation needed this period to avoid breach
+#     catchup_alloc_next_t     allocation needed next period to avoid breach
+#     target_progress_gap      next_ms.progress_threshold - progress_actual
+#                              (clamped to 0 when progress past threshold;
+#                               milestone may still be pending on time gate)
+#     target_timestep_gap      next_ms.timestep_threshold - t_episode
+#     target_required_alloc    target_progress_gap * bac
+#     target_payment_rate      next_ms.net_payment / target_required_alloc
+#
+#   Portfolio (2 features):
+#     net_cashflow             period inflow - outflow across all projects
+#     budget_available         current budget after net_cashflow applied
+#
 # Phase order per timestep (per active project):
 #
 #   ── EARLY PHASE (pre-allocation) ──────────────────────────────────────────
@@ -12,23 +29,25 @@
 #   5. Tolerance update     decrement or reset
 #   6. Termination check    fires on deadline or tolerance exhaustion
 #   7. Completion check     progress_actual >= 1.0
+#   8. Obs fields update    computed on post-EVM pre-allocation state
 #
-#   GET OBSERVATION  ← snapshot here; agent acts on pre-allocation state
+#   GET OBSERVATION  ← snapshot here
 #
 #   ── LATE PHASE (post-allocation) ──────────────────────────────────────────
-#   8. Scale & validate action
-#   9. Interest             treasury_draw computed BEFORE outflow update
-#  10. Allocation & progress cumulative_cost and progress_actual updated
-#  11. EVM update           recomputed on post-allocation state
-#  12. Payment delivery     certified milestones paid; inflow updated
-#  13. Breach evaluation    post-allocation (abandoned checked here)
-#  14. Tolerance update
-#  15. Termination check    may fire on under-allocation breach
-#  16. Completion check     progress_actual >= 1.0 after allocation
+#   9.  Scale & validate action
+#   10. Interest
+#   11. Allocation & progress
+#   12. EVM update (post-allocation)
+#   13. Payment delivery
+#   14. Breach evaluation (post-allocation)
+#   15. Tolerance update
+#   16. Termination check
+#   17. Completion check
+#   18. Obs fields update   always runs — even on termination/completion
 #
 #   RECORD
-#  17. net_cashflow, budget, reward
-#  18. DB write (try/except — never load-bearing)
+#   19. net_cashflow, budget, reward
+#   20. DB write
 
 from __future__ import annotations
 
@@ -72,44 +91,41 @@ class PortfolioBudgetingEnv(gym.Env):
         self._n_projects_hint = n
         self._declare_spaces(n)
 
-        self.episode_id      : str             = ""
-        self.t               : int             = 0
-        self.budget          : float           = 0.0
-        self.initial_budget  : float           = 0.0
-        self.discount        : float           = 1.0
-        self.horizon         : int             = 0
-        self.projects        : list[dict]      = []
-        self.milestones      : list[list]      = []   # profile (static)
-        self.milestone_state : list[list]      = []   # runtime (per episode)
-        self.proj_state      : list[dict]      = []
+        self.episode_id         : str        = ""
+        self.t                  : int        = 0
+        self.budget             : float      = 0.0
+        self.initial_budget     : float      = 0.0
+        self.discount           : float      = 1.0
+        self.horizon            : int        = 0
+        self.projects           : list[dict] = []
+        self.milestones         : list[list] = []
+        self.milestone_state    : list[list] = []
+        self.proj_state         : list[dict] = []
+        self._last_net_cashflow : float      = 0.0
 
     def _declare_spaces(self, n: int) -> None:
-        # Per-project feature bounds (8 features each)
         proj_low = np.tile([
-            0.0,   # progress_actual
-            0.0,   # progress_plan_t
-        -1.0,   # progress_delay_t
-            0.0,   # spi
-            0.0,   # cpi
-            0.0,   # projected_cost_overrun (EAC/BAC)
-            0.0,   # catchup_norm
-            0.0,   # tol_norm
+            0.0,    # tolerance_norm
+            0.0,    # catchup_alloc_t_norm
+            0.0,    # catchup_alloc_next_t_norm
+            0.0,    # target_progress_gap        (always >= 0)
+           -1.0,    # target_timestep_gap_norm   (negative = overdue)
+            0.0,    # target_required_alloc_norm
+            0.0,    # target_payment_rate
         ], n)
 
         proj_high = np.tile([
-            1.0,   # progress_actual
-            1.0,   # progress_plan_t
-            1.0,   # progress_delay_t
-            3.0,   # spi  — clamp in _build_obs if needed
-            3.0,   # cpi
-            3.0,   # projected_cost_overrun
-            1.0,   # catchup_norm
-            1.0,   # tol_norm
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            5.0,    # payment rate clipped at 5
         ], n)
 
-        # Portfolio-level feature (1 feature)
-        port_low  = np.array([0.0])   # budget_norm
-        port_high = np.array([2.0])   # budget can grow beyond initial
+        port_low  = np.array([-2.0, 0.0])
+        port_high = np.array([ 2.0, 2.0])
 
         self.observation_space = spaces.Box(
             low  = np.concatenate([proj_low,  port_low]).astype(np.float32),
@@ -117,9 +133,7 @@ class PortfolioBudgetingEnv(gym.Env):
             dtype=np.float32,
         )
         self.action_space = spaces.Box(
-            low=0.0, high=1.0,
-            shape=(n,),
-            dtype=np.float32,
+            low=0.0, high=1.0, shape=(n,), dtype=np.float32,
         )
 
     # ── RESET ─────────────────────────────────────────────────────────────────
@@ -131,6 +145,7 @@ class PortfolioBudgetingEnv(gym.Env):
         cfg             = self.config
         self.episode_id = str(uuid.uuid4())
         self.t          = 0
+        self._last_net_cashflow = 0.0
 
         self.discount = max(0.0, min(1.0, sample(
             self.np_random,
@@ -156,7 +171,6 @@ class PortfolioBudgetingEnv(gym.Env):
             self._declare_spaces(n_projects)
             self._n_projects_hint = n_projects
 
-        # Sample projects, milestone profiles, and milestone runtime state
         self.projects        = []
         self.milestones      = []
         self.milestone_state = []
@@ -164,7 +178,9 @@ class PortfolioBudgetingEnv(gym.Env):
             proj = sample_project(self.np_random, cfg, i)
             ms_list = sample_milestones(self.np_random, cfg, proj)
             ms_state_list = [
-                {"certified": False, "certified_t": None, "payment_released": 0.0}
+                {"certified": False,
+                 "certified_t": None,
+                 "payment_released": 0.0}
                 for _ in ms_list
             ]
             self.projects.append(proj)
@@ -187,6 +203,20 @@ class PortfolioBudgetingEnv(gym.Env):
         ):
             if proj["planned_start"] == 0:
                 self._deliver_advance(ps, proj, milestones, ms_state_list, t=0)
+
+        # Initial EVM + obs fields
+        for ps, proj, milestones, ms_state_list in zip(
+            self.proj_state, self.projects,
+            self.milestones, self.milestone_state
+        ):
+            ps["progress_plan_t"] = planned_progress(
+                ps["t_project"],
+                proj["planned_duration"],
+                proj["scurve_a"],
+                proj["scurve_b"],
+            )
+            evm_mod.update_evm(ps, proj)
+            self._update_obs_fields(ps, proj, milestones, ms_state_list)
 
         if self.conn is not None:
             try:
@@ -257,7 +287,7 @@ class PortfolioBudgetingEnv(gym.Env):
             if ps["status"] in ("completed", "terminated"):
                 continue
 
-            # 1. Advance delivery for projects starting this period (start > 0)
+            # 1. Advance delivery for projects starting this period
             if self.t == proj["planned_start"] and proj["planned_start"] > 0:
                 advance = self._deliver_advance(
                     ps, proj, milestones, ms_state_list, t=self.t
@@ -279,7 +309,7 @@ class PortfolioBudgetingEnv(gym.Env):
                 self.t, ps, milestones, ms_state_list
             )
 
-            # 4. Breach evaluation
+            # 4. Breach evaluation (pre-allocation)
             flags = br.evaluate_breaches(ps, proj, alloc=None)
 
             # 5. Tolerance update
@@ -298,12 +328,18 @@ class PortfolioBudgetingEnv(gym.Env):
                 ps["inflow"]               += max(0.0, settlement)
                 period_inflow              += max(0.0, settlement)
                 proj_cf[i]["settlement"]    = settlement
+                # Still update obs fields so render shows current state
+                self._update_obs_fields(ps, proj, milestones, ms_state_list)
                 continue
 
             # 7. Completion check
             if ps["progress_actual"] >= 1.0 and ps["status"] == "active":
                 ps["status"] = "completed"
+                self._update_obs_fields(ps, proj, milestones, ms_state_list)
                 continue
+
+            # 8. Obs fields — computed after EVM update, before allocation
+            self._update_obs_fields(ps, proj, milestones, ms_state_list)
 
         # ── GET OBSERVATION ────────────────────────────────────────────────
         obs = self._build_obs()
@@ -321,7 +357,7 @@ class PortfolioBudgetingEnv(gym.Env):
 
             alloc = float(allocations[i])
 
-            # 9. Interest
+            # 10. Interest
             monthly_rate  = cfg["annual_interest_rate"] / 12.0
             treasury_draw = max(0.0, ps["outflow"] - ps["inflow"])
             interest      = monthly_rate * treasury_draw
@@ -330,7 +366,7 @@ class PortfolioBudgetingEnv(gym.Env):
             proj_cf[i]["interest"]      = interest
             period_outflow             += interest
 
-            # 10. Allocation & progress
+            # 11. Allocation & progress
             eta       = sample_efficiency(self.np_random, cfg)
             increment = (alloc / proj["bac"]) * eta if proj["bac"] > 0 else 0.0
 
@@ -344,7 +380,7 @@ class PortfolioBudgetingEnv(gym.Env):
 
             ps["t_project"] += 1
 
-            # 11. EVM update
+            # 12. EVM update (post-allocation)
             ps["progress_plan_t"] = planned_progress(
                 ps["t_project"],
                 proj["planned_duration"],
@@ -353,7 +389,7 @@ class PortfolioBudgetingEnv(gym.Env):
             )
             evm_mod.update_evm(ps, proj)
 
-            # 12. Payment delivery
+            # 13. Payment delivery
             ms_net = pay.deliver_payments(
                 certified_js_by_proj[i], self.t,
                 ps, milestones, ms_state_list
@@ -361,13 +397,13 @@ class PortfolioBudgetingEnv(gym.Env):
             period_inflow               += ms_net
             proj_cf[i]["milestone_net"]  = ms_net
 
-            # 13. Breach evaluation
+            # 14. Breach evaluation (post-allocation)
             flags = br.evaluate_breaches(ps, proj, alloc=alloc)
 
-            # 14. Tolerance update
+            # 15. Tolerance update
             br.update_tolerance(ps, proj, flags)
 
-            # 15. Termination check
+            # 16. Termination check
             terminated, over_deadline = br.check_termination(
                 self.t, ps, proj, flags
             )
@@ -380,19 +416,24 @@ class PortfolioBudgetingEnv(gym.Env):
                 ps["inflow"]               += max(0.0, settlement)
                 period_inflow              += max(0.0, settlement)
                 proj_cf[i]["settlement"]    = settlement
-                continue
 
-            # 16. Completion check
-            if ps["progress_actual"] >= 1.0:
+            # 17. Completion check (only if not already terminated)
+            elif ps["progress_actual"] >= 1.0:
                 ps["status"] = "completed"
+
+            # 18. Obs fields refresh — ALWAYS runs regardless of status
+            #     so render shows post-step state and next early phase
+            #     starts with current values
+            self._update_obs_fields(ps, proj, milestones, ms_state_list)
 
         # ══════════════════════════════════════════════════════════════════════
         # RECORD
         # ══════════════════════════════════════════════════════════════════════
 
-        net_cashflow   = period_inflow - period_outflow
-        self.budget   += net_cashflow
-        reward         = float(discount_factor * net_cashflow)
+        net_cashflow            = period_inflow - period_outflow
+        self._last_net_cashflow = net_cashflow
+        self.budget            += net_cashflow
+        reward                  = float(discount_factor * net_cashflow)
 
         all_terminal = all(
             ps["status"] in ("completed", "terminated")
@@ -420,9 +461,9 @@ class PortfolioBudgetingEnv(gym.Env):
         self.t += 1
 
         info = self._build_info()
-        info["cashflow"]      = proj_cf
-        info["period_inflow"] = period_inflow
-        info["period_outflow"]= period_outflow
+        info["cashflow"]       = proj_cf
+        info["period_inflow"]  = period_inflow
+        info["period_outflow"] = period_outflow
 
         return obs, reward, terminated_ep, truncated_ep, info
 
@@ -432,50 +473,179 @@ class PortfolioBudgetingEnv(gym.Env):
         if self.render_mode != "ansi":
             return None
         rnd.render(
-            t              = self.t,
-            budget         = self.budget,
-            horizon        = self.horizon,
-            initial_budget = self.initial_budget,
-            projects       = self.projects,
-            proj_state     = self.proj_state,
-            milestones     = self.milestones,
+            t               = self.t,
+            budget          = self.budget,
+            horizon         = self.horizon,
+            initial_budget  = self.initial_budget,
+            projects        = self.projects,
+            proj_state      = self.proj_state,
+            milestones      = self.milestones,
+            milestone_state = self.milestone_state,
+            episode_id      = self.episode_id,
+            net_cashflow    = self._last_net_cashflow,
+            cum_reward      = 0.0,
         )
         return None
 
     def close(self) -> None:
         pass
 
-    # ── OBSERVATION ────────────────────────────────────────────────────────────
+    # ── OBSERVATION FIELD COMPUTATION ─────────────────────────────────────────
+
+    def _update_obs_fields(self, ps: dict, proj: dict,
+                           milestones: list[dict],
+                           milestone_state: list[dict]) -> None:
+        """
+        Compute and store all observation fields into ps in-place.
+
+        Called at:
+          - reset()       : after initial EVM update
+          - early phase   : step 8 (and on early termination/completion)
+          - late phase    : step 18 (unconditionally — even if terminated)
+
+        Catchup logic
+        -------------
+        catchup_alloc_t:
+            How much to allocate THIS period to avoid a progress-delay breach.
+            min_progress_needed = max(0, plan_t - delay_cap)
+            needed              = max(0, min_progress_needed - progress_actual)
+            catchup             = needed * bac
+
+        catchup_alloc_next_t:
+            Same formula applied to plan at t_project + 1.
+            Gives the agent a one-period lookahead.
+
+        Target milestone logic
+        ----------------------
+        Iterates milestones in j order, skips j=0 (advance) and already-
+        certified milestones (checked via milestone_state, not progress).
+
+        The FIRST uncertified milestone is the target regardless of whether
+        progress has already passed its threshold — the milestone may be
+        blocked by its timestep_threshold (time gate).
+
+        target_progress_gap:
+            max(0, threshold - progress_actual)
+            = 0 when progress already past threshold (time-gated)
+            > 0 when progress work still required
+
+        target_timestep_gap:
+            timestep_threshold - self.t
+            negative means the time gate has passed (certification imminent)
+
+        target_required_alloc:
+            target_progress_gap * bac
+            = 0 when time-gated (no more progress work needed)
+
+        target_payment_rate:
+            net_payment / target_required_alloc
+            = 0 when target_required_alloc == 0 (time-gated or no target)
+        """
+        bac       = proj["bac"]
+        prog      = ps.get("progress_actual", 0.0)
+        t_proj    = ps.get("t_project", 0)
+        duration  = proj["planned_duration"]
+        a         = proj["scurve_a"]
+        b         = proj["scurve_b"]
+        delay_cap = proj["progress_delay_cap"]
+
+        # ── catchup_alloc_t ───────────────────────────────────────────────
+        plan_t     = ps.get("progress_plan_t", 0.0)
+        min_prog_t = max(0.0, plan_t - delay_cap)
+        needed_t   = max(0.0, min_prog_t - prog)
+        catchup_t  = needed_t * bac
+
+        # ── catchup_alloc_next_t ──────────────────────────────────────────
+        plan_next_t  = planned_progress(t_proj + 1, duration, a, b)
+        min_prog_nt  = max(0.0, plan_next_t - delay_cap)
+        needed_nt    = max(0.0, min_prog_nt - prog)
+        catchup_nt   = needed_nt * bac
+
+        ps["progress_plan_next_t"] = plan_next_t
+        ps["catchup_alloc_t"]      = catchup_t
+        ps["catchup_alloc_next_t"] = catchup_nt
+
+        # ── target milestone ──────────────────────────────────────────────
+        # Walk milestones in order; take the FIRST uncertified one.
+        # Do NOT skip based on progress — a milestone may be time-gated.
+        target_j              = None
+        target_progress_gap   = 0.0
+        target_timestep_gap   = 0
+        target_net_payment    = 0.0
+        target_required_alloc = 0.0
+        target_payment_rate   = 0.0
+
+        for ms, ms_state in zip(milestones, milestone_state):
+            if ms["j"] == 0:
+                continue                    # advance — always already certified
+            if ms_state["certified"]:
+                continue                    # already paid
+
+            # This is the next uncertified milestone
+            target_j            = ms["j"]
+            target_progress_gap = max(0.0, ms["progress_threshold"] - prog)
+            target_timestep_gap = ms["timestep_threshold"] - self.t
+            target_net_payment  = ms["net_payment"]
+
+            # Required allocation = remaining progress work × bac
+            # Zero when progress already past threshold (time gate only)
+            target_required_alloc = target_progress_gap * bac
+
+            # Payment rate = payoff per unit of required allocation
+            # Zero when no allocation required (time-gated)
+            target_payment_rate = (
+                target_net_payment / target_required_alloc
+                if target_required_alloc > 1e-9 else 0.0
+            )
+            break
+
+        ps["target_milestone_j"]    = target_j
+        ps["target_progress_gap"]   = target_progress_gap
+        ps["target_timestep_gap"]   = target_timestep_gap
+        ps["target_net_payment"]    = target_net_payment
+        ps["target_required_alloc"] = target_required_alloc
+        ps["target_payment_rate"]   = target_payment_rate
+
+    # ── OBSERVATION BUILDER ────────────────────────────────────────────────────
 
     def _build_obs(self) -> np.ndarray:
+        """
+        Build the flat observation vector from pre-computed ps fields.
+
+        Layout (7 × n_projects + 2 portfolio):
+          Per project:
+            [0] tolerance_norm              = tolerance_remain / tol_max
+            [1] catchup_alloc_t_norm        = catchup_alloc_t / initial_budget
+            [2] catchup_alloc_next_t_norm   = catchup_alloc_next_t / initial_budget
+            [3] target_progress_gap         raw [0, 1]
+            [4] target_timestep_gap_norm    = target_timestep_gap / horizon
+            [5] target_required_alloc_norm  = target_required_alloc / initial_budget
+            [6] target_payment_rate         clipped [0, 5]
+          Portfolio:
+            [7n+0] net_cashflow_norm        = last_net_cashflow / initial_budget
+            [7n+1] budget_available_norm    = budget / initial_budget
+        """
         obs: list[float] = []
+        ib = self.initial_budget if self.initial_budget > 0 else 1.0
 
         for proj, ps in zip(self.projects, self.proj_state):
-            bac          = proj["bac"]
-            tol_norm     = (
-                ps["tolerance_remain"] / proj["termination_tolerance"]
-                if proj["termination_tolerance"] > 0 else 1.0
-            )
-            catchup_norm = (
-                ps.get("catchup_alloc_t", 0.0) / bac
-                if bac > 0 else 0.0
-            )
+            tol_max  = proj["termination_tolerance"]
+            tol_norm = ps["tolerance_remain"] / tol_max if tol_max > 0 else 1.0
+
             obs.extend([
-                np.clip(ps["progress_actual"],          0.0, 1.0),
-                np.clip(ps["progress_plan_t"],          0.0, 1.0),
-                np.clip(ps["progress_delay_t"],        -1.0, 1.0),
-                np.clip(ps["spi"],                      0.0, 3.0),
-                np.clip(ps["cpi"],                      0.0, 3.0),
-                np.clip(ps["projected_cost_overrun"],   0.0, 3.0),
-                np.clip(catchup_norm,                   0.0, 1.0),
-                np.clip(tol_norm,                       0.0, 1.0),
+                np.clip(tol_norm,                                       0.0, 1.0),
+                np.clip(ps["catchup_alloc_t"]      / ib,               0.0, 1.0),
+                np.clip(ps["catchup_alloc_next_t"] / ib,               0.0, 1.0),
+                np.clip(ps["target_progress_gap"],                      0.0, 1.0),
+                np.clip(ps["target_timestep_gap"]  / self.horizon,     -1.0, 1.0),
+                np.clip(ps["target_required_alloc"]/ ib,               0.0, 1.0),
+                np.clip(ps["target_payment_rate"],                      0.0, 5.0),
             ])
 
-        budget_norm = (
-            self.budget / self.initial_budget
-            if self.initial_budget > 0 else 1.0
-        )
-        obs.append(np.clip(budget_norm, 0.0, 2.0))
+        obs.extend([
+            np.clip(self._last_net_cashflow / ib, -2.0,  2.0),
+            np.clip(self.budget             / ib,  0.0,  2.0),
+        ])
 
         return np.array(obs, dtype=np.float32)
 
@@ -507,6 +677,12 @@ class PortfolioBudgetingEnv(gym.Env):
                     "t_project":              ps["t_project"],
                     "inflow":                 ps["inflow"],
                     "outflow":                ps["outflow"],
+                    "catchup_alloc_t":        ps["catchup_alloc_t"],
+                    "catchup_alloc_next_t":   ps["catchup_alloc_next_t"],
+                    "target_progress_gap":    ps["target_progress_gap"],
+                    "target_timestep_gap":    ps["target_timestep_gap"],
+                    "target_required_alloc":  ps["target_required_alloc"],
+                    "target_payment_rate":    ps["target_payment_rate"],
                 }
                 for proj, ps in zip(self.projects, self.proj_state)
             ],
@@ -518,18 +694,12 @@ class PortfolioBudgetingEnv(gym.Env):
                          milestones: list[dict],
                          milestone_state: list[dict],
                          t: int) -> float:
-        """
-        Deliver the advance payment (j=0) for a project starting at *t*.
-        Marks the advance milestone runtime state as certified.
-        Updates ps["inflow"] and ps["status"].
-        Returns the advance amount delivered.
-        """
-        ms_state = milestone_state[0]   # j=0 is always first
+        ms_state = milestone_state[0]
 
         if ms_state["certified"]:
-            return 0.0                  # already delivered (safety guard)
+            return 0.0
 
-        amount = milestones[0]["net_payment"]   # read from profile
+        amount = milestones[0]["net_payment"]
 
         ms_state["certified"]        = True
         ms_state["certified_t"]      = t
@@ -554,9 +724,16 @@ class PortfolioBudgetingEnv(gym.Env):
             "efficiency":               1.0,
             "progress_actual":          0.0,
             "progress_plan_t":          0.0,
+            "progress_plan_next_t":     0.0,
             "progress_delay_t":         0.0,
             "catchup_alloc_t":          0.0,
             "catchup_alloc_next_t":     0.0,
+            "target_milestone_j":       None,
+            "target_progress_gap":      0.0,
+            "target_timestep_gap":      0,
+            "target_net_payment":       0.0,
+            "target_required_alloc":    0.0,
+            "target_payment_rate":      0.0,
             "spi":                      1.0,
             "cpi":                      1.0,
             "tcpi":                     1.0,

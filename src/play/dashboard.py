@@ -1,5 +1,23 @@
 # src/env/render.py
 #
+
+
+
+# one time report at the end. to be triggered after episode finish
+# run milp and greedy benchmark solver over the same episode
+# finally draw the plots for report on that configuration run 
+
+
+
+
+
+
+
+
+
+
+
+
 # Minimal terminal observation display for PortfolioBudgetingEnv.
 #
 # Responsibility: show the agent/player exactly what the observation

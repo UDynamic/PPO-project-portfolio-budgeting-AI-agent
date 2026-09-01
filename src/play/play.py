@@ -2,23 +2,13 @@
 #
 # Manual play loop for PortfolioBudgetingEnv.
 #
-# Responsibilities:
-#   1. Prompt user to select a config from the database (or by name).
-#   2. Launch the live dashboard in a background browser tab.
-#   3. Run the game loop: render minimal terminal observation, collect
-#      allocations, step env, update dashboard state.
-#
-# All terminal formatting stays in src/env/render.py.
-# All dashboard formatting stays in src/play/dashboard.py.
-#
 # Usage
 # -----
 #   cd <repo_root>
 #   python src/play/play.py [--config single|dual] [--seed N] [--no-db]
-#                           [--no-dashboard] [--port 8050]
 #
-# Controls (each period)
-# ----------------------
+# Controls
+# --------
 #   Enter                   → equal split across active projects
 #   q / quit / exit         → quit
 #   Comma-separated floats  → explicit amounts (normalised to budget fractions)
@@ -36,7 +26,7 @@ _ENV_DIR  = os.path.join(_SRC_DIR, "env")
 _DB_DIR   = os.path.join(_SRC_DIR, "db")
 _CFGS_DIR = os.path.join(_ENV_DIR, "configs")
 
-for _d in (_SRC_DIR, _ENV_DIR, _DB_DIR, _CFGS_DIR, _THIS_DIR):
+for _d in (_SRC_DIR, _ENV_DIR, _DB_DIR, _CFGS_DIR):
     if _d not in sys.path:
         sys.path.insert(0, _d)
 
@@ -53,28 +43,21 @@ def _parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--config", default=None,
-        help=(
-            "Config name or id to load directly, skipping the DB prompt. "
-            "Use 'single' or 'dual' for the built-in configs."
-        ),
+        help="Config name ('single' or 'dual') to skip the DB prompt.",
     )
-    p.add_argument("--seed",  type=int, default=None)
+    p.add_argument("--seed", type=int, default=None)
     p.add_argument("--no-db", action="store_true",
-                   help="Disable DB logging (also disables dashboard).")
-    p.add_argument("--no-dashboard", action="store_true",
-                   help="Skip launching the browser dashboard.")
-    p.add_argument("--port", type=int, default=8050,
-                   help="Dashboard port (default 8050).")
+                   help="Disable DB logging.")
     return p.parse_args()
 
 
 # ── config selection ──────────────────────────────────────────────────────────
 
 def _list_db_configs(conn) -> list[dict]:
-    """Return all rows from environment_config as list of dicts."""
     try:
         rows = conn.execute(
-            "SELECT config_id, config_name, created_at FROM environment_config ORDER BY created_at"
+            "SELECT config_id, config_name, created_at "
+            "FROM environment_config ORDER BY created_at"
         ).fetchall()
         return [dict(r) for r in rows]
     except Exception:
@@ -82,10 +65,6 @@ def _list_db_configs(conn) -> list[dict]:
 
 
 def _prompt_config_selection(conn) -> str | None:
-    """
-    Show configs stored in DB and let user pick one.
-    Returns config_id string or None if user wants to quit.
-    """
     configs = _list_db_configs(conn)
     if not configs:
         print("  [!] No configs found in database.")
@@ -113,28 +92,22 @@ def _prompt_config_selection(conn) -> str | None:
 
 
 def _load_config_by_id(config_id: str) -> dict | None:
-    """
-    Load a CONFIG dict by config_id.
-    Tries built-in module names first, then falls back to DB reconstruction.
-    For the MVP the two built-in configs cover all cases.
-    """
-    # Built-in shortcut
     if "SINGLE" in config_id.upper():
         from single_project import CONFIG
         return CONFIG
     if "DUAL" in config_id.upper():
         from dual_project import CONFIG
         return CONFIG
-    print(f"  [!] Cannot resolve config_id {config_id!r} to a CONFIG dict.")
+    print(f"  [!] Cannot resolve config_id {config_id!r}.")
     return None
 
 
 def _load_config_by_name(name: str) -> dict | None:
-    name = name.strip().lower()
-    if name == "single":
+    n = name.strip().lower()
+    if n == "single":
         from single_project import CONFIG
         return CONFIG
-    if name == "dual":
+    if n == "dual":
         from dual_project import CONFIG
         return CONFIG
     print(f"  [!] Unknown config name {name!r}. Use 'single' or 'dual'.")
@@ -145,18 +118,16 @@ def _load_config_by_name(name: str) -> dict | None:
 
 def _open_conn(no_db: bool):
     if no_db:
-        return None, None
+        return None
     try:
-        from db_init import init_db, DB_PATH
-        conn = init_db()
-        return conn, DB_PATH
+        from db_init import init_db
+        return init_db()
     except Exception as exc:
         print(f"  [play] DB unavailable ({exc}); continuing without logging.")
-        return None, None
+        return None
 
 
 def _seed_config(conn, cfg: dict) -> None:
-    """Write config row if not already present."""
     if conn is None:
         return
     try:
@@ -204,49 +175,45 @@ def _default_action(n: int, active_mask: list[bool]) -> np.ndarray:
     if n_active == 0:
         return np.zeros(n, dtype=np.float32)
     share = 1.0 / n_active
-    return np.array([share if active_mask[i] else 0.0 for i in range(n)],
-                    dtype=np.float32)
+    return np.array(
+        [share if active_mask[i] else 0.0 for i in range(n)],
+        dtype=np.float32,
+    )
 
 
 # ── render helper ─────────────────────────────────────────────────────────────
 
 def _render(env: PortfolioBudgetingEnv,
             cum_reward: float,
-            proj_cf: list[dict] | None = None) -> None:
+            net_cashflow: float = 0.0) -> None:
     rnd.render(
-        t              = env.t,
-        budget         = env.budget,
-        horizon        = env.horizon,
-        initial_budget = env.initial_budget,
-        projects       = env.projects,
-        proj_state     = env.proj_state,
-        milestones     = env.milestones,
-        milestone_state= env.milestone_state,
-        episode_id     = env.episode_id,
-        cum_reward     = cum_reward,
+        t               = env.t,
+        budget          = env.budget,
+        horizon         = env.horizon,
+        initial_budget  = env.initial_budget,
+        projects        = env.projects,
+        proj_state      = env.proj_state,
+        milestones      = env.milestones,
+        milestone_state = env.milestone_state,
+        episode_id      = env.episode_id,
+        net_cashflow    = net_cashflow,
+        cum_reward      = cum_reward,
     )
 
 
 # ── action prompt ─────────────────────────────────────────────────────────────
 
 def _prompt(env: PortfolioBudgetingEnv) -> np.ndarray | None:
-    """
-    Print allocation prompt and return action array.
-    Returns None if the user wants to quit.
-    """
     n           = len(env.projects)
     active_mask = [ps["status"] == "active" for ps in env.proj_state]
-    active_ids  = [str(i) for i, a in enumerate(active_mask) if a]
 
-    print()
-    print(
-        f"  Budget available: {env.budget:,.2f}"
-        f"   Active: [{', '.join(active_ids) if active_ids else 'none'}]"
-    )
     if n == 1:
-        prompt = "  Amount (Enter=all-in, q=quit): "
+        prompt = "  Allocate amount (Enter = all-in, q = quit): "
     else:
-        prompt = f"  {n} amounts separated by commas (Enter=equal split, q=quit): "
+        prompt = (
+            f"  Allocate {n} comma-separated amounts"
+            f" (Enter = equal split, q = quit): "
+        )
 
     while True:
         raw = input(prompt).strip()
@@ -262,8 +229,8 @@ def _prompt(env: PortfolioBudgetingEnv) -> np.ndarray | None:
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    args       = _parse_args()
-    conn, db_path = _open_conn(args.no_db)
+    args = _parse_args()
+    conn = _open_conn(args.no_db)
 
     # ── config selection ──────────────────────────────────────────────────────
     if args.config:
@@ -280,7 +247,6 @@ def main() -> None:
         if cfg is None:
             sys.exit(1)
     else:
-        # No DB and no --config flag: default to single
         print("  [play] No DB and no --config; defaulting to 'single'.")
         from single_project import CONFIG
         cfg = CONFIG
@@ -295,28 +261,11 @@ def main() -> None:
         method      = "manual",
     )
 
-    obs, info = env.reset(seed=args.seed)
-    n         = len(env.projects)
+    obs, info  = env.reset(seed=args.seed)
     cum_reward = 0.0
 
-    # ── launch dashboard ──────────────────────────────────────────────────────
-    if not args.no_db and not args.no_dashboard and db_path:
-        try:
-            import dashboard
-            dashboard.launch(
-                db_path    = db_path,
-                episode_id = env.episode_id,
-                method     = "manual",
-                port       = args.port,
-            )
-            print(f"  [dashboard] Running at http://127.0.0.1:{args.port}")
-        except ImportError as exc:
-            print(f"  [dashboard] Skipped — missing dependency: {exc}")
-        except Exception as exc:
-            print(f"  [dashboard] Failed to launch: {exc}")
-
-    # ── initial render ────────────────────────────────────────────────────────
-    _render(env, cum_reward)
+    # Initial render
+    _render(env, cum_reward, net_cashflow=0.0)
 
     terminated = False
     truncated  = False
@@ -331,31 +280,18 @@ def main() -> None:
         obs, reward, terminated, truncated, info = env.step(action)
         cum_reward += reward
 
-        # Update dashboard episode pointer (episode_id doesn't change mid-run
-        # but method/db stay consistent; update is a no-op here, kept for
-        # future multi-episode support)
-        if not args.no_db and not args.no_dashboard and db_path:
-            try:
-                import dashboard
-                dashboard.set_state(db_path, env.episode_id, "manual")
-            except Exception:
-                pass
-
-        _render(env, cum_reward)
+        net_cashflow = info.get("period_inflow", 0.0) - info.get("period_outflow", 0.0)
+        _render(env, cum_reward, net_cashflow=net_cashflow)
 
     # ── episode end ───────────────────────────────────────────────────────────
     print()
-    print("=" * 60)
+    print("═" * 60)
     if terminated:
         print("  Episode terminated (all projects done).")
     if truncated:
         print("  Episode truncated (horizon reached).")
     print(f"  Cumulative reward: {cum_reward:+.4f}")
-    print("=" * 60)
-
-    if not args.no_db and not args.no_dashboard:
-        print()
-        input("  Dashboard still running. Press Enter to close and exit…")
+    print("═" * 60)
 
     env.close()
     if conn is not None:
