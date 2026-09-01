@@ -24,6 +24,7 @@
 #   ps["tolerance_remain"], ps["breach_flags"]
 #   ms["progress_threshold"], ms["timestep_threshold"]
 #   ms["gross_payment"], ms["net_payment"], etc.
+#   ms_state["certified"], ms_state["certified_t"]   ← runtime state (separate list)
 #
 # History store
 # -------------
@@ -85,12 +86,12 @@ def _record_row(episode_id: str, proj_index: int,
     eac      = ps.get("eac", bac)
     eac_bac  = eac / bac if bac > 0 else 1.0
 
-    alloc    = cf.get("allocation",   0.0)
-    interest = cf.get("interest",     0.0)
-    draw     = cf.get("treasury_draw",0.0)
-    adv_in   = cf.get("advance",      0.0)
-    ms_in    = cf.get("milestone_net",0.0)
-    sett_in  = cf.get("settlement",   0.0)
+    alloc    = cf.get("allocation",    0.0)
+    interest = cf.get("interest",      0.0)
+    draw     = cf.get("treasury_draw", 0.0)
+    adv_in   = cf.get("advance",       0.0)
+    ms_in    = cf.get("milestone_net", 0.0)
+    sett_in  = cf.get("settlement",    0.0)
 
     inflow_p  = adv_in + ms_in + max(0.0, sett_in)
     outflow_p = alloc + interest
@@ -108,39 +109,39 @@ def _record_row(episode_id: str, proj_index: int,
     flags = ps.get("breach_flags", {})
 
     row = {
-        "t":                    t,
-        "status":               ps.get("status") or "pending",
-        "inflow_period":        inflow_p,
-        "outflow_period":       outflow_p,
-        "net_cf_period":        net_cf_p,
-        "cash_deficit_period":  deficit_p,
-        "allocation":           alloc,
-        "interest":             interest,
-        "treasury_draw":        draw,
-        "inflow_cum":           cum["inflow"],
-        "outflow_cum":          cum["outflow"],
-        "net_cf_cum":           cum["net_cf"],
-        "cash_deficit_cum":     cum["deficit"],
-        "alloc_cum":            cum["alloc"],
-        "interest_cum":         cum["interest"],
-        "treasury_draw_cum":    cum["treasury_draw"],
-        "progress_actual":      ps.get("progress_actual",   0.0),
-        "progress_plan_t":      ps.get("progress_plan_t",   0.0),
-        "progress_delay_t":     ps.get("progress_delay_t",  0.0),
-        "spi":                  ps.get("spi",               1.0),
-        "cpi":                  ps.get("cpi",               1.0),
-        "tcpi":                 ps.get("tcpi",              1.0),
-        "eac":                  eac,
-        "eac_bac":              eac_bac,
+        "t":                      t,
+        "status":                 ps.get("status") or "pending",
+        "inflow_period":          inflow_p,
+        "outflow_period":         outflow_p,
+        "net_cf_period":          net_cf_p,
+        "cash_deficit_period":    deficit_p,
+        "allocation":             alloc,
+        "interest":               interest,
+        "treasury_draw":          draw,
+        "inflow_cum":             cum["inflow"],
+        "outflow_cum":            cum["outflow"],
+        "net_cf_cum":             cum["net_cf"],
+        "cash_deficit_cum":       cum["deficit"],
+        "alloc_cum":              cum["alloc"],
+        "interest_cum":           cum["interest"],
+        "treasury_draw_cum":      cum["treasury_draw"],
+        "progress_actual":        ps.get("progress_actual",        0.0),
+        "progress_plan_t":        ps.get("progress_plan_t",        0.0),
+        "progress_delay_t":       ps.get("progress_delay_t",       0.0),
+        "spi":                    ps.get("spi",                    1.0),
+        "cpi":                    ps.get("cpi",                    1.0),
+        "tcpi":                   ps.get("tcpi",                   1.0),
+        "eac":                    eac,
+        "eac_bac":                eac_bac,
         "projected_finish_delay": ps.get("projected_finish_delay", 0.0),
-        "projected_finish":     ps.get("projected_finish", float(proj["planned_finish"])),
-        "tolerance_remain":     ps.get("tolerance_remain", proj["termination_tolerance"]),
-        "abandoned":            flags.get("abandoned",           False),
-        "over_progress_delay":  flags.get("over_progress_delay", False),
-        "over_finish_delay":    flags.get("over_finish_delay",   False),
-        "over_cost_overrun":    flags.get("over_cost_overrun",   False),
-        "over_duration_window": flags.get("over_duration_window",False),
-        "over_any":             flags.get("over_any",            False),
+        "projected_finish":       ps.get("projected_finish",       float(proj["planned_finish"])),
+        "tolerance_remain":       ps.get("tolerance_remain",       proj["termination_tolerance"]),
+        "abandoned":              flags.get("abandoned",            False),
+        "over_progress_delay":    flags.get("over_progress_delay",  False),
+        "over_finish_delay":      flags.get("over_finish_delay",    False),
+        "over_cost_overrun":      flags.get("over_cost_overrun",    False),
+        "over_duration_window":   flags.get("over_duration_window", False),
+        "over_any":               flags.get("over_any",             False),
     }
 
     _history.setdefault(key, []).append(row)
@@ -159,15 +160,6 @@ def _header(title: str, char: str = "═", width: int = W) -> str:
     left  = pad // 2
     right = pad - left
     return f"{char * left}  {title}  {char * right}"
-
-def _fmt_mu(v) -> str:
-    return f"{v:>12,.2f}" if v is not None else f"{'—':>12}"
-
-def _fmt_f4(v) -> str:
-    return f"{v:>10.4f}" if v is not None else f"{'—':>10}"
-
-def _fmt_pct(v) -> str:
-    return f"{v*100:>7.1f}%" if v is not None else f"{'—':>8}"
 
 def _fmt_int(v) -> str:
     return str(int(v)) if v is not None else "—"
@@ -211,14 +203,19 @@ def _print_project_identity(proj: dict) -> None:
 # PANEL 2 — PAYMENT PROFILE
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _print_payment_profile(proj: dict, milestones: list[dict],
+def _print_payment_profile(proj: dict,
+                            milestones: list[dict],
+                            milestone_state: list[dict],
                             ps: dict) -> None:
     """
     Print the milestone payment table.
 
-    Reads all payment values from the precomputed milestone profile
+    Reads all payment amounts from the precomputed milestone profile
     (gross_payment, advance_recovery, retention_withheld,
-    retention_released, net_payment).  No financial recomputation here.
+    retention_released, net_payment).
+
+    Certification status is read from milestone_state (runtime),
+    NOT from the profile dicts — profile is static.
 
     j=0  advance
     j=1..n-1  interim milestones
@@ -237,7 +234,7 @@ def _print_payment_profile(proj: dict, milestones: list[dict],
     print(hdr)
     print("  " + _sep("─", W - 2))
 
-    for ms in milestones:
+    for ms, ms_state in zip(milestones, milestone_state):
         j        = ms["j"]
         is_final = ms["progress_threshold"] >= 1.0
 
@@ -248,8 +245,9 @@ def _print_payment_profile(proj: dict, milestones: list[dict],
         else:
             label = f"Milestone {j}"
 
-        if ms["certified"]:
-            status = f"PAID  t={ms['certified_t']}"
+        # Certification status comes from runtime state, not profile
+        if ms_state["certified"]:
+            status = f"PAID  t={ms_state['certified_t']}"
         elif ps.get("progress_actual", 0.0) >= ms["progress_threshold"]:
             status = "ELIGIBLE"
         else:
@@ -288,12 +286,12 @@ def _print_termination_status(proj_index: int, ps: dict,
     flags = ps.get("breach_flags", {})
     col_w = 26
     fields = [
-        ("Abandoned (idle)",       flags.get("abandoned",           False)),
-        ("Over Progress Delay",    flags.get("over_progress_delay", False)),
-        ("Over Finish Delay",      flags.get("over_finish_delay",   False)),
-        ("Over Cost Overrun",      flags.get("over_cost_overrun",   False)),
-        ("Over Duration Window",   flags.get("over_duration_window",False)),
-        ("Any Breach",             flags.get("over_any",            False)),
+        ("Abandoned (idle)",       flags.get("abandoned",            False)),
+        ("Over Progress Delay",    flags.get("over_progress_delay",  False)),
+        ("Over Finish Delay",      flags.get("over_finish_delay",    False)),
+        ("Over Cost Overrun",      flags.get("over_cost_overrun",    False)),
+        ("Over Duration Window",   flags.get("over_duration_window", False)),
+        ("Any Breach",             flags.get("over_any",             False)),
     ]
     for label, val in fields:
         print(f"  {label:<{col_w}}  {_breach(val)}")
@@ -374,18 +372,29 @@ def _print_timeseries(episode_id: str, proj_index: int) -> None:
 # PORTFOLIO SUMMARY
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _print_portfolio_summary(t: int, budget: float, initial_budget: float,
-                              horizon: int, proj_cf: list[dict],
+def _print_portfolio_summary(t: int,
+                              budget: float,
+                              initial_budget: float,
+                              horizon: int,
+                              proj_cf: list[dict],
                               period_inflow: float,
-                              period_outflow: float) -> None:
+                              period_outflow: float,
+                              reward: Optional[float] = None,
+                              cum_reward: Optional[float] = None) -> None:
     print()
     print(_sep("="))
     budget_norm = budget / initial_budget if initial_budget > 0 else 1.0
+    reward_str  = ""
+    if reward is not None:
+        reward_str = f"   Step reward: {reward:+.4f}"
+    if cum_reward is not None:
+        reward_str += f"   Cumulative: {cum_reward:+.4f}"
     print(
         f"  PORTFOLIO"
         f"   Period {t}"
         f"   Budget {budget:,.2f}  ({budget_norm:.1%} of initial)"
         f"   Horizon {horizon}"
+        f"{reward_str}"
     )
     print(_sep("="))
 
@@ -398,7 +407,7 @@ def _print_portfolio_summary(t: int, budget: float, initial_budget: float,
         print("  " + _sep("─", W - 2))
         for idx, cf in enumerate(proj_cf):
             inflow  = (
-                cf.get("advance", 0.0)
+                cf.get("advance",       0.0)
                 + cf.get("milestone_net", 0.0)
                 + max(0.0, cf.get("settlement", 0.0))
             )
@@ -432,14 +441,34 @@ def render(t: int,
            projects: list[dict],
            proj_state: list[dict],
            milestones: list[list[dict]],
+           milestone_state: list[list[dict]],
+           episode_id: str = "",
            proj_cf: Optional[list[dict]] = None,
            period_inflow: float = 0.0,
            period_outflow: float = 0.0,
-           episode_id: str = "") -> None:
+           reward: Optional[float] = None,
+           cum_reward: Optional[float] = None) -> None:
     """
     Full render for one timestep.  Called from env.render() and play.py.
 
     Records a timeseries row for each project then prints all panels.
+
+    Parameters
+    ----------
+    t               : current episode timestep (after step; pre-increment)
+    budget          : current portfolio budget
+    horizon         : episode horizon
+    initial_budget  : budget at episode start (for normalisation display)
+    projects        : list of project profile dicts
+    proj_state      : list of project runtime state dicts
+    milestones      : list of lists — milestone profile dicts (static)
+    milestone_state : list of lists — milestone runtime state dicts
+    episode_id      : used as history key
+    proj_cf         : list of per-project cashflow dicts from env.step()
+    period_inflow   : total portfolio inflow this period
+    period_outflow  : total portfolio outflow this period
+    reward          : step reward (optional; shown in header)
+    cum_reward      : cumulative reward (optional; shown in header)
     """
     if proj_cf is None:
         proj_cf = [{} for _ in projects]
@@ -447,13 +476,14 @@ def render(t: int,
     _print_portfolio_summary(
         t, budget, initial_budget, horizon,
         proj_cf, period_inflow, period_outflow,
+        reward, cum_reward,
     )
 
-    for i, (proj, ps, ms_list, cf) in enumerate(
-        zip(projects, proj_state, milestones, proj_cf)
+    for i, (proj, ps, ms_list, ms_state_list, cf) in enumerate(
+        zip(projects, proj_state, milestones, milestone_state, proj_cf)
     ):
         _record_row(episode_id, i, t, ps, proj, cf)
         _print_project_identity(proj)
-        _print_payment_profile(proj, ms_list, ps)
+        _print_payment_profile(proj, ms_list, ms_state_list, ps)
         _print_termination_status(i, ps, proj)
         _print_timeseries(episode_id, i)

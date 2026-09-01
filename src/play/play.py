@@ -18,8 +18,8 @@
 # ----------------------
 #   Enter             → allocate budget equally across active projects
 #   q / quit / exit   → quit immediately
-#   Comma-separated floats (e.g. "30,20") → explicit allocation fractions;
-#       values are normalised to sum <= 1 before being passed to env.step()
+#   Comma-separated floats (e.g. "30,20") → explicit allocation amounts;
+#       values are normalised to fractions of budget before env.step()
 
 from __future__ import annotations
 
@@ -27,13 +27,13 @@ import argparse
 import sys
 import os
 
-# ── path setup ─────────────────────────────────────────────────────────────
+# ── path setup ──────────────────────────────────────────────────────────────
 # Resolve repo root (two levels up from this file: src/play/play.py).
-_THIS_DIR  = os.path.dirname(os.path.abspath(__file__))
-_SRC_DIR   = os.path.dirname(_THIS_DIR)              # src/
-_ENV_DIR   = os.path.join(_SRC_DIR, "env")           # src/env/
-_DB_DIR    = os.path.join(_SRC_DIR, "db")            # src/db/
-_CFGS_DIR  = os.path.join(_ENV_DIR, "configs")       # src/env/configs/
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_SRC_DIR  = os.path.dirname(_THIS_DIR)          # src/
+_ENV_DIR  = os.path.join(_SRC_DIR, "env")       # src/env/
+_DB_DIR   = os.path.join(_SRC_DIR, "db")        # src/db/
+_CFGS_DIR = os.path.join(_ENV_DIR, "configs")   # src/env/configs/
 
 for _d in (_SRC_DIR, _ENV_DIR, _DB_DIR, _CFGS_DIR):
     if _d not in sys.path:
@@ -41,13 +41,15 @@ for _d in (_SRC_DIR, _ENV_DIR, _DB_DIR, _CFGS_DIR):
 
 import numpy as np
 import render as rnd
-from env import PortfolioBudgetingEnv                # src/env/env.py
+from env import PortfolioBudgetingEnv
 
 
-# ── argument parsing ────────────────────────────────────────────────────────
+# ── argument parsing ─────────────────────────────────────────────────────────
 
 def _parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Manual play loop — Portfolio Budgeting RL Env")
+    p = argparse.ArgumentParser(
+        description="Manual play loop — Portfolio Budgeting RL Env"
+    )
     p.add_argument(
         "--config", choices=["single", "dual"], default="single",
         help="Which config to load (default: single)",
@@ -63,7 +65,7 @@ def _parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-# ── config loader ───────────────────────────────────────────────────────────
+# ── config loader ────────────────────────────────────────────────────────────
 
 def _load_config(name: str) -> dict:
     if name == "single":
@@ -73,11 +75,11 @@ def _load_config(name: str) -> dict:
     return CONFIG
 
 
-# ── DB connection ────────────────────────────────────────────────────────────
+# ── DB connection ─────────────────────────────────────────────────────────────
 
 def _open_conn(cfg: dict, no_db: bool):
     """
-    Return an open sqlite3.Connection (seeded with config) or None.
+    Return an open sqlite3.Connection or None.
     Swallows all errors — DB is side-effect only.
     """
     if no_db:
@@ -85,7 +87,6 @@ def _open_conn(cfg: dict, no_db: bool):
     try:
         from db_init import init_db
         conn = init_db()
-        # Seed the config row if not already present
         if cfg.get("config_id", "").startswith("CFG-SINGLE"):
             from single_project import seed
         else:
@@ -97,18 +98,17 @@ def _open_conn(cfg: dict, no_db: bool):
         return None
 
 
-# ── action parsing ───────────────────────────────────────────────────────────
+# ── action parsing ────────────────────────────────────────────────────────────
 
 def _parse_action(raw: str, n: int, budget: float) -> np.ndarray | None:
     """
     Parse a comma-separated allocation string into a float32 action array.
 
+    Values are treated as raw monetary amounts and converted to fractions
+    of budget.  If their sum exceeds budget they are rescaled proportionally.
     Returns None on parse failure (caller will prompt again).
-    Values are treated as raw amounts and converted to fractions of budget.
-    If sum of values > budget, they are rescaled proportionally.
     """
-    raw = raw.strip()
-    parts = [p.strip() for p in raw.split(",")]
+    parts = [p.strip() for p in raw.strip().split(",")]
     if len(parts) != n:
         print(f"  [!] Expected {n} value(s), got {len(parts)}.")
         return None
@@ -123,7 +123,6 @@ def _parse_action(raw: str, n: int, budget: float) -> np.ndarray | None:
 
     total = sum(amounts)
     if total <= 0.0:
-        # All-zero → let env handle it (idle breach will apply)
         return np.zeros(n, dtype=np.float32)
 
     if budget > 0.0:
@@ -131,7 +130,6 @@ def _parse_action(raw: str, n: int, budget: float) -> np.ndarray | None:
     else:
         fractions = [0.0] * n
 
-    # Rescale if sum of fractions > 1
     frac_sum = sum(fractions)
     if frac_sum > 1.0 + 1e-9:
         fractions = [f / frac_sum for f in fractions]
@@ -151,12 +149,42 @@ def _default_action(n: int, active_mask: list[bool]) -> np.ndarray:
     )
 
 
-# ── main loop ────────────────────────────────────────────────────────────────
+# ── render helper ─────────────────────────────────────────────────────────────
+
+def _render(env: PortfolioBudgetingEnv,
+            proj_cf: list[dict],
+            period_inflow: float,
+            period_outflow: float,
+            reward: float | None,
+            cum_reward: float) -> None:
+    """
+    Single call-site for render.render() used both before first step
+    and after each step.
+    """
+    rnd.render(
+        t              = env.t,
+        budget         = env.budget,
+        horizon        = env.horizon,
+        initial_budget = env.initial_budget,
+        projects       = env.projects,
+        proj_state     = env.proj_state,
+        milestones     = env.milestones,
+        milestone_state= env.milestone_state,
+        episode_id     = env.episode_id,
+        proj_cf        = proj_cf,
+        period_inflow  = period_inflow,
+        period_outflow = period_outflow,
+        reward         = reward,
+        cum_reward     = cum_reward,
+    )
+
+
+# ── main loop ─────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    args   = _parse_args()
-    cfg    = _load_config(args.config)
-    conn   = _open_conn(cfg, args.no_db)
+    args = _parse_args()
+    cfg  = _load_config(args.config)
+    conn = _open_conn(cfg, args.no_db)
 
     env = PortfolioBudgetingEnv(
         config      = cfg,
@@ -166,40 +194,31 @@ def main() -> None:
     )
 
     obs, info = env.reset(seed=args.seed)
-    n         = len(env.projects)
-    cum_reward= 0.0
+    n          = len(env.projects)
+    cum_reward = 0.0
 
-    # Print initial state (before first step)
-    rnd.print_portfolio_summary(
-        t            = env.t,
-        budget       = env.budget,
-        horizon      = env.horizon,
-        total_reward = cum_reward,
-    )
-    rnd.render_all_projects(
-        episode_id       = env.episode_id,
-        projects         = env.projects,
-        proj_states      = env.proj_state,
-        milestones_list  = env.milestones,
-        cfg              = env.config,
-        cashflow_by_proj = {i: {} for i in range(n)},
-        t                = env.t,
-    )
+    # Empty cashflow dicts for the pre-step render
+    empty_cf = [
+        {"advance": 0.0, "milestone_net": 0.0, "settlement": 0.0,
+         "allocation": 0.0, "interest": 0.0, "treasury_draw": 0.0}
+        for _ in range(n)
+    ]
+
+    # Print initial state (t=0, before first step)
+    _render(env, empty_cf, 0.0, 0.0, reward=None, cum_reward=0.0)
 
     terminated = False
     truncated  = False
 
     while not (terminated or truncated):
         active_mask = [ps["status"] == "active" for ps in env.proj_state]
-        n_active    = sum(active_mask)
+        active_ids  = [str(i) for i, a in enumerate(active_mask) if a]
 
-        # Build prompt hint
-        active_ids = [str(i) for i, a in enumerate(active_mask) if a]
-        hint = (
-            f"Active project(s): {', '.join(active_ids) if active_ids else 'none'}"
+        print(
+            f"  Budget: {env.budget:,.2f}"
+            f"   Active project(s): {', '.join(active_ids) if active_ids else 'none'}"
         )
 
-        print(f"  Budget: {env.budget:,.2f}   {hint}")
         if n == 1:
             prompt = "  Allocate (amount or Enter for all-in, q to quit): "
         else:
@@ -219,36 +238,18 @@ def main() -> None:
         else:
             action = _parse_action(raw, n, env.budget)
             if action is None:
-                continue    # prompt again
+                continue    # bad input — prompt again
 
         obs, reward, terminated, truncated, info = env.step(action)
         cum_reward += reward
 
-        # Build cashflow_by_proj from info["cashflow"] list
-        cashflow_by_proj = {
-            cf["i"]: cf
-            for cf in info.get("cashflow", [])
-        }
+        # proj_cf from info is a list indexed by project position
+        proj_cf        = info.get("cashflow",       empty_cf)
+        period_inflow  = info.get("period_inflow",  0.0)
+        period_outflow = info.get("period_outflow", 0.0)
 
-        rnd.print_portfolio_summary(
-            t            = env.t,
-            budget       = env.budget,
-            horizon      = env.horizon,
-            total_reward = cum_reward,
-            info         = {
-                "cashflow": info.get("cashflow", []),
-                "_reward":  reward,
-            },
-        )
-        rnd.render_all_projects(
-            episode_id       = env.episode_id,
-            projects         = env.projects,
-            proj_states      = env.proj_state,
-            milestones_list  = env.milestones,
-            cfg              = env.config,
-            cashflow_by_proj = cashflow_by_proj,
-            t                = env.t,
-        )
+        _render(env, proj_cf, period_inflow, period_outflow,
+                reward=reward, cum_reward=cum_reward)
 
     # Episode end
     print()
