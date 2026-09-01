@@ -353,10 +353,10 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
     weights[-1]    = round(1.0 - sum(weights[:-1]), 6)
 
     # Sample earliest_t fraction once per project
-    earliest_t_fraction = max(0.0, min(1.0, sample(
-        rng, cfg["earliest_t_fraction_dist"],
-        cfg["earliest_t_fraction_p1"], cfg["earliest_t_fraction_p2"],
-        cfg["earliest_t_fraction_p3"], cfg["earliest_t_fraction_p4"]
+    timestep_threshold_fraction = max(0.0, min(1.0, sample(
+        rng, cfg["timestep_threshold_dist"],
+        cfg["timestep_threshold_p1"], cfg["timestep_threshold_p2"],
+        cfg["timestep_threshold_p3"], cfg["timestep_threshold_p4"]
     )))
 
     price            = proj["price"]
@@ -393,7 +393,7 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
             timestep_threshold = proj["planned_finish"]
         else:
             timestep_threshold = proj["planned_start"] + max(1, round(
-                thresholds[idx] * proj["planned_duration"] * earliest_t_fraction
+                                thresholds[idx] * proj["planned_duration"] * timestep_threshold_fraction
             ))
 
         gross = weights[idx] * price

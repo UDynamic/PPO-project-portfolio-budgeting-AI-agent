@@ -14,27 +14,17 @@
 #       j = 1..n-1   interim milestones
 #       j = n        final milestone (includes retention_released)
 #
-#   Runtime milestone state (lives in episode state, not profile):
-#       ms["certified"]        bool   — has this milestone been certified
-#       ms["certified_t"]      int    — period when certified; None if not yet
-#       ms["payment_released"] float  — net payment released; None if not yet
+#   Runtime milestone state lives in a SEPARATE list (milestone_state),
+#   not in the profile dicts. Each entry:
+#       ms_state["certified"]        bool   — has this milestone been certified
+#       ms_state["certified_t"]      int    — period when certified; None if not yet
+#       ms_state["payment_released"] float  — net payment released; 0.0 if not yet
+#
+#   Profile and runtime state share the same list index (ms and ms_state at
+#   index k correspond to the same milestone j).
 #
 #   Project cashflow is tracked in ps["inflow"] and ps["outflow"] (cumulative)
-#   matching projects_status schema exactly. No other cashflow accumulators.
-#
-# FIDIC 14.2-style mechanics — spec §Payment mechanics:
-#
-#   Advance     j=0 — net_payment = advance_percent × price
-#               triggered at t == planned_start (handled in env.py, not here)
-#
-#   Milestone   j=1..n — trigger: progress_actual >= progress_threshold
-#                                  AND t >= timestep_threshold
-#               net_payment read directly from milestone profile
-#
-#   Retention   included in final milestone (j=n) net_payment via
-#               retention_released field — no separate release step needed
-#
-#   Settlement  progress_actual × price − cumulative inflow received
+#   matching projects_status schema exactly.
 
 from __future__ import annotations
 
@@ -43,7 +33,10 @@ from __future__ import annotations
 # MILESTONE CERTIFICATION CHECK  (early phase)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def check_certifications(t: int, ps: dict, milestones: list[dict]) -> list[int]:
+def check_certifications(t: int,
+                         ps: dict,
+                         milestones: list[dict],
+                         milestone_state: list[dict]) -> list[int]:
     """
     Check which uncertified milestones qualify for certification this period.
 
@@ -51,18 +44,19 @@ def check_certifications(t: int, ps: dict, milestones: list[dict]) -> list[int]:
         ps["progress_actual"] >= ms["progress_threshold"]
         t                     >= ms["timestep_threshold"]
 
-    The advance (j=0) is excluded here — it is handled directly in env.py
-    at project start (t == planned_start) and does not go through this check.
+    The advance (j=0) is excluded — handled directly in env.py at project
+    start and does not go through this check.
 
-    Does NOT mutate any state. Returns the list of qualifying j indices so
-    the caller (env.py early phase) can record which milestones are pending
-    payment delivery in the late phase.
+    Does NOT mutate any state. Returns qualifying j indices so the caller
+    (env.py early phase) can record which milestones are pending payment
+    delivery in the late phase.
 
     Parameters
     ----------
-    t           : current episode timestep
-    ps          : project state dict (read-only here)
-    milestones  : list of milestone dicts (profile + runtime fields)
+    t               : current episode timestep
+    ps              : project state dict (read-only)
+    milestones      : list of milestone profile dicts (read-only)
+    milestone_state : list of milestone runtime dicts (read-only here)
 
     Returns
     -------
@@ -70,10 +64,10 @@ def check_certifications(t: int, ps: dict, milestones: list[dict]) -> list[int]:
     """
     certified_this_period = []
 
-    for ms in milestones:
+    for ms, ms_state in zip(milestones, milestone_state):
         if ms["j"] == 0:
             continue                                  # advance handled separately
-        if ms["certified"]:
+        if ms_state["certified"]:
             continue                                  # already paid
         if ps["progress_actual"] < ms["progress_threshold"]:
             continue
@@ -92,36 +86,37 @@ def check_certifications(t: int, ps: dict, milestones: list[dict]) -> list[int]:
 def deliver_payments(certified_js: list[int],
                      t: int,
                      ps: dict,
-                     milestones: list[dict]) -> float:
+                     milestones: list[dict],
+                     milestone_state: list[dict]) -> float:
     """
     Deliver payments for all milestones certified this period.
 
-    Reads net_payment directly from the milestone profile — no recomputation.
+    Reads net_payment from the milestone profile dict.
     Mutates milestone runtime state and ps["inflow"] in-place.
 
     Parameters
     ----------
-    certified_js : list of j indices returned by check_certifications()
-    t            : current episode timestep (recorded as certified_t)
-    ps           : project state dict (ps["inflow"] incremented)
-    milestones   : list of milestone dicts (runtime fields mutated)
+    certified_js    : list of j indices returned by check_certifications()
+    t               : current episode timestep (recorded as certified_t)
+    ps              : project state dict (ps["inflow"] incremented)
+    milestones      : list of milestone profile dicts (read-only)
+    milestone_state : list of milestone runtime dicts (mutated)
 
     Returns
     -------
-    total_net : total net inflow delivered this period across all certified
-                milestones (for reward and portfolio budget update)
+    total_net : total net inflow delivered this period
     """
     total_net = 0.0
 
-    for ms in milestones:
+    for ms, ms_state in zip(milestones, milestone_state):
         if ms["j"] not in certified_js:
             continue
 
         net = ms["net_payment"]
 
-        ms["certified"]        = True
-        ms["certified_t"]      = t
-        ms["payment_released"] = net
+        ms_state["certified"]        = True
+        ms_state["certified_t"]      = t
+        ms_state["payment_released"] = net
 
         ps["inflow"] += net
         total_net    += net
@@ -145,8 +140,8 @@ def compute_termination_settlement(proj: dict, ps: dict) -> float:
         positive → contractor receives a final payment
         negative → contractor owes money back (rare; signals over-advance)
 
-    Does NOT mutate ps. The caller (env.py late phase) writes the result
-    into ps["termination_settlement"] and updates ps["inflow"] accordingly.
+    Does NOT mutate ps. The caller (env.py) writes the result into
+    ps["termination_settlement"] and updates ps["inflow"] accordingly.
 
     Parameters
     ----------

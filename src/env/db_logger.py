@@ -10,6 +10,8 @@
 #     it never touches conn directly for writes.
 #   - The connection is passed in on each call (stateless module).
 #   - All column names and dict keys match schema.sql exactly.
+#   - milestone profile (milestones_list) and runtime state
+#     (milestone_state_list) are always passed and read separately.
 
 from __future__ import annotations
 
@@ -28,7 +30,7 @@ def write_profiles(conn: sqlite3.Connection,
     """
     Insert projects_profile and milestones_profile rows for a new episode.
     Called once from env.reset() after sampling.
-    All column names match schema exactly.
+    Reads profile fields only — no runtime state needed here.
     """
     try:
         for proj in projects:
@@ -80,7 +82,7 @@ def write_profiles(conn: sqlite3.Connection,
         conn.commit()
 
     except Exception:
-        pass  # never load-bearing
+        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -99,6 +101,7 @@ def write_step(conn: sqlite3.Connection,
                projects: list[dict],
                proj_state: list[dict],
                milestones_list: list[list[dict]],
+               milestone_state_list: list[list[dict]],
                proj_cf: list[dict]) -> None:
     """
     Write all rows for one completed step:
@@ -106,7 +109,8 @@ def write_step(conn: sqlite3.Connection,
         - one projects_status row per project
         - one milestones_status row per milestone certified this step
 
-    Called from env.step() inside a try/except — never load-bearing.
+    milestone_state_list carries runtime certification state separately
+    from milestones_list (profile data).
     """
     try:
         _write_portfolio_row(
@@ -114,14 +118,15 @@ def write_step(conn: sqlite3.Connection,
             budget, net_cashflow, reward, done,
         )
 
-        for proj, ps, milestones, cf in zip(
-            projects, proj_state, milestones_list, proj_cf
+        for proj, ps, milestones, ms_state_list, cf in zip(
+            projects, proj_state, milestones_list, milestone_state_list, proj_cf
         ):
             _write_project_row(
                 conn, episode_id, t, method, proj, ps, cf,
             )
             _write_certified_milestones(
-                conn, episode_id, t, method, proj["i"], milestones,
+                conn, episode_id, t, method, proj["i"],
+                milestones, ms_state_list,
             )
 
     except Exception:
@@ -165,11 +170,6 @@ def _write_project_row(conn: sqlite3.Connection,
                        proj: dict,
                        ps: dict,
                        cf: dict) -> None:
-    """
-    Insert one projects_status row.
-    Reads ps keys that match schema column names exactly.
-    cf is the per-project cashflow dict from env.step proj_cf[i].
-    """
     flags = ps.get("breach_flags", {})
 
     conn.execute("""
@@ -222,12 +222,12 @@ def _write_project_row(conn: sqlite3.Connection,
             + cf.get("advance", 0.0)
             + cf.get("settlement", 0.0)
             - cf.get("allocation", 0.0)
-            - cf.get("interest", 0.0),   # period net_cashflow
+            - cf.get("interest", 0.0),
 
-        cf.get("allocation", 0.0),                      # allocation_action
-        cf.get("treasury_draw", 0.0),                   # deficit
-        cf.get("interest", 0.0),                        # interest_cost
-        cf.get("allocation", 0.0) + cf.get("interest", 0.0),  # allocation (total outflow)
+        cf.get("allocation", 0.0),
+        cf.get("treasury_draw", 0.0),
+        cf.get("interest", 0.0),
+        cf.get("allocation", 0.0) + cf.get("interest", 0.0),
 
         ps.get("efficiency", 1.0),
 
@@ -264,20 +264,23 @@ def _write_certified_milestones(conn: sqlite3.Connection,
                                  t: int,
                                  method: str,
                                  i: int,
-                                 milestones: list[dict]) -> None:
+                                 milestones: list[dict],
+                                 milestone_state: list[dict]) -> None:
     """
     Insert milestones_status rows for milestones certified this step.
+    Reads j and timestep_threshold from profile; certified_t and
+    payment_released from runtime state.
     Only writes rows where certified_t == t (certified this period).
     """
-    for ms in milestones:
-        if not ms["certified"]:
+    for ms, ms_state in zip(milestones, milestone_state):
+        if not ms_state["certified"]:
             continue
-        if ms["certified_t"] != t:
+        if ms_state["certified_t"] != t:
             continue   # certified in a prior step; already written
 
         certification_delay = (
-            ms["certified_t"] - ms["timestep_threshold"]
-            if ms["certified_t"] is not None else None
+            ms_state["certified_t"] - ms["timestep_threshold"]
+            if ms_state["certified_t"] is not None else None
         )
 
         conn.execute("""
@@ -287,18 +290,17 @@ def _write_certified_milestones(conn: sqlite3.Connection,
             ) VALUES (?,?,?,?,?,?,?)
         """, (
             episode_id, i, ms["j"], method,
-            ms["certified_t"],
+            ms_state["certified_t"],
             certification_delay,
-            ms["payment_released"],
+            ms_state["payment_released"],
         ))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# COMMIT  (unconditional, every step)
+# COMMIT
 # ─────────────────────────────────────────────────────────────────────────────
 
 def commit(conn: sqlite3.Connection) -> None:
-    """Commit the current transaction. Swallows exceptions — never load-bearing."""
     try:
         conn.commit()
     except Exception:

@@ -177,11 +177,11 @@ CONFIG: dict = {
     "payment_weight_p4":          None,
 
     # fraction = 1.0 → earliest_t aligns with on-plan completion date
-    "earliest_t_fraction_dist":   "fixed",
-    "earliest_t_fraction_p1":     1.0,
-    "earliest_t_fraction_p2":     None,
-    "earliest_t_fraction_p3":     None,
-    "earliest_t_fraction_p4":     None,
+    "timestep_threshold_dist":   "fixed",
+    "timestep_threshold_p1":     1.0,
+    "timestep_threshold_p2":     None,
+    "timestep_threshold_p3":     None,
+    "timestep_threshold_p4":     None,
 
     "annual_interest_rate":       0.12,
 }
@@ -193,6 +193,8 @@ def seed(conn: sqlite3.Connection) -> str:
     Idempotent — skips if the row already exists.
     Returns the config_id.
     """
+    from datetime import datetime, timezone
+
     existing = conn.execute(
         "SELECT config_id FROM environment_config WHERE config_id = ?",
         (CONFIG_ID,),
@@ -271,39 +273,40 @@ def seed(conn: sqlite3.Connection) -> str:
             payment_weight_dist, payment_weight_p1,
             payment_weight_p2, payment_weight_p3, payment_weight_p4,
 
-            earliest_t_fraction_dist, earliest_t_fraction_p1,
-            earliest_t_fraction_p2, earliest_t_fraction_p3, earliest_t_fraction_p4,
+            timestep_threshold_dist, timestep_threshold_p1,
+            timestep_threshold_p2, timestep_threshold_p3, timestep_threshold_p4,
 
             annual_interest_rate
         )
         VALUES (
             ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?
+            ?, ?, ?, ?, ?,   -- n_projects
+            ?, ?, ?, ?, ?,   -- budget_available
+            ?, ?, ?, ?, ?,   -- budget_tightness
+            ?, ?, ?, ?, ?,   -- discount
+            ?, ?, ?, ?, ?,   -- bac
+            ?, ?, ?, ?, ?,   -- profit_percent
+            ?, ?, ?, ?, ?,   -- planned_start
+            ?, ?, ?, ?, ?,   -- planned_duration
+            ?, ?, ?, ?, ?,   -- scurve_a
+            ?, ?, ?, ?, ?,   -- scurve_b
+            ?, ?, ?, ?, ?,   -- advance_percent
+            ?, ?, ?, ?, ?,   -- advance_trigger
+            ?, ?, ?, ?, ?,   -- advance_recovery
+            ?, ?, ?, ?, ?,   -- retention_rate
+            ?, ?, ?, ?, ?,   -- progress_delay_cap
+            ?, ?, ?, ?, ?,   -- finish_delay_cap
+            ?, ?, ?, ?, ?,   -- cost_overrun_cap
+            ?, ?, ?, ?, ?,   -- termination_tolerance
+            ?, ?, ?, ?, ?,   -- efficiency
+            ?, ?, ?, ?, ?,   -- n_milestones
+            ?, ?, ?, ?, ?,   -- progress_threshold
+            ?, ?, ?, ?, ?,   -- payment_weight
+            ?, ?, ?, ?, ?,   -- timestep_threshold
+            ?                -- annual_interest_rate
         )
     """, (
-        CONFIG_ID, "single_project_baseline", datetime.utcnow().isoformat(),
+        CONFIG_ID, "single_project_baseline", datetime.now(timezone.utc).isoformat(),
 
         "fixed", 1,     None, None, None,   # n_projects
         "fixed", 200.0, None, None, None,   # budget_available
@@ -333,7 +336,7 @@ def seed(conn: sqlite3.Connection) -> str:
         "fixed", 4,     None, None, None,   # n_milestones
         "fixed", 0.25,  None, None, None,   # progress_threshold
         "fixed", 0.25,  None, None, None,   # payment_weight
-        "fixed", 1.0,   None, None, None,   # earliest_t_fraction
+        "fixed", 1.0,   None, None, None,   # timestep_threshold
 
         0.12,                               # annual_interest_rate
     ))
