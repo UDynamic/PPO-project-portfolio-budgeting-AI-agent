@@ -15,7 +15,7 @@
 #
 # Parameters
 # ----------
-# Portfolio  : 2 projects, initial budget = 400 (kappa = 400/230 ~= 1.74)
+# Portfolio  : 2 projects, initial budget = 900 (kappa = 900/(2*150) = 3)
 # BAC        : uniform(80, 150) per project
 # Profit %   : uniform(12%, 20%) per project
 # Timeline   : planned_start = 0 for both; planned_duration uniform(10, 15)
@@ -47,13 +47,13 @@ CONFIG: dict = {
     "n_projects_p4":              None,
 
     "budget_available_dist":      "fixed",
-    "budget_available_p1":        400.0,
+    "budget_available_p1":        900.0,
     "budget_available_p2":        None,
     "budget_available_p3":        None,
     "budget_available_p4":        None,
 
     "budget_tightness_dist":      "fixed",
-    "budget_tightness_p1":        1.74,
+    "budget_tightness_p1":        3,
     "budget_tightness_p2":        None,
     "budget_tightness_p3":        None,
     "budget_tightness_p4":        None,
@@ -308,8 +308,8 @@ def seed(conn: sqlite3.Connection) -> str:
         CONFIG_ID, "dual_project_baseline", datetime.now(timezone.utc).isoformat(),
 
         "fixed",   2,     None,  None, None,   # n_projects
-        "fixed",   400.0, None,  None, None,   # budget_available
-        "fixed",   1.74,  None,  None, None,   # budget_tightness
+        "fixed",   900.0, None,  None, None,   # budget_available
+        "fixed",   3,  None,  None, None,   # budget_tightness
         "fixed",   0.97,  None,  None, None,   # discount
 
         "uniform", 80.0,  150.0, None, None,   # bac

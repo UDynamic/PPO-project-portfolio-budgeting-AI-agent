@@ -15,7 +15,7 @@
 #
 # Parameters
 # ----------
-# Portfolio  : 1 project, initial budget = 200
+# Portfolio  : 1 project, initial budget = 300
 # BAC        : 100, profit 15% → price = 115
 # Timeline   : planned_start = 0, planned_duration = 12, planned_finish = 12
 # S-curve    : α = 2.0, β = 5.0  (front-loaded)
@@ -48,13 +48,13 @@ CONFIG: dict = {
     "n_projects_p4":              None,
 
     "budget_available_dist":      "fixed",
-    "budget_available_p1":        200.0,
+    "budget_available_p1":        300.0,
     "budget_available_p2":        None,
     "budget_available_p3":        None,
     "budget_available_p4":        None,
 
     "budget_tightness_dist":      "fixed",
-    "budget_tightness_p1":        1.0,
+    "budget_tightness_p1":        3.0,
     "budget_tightness_p2":        None,
     "budget_tightness_p3":        None,
     "budget_tightness_p4":        None,
@@ -309,8 +309,8 @@ def seed(conn: sqlite3.Connection) -> str:
         CONFIG_ID, "single_project_baseline", datetime.now(timezone.utc).isoformat(),
 
         "fixed", 1,     None, None, None,   # n_projects
-        "fixed", 200.0, None, None, None,   # budget_available
-        "fixed", 1.0,   None, None, None,   # budget_tightness
+        "fixed", 300.0, None, None, None,   # budget_available
+        "fixed", 3.0,   None, None, None,   # budget_tightness
         "fixed", 0.97,  None, None, None,   # discount
 
         "fixed", 100.0, None, None, None,   # bac
