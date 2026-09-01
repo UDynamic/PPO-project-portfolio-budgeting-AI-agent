@@ -3,15 +3,11 @@
 # SQLite audit ledger — side effects only.
 #
 # Design rules:
-#   - Every write is wrapped in try/except — a DB failure must never crash
-#     the environment or affect step return values.
-#   - conn.commit() is called every step unconditionally.
-#   - This module owns all SQL. env.py calls the public functions only;
-#     it never touches conn directly for writes.
-#   - The connection is passed in on each call (stateless module).
-#   - All column names and dict keys match schema.sql exactly.
-#   - milestone profile (milestones_list) and runtime state
-#     (milestone_state_list) are always passed and read separately.
+#   - Every write is wrapped in try/except
+#   - conn.commit() called after every step
+#   - This module owns all SQL
+#   - All column names match schema.sql exactly
+#   - milestone profile and runtime state passed and read separately
 
 from __future__ import annotations
 
@@ -27,11 +23,6 @@ def write_profiles(conn: sqlite3.Connection,
                    config_id: str,
                    projects: list[dict],
                    milestones_list: list[list[dict]]) -> None:
-    """
-    Insert projects_profile and milestones_profile rows for a new episode.
-    Called once from env.reset() after sampling.
-    Reads profile fields only — no runtime state needed here.
-    """
     try:
         for proj in projects:
             conn.execute("""
@@ -86,7 +77,7 @@ def write_profiles(conn: sqlite3.Connection,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP WRITE  (called once per step from env.py)
+# STEP WRITE
 # ─────────────────────────────────────────────────────────────────────────────
 
 def write_step(conn: sqlite3.Connection,
@@ -104,25 +95,29 @@ def write_step(conn: sqlite3.Connection,
                milestone_state_list: list[list[dict]],
                proj_cf: list[dict]) -> None:
     """
-    Write all rows for one completed step:
-        - one portfolios row
-        - one projects_status row per project
-        - one milestones_status row per milestone certified this step
-
-    milestone_state_list carries runtime certification state separately
-    from milestones_list (profile data).
+    Write all rows for one completed step.
+    Called AFTER the late phase completes so all post-allocation
+    values (progress, outflow, evm, breach flags) are current.
     """
     try:
         _write_portfolio_row(
             conn, episode_id, config_id, t, method,
             budget, net_cashflow, reward, done,
         )
+        _write_portfolio_observation(
+            conn, episode_id, t, method,
+            net_cashflow, budget,
+        )
 
         for proj, ps, milestones, ms_state_list, cf in zip(
-            projects, proj_state, milestones_list, milestone_state_list, proj_cf
+            projects, proj_state, milestones_list,
+            milestone_state_list, proj_cf
         ):
             _write_project_row(
                 conn, episode_id, t, method, proj, ps, cf,
+            )
+            _write_project_observation(
+                conn, episode_id, t, method, proj, ps,
             )
             _write_certified_milestones(
                 conn, episode_id, t, method, proj["i"],
@@ -137,15 +132,8 @@ def write_step(conn: sqlite3.Connection,
 # PORTFOLIO ROW
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _write_portfolio_row(conn: sqlite3.Connection,
-                         episode_id: str,
-                         config_id: str,
-                         t: int,
-                         method: str,
-                         budget: float,
-                         net_cashflow: float,
-                         reward: float,
-                         done: bool) -> None:
+def _write_portfolio_row(conn, episode_id, config_id, t, method,
+                         budget, net_cashflow, reward, done):
     conn.execute("""
         INSERT INTO portfolios (
             episode_id, config_id, t_episode, method,
@@ -160,16 +148,27 @@ def _write_portfolio_row(conn: sqlite3.Connection,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PORTFOLIO OBSERVATION ROW
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _write_portfolio_observation(conn, episode_id, t, method,
+                                  net_cashflow, budget_available):
+    conn.execute("""
+        INSERT INTO portfolio_observation (
+            episode_id, t_episode, method,
+            net_cashflow, budget_available
+        ) VALUES (?,?,?,?,?)
+    """, (
+        episode_id, t, method,
+        net_cashflow, budget_available,
+    ))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # PROJECT STATUS ROW
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _write_project_row(conn: sqlite3.Connection,
-                       episode_id: str,
-                       t: int,
-                       method: str,
-                       proj: dict,
-                       ps: dict,
-                       cf: dict) -> None:
+def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
     flags = ps.get("breach_flags", {})
 
     conn.execute("""
@@ -189,6 +188,17 @@ def _write_project_row(conn: sqlite3.Connection,
             progress_actual,
 
             progress_plan_t, progress_delay_t,
+            progress_space_t, min_prog_t,
+            progress_needed_t, catchup_alloc_t,
+
+            progress_plan_next_t, progress_delay_next_t,
+            progress_space_next_t, min_prog_next_t,
+            progress_needed_next_t, catchup_alloc_next_t,
+
+            target_milestone_j,
+            target_progress_gap, target_timestep_gap,
+            target_net_payment, target_required_alloc,
+            target_payment_rate,
 
             projected_cost_overrun, projected_finish, projected_finish_delay,
 
@@ -205,7 +215,10 @@ def _write_project_row(conn: sqlite3.Connection,
             ?,
             ?,?,?,
             ?,
-            ?,?,
+            ?,?,?,?,?,?,
+            ?,?,?,?,?,?,
+            ?,
+            ?,?,?,?,?,
             ?,?,?,
             ?,?,?,?,?,?,
             ?
@@ -215,68 +228,117 @@ def _write_project_row(conn: sqlite3.Connection,
 
         ps.get("status"),
 
-        ps.get("inflow", 0.0),
+        ps.get("inflow",  0.0),
         ps.get("outflow", 0.0),
         ps.get("termination_settlement", 0.0),
+        # net_cashflow for this project this period
         cf.get("milestone_net", 0.0)
-            + cf.get("advance", 0.0)
+            + cf.get("advance",    0.0)
             + cf.get("settlement", 0.0)
             - cf.get("allocation", 0.0)
-            - cf.get("interest", 0.0),
+            - cf.get("interest",   0.0),
 
-        cf.get("allocation", 0.0),
+        # allocation_action is the raw amount allocated this period
+        cf.get("allocation",    0.0),
+        # deficit = treasury draw (outflow - inflow before this period)
         cf.get("treasury_draw", 0.0),
-        cf.get("interest", 0.0),
-        cf.get("allocation", 0.0) + cf.get("interest", 0.0),
+        cf.get("interest",      0.0),
+        # total deducted from budget = allocation + interest
+        cf.get("allocation",    0.0) + cf.get("interest", 0.0),
 
         ps.get("efficiency", 1.0),
 
-        ps.get("spi", 1.0),
-        ps.get("cpi", 1.0),
-        ps.get("eac", proj["bac"]),
+        ps.get("spi",  1.0),
+        ps.get("cpi",  1.0),
+        ps.get("eac",  proj["bac"]),
 
         ps.get("progress_actual", 0.0),
 
-        ps.get("progress_plan_t", 0.0),
-        ps.get("progress_delay_t", 0.0),
+        # current period catchup fields
+        ps.get("progress_plan_t",    0.0),
+        ps.get("progress_delay_t",   0.0),
+        ps.get("progress_space_t",   0.0),
+        ps.get("min_prog_t",         0.0),
+        ps.get("progress_needed_t",  0.0),
+        ps.get("catchup_alloc_t",    0.0),
+
+        # next period catchup fields
+        ps.get("progress_plan_next_t",    0.0),
+        ps.get("progress_delay_next_t",   0.0),
+        ps.get("progress_space_next_t",   0.0),
+        ps.get("min_prog_next_t",         0.0),
+        ps.get("progress_needed_next_t",  0.0),
+        ps.get("catchup_alloc_next_t",    0.0),
+
+        # target milestone
+        ps.get("target_milestone_j"),
+        ps.get("target_progress_gap",    0.0),
+        ps.get("target_timestep_gap",    0),
+        ps.get("target_net_payment",     0.0),
+        ps.get("target_required_alloc",  0.0),
+        ps.get("target_payment_rate",    0.0),
 
         ps.get("projected_cost_overrun", 1.0),
-        ps.get("projected_finish", float(proj["planned_finish"])),
+        ps.get("projected_finish",       float(proj["planned_finish"])),
         ps.get("projected_finish_delay", 0.0),
 
-        int(flags.get("abandoned", False)),
+        int(flags.get("abandoned",            False)),
         int(flags.get("over_duration_window", False)),
-        int(flags.get("over_progress_delay", False)),
-        int(flags.get("over_finish_delay", False)),
-        int(flags.get("over_cost_overrun", False)),
-        int(flags.get("over_any", False)),
+        int(flags.get("over_progress_delay",  False)),
+        int(flags.get("over_finish_delay",    False)),
+        int(flags.get("over_cost_overrun",    False)),
+        int(flags.get("over_any",             False)),
 
         ps.get("tolerance_remain", proj["termination_tolerance"]),
     ))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MILESTONE STATUS  (written on certification)
+# PROJECT OBSERVATION ROW
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _write_certified_milestones(conn: sqlite3.Connection,
-                                 episode_id: str,
-                                 t: int,
-                                 method: str,
-                                 i: int,
-                                 milestones: list[dict],
-                                 milestone_state: list[dict]) -> None:
+def _write_project_observation(conn, episode_id, t, method, proj, ps):
     """
-    Insert milestones_status rows for milestones certified this step.
-    Reads j and timestep_threshold from profile; certified_t and
-    payment_released from runtime state.
-    Only writes rows where certified_t == t (certified this period).
+    Write one projects_observation row per project per step.
+    These are exactly the features that go into the obs vector.
+    net_cashflow here is per-project: inflow - outflow (cumulative delta).
     """
+    conn.execute("""
+        INSERT INTO projects_observation (
+            episode_id, i, t_episode, t_project, method,
+            net_cashflow,
+            tolerance_remain,
+            catchup_alloc_t,
+            catchup_alloc_next_t,
+            target_progress_gap,
+            target_timestep_gap,
+            target_required_alloc,
+            target_payment_rate
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """, (
+        episode_id, proj["i"], t, ps.get("t_project"), method,
+        ps.get("inflow", 0.0) - ps.get("outflow", 0.0),
+        ps.get("tolerance_remain",       proj["termination_tolerance"]),
+        ps.get("catchup_alloc_t",        0.0),
+        ps.get("catchup_alloc_next_t",   0.0),
+        ps.get("target_progress_gap",    0.0),
+        ps.get("target_timestep_gap",    0),
+        ps.get("target_required_alloc",  0.0),
+        ps.get("target_payment_rate",    0.0),
+    ))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MILESTONE STATUS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _write_certified_milestones(conn, episode_id, t, method, i,
+                                 milestones, milestone_state):
     for ms, ms_state in zip(milestones, milestone_state):
         if not ms_state["certified"]:
             continue
         if ms_state["certified_t"] != t:
-            continue   # certified in a prior step; already written
+            continue
 
         certification_delay = (
             ms_state["certified_t"] - ms["timestep_threshold"]
