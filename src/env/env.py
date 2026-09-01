@@ -84,9 +84,36 @@ class PortfolioBudgetingEnv(gym.Env):
         self.proj_state      : list[dict]      = []
 
     def _declare_spaces(self, n: int) -> None:
+        # Per-project feature bounds (8 features each)
+        proj_low = np.tile([
+            0.0,   # progress_actual
+            0.0,   # progress_plan_t
+        -1.0,   # progress_delay_t
+            0.0,   # spi
+            0.0,   # cpi
+            0.0,   # projected_cost_overrun (EAC/BAC)
+            0.0,   # catchup_norm
+            0.0,   # tol_norm
+        ], n)
+
+        proj_high = np.tile([
+            1.0,   # progress_actual
+            1.0,   # progress_plan_t
+            1.0,   # progress_delay_t
+            3.0,   # spi  — clamp in _build_obs if needed
+            3.0,   # cpi
+            3.0,   # projected_cost_overrun
+            1.0,   # catchup_norm
+            1.0,   # tol_norm
+        ], n)
+
+        # Portfolio-level feature (1 feature)
+        port_low  = np.array([0.0])   # budget_norm
+        port_high = np.array([2.0])   # budget can grow beyond initial
+
         self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf,
-            shape=(8 * n + 1,),
+            low  = np.concatenate([proj_low,  port_low]).astype(np.float32),
+            high = np.concatenate([proj_high, port_high]).astype(np.float32),
             dtype=np.float32,
         )
         self.action_space = spaces.Box(
@@ -434,21 +461,21 @@ class PortfolioBudgetingEnv(gym.Env):
                 if bac > 0 else 0.0
             )
             obs.extend([
-                ps["progress_actual"],
-                ps["progress_plan_t"],
-                ps["progress_delay_t"],
-                ps["spi"],
-                ps["cpi"],
-                ps["projected_cost_overrun"],
-                catchup_norm,
-                tol_norm,
+                np.clip(ps["progress_actual"],          0.0, 1.0),
+                np.clip(ps["progress_plan_t"],          0.0, 1.0),
+                np.clip(ps["progress_delay_t"],        -1.0, 1.0),
+                np.clip(ps["spi"],                      0.0, 3.0),
+                np.clip(ps["cpi"],                      0.0, 3.0),
+                np.clip(ps["projected_cost_overrun"],   0.0, 3.0),
+                np.clip(catchup_norm,                   0.0, 1.0),
+                np.clip(tol_norm,                       0.0, 1.0),
             ])
 
         budget_norm = (
             self.budget / self.initial_budget
             if self.initial_budget > 0 else 1.0
         )
-        obs.append(budget_norm)
+        obs.append(np.clip(budget_norm, 0.0, 2.0))
 
         return np.array(obs, dtype=np.float32)
 
