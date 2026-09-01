@@ -1,18 +1,65 @@
 # src/env/render.py
 #
-# Terminal observation display for PortfolioBudgetingEnv.
+# Compact two-column terminal observation display for PortfolioBudgetingEnv.
 #
-# Shows exactly the observation vector defined in:
-#   projects_observation  (per-project features)
-#   portfolio_observation (portfolio-level features)
+# Layout
+# ------
+# Portfolio header  : period / reward  |  net_cashflow / budget
+# Per-project block : identity, catchup, target — all in two columns
+# Thin ─ separator between logical groups within a project block
+# Thick ═ separator between projects and at top/bottom
 #
-# Public API:
-#   reset_history(episode_id, n_projects)   called from env.reset()
-#   render(...)                             called from env.render() / play.py
+# Public API
+# ----------
+# reset_history(episode_id, n_projects)   called from env.reset()
+# render(...)                             called from env.render() / play.py
 
 from __future__ import annotations
 
-W = 92  # terminal width
+# ── layout constants ──────────────────────────────────────────────────────────
+
+W   = 80   # total line width
+LW  = 17   # label column width
+VW  = 12   # value column width
+GAP =  3   # gap between the two columns
+
+
+# ── format helpers ────────────────────────────────────────────────────────────
+
+def _sep(char: str = "═") -> str:
+    return char * W
+
+
+def _row(l_label: str, l_value: str,
+         r_label: str = "", r_value: str = "") -> str:
+    """
+    One two-column row.
+
+    Left  : l_label padded to LW, l_value right-aligned to VW
+    Right : r_label padded to LW, r_value right-aligned to VW
+    Columns separated by GAP spaces.
+    If right side is empty the line ends after the left value.
+    """
+    left = f"  {l_label:<{LW}} : {l_value:>{VW}}"
+    if r_label or r_value:
+        right = f"{' ' * GAP}{r_label:<{LW}} : {r_value:>{VW}}"
+        return left + right
+    return left
+
+
+def _fmt(v: float, decimals: int = 2) -> str:
+    return f"{v:,.{decimals}f}"
+
+
+def _status_tag(status: str) -> str:
+    tags = {
+        "active":     "ACTIVE",
+        "pending":    "PENDING",
+        "completed":  "COMPLETED",
+        "terminated": "TERMINATED",
+    }
+    return tags.get((status or "").lower(), (status or "UNKNOWN").upper())
+
 
 # ── episode context ───────────────────────────────────────────────────────────
 
@@ -26,23 +73,7 @@ def reset_history(episode_id: str, n_projects: int) -> None:
     _n_projects = n_projects
 
 
-# ── format helpers ────────────────────────────────────────────────────────────
-
-def _sep(char: str = "═", width: int = W) -> str:
-    return char * width
-
-
-def _status_tag(status: str) -> str:
-    tags = {
-        "active":     "ACTIVE",
-        "pending":    "PENDING",
-        "completed":  "COMPLETED",
-        "terminated": "TERMINATED",
-    }
-    return tags.get((status or "").lower(), (status or "UNKNOWN").upper())
-
-
-# ── render ────────────────────────────────────────────────────────────────────
+# ── public render entry point ─────────────────────────────────────────────────
 
 def render(t: int,
            budget: float,
@@ -60,12 +91,14 @@ def render(t: int,
     # ── portfolio header ──────────────────────────────────────────────────────
     print()
     print(_sep())
-    print(
-        f"  PERIOD : {t} / {horizon}"
-        f"   ---   net_cashflow : {net_cashflow:.2f}"
-        f"   ---   budget_available : {budget:.2f}"
-        f"   ---   Cumulative reward: {cum_reward:+.4f}"
-    )
+    print(_row(
+        f"PERIOD {t} / {horizon}", "",
+        "net_cashflow",      _fmt(net_cashflow),
+    ))
+    print(_row(
+        "reward",            f"{cum_reward:+.4f}",
+        "budget_available",  _fmt(budget),
+    ))
     print(_sep())
 
     # ── per-project blocks ────────────────────────────────────────────────────
@@ -73,38 +106,39 @@ def render(t: int,
         projects, proj_state, milestones, milestone_state
     ):
         i      = proj["i"]
-        status = ps.get("status", "pending")
+        status = _status_tag(ps.get("status", "pending"))
 
         tol     = ps.get("tolerance_remain", proj["termination_tolerance"])
         tol_max = proj["termination_tolerance"]
+        inflow  = ps.get("inflow",  0.0)
+        outflow = ps.get("outflow", 0.0)
 
-        proj_cf = ps.get("_last_cf_net", 0.0)   # per-project net; 0 if not set
+        # ── project heading ───────────────────────────────────────────────
+        print(f"  [{status}]  Project {i}")
 
-        # Line 1 — status + identity
-        print(
-            f"  [{_status_tag(status)}] Project {i}"
-        )
+        # ── identity ──────────────────────────────────────────────────────
+        print(_row(
+            "BAC",   _fmt(proj["bac"]),
+            "Price", _fmt(proj["price"]),
+        ))
+        print(_row(
+            "t_proj",            str(ps.get("t_project", 0)),
+            "tolerance_remain",  f"{tol}/{tol_max}",
+        ))
+        print(_row(
+            "inflow",  _fmt(inflow),
+            "outflow", _fmt(outflow),
+        ))
 
-        # Line 2 — BAC / Price / t_proj / tolerance / net_cashflow
-        print(
-            f"  BAC: {proj['bac']:,.0f}"
-            f"  ---  Price: {proj['price']:,.0f}"
-            f"  ---  t_proj: {ps.get('t_project', 0)}"
-            f"  ---  tolerance_remain : {tol}/{tol_max}"
-            f"  ---  net_cashflow : {ps.get('inflow', 0.0) - ps.get('outflow', 0.0):.2f}"
-        )
+        # ── catchup ───────────────────────────────────────────────────────
+        print(_sep("─"))
+        print(_row(
+            "catchup_t",      _fmt(ps.get("catchup_alloc_t",      0.0)),
+            "catchup_next_t", _fmt(ps.get("catchup_alloc_next_t", 0.0)),
+        ))
 
-        print()
-
-        # Line 3 — catchup
-        print(
-            f"    catchup_alloc_t  : {ps.get('catchup_alloc_t', 0.0):.2f}"
-            f"    ---    catchup_alloc_next_t : {ps.get('catchup_alloc_next_t', 0.0):.2f}"
-        )
-
-        print()
-
-        # Lines 4-7 — target milestone block
+        # ── target milestone ──────────────────────────────────────────────
+        print(_sep("─"))
         t_j         = ps.get("target_milestone_j")
         t_net_pay   = ps.get("target_net_payment",    0.0)
         t_gap_prog  = ps.get("target_progress_gap",   0.0)
@@ -114,30 +148,17 @@ def render(t: int,
 
         ms_label = f"j={t_j}" if t_j is not None else "none"
 
-        print(
-            f"    target_milestone"
-            f"              {ms_label}"
-            f"           ----  net_payment: {t_net_pay:>12,.2f}"
-        )
-        print(
-            f"    target_progress_gap  : {t_gap_prog:.4f}"
-            f"  ---  target_timestep_gap  : {t_gap_time:>3}"
-        )
-        print(
-            f"    target_required_alloc : {t_req_alloc:.2f}"
-        )
-        print(
-            f"    target_payment_rate   : {t_pay_rate:.4f}"
-        )
-
-        # Breach flags — only if any active
-        flags = ps.get("breach_flags", {})
-        active_flags = [
-            k.replace("over_", "").replace("_", "-").upper()
-            for k, v in flags.items()
-            if v and k != "over_any"
-        ]
-        if active_flags:
-            print(f"    ⚠  BREACHES: {', '.join(active_flags)}")
+        print(_row(
+            "target",        ms_label,
+            "net_payment",   _fmt(t_net_pay),
+        ))
+        print(_row(
+            "progress_gap",  _fmt(t_gap_prog, 4),
+            "timestep_gap",  str(t_gap_time),
+        ))
+        print(_row(
+            "required_alloc", _fmt(t_req_alloc),
+            "payment_rate",   _fmt(t_pay_rate, 4),
+        ))
 
         print(_sep())
