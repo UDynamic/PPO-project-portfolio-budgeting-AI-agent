@@ -474,6 +474,15 @@ class PortfolioBudgetingEnv(gym.Env):
 
         self.t += 1                          # increment AFTER DB write
 
+        # Refresh obs fields so timestep-relative values (target_timestep_gap,
+        # target_npv) are correct for the render and next step's early phase.
+        for ps, proj, milestones, ms_state_list in zip(
+            self.proj_state, self.projects,
+            self.milestones, self.milestone_state
+        ):
+            if ps["status"] in ("active", "completed", "terminated"):
+                self._update_obs_fields(ps, proj, milestones, ms_state_list)
+
         info = self._build_info()
         info["cashflow"]       = proj_cf
         info["period_inflow"]  = period_inflow
