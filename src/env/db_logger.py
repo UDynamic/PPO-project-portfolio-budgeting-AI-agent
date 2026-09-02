@@ -202,7 +202,7 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
 
             projected_cost_overrun, projected_finish, projected_finish_delay,
 
-            abandoned, over_duration_window,
+            over_duration_window,
             over_progress_delay, over_finish_delay, over_cost_overrun,
             over_any,
 
@@ -220,7 +220,7 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
             ?,
             ?,?,?,?,?,?,
             ?,?,?,
-            ?,?,?,?,?,?,
+            ?,?,?,?,?,
             ?
         )
     """, (
@@ -285,7 +285,6 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
         ps.get("projected_finish",       float(proj["planned_finish"])),
         ps.get("projected_finish_delay", 0.0),
 
-        int(flags.get("abandoned",            False)),
         int(flags.get("over_duration_window", False)),
         int(flags.get("over_progress_delay",  False)),
         int(flags.get("over_finish_delay",    False)),

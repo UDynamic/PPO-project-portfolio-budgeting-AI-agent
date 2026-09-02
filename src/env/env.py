@@ -314,8 +314,8 @@ class PortfolioBudgetingEnv(gym.Env):
                 self.t, ps, milestones, ms_state_list
             )
 
-            # 4. Breach evaluation (pre-allocation; abandoned always False)
-            flags = br.evaluate_breaches(ps, proj, alloc=None)
+            # 4. Breach evaluation (pre-allocation)
+            flags = br.evaluate_breaches(ps, proj)
 
             # 5. Hard deadline check — only over_duration_window terminates
             #    here. Tolerance is NOT updated in early phase — the agent
@@ -406,7 +406,7 @@ class PortfolioBudgetingEnv(gym.Env):
             proj_cf[i]["milestone_net"]  = ms_net
 
             # 14. Breach evaluation (post-allocation)
-            flags = br.evaluate_breaches(ps, proj, alloc=alloc)
+            flags = br.evaluate_breaches(ps, proj)
 
             # 15. Tolerance update — only here, after allocation is applied
             br.update_tolerance(ps, proj, flags)
@@ -802,7 +802,6 @@ class PortfolioBudgetingEnv(gym.Env):
             "projected_finish_delay":   0.0,
             "projected_cost_overrun":   1.0,
             "breach_flags": {
-                "abandoned":            False,
                 "over_progress_delay":  False,
                 "over_finish_delay":    False,
                 "over_cost_overrun":    False,

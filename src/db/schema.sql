@@ -316,7 +316,6 @@ CREATE TABLE IF NOT EXISTS projects_status (
     projected_finish_delay    REAL,     -- projected_finish - planned_finish
 
     -- breach flags
-    abandoned                INTEGER,   -- 1 if allocation_action < epsilon while active
     over_duration_window     INTEGER,   -- 1 if t >= planned_finish + finish_delay_cap
     over_progress_delay      INTEGER,   -- 1 if progress_delay > progress_delay_cap
     over_finish_delay        INTEGER,   -- 1 if projected_finish_delay > finish_delay_cap

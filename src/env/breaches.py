@@ -14,7 +14,6 @@
 #   logic in one place and avoid redundant checks across both phases.
 #
 # Breach flag names match projects_status schema exactly:
-#   abandoned            1 if allocation_action < epsilon while active
 #   over_progress_delay  1 if progress_delay_t > progress_delay_cap
 #   over_finish_delay    1 if projected_finish_delay > finish_delay_cap
 #   over_cost_overrun    1 if projected_cost_overrun > cost_overrun_cap
@@ -30,37 +29,31 @@
 
 from __future__ import annotations
 
-_EPSILON = 1e-9   # minimum allocation to avoid abandoned flag
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # BREACH EVALUATION
 # ─────────────────────────────────────────────────────────────────────────────
 
-def evaluate_breaches(ps: dict, proj: dict,
-                      alloc: float | None = None) -> dict:
+def evaluate_breaches(ps: dict, proj: dict) -> dict:
     """
     Evaluate all breach conditions for one active project.
 
     Called twice per timestep:
-      - Early phase:  alloc=None  → abandoned is always False
-      - Late phase:   alloc=float → abandoned checked against epsilon
+      - Early phase:  pre-allocation state
+      - Late phase:   post-allocation state
 
     over_duration_window is NOT computed here — see check_termination().
 
     Parameters
     ----------
-    ps    : project state dict (read-only)
-    proj  : project parameter dict (read-only)
-    alloc : allocation amount this period; None in early phase
+    ps   : project state dict (read-only)
+    proj : project parameter dict (read-only)
 
     Returns
     -------
-    dict with keys matching projects_status breach flag columns:
-        abandoned, over_progress_delay, over_finish_delay,
-        over_cost_overrun, over_any
+    dict with keys:
+        over_progress_delay, over_finish_delay,
+        over_cost_overrun, over_any, over_duration_window
     """
-    abandoned = False if alloc is None else (alloc < _EPSILON)
 
     over_progress_delay = (
         ps["progress_delay_t"] > proj["progress_delay_cap"]
@@ -73,19 +66,17 @@ def evaluate_breaches(ps: dict, proj: dict,
     )
 
     over_any = (
-        abandoned
-        or over_progress_delay
+        over_progress_delay
         or over_finish_delay
         or over_cost_overrun
     )
 
     return {
-        "abandoned":            abandoned,
         "over_progress_delay":  over_progress_delay,
         "over_finish_delay":    over_finish_delay,
         "over_cost_overrun":    over_cost_overrun,
         "over_any":             over_any,
-        "over_duration_window": False,   # placeholder; set by check_termination
+        "over_duration_window": False,
     }
 
 
