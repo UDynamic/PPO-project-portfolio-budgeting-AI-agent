@@ -160,9 +160,10 @@ def render(t: int,
             "progress_gap",  _fmt(t_gap_prog, 4),
             "timestep_gap",  str(t_gap_time),
         ))
+        t_npv = ps.get("target_npv", 0.0)
+
         print(_row(
             "required_alloc", _fmt(t_req_alloc),
-            "payment_rate",   _fmt(t_pay_rate, 4),
+            "target_npv",     _fmt(t_npv, 4),
         ))
-
         print(_sep())

@@ -198,7 +198,7 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
             target_milestone_j,
             target_progress_gap, target_timestep_gap,
             target_net_payment, target_required_alloc,
-            target_payment_rate,
+            target_payment_rate, target_npv,
 
             projected_cost_overrun, projected_finish, projected_finish_delay,
 
@@ -218,7 +218,7 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
             ?,?,?,?,?,?,?,
             ?,?,?,?,?,?,?,
             ?,
-            ?,?,?,?,?,
+            ?,?,?,?,?,?,
             ?,?,?,
             ?,?,?,?,?,?,
             ?
@@ -279,6 +279,7 @@ def _write_project_row(conn, episode_id, t, method, proj, ps, cf):
         ps.get("target_net_payment",     0.0),
         ps.get("target_required_alloc",  0.0),
         ps.get("target_payment_rate",    0.0),
+        ps.get("target_npv",             0.0),
 
         ps.get("projected_cost_overrun", 1.0),
         ps.get("projected_finish",       float(proj["planned_finish"])),
@@ -317,7 +318,7 @@ def _write_project_observation(conn, episode_id, t, method, proj, ps):
             target_progress_gap,
             target_timestep_gap,
             target_required_alloc,
-            target_payment_rate
+            target_npv
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         episode_id, proj["i"], t, ps.get("t_project"), method,
@@ -330,7 +331,7 @@ def _write_project_observation(conn, episode_id, t, method, proj, ps):
         ps.get("target_progress_gap",    0.0),
         ps.get("target_timestep_gap",    0),
         ps.get("target_required_alloc",  0.0),
-        ps.get("target_payment_rate",    0.0),
+        ps.get("target_npv",             0.0),
     ))
 
 

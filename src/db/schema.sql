@@ -305,9 +305,10 @@ CREATE TABLE IF NOT EXISTS projects_status (
     target_milestone_j        INTEGER,  -- index only, not in obs vector
     target_progress_gap       REAL,     -- threshold - progress_actual
     target_timestep_gap       INTEGER,  -- earliest_t - t_episode
-    target_net_payment        REAL,     -- 
+    target_net_payment        REAL,     --
     target_required_alloc     REAL,     -- target_progress_gap x BAC
     target_payment_rate       REAL,     -- target_net_payment / target_required_alloc
+    target_npv                REAL,     -- PV(target_net_payment, timestep_gap, discount) - target_required_alloc
 
     -- finish projections
     projected_cost_overrun    REAL,     -- EAC / BAC; compared against cost_overrun_cap
@@ -350,7 +351,7 @@ CREATE TABLE IF NOT EXISTS projects_observation (
     target_progress_gap      REAL,     -- threshold - progress_actual
     target_timestep_gap      INTEGER,  -- earliest_t - t_episode
     target_required_alloc    REAL,     -- target_progress_gap x BAC
-    target_payment_rate      REAL,     -- target_net_payment / target_required_alloc
+    target_npv               REAL,     -- PV(target_net_payment, timestep_gap, discount) - target_required_alloc
 
     PRIMARY KEY (episode_id, i, t_episode, method),
     FOREIGN KEY (episode_id, i) REFERENCES projects_profile(episode_id, i)

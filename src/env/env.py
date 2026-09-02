@@ -111,7 +111,7 @@ class PortfolioBudgetingEnv(gym.Env):
             0.0,    # target_progress_gap        (always >= 0)
            -1.0,    # target_timestep_gap_norm   (negative = overdue)
             0.0,    # target_required_alloc_norm
-            0.0,    # target_payment_rate
+           -1.0,    # target_npv_norm  (negative = costs more than it pays)
         ], n)
 
         proj_high = np.tile([
@@ -121,7 +121,7 @@ class PortfolioBudgetingEnv(gym.Env):
             1.0,
             1.0,
             1.0,
-            5.0,    # payment rate clipped at 5
+            1.0,    # target_npv_norm clipped at [-1, 1]
         ], n)
 
         port_low  = np.array([-2.0, 0.0])
@@ -584,6 +584,7 @@ class PortfolioBudgetingEnv(gym.Env):
         target_net_payment    = 0.0
         target_required_alloc = 0.0
         target_payment_rate   = 0.0
+        target_npv            = 0.0
 
         for ms, ms_state in zip(milestones, milestone_state):
             if ms["j"] == 0:
@@ -595,7 +596,18 @@ class PortfolioBudgetingEnv(gym.Env):
             target_timestep_gap   = ms["timestep_threshold"] - self.t
             target_net_payment    = ms["net_payment"]
             target_required_alloc = target_progress_gap * bac
-            target_payment_rate   = (
+
+            # NPV of pursuing this milestone right now:
+            # discount the net payment back by timestep_gap periods
+            # then subtract the required allocation cost
+            gap_periods = max(0, target_timestep_gap)
+            discounted_payment = (
+                target_net_payment / (self.discount ** gap_periods)
+                if self.discount > 1e-9 else target_net_payment
+            )
+            target_npv = discounted_payment - target_required_alloc
+
+            target_payment_rate = (
                 target_net_payment / target_required_alloc
                 if target_required_alloc > 1e-9 else 0.0
             )
@@ -607,6 +619,7 @@ class PortfolioBudgetingEnv(gym.Env):
         ps["target_net_payment"]    = target_net_payment
         ps["target_required_alloc"] = target_required_alloc
         ps["target_payment_rate"]   = target_payment_rate
+        ps["target_npv"]            = target_npv
     # ── OBSERVATION BUILDER ────────────────────────────────────────────────────
 
     def _build_obs(self) -> np.ndarray:
@@ -615,13 +628,14 @@ class PortfolioBudgetingEnv(gym.Env):
 
         Layout (7 × n_projects + 2 portfolio):
           Per project:
-            [0] tolerance_norm              = tolerance_remain / tol_max
+            [0] tolerance_remain            raw integer (not normalised)
             [1] catchup_alloc_t_norm        = catchup_alloc_t / initial_budget
             [2] catchup_alloc_next_t_norm   = catchup_alloc_next_t / initial_budget
             [3] target_progress_gap         raw [0, 1]
             [4] target_timestep_gap_norm    = target_timestep_gap / horizon
             [5] target_required_alloc_norm  = target_required_alloc / initial_budget
-            [6] target_payment_rate         clipped [0, 5]
+            [6] target_npv_norm             = target_npv / max(|target_npv|) across projects
+                                              clipped to [-1, 1]; 0 if all zero
           Portfolio:
             [7n+0] net_cashflow_norm        = last_net_cashflow / initial_budget
             [7n+1] budget_available_norm    = budget / initial_budget
@@ -629,18 +643,26 @@ class PortfolioBudgetingEnv(gym.Env):
         obs: list[float] = []
         ib = self.initial_budget if self.initial_budget > 0 else 1.0
 
+        # Cross-project normalisation of target_npv
+        npv_values = [ps["target_npv"] for ps in self.proj_state]
+        max_abs_npv = max(abs(v) for v in npv_values)
+        # avoid division by zero when all projects have target_npv = 0
+        npv_denom = max_abs_npv if max_abs_npv > 1e-9 else 1.0
+
         for proj, ps in zip(self.projects, self.proj_state):
-            tol_max  = proj["termination_tolerance"]
-            tol_norm = ps["tolerance_remain"] / tol_max if tol_max > 0 else 1.0
+            tol_max = proj["termination_tolerance"]
+            tol_raw = ps["tolerance_remain"]   # raw integer, not normalised
+
+            target_npv_norm = ps["target_npv"] / npv_denom
 
             obs.extend([
-                np.clip(tol_norm,                                       0.0, 1.0),
-                np.clip(ps["catchup_alloc_t"]      / ib,               0.0, 1.0),
-                np.clip(ps["catchup_alloc_next_t"] / ib,               0.0, 1.0),
-                np.clip(ps["target_progress_gap"],                      0.0, 1.0),
-                np.clip(ps["target_timestep_gap"]  / self.horizon,     -1.0, 1.0),
-                np.clip(ps["target_required_alloc"]/ ib,               0.0, 1.0),
-                np.clip(ps["target_payment_rate"],                      0.0, 5.0),
+                np.clip(tol_raw,                                            0.0, float(tol_max)),
+                np.clip(ps["catchup_alloc_t"]      / ib,                   0.0, 1.0),
+                np.clip(ps["catchup_alloc_next_t"] / ib,                   0.0, 1.0),
+                np.clip(ps["target_progress_gap"],                          0.0, 1.0),
+                np.clip(ps["target_timestep_gap"]  / self.horizon,         -1.0, 1.0),
+                np.clip(ps["target_required_alloc"]/ ib,                   0.0, 1.0),
+                np.clip(target_npv_norm,                                   -1.0, 1.0),
             ])
 
         obs.extend([
@@ -686,6 +708,7 @@ class PortfolioBudgetingEnv(gym.Env):
                     "target_timestep_gap":    ps["target_timestep_gap"],
                     "target_required_alloc":  ps["target_required_alloc"],
                     "target_payment_rate":    ps["target_payment_rate"],
+                    "target_npv":             ps["target_npv"],
                 }
                 for proj, ps in zip(self.projects, self.proj_state)
             ],
@@ -749,6 +772,7 @@ class PortfolioBudgetingEnv(gym.Env):
             "target_net_payment":       0.0,
             "target_required_alloc":    0.0,
             "target_payment_rate":      0.0,
+            "target_npv":               0.0,
             # evm
             "spi":                      1.0,
             "cpi":                      1.0,
