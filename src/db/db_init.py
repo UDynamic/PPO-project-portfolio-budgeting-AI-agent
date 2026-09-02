@@ -43,6 +43,8 @@ def verify(conn: sqlite3.Connection) -> None:
         "milestones_profile",
         "portfolios",
         "projects_status",
+        "projects_observation",
+        "portfolio_observation",
         "milestones_status",
         "training_log",
     ]
