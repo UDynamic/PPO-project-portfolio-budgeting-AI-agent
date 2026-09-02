@@ -339,8 +339,9 @@ class PortfolioBudgetingEnv(gym.Env):
                 self._update_obs_fields(ps, proj, milestones, ms_state_list)
                 continue
 
-            # 7. Completion check
-            if ps["progress_actual"] >= 1.0:
+            # 7. Completion check — progress AND all milestones certified
+            if (ps["progress_actual"] >= 1.0
+                    and self._all_milestones_certified(ms_state_list)):
                 ps["status"] = "completed"
                 self._update_obs_fields(ps, proj, milestones, ms_state_list)
                 continue
@@ -424,8 +425,9 @@ class PortfolioBudgetingEnv(gym.Env):
                 period_inflow              += max(0.0, settlement)
                 proj_cf[i]["settlement"]    = settlement
 
-            # 17. Completion check (only if not already terminated)
-            elif ps["progress_actual"] >= 1.0:
+            # 17. Completion check — progress AND all milestones certified
+            elif (ps["progress_actual"] >= 1.0
+                      and self._all_milestones_certified(ms_state_list)):
                 ps["status"] = "completed"
 
             # 18. Obs fields refresh — ALWAYS runs regardless of status
@@ -724,6 +726,15 @@ class PortfolioBudgetingEnv(gym.Env):
         }
 
     # ── ADVANCE DELIVERY HELPER ────────────────────────────────────────────────
+
+    @staticmethod
+    def _all_milestones_certified(milestone_state: list[dict]) -> bool:
+        """
+        Returns True only when every milestone (including final retention
+        release) has been certified. j=0 advance is included — it is always
+        certified at project start so it never blocks completion.
+        """
+        return all(ms["certified"] for ms in milestone_state)
 
     def _deliver_advance(self, ps: dict, proj: dict,
                          milestones: list[dict],
