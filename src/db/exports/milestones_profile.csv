@@ -1,6 +1,1 @@
 episode_id,i,j,progress_threshold,timestep_threshold,payment_weight,gross_payment,advance_recovery,advance_recovery_remain,retention_withheld,retention_released,net_payment
-5afb87e4-9ebe-4bcf-899f-da53d1ef0ec9,0,0,0.0,0,0.0,11.5,0.0,11.5,0.0,0.0,11.5
-5afb87e4-9ebe-4bcf-899f-da53d1ef0ec9,0,1,0.25,3,0.25,28.749999999999996,5.75,5.75,1.4375,0.0,21.562499999999996
-5afb87e4-9ebe-4bcf-899f-da53d1ef0ec9,0,2,0.5,6,0.25,28.749999999999996,5.75,0.0,1.4375,0.0,21.562499999999996
-5afb87e4-9ebe-4bcf-899f-da53d1ef0ec9,0,3,0.75,9,0.25,28.749999999999996,0.0,0.0,1.4375,0.0,27.312499999999996
-5afb87e4-9ebe-4bcf-899f-da53d1ef0ec9,0,4,1.0,12,0.25,28.749999999999996,0.0,0.0,1.4375,5.75,33.0625

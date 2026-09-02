@@ -1,6 +1,14 @@
 # src/env/env.py
+#
+# PortfolioBudgetingEnv — Gymnasium environment for project portfolio budgeting.
+# DB logging (SQLite) is inlined below the environment class.
+#
+# External imports: numpy, gymnasium, sqlite3, uuid
+# Internal imports: helper  (all pure logic — sampling, EVM, breaches, payments, render)
+
 from __future__ import annotations
 
+import sqlite3
 import uuid
 from typing import Any, Optional
 
@@ -8,17 +16,12 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-import db_logger
-import evm as evm_mod
-import payments as pay
-import breaches as br
-import render as rnd
-from sampler import (
-    sample, sample_int,
-    sample_project, sample_milestones, sample_efficiency,
-    planned_progress,
-)
+import helper as h
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENVIRONMENT
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class PortfolioBudgetingEnv(gym.Env):
 
@@ -29,7 +32,6 @@ class PortfolioBudgetingEnv(gym.Env):
                  conn=None,
                  method: str = "rl"):
         super().__init__()
-
         self.config      = config
         self.render_mode = render_mode
         self.conn        = conn
@@ -39,74 +41,58 @@ class PortfolioBudgetingEnv(gym.Env):
         self._n_projects_hint = n
         self._declare_spaces(n)
 
-        self.episode_id         : str        = ""
-        self.t                  : int        = 0
-        self.budget             : float      = 0.0
-        self.initial_budget     : float      = 0.0
-        self.discount           : float      = 1.0
-        self.horizon            : int        = 0
-        self.projects           : list[dict] = []
-        self.milestones         : list[list] = []
-        self.milestone_state    : list[list] = []
-        self.proj_state         : list[dict] = []
-        self._last_net_cashflow : float      = 0.0
-        # Advances paid during reset() for t=0 projects; consumed on first step
-        self._pending_advance_inflow: float  = 0.0
+        self.episode_id             : str        = ""
+        self.t                      : int        = 0
+        self.budget                 : float      = 0.0
+        self.initial_budget         : float      = 0.0
+        self.discount               : float      = 1.0
+        self.horizon                : int        = 0
+        self.projects               : list[dict] = []
+        self.milestones             : list[list] = []
+        self.milestone_state        : list[list] = []
+        self.proj_state             : list[dict] = []
+        self._last_net_cashflow     : float      = 0.0
+        self._pending_advance_inflow: float      = 0.0
+
+    # ── spaces ────────────────────────────────────────────────────────────────
 
     def _declare_spaces(self, n: int) -> None:
-        proj_low = np.tile([
-            0.0,   # tolerance_remain_norm
-            0.0,   # catchup_alloc_t_norm
-            0.0,   # catchup_alloc_next_t_norm
-            0.0,   # target_progress_gap
-           -1.0,   # target_timestep_gap_norm
-            0.0,   # target_required_alloc_norm
-           -1.0,   # target_npv_norm
-        ], n)
-
-        proj_high = np.tile([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], n)
-
-        port_low  = np.array([-2.0, 0.0])
-        port_high = np.array([ 2.0, 2.0])
-
+        proj_low  = np.tile([0.0, 0.0, 0.0, 0.0, -1.0, 0.0, -1.0], n)
+        proj_high = np.tile([1.0, 1.0, 1.0, 1.0,  1.0, 1.0,  1.0], n)
         self.observation_space = spaces.Box(
-            low  = np.concatenate([proj_low,  port_low]).astype(np.float32),
-            high = np.concatenate([proj_high, port_high]).astype(np.float32),
+            low  = np.concatenate([proj_low,  [-2.0, 0.0]]).astype(np.float32),
+            high = np.concatenate([proj_high, [ 2.0, 2.0]]).astype(np.float32),
             dtype=np.float32,
         )
-        self.action_space = spaces.Box(
-            low=0.0, high=1.0, shape=(n,), dtype=np.float32,
-        )
+        self.action_space = spaces.Box(low=0.0, high=1.0, shape=(n,), dtype=np.float32)
 
-    # ── RESET ─────────────────────────────────────────────────────────────────
+    # ── reset ─────────────────────────────────────────────────────────────────
 
     def reset(self, seed: Optional[int] = None,
               options: Optional[dict] = None) -> tuple[np.ndarray, dict]:
         super().reset(seed=seed)
-
         cfg             = self.config
         self.episode_id = str(uuid.uuid4())
         self.t          = 0
         self._last_net_cashflow      = 0.0
-        self._pending_advance_inflow = 0.0   # reset accumulator
+        self._pending_advance_inflow = 0.0
 
-        self.discount = max(0.0, min(1.0, sample(
-            self.np_random,
-            cfg["discount_dist"], cfg["discount_p1"],
-            cfg["discount_p2"],   cfg["discount_p3"], cfg["discount_p4"],
+        self.discount = max(0.0, min(1.0, h.sample(
+            self.np_random, cfg["discount_dist"],
+            cfg["discount_p1"], cfg["discount_p2"],
+            cfg["discount_p3"], cfg["discount_p4"],
         )))
 
-        n_projects = sample_int(
-            self.np_random,
-            cfg["n_projects_dist"], cfg["n_projects_p1"],
-            cfg["n_projects_p2"],   cfg["n_projects_p3"], cfg["n_projects_p4"],
+        n_projects = h.sample_int(
+            self.np_random, cfg["n_projects_dist"],
+            cfg["n_projects_p1"], cfg["n_projects_p2"],
+            cfg["n_projects_p3"], cfg["n_projects_p4"],
         )
 
-        self.initial_budget = max(0.0, sample(
-            self.np_random,
-            cfg["budget_available_dist"], cfg["budget_available_p1"],
-            cfg["budget_available_p2"],   cfg["budget_available_p3"],
-            cfg["budget_available_p4"],
+        self.initial_budget = max(0.0, h.sample(
+            self.np_random, cfg["budget_available_dist"],
+            cfg["budget_available_p1"], cfg["budget_available_p2"],
+            cfg["budget_available_p3"], cfg["budget_available_p4"],
         ))
         self.budget = self.initial_budget
 
@@ -114,93 +100,60 @@ class PortfolioBudgetingEnv(gym.Env):
             self._declare_spaces(n_projects)
             self._n_projects_hint = n_projects
 
-        self.projects        = []
-        self.milestones      = []
-        self.milestone_state = []
+        self.projects, self.milestones, self.milestone_state = [], [], []
         for i in range(n_projects):
-            proj = sample_project(self.np_random, cfg, i)
-            ms_list = sample_milestones(self.np_random, cfg, proj)
-            ms_state_list = [
-                {"certified": False,
-                 "certified_t": None,
-                 "payment_released": 0.0}
-                for _ in ms_list
-            ]
+            proj     = h.sample_project(self.np_random, cfg, i)
+            ms_list  = h.sample_milestones(self.np_random, cfg, proj)
+            ms_state = [{"certified": False, "certified_t": None, "payment_released": 0.0}
+                        for _ in ms_list]
             self.projects.append(proj)
             self.milestones.append(ms_list)
-            self.milestone_state.append(ms_state_list)
+            self.milestone_state.append(ms_state)
 
-        self.horizon = max(
-            p["planned_finish"] + p["finish_delay_cap"]
-            for p in self.projects
-        )
+        self.horizon = max(p["planned_finish"] + p["finish_delay_cap"] for p in self.projects)
+        self.proj_state = [self._init_proj_state(proj) for proj in self.projects]
 
-        self.proj_state = [
-            self._init_proj_state(proj) for proj in self.projects
-        ]
-
-        # Deliver advance payments for projects starting at t=0.
-        # The advance is added to budget immediately so the opening render
-        # shows the correct available balance.
-        # _pending_advance_inflow carries the amount into step() solely so
-        # the DB proj_cf row at t=0 records the advance correctly — it must
-        # NOT be added to period_inflow in step() again (budget already has it).
-        for ps, proj, milestones, ms_state_list in zip(
-            self.proj_state, self.projects,
-            self.milestones, self.milestone_state
-        ):
+        # Advance payments for t=0 projects — credited to budget immediately.
+        # _pending_advance_inflow carries the amount so step() can write the
+        # correct DB row without double-counting it in period_inflow.
+        for ps, proj, ms_list, ms_sl in zip(
+                self.proj_state, self.projects, self.milestones, self.milestone_state):
             if proj["planned_start"] == 0:
-                advance = self._deliver_advance(
-                    ps, proj, milestones, ms_state_list, t=0
-                )
-                self._pending_advance_inflow += advance
-                self.budget                  += advance   # visible immediately
+                adv = self._deliver_advance(ps, proj, ms_list, ms_sl, t=0)
+                self._pending_advance_inflow += adv
+                self.budget                  += adv
 
-        # Prime the render's cashflow display so period 0 shows the advance.
         self._last_net_cashflow = self._pending_advance_inflow
 
-        # Initial EVM + obs fields
-        for ps, proj, milestones, ms_state_list in zip(
-            self.proj_state, self.projects,
-            self.milestones, self.milestone_state
-        ):
-            ps["progress_plan_t"] = planned_progress(
-                ps["t_project"],
-                proj["planned_duration"],
-                proj["scurve_a"],
-                proj["scurve_b"],
-            )
-            evm_mod.update_evm(ps, proj)
-            self._update_obs_fields(ps, proj, milestones, ms_state_list)
+        # Prime EVM + obs fields
+        for ps, proj, ms_list, ms_sl in zip(
+                self.proj_state, self.projects, self.milestones, self.milestone_state):
+            ps["progress_plan_t"] = h.planned_progress(
+                ps["t_project"], proj["planned_duration"],
+                proj["scurve_a"], proj["scurve_b"])
+            h.update_evm(ps, proj)
+            self._update_obs_fields(ps, proj, ms_list, ms_sl)
 
         if self.conn is not None:
             try:
-                db_logger.write_profiles(
-                    self.conn, self.episode_id,
-                    self.config.get("config_id", ""),
-                    self.projects, self.milestones,
-                )
+                _db_write_profiles(self.conn, self.episode_id,
+                                   self.config.get("config_id", ""),
+                                   self.projects, self.milestones)
             except Exception:
                 pass
 
-        rnd.reset_history(self.episode_id, len(self.projects))
-
+        h.reset_history(self.episode_id, len(self.projects))
         return self._build_obs(), self._build_info()
 
-    # ── STEP ──────────────────────────────────────────────────────────────────
+    # ── step ──────────────────────────────────────────────────────────────────
 
-    def step(self, action: np.ndarray
-             ) -> tuple[np.ndarray, float, bool, bool, dict]:
-
-        n   = len(self.projects)
+    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
         cfg = self.config
+        n   = len(self.projects)
 
-        raw = np.clip(np.asarray(action, dtype=np.float64), 0.0, None)
-
-        active_mask = np.array(
-            [ps["status"] == "active" for ps in self.proj_state], dtype=bool
-        )
-        active_sum = float(raw[active_mask].sum())
+        raw          = np.clip(np.asarray(action, dtype=np.float64), 0.0, None)
+        active_mask  = np.array([ps["status"] == "active" for ps in self.proj_state], dtype=bool)
+        active_sum   = float(raw[active_mask].sum())
         if active_sum > 1.0 + 1e-9:
             raw = raw / active_sum
 
@@ -210,466 +163,325 @@ class PortfolioBudgetingEnv(gym.Env):
                 allocations[i] = 0.0
 
         discount_factor = self.discount ** self.t
-
-        # _pending_advance_inflow was already added to self.budget in reset()
-        # so it must NOT enter period_inflow here — that would double-count it.
-        # We clear it now; proj_cf population below uses ms_state directly.
-        period_inflow  = 0.0
-        period_outflow = 0.0
-        self._pending_advance_inflow = 0.0   # clear — budget already updated
+        period_inflow   = 0.0
+        period_outflow  = 0.0
+        self._pending_advance_inflow = 0.0
 
         proj_cf: list[dict] = [
-            {
-                "advance":       0.0,
-                "milestone_net": 0.0,
-                "settlement":    0.0,
-                "allocation":    0.0,
-                "interest":      0.0,
-                "treasury_draw": 0.0,
-            }
+            {"advance": 0.0, "milestone_net": 0.0, "settlement": 0.0,
+             "allocation": 0.0, "interest": 0.0, "treasury_draw": 0.0}
             for _ in self.projects
         ]
 
-        # Restore any advance already credited at reset into proj_cf[i]
-        # so the DB row for t=0 shows the advance correctly.
-        # Only applies when planned_start == 0 and certified_t == 0 == self.t.
-        for i, (proj, ps, milestones, ms_state_list) in enumerate(zip(
-            self.projects, self.proj_state,
-            self.milestones, self.milestone_state
-        )):
-            if (proj["planned_start"] == 0
-                    and self.t == 0
-                    and ms_state_list[0]["certified_t"] == 0):
-                proj_cf[i]["advance"] = ms_state_list[0]["payment_released"]
+        # Restore advance already credited at reset into proj_cf for t=0 DB row
+        for i, (proj, ps, ms_list, ms_sl) in enumerate(zip(
+                self.projects, self.proj_state, self.milestones, self.milestone_state)):
+            if proj["planned_start"] == 0 and self.t == 0 and ms_sl[0]["certified_t"] == 0:
+                proj_cf[i]["advance"] = ms_sl[0]["payment_released"]
 
-        # ══════════════════════════════════════════════════════════════════════
-        # EARLY PHASE
-        # Hard deadline (over_duration_window) fires here.
-        # All other breach conditions are evaluated so the agent sees the
-        # degraded state in the observation, but tolerance is NOT updated and
-        # non-deadline terminations are NOT fired — those happen in late phase
-        # AFTER the agent has had a chance to allocate and resolve the breach.
-        # ══════════════════════════════════════════════════════════════════════
+        # ── EARLY PHASE ──────────────────────────────────────────────────────
+        # Hard deadline fires here. Other breaches update obs only (no tolerance,
+        # no non-deadline termination) — the agent gets one period to allocate first.
 
         certified_js_by_proj: list[list[int]] = [[] for _ in self.projects]
 
-        for i, (proj, ps, milestones, ms_state_list) in enumerate(zip(
-            self.projects, self.proj_state,
-            self.milestones, self.milestone_state
-        )):
+        for i, (proj, ps, ms_list, ms_sl) in enumerate(zip(
+                self.projects, self.proj_state, self.milestones, self.milestone_state)):
+
             if self.t < proj["planned_start"]:
                 ps["status"] = "pending"
                 continue
-
             if ps["status"] in ("completed", "terminated"):
                 continue
 
-            # 1. Advance delivery for projects starting this period (t > 0)
+            # Advance for projects starting this period (t > 0)
             if self.t == proj["planned_start"] and proj["planned_start"] > 0:
-                advance = self._deliver_advance(
-                    ps, proj, milestones, ms_state_list, t=self.t
-                )
-                period_inflow        += advance
-                proj_cf[i]["advance"] = advance
+                adv = self._deliver_advance(ps, proj, ms_list, ms_sl, t=self.t)
+                period_inflow        += adv
+                proj_cf[i]["advance"] = adv
 
-            # 2. EVM update
-            ps["progress_plan_t"] = planned_progress(
-                ps["t_project"],
-                proj["planned_duration"],
-                proj["scurve_a"],
-                proj["scurve_b"],
-            )
-            evm_mod.update_evm(ps, proj)
+            # EVM update
+            ps["progress_plan_t"] = h.planned_progress(
+                ps["t_project"], proj["planned_duration"],
+                proj["scurve_a"], proj["scurve_b"])
+            h.update_evm(ps, proj)
 
-            # 3. Certification check
-            certified_js_by_proj[i] = pay.check_certifications(
-                self.t, ps, milestones, ms_state_list
-            )
+            # Certification check
+            certified_js_by_proj[i] = h.check_certifications(self.t, ps, ms_list, ms_sl)
 
-            # 4. Breach evaluation (pre-allocation, for observation only)
-            #    Tolerance is NOT updated here — only in late phase.
-            flags = br.evaluate_breaches(ps, proj)
+            # Breach flags (pre-allocation, obs only)
+            flags = h.evaluate_breaches(ps, proj)
 
-            # 5. Hard deadline check — ONLY over_duration_window terminates
-            #    in the early phase. No tolerance update happens here.
-            over_duration_window = (
-                self.t >= proj["planned_finish"] + proj["finish_delay_cap"]
-            )
-            flags["over_duration_window"] = over_duration_window
+            # Hard deadline — only over_duration_window terminates in early phase
+            odw = self.t >= proj["planned_finish"] + proj["finish_delay_cap"]
+            flags["over_duration_window"] = odw
             ps["breach_flags"] = flags
 
-            if over_duration_window:
+            if odw:
                 ps["status"] = "terminated"
-                settlement   = pay.compute_termination_settlement(proj, ps)
-                ps["termination_settlement"] = settlement
-                ps["inflow"]               += max(0.0, settlement)
-                period_inflow              += max(0.0, settlement)
-                proj_cf[i]["settlement"]    = settlement
-                self._update_obs_fields(ps, proj, milestones, ms_state_list)
+                s = h.compute_termination_settlement(proj, ps)
+                ps["termination_settlement"] = s
+                ps["inflow"]  += max(0.0, s)
+                period_inflow += max(0.0, s)
+                proj_cf[i]["settlement"] = s
+                self._update_obs_fields(ps, proj, ms_list, ms_sl)
                 continue
 
-            # 6. Completion check
-            if (ps["progress_actual"] >= 1.0
-                    and self._all_milestones_certified(ms_state_list)):
+            if ps["progress_actual"] >= 1.0 and _all_certified(ms_sl):
                 ps["status"] = "completed"
-                self._update_obs_fields(ps, proj, milestones, ms_state_list)
+                self._update_obs_fields(ps, proj, ms_list, ms_sl)
                 continue
 
-            # 7. Obs fields — after EVM, before allocation
-            self._update_obs_fields(ps, proj, milestones, ms_state_list)
+            self._update_obs_fields(ps, proj, ms_list, ms_sl)
 
-        # ── GET OBSERVATION ────────────────────────────────────────────────
         obs = self._build_obs()
 
-        # ══════════════════════════════════════════════════════════════════════
-        # LATE PHASE
-        # Tolerance update and non-deadline termination fire here, AFTER
-        # the agent's allocation has been applied and progress updated.
-        # This gives the agent a full period to resolve any breach before
-        # tolerance is decremented.
-        # ══════════════════════════════════════════════════════════════════════
+        # ── LATE PHASE ───────────────────────────────────────────────────────
+        # Tolerance update + non-deadline termination after allocation is applied.
 
-        for i, (proj, ps, milestones, ms_state_list) in enumerate(zip(
-            self.projects, self.proj_state,
-            self.milestones, self.milestone_state
-        )):
+        for i, (proj, ps, ms_list, ms_sl) in enumerate(zip(
+                self.projects, self.proj_state, self.milestones, self.milestone_state)):
+
             if ps["status"] != "active":
                 continue
 
             alloc = float(allocations[i])
 
-            # 10. Interest — based on cumulative deficit BEFORE this allocation
+            # Interest on treasury draw (cumulative deficit before this allocation)
             monthly_rate  = cfg["annual_interest_rate"] / 12.0
             treasury_draw = max(0.0, ps["outflow"] - ps["inflow"])
             interest      = monthly_rate * treasury_draw
-
             proj_cf[i]["treasury_draw"] = treasury_draw
             proj_cf[i]["interest"]      = interest
-            period_outflow             += interest
+            period_outflow += interest
 
-            # 11. Allocation & progress
-            eta       = sample_efficiency(self.np_random, cfg)
+            # Allocation & progress
+            eta       = h.sample_efficiency(self.np_random, cfg)
             increment = (alloc / proj["bac"]) * eta if proj["bac"] > 0 else 0.0
-
-            ps["progress_actual"]    = min(1.0, ps["progress_actual"] + increment)
-            ps["outflow"]           += alloc + interest
-            ps["efficiency"]         = eta
-            ps["allocation_action"]  = alloc
-            period_outflow          += alloc
+            ps["progress_actual"]   = min(1.0, ps["progress_actual"] + increment)
+            ps["outflow"]          += alloc + interest
+            ps["efficiency"]        = eta
+            ps["allocation_action"] = alloc
+            period_outflow         += alloc
             proj_cf[i]["allocation"] = alloc
 
-            # 12. EVM update (post-allocation) — t_project NOT yet incremented
-            #     so the plan is evaluated at the current period, matching
-            #     exactly what the agent saw in the observation. Breach eval
-            #     at step 14 must compare progress against this same target.
-            ps["progress_plan_t"] = planned_progress(
-                ps["t_project"],
-                proj["planned_duration"],
-                proj["scurve_a"],
-                proj["scurve_b"],
-            )
-            evm_mod.update_evm(ps, proj)
+            # EVM update (post-allocation; t_project not yet incremented)
+            ps["progress_plan_t"] = h.planned_progress(
+                ps["t_project"], proj["planned_duration"],
+                proj["scurve_a"], proj["scurve_b"])
+            h.update_evm(ps, proj)
 
-            # 13. Payment delivery
-            ms_net = pay.deliver_payments(
-                certified_js_by_proj[i], self.t,
-                ps, milestones, ms_state_list
-            )
-            period_inflow               += ms_net
-            proj_cf[i]["milestone_net"]  = ms_net
+            # Payment delivery
+            ms_net = h.deliver_payments(certified_js_by_proj[i], self.t, ps, ms_list, ms_sl)
+            period_inflow              += ms_net
+            proj_cf[i]["milestone_net"] = ms_net
 
-            # 14. Breach evaluation (post-allocation) — authoritative for
-            #     tolerance and termination decisions this period.
-            #     Uses current-period plan (t_project not yet incremented).
-            flags = br.evaluate_breaches(ps, proj)
-
-            # 15. Tolerance update — fires AFTER allocation is applied so the
-            #     agent can resolve the breach and avoid a decrement.
-            #     If the breach is cleared by the allocation, tolerance resets.
-            br.update_tolerance(ps, proj, flags)
-
-            # 16. Termination check (non-deadline only — deadline fired early)
-            terminated, over_deadline = br.check_termination(
-                self.t, ps, proj, flags
-            )
+            # Breach evaluation (post-allocation — authoritative)
+            flags = h.evaluate_breaches(ps, proj)
+            h.update_tolerance(ps, proj, flags)
+            terminated, _ = h.check_termination(self.t, ps, proj, flags)
             ps["breach_flags"] = flags
 
             if terminated:
                 ps["status"] = "terminated"
-                settlement   = pay.compute_termination_settlement(proj, ps)
-                ps["termination_settlement"] = settlement
-                ps["inflow"]               += max(0.0, settlement)
-                period_inflow              += max(0.0, settlement)
-                proj_cf[i]["settlement"]    = settlement
-
-            elif (ps["progress_actual"] >= 1.0
-                      and self._all_milestones_certified(ms_state_list)):
+                s = h.compute_termination_settlement(proj, ps)
+                ps["termination_settlement"] = s
+                ps["inflow"]  += max(0.0, s)
+                period_inflow += max(0.0, s)
+                proj_cf[i]["settlement"] = s
+            elif ps["progress_actual"] >= 1.0 and _all_certified(ms_sl):
                 ps["status"] = "completed"
 
-            # 17. Increment t_project AFTER breach eval and termination check.
-            #     Steps 14-16 judge progress against the plan the agent was
-            #     shown, not the next period's higher plan target.
+            # Increment t_project AFTER breach eval so plan target matches observation
             ps["t_project"] += 1
+            self._update_obs_fields(ps, proj, ms_list, ms_sl)
 
-            # 18. Obs fields refresh — now uses incremented t_project so
-            #     catchup_next_t and reach_plan_next_t correctly preview the
-            #     period after next from the agent's perspective.
-            self._update_obs_fields(ps, proj, milestones, ms_state_list)
-
-        # ══════════════════════════════════════════════════════════════════════
-        # RECORD
-        # ══════════════════════════════════════════════════════════════════════
+        # ── RECORD ───────────────────────────────────────────────────────────
 
         net_cashflow            = period_inflow - period_outflow
         self._last_net_cashflow = net_cashflow
         self.budget            += net_cashflow
         reward                  = float(discount_factor * net_cashflow)
 
-        all_terminal = all(
-            ps["status"] in ("completed", "terminated")
-            for ps in self.proj_state
-        )
+        all_terminal  = all(ps["status"] in ("completed", "terminated") for ps in self.proj_state)
         terminated_ep = all_terminal
         truncated_ep  = self.t >= self.horizon
 
         if self.conn is not None:
             try:
-                db_logger.write_step(
-                    self.conn,
-                    self.episode_id,
-                    self.config.get("config_id", ""),
-                    self.t,
-                    self.method,
-                    self.budget,
-                    net_cashflow,
-                    reward,
+                _db_write_step(
+                    self.conn, self.episode_id, self.config.get("config_id", ""),
+                    self.t, self.method, self.budget, net_cashflow, reward,
                     terminated_ep or truncated_ep,
-                    self.projects,
-                    self.proj_state,
-                    self.milestones,
-                    self.milestone_state,
-                    proj_cf,
+                    self.projects, self.proj_state,
+                    self.milestones, self.milestone_state, proj_cf,
                 )
-                db_logger.commit(self.conn)
+                _db_commit(self.conn)
             except Exception:
                 pass
 
         self.t += 1
 
-        for ps, proj, milestones, ms_state_list in zip(
-            self.proj_state, self.projects,
-            self.milestones, self.milestone_state
-        ):
+        for ps, proj, ms_list, ms_sl in zip(
+                self.proj_state, self.projects, self.milestones, self.milestone_state):
             if ps["status"] in ("active", "completed", "terminated"):
-                self._update_obs_fields(ps, proj, milestones, ms_state_list)
+                self._update_obs_fields(ps, proj, ms_list, ms_sl)
 
         info = self._build_info()
         info["cashflow"]       = proj_cf
         info["period_inflow"]  = period_inflow
         info["period_outflow"] = period_outflow
-
         return obs, reward, terminated_ep, truncated_ep, info
 
-    # ── GYMNASIUM API ──────────────────────────────────────────────────────────
+    # ── gymnasium API ─────────────────────────────────────────────────────────
 
     def render(self) -> Optional[str]:
         if self.render_mode != "ansi":
             return None
-        rnd.render(
-            t               = self.t,
-            budget          = self.budget,
-            horizon         = self.horizon,
-            initial_budget  = self.initial_budget,
-            projects        = self.projects,
-            proj_state      = self.proj_state,
-            milestones      = self.milestones,
-            milestone_state = self.milestone_state,
-            episode_id      = self.episode_id,
-            net_cashflow    = self._last_net_cashflow,
-            cum_reward      = 0.0,
+        h.render(
+            t=self.t, budget=self.budget, horizon=self.horizon,
+            initial_budget=self.initial_budget,
+            projects=self.projects, proj_state=self.proj_state,
+            milestones=self.milestones, milestone_state=self.milestone_state,
+            episode_id=self.episode_id,
+            net_cashflow=self._last_net_cashflow, cum_reward=0.0,
         )
         return None
 
     def close(self) -> None:
         pass
 
-    # ── OBSERVATION FIELD COMPUTATION ─────────────────────────────────────────
+    # ── observation field computation ─────────────────────────────────────────
 
     def _update_obs_fields(self, ps: dict, proj: dict,
-                           milestones: list[dict],
-                           milestone_state: list[dict]) -> None:
-        bac       = proj["bac"]
-        prog      = ps.get("progress_actual", 0.0)
-        t_proj    = ps.get("t_project", 0)
-        duration  = proj["planned_duration"]
-        a         = proj["scurve_a"]
-        b         = proj["scurve_b"]
-        delay_cap = proj["progress_delay_cap"]
-
+                           milestones: list[dict], milestone_state: list[dict]) -> None:
+        bac      = proj["bac"]
+        prog     = ps.get("progress_actual", 0.0)
+        t_proj   = ps.get("t_project", 0)
+        dur      = proj["planned_duration"]
+        a, b     = proj["scurve_a"], proj["scurve_b"]
+        dcap     = proj["progress_delay_cap"]
         plan_t   = ps.get("progress_plan_t", 0.0)
+
+        # Current-period catchup fields
         delay_t  = plan_t - prog
+        ps["progress_delay_t"]  = delay_t
+        ps["progress_space_t"]  = dcap - delay_t
+        ps["min_prog_t"]        = max(0.0, plan_t - dcap)
+        ps["progress_needed_t"] = max(0.0, ps["min_prog_t"] - prog)
+        ps["catchup_alloc_t"]   = ps["progress_needed_t"] * bac
+        ps["reach_plan_t"]      = max(0.0, plan_t - prog) * bac
 
-        space_t  = delay_cap - delay_t
-        min_t    = max(0.0, plan_t - delay_cap)
-        needed_t = max(0.0, min_t - prog)
-        catch_t  = needed_t * bac
-        reach_t  = max(0.0, plan_t - prog) * bac
-
-        ps["progress_delay_t"]    = delay_t
-        ps["progress_space_t"]    = space_t
-        ps["min_prog_t"]          = min_t
-        ps["progress_needed_t"]   = needed_t
-        ps["catchup_alloc_t"]     = catch_t
-        ps["reach_plan_t"]        = reach_t
-
-        plan_nt   = planned_progress(t_proj + 1, duration, a, b)
-        delay_nt  = plan_nt - prog
-        space_nt  = delay_cap - delay_nt
-        min_nt    = max(0.0, plan_nt - delay_cap)
-        needed_nt = max(0.0, min_nt - prog)
-        catch_nt  = needed_nt * bac
-        reach_nt  = max(0.0, plan_nt - prog) * bac
-
+        # Next-period catchup fields
+        plan_nt  = h.planned_progress(t_proj + 1, dur, a, b)
+        delay_nt = plan_nt - prog
+        min_nt   = max(0.0, plan_nt - dcap)
         ps["progress_plan_next_t"]    = plan_nt
         ps["progress_delay_next_t"]   = delay_nt
-        ps["progress_space_next_t"]   = space_nt
+        ps["progress_space_next_t"]   = dcap - delay_nt
         ps["min_prog_next_t"]         = min_nt
-        ps["progress_needed_next_t"]  = needed_nt
-        ps["catchup_alloc_next_t"]    = catch_nt
-        ps["reach_plan_next_t"]       = reach_nt
+        ps["progress_needed_next_t"]  = max(0.0, min_nt - prog)
+        ps["catchup_alloc_next_t"]    = ps["progress_needed_next_t"] * bac
+        ps["reach_plan_next_t"]       = max(0.0, plan_nt - prog) * bac
 
-        target_j              = None
-        target_progress_gap   = 0.0
-        target_timestep_gap   = 0
-        target_net_payment    = 0.0
-        target_required_alloc = 0.0
-        target_payment_rate   = 0.0
-        target_npv            = 0.0
-
+        # Target milestone
+        target_j = target_pg = target_tg = target_np = target_ra = target_pr = target_npv = None
         for ms, ms_state in zip(milestones, milestone_state):
-            if ms["j"] == 0:
+            if ms["j"] == 0 or ms_state["certified"]:
                 continue
-            if ms_state["certified"]:
-                continue
-            target_j              = ms["j"]
-            target_progress_gap   = max(0.0, ms["progress_threshold"] - prog)
-            target_timestep_gap   = ms["timestep_threshold"] - self.t
-            target_net_payment    = ms["net_payment"]
-            target_required_alloc = target_progress_gap * bac
-
-            gap_periods = max(0, target_timestep_gap)
-            discounted_payment = (
-                target_net_payment / (self.discount ** gap_periods)
-                if self.discount > 1e-9 else target_net_payment
-            )
-            target_npv = discounted_payment - target_required_alloc
-
-            target_payment_rate = (
-                target_net_payment / target_required_alloc
-                if target_required_alloc > 1e-9 else 0.0
-            )
+            target_j  = ms["j"]
+            target_pg = max(0.0, ms["progress_threshold"] - prog)
+            target_tg = ms["timestep_threshold"] - self.t
+            target_np = ms["net_payment"]
+            target_ra = target_pg * bac
+            gap       = max(0, target_tg)
+            disc_pay  = (target_np / (self.discount ** gap)
+                         if self.discount > 1e-9 else target_np)
+            target_npv = disc_pay - target_ra
+            target_pr  = target_np / target_ra if target_ra > 1e-9 else 0.0
             break
 
         ps["target_milestone_j"]    = target_j
-        ps["target_progress_gap"]   = target_progress_gap
-        ps["target_timestep_gap"]   = target_timestep_gap
-        ps["target_net_payment"]    = target_net_payment
-        ps["target_required_alloc"] = target_required_alloc
-        ps["target_payment_rate"]   = target_payment_rate
-        ps["target_npv"]            = target_npv
+        ps["target_progress_gap"]   = target_pg   or 0.0
+        ps["target_timestep_gap"]   = target_tg   or 0
+        ps["target_net_payment"]    = target_np   or 0.0
+        ps["target_required_alloc"] = target_ra   or 0.0
+        ps["target_payment_rate"]   = target_pr   or 0.0
+        ps["target_npv"]            = target_npv  or 0.0
 
-    # ── OBSERVATION BUILDER ────────────────────────────────────────────────────
+    # ── observation builder ───────────────────────────────────────────────────
 
     def _build_obs(self) -> np.ndarray:
+        ib       = self.initial_budget if self.initial_budget > 0 else 1.0
+        npv_vals = [ps["target_npv"] for ps in self.proj_state]
+        npv_den  = max(abs(v) for v in npv_vals)
+        npv_den  = npv_den if npv_den > 1e-9 else 1.0
+
         obs: list[float] = []
-        ib = self.initial_budget if self.initial_budget > 0 else 1.0
-
-        npv_values  = [ps["target_npv"] for ps in self.proj_state]
-        max_abs_npv = max(abs(v) for v in npv_values)
-        npv_denom   = max_abs_npv if max_abs_npv > 1e-9 else 1.0
-
         for proj, ps in zip(self.projects, self.proj_state):
-            tol_max         = proj["termination_tolerance"]
-            tol_raw         = ps["tolerance_remain"]
-            target_npv_norm = ps["target_npv"] / npv_denom
-
+            tol_max = proj["termination_tolerance"]
             obs.extend([
-                np.clip(tol_raw,                                          0.0, float(tol_max)),
-                np.clip(ps["catchup_alloc_t"]      / ib,                 0.0, 1.0),
-                np.clip(ps["catchup_alloc_next_t"] / ib,                 0.0, 1.0),
-                np.clip(ps["target_progress_gap"],                        0.0, 1.0),
-                np.clip(ps["target_timestep_gap"]  / self.horizon,       -1.0, 1.0),
-                np.clip(ps["target_required_alloc"]/ ib,                 0.0, 1.0),
-                np.clip(target_npv_norm,                                 -1.0, 1.0),
+                np.clip(ps["tolerance_remain"],                             0.0, float(tol_max)),
+                np.clip(ps["catchup_alloc_t"]      / ib,                   0.0, 1.0),
+                np.clip(ps["catchup_alloc_next_t"] / ib,                   0.0, 1.0),
+                np.clip(ps["target_progress_gap"],                          0.0, 1.0),
+                np.clip(ps["target_timestep_gap"]  / self.horizon,         -1.0, 1.0),
+                np.clip(ps["target_required_alloc"]/ ib,                   0.0, 1.0),
+                np.clip(ps["target_npv"]           / npv_den,              -1.0, 1.0),
             ])
-
         obs.extend([
-            np.clip(self._last_net_cashflow / ib, -2.0,  2.0),
-            np.clip(self.budget             / ib,  0.0,  2.0),
+            np.clip(self._last_net_cashflow / ib, -2.0, 2.0),
+            np.clip(self.budget             / ib,  0.0, 2.0),
         ])
-
         return np.array(obs, dtype=np.float32)
 
-    # ── INFO ───────────────────────────────────────────────────────────────────
+    # ── info builder ──────────────────────────────────────────────────────────
 
     def _build_info(self) -> dict:
         return {
-            "t_episode": self.t,
-            "budget":    self.budget,
-            "horizon":   self.horizon,
-            "projects": [
-                {
-                    "i":                      proj["i"],
-                    "status":                 ps["status"],
-                    "bac":                    proj["bac"],
-                    "planned_start":          proj["planned_start"],
-                    "planned_finish":         proj["planned_finish"],
-                    "progress_actual":        ps["progress_actual"],
-                    "progress_plan_t":        ps["progress_plan_t"],
-                    "progress_delay_t":       ps["progress_delay_t"],
-                    "spi":                    ps["spi"],
-                    "cpi":                    ps["cpi"],
-                    "tcpi":                   ps["tcpi"],
-                    "eac":                    ps["eac"],
-                    "projected_finish":       ps["projected_finish"],
-                    "projected_finish_delay": ps["projected_finish_delay"],
-                    "projected_cost_overrun": ps["projected_cost_overrun"],
-                    "tolerance_remain":       ps["tolerance_remain"],
-                    "t_project":              ps["t_project"],
-                    "inflow":                 ps["inflow"],
-                    "outflow":                ps["outflow"],
-                    "catchup_alloc_t":        ps["catchup_alloc_t"],
-                    "catchup_alloc_next_t":   ps["catchup_alloc_next_t"],
-                    "reach_plan_t":           ps["reach_plan_t"],
-                    "reach_plan_next_t":      ps["reach_plan_next_t"],
-                    "target_progress_gap":    ps["target_progress_gap"],
-                    "target_timestep_gap":    ps["target_timestep_gap"],
-                    "target_required_alloc":  ps["target_required_alloc"],
-                    "target_payment_rate":    ps["target_payment_rate"],
-                    "target_npv":             ps["target_npv"],
-                }
-                for proj, ps in zip(self.projects, self.proj_state)
-            ],
+            "t_episode": self.t, "budget": self.budget, "horizon": self.horizon,
+            "projects": [{
+                "i":                      proj["i"],
+                "status":                 ps["status"],
+                "bac":                    proj["bac"],
+                "planned_start":          proj["planned_start"],
+                "planned_finish":         proj["planned_finish"],
+                "progress_actual":        ps["progress_actual"],
+                "progress_plan_t":        ps["progress_plan_t"],
+                "progress_delay_t":       ps["progress_delay_t"],
+                "spi":                    ps["spi"],
+                "cpi":                    ps["cpi"],
+                "tcpi":                   ps["tcpi"],
+                "eac":                    ps["eac"],
+                "projected_finish":       ps["projected_finish"],
+                "projected_finish_delay": ps["projected_finish_delay"],
+                "projected_cost_overrun": ps["projected_cost_overrun"],
+                "tolerance_remain":       ps["tolerance_remain"],
+                "t_project":              ps["t_project"],
+                "inflow":                 ps["inflow"],
+                "outflow":                ps["outflow"],
+                "catchup_alloc_t":        ps["catchup_alloc_t"],
+                "catchup_alloc_next_t":   ps["catchup_alloc_next_t"],
+                "reach_plan_t":           ps["reach_plan_t"],
+                "reach_plan_next_t":      ps["reach_plan_next_t"],
+                "target_progress_gap":    ps["target_progress_gap"],
+                "target_timestep_gap":    ps["target_timestep_gap"],
+                "target_required_alloc":  ps["target_required_alloc"],
+                "target_payment_rate":    ps["target_payment_rate"],
+                "target_npv":             ps["target_npv"],
+            } for proj, ps in zip(self.projects, self.proj_state)],
         }
 
-    # ── HELPERS ────────────────────────────────────────────────────────────────
-
-    @staticmethod
-    def _all_milestones_certified(milestone_state: list[dict]) -> bool:
-        return all(ms["certified"] for ms in milestone_state)
+    # ── helpers ───────────────────────────────────────────────────────────────
 
     def _deliver_advance(self, ps: dict, proj: dict,
-                         milestones: list[dict],
-                         milestone_state: list[dict],
+                         milestones: list[dict], milestone_state: list[dict],
                          t: int) -> float:
         ms_state = milestone_state[0]
         if ms_state["certified"]:
             return 0.0
-
         amount = milestones[0]["net_payment"]
-        ms_state["certified"]        = True
-        ms_state["certified_t"]      = t
-        ms_state["payment_released"] = amount
+        ms_state.update(certified=True, certified_t=t, payment_released=amount)
         ps["status"]  = "active"
         ps["inflow"] += amount
         return amount
@@ -677,48 +489,220 @@ class PortfolioBudgetingEnv(gym.Env):
     @staticmethod
     def _init_proj_state(proj: dict) -> dict:
         return {
-            "status":                   "pending",
-            "t_project":                0,
-            "inflow":                   0.0,
-            "outflow":                  0.0,
-            "termination_settlement":   0.0,
-            "allocation_action":        0.0,
-            "efficiency":               1.0,
-            "progress_actual":          0.0,
-            "progress_plan_t":          0.0,
-            "progress_delay_t":         0.0,
-            "progress_space_t":         0.0,
-            "min_prog_t":               0.0,
-            "progress_needed_t":        0.0,
-            "catchup_alloc_t":          0.0,
-            "reach_plan_t":             0.0,
-            "progress_plan_next_t":     0.0,
-            "progress_delay_next_t":    0.0,
-            "progress_space_next_t":    0.0,
-            "min_prog_next_t":          0.0,
-            "progress_needed_next_t":   0.0,
-            "catchup_alloc_next_t":     0.0,
-            "reach_plan_next_t":        0.0,
-            "target_milestone_j":       None,
-            "target_progress_gap":      0.0,
-            "target_timestep_gap":      0,
-            "target_net_payment":       0.0,
-            "target_required_alloc":    0.0,
-            "target_payment_rate":      0.0,
-            "target_npv":               0.0,
-            "spi":                      1.0,
-            "cpi":                      1.0,
-            "tcpi":                     1.0,
-            "eac":                      proj["bac"],
-            "projected_finish":         float(proj["planned_finish"]),
-            "projected_finish_delay":   0.0,
-            "projected_cost_overrun":   1.0,
+            "status": "pending", "t_project": 0,
+            "inflow": 0.0, "outflow": 0.0,
+            "termination_settlement": 0.0, "allocation_action": 0.0,
+            "efficiency": 1.0, "progress_actual": 0.0,
+            "progress_plan_t": 0.0,   "progress_delay_t": 0.0,
+            "progress_space_t": 0.0,  "min_prog_t": 0.0,
+            "progress_needed_t": 0.0, "catchup_alloc_t": 0.0, "reach_plan_t": 0.0,
+            "progress_plan_next_t": 0.0,   "progress_delay_next_t": 0.0,
+            "progress_space_next_t": 0.0,  "min_prog_next_t": 0.0,
+            "progress_needed_next_t": 0.0, "catchup_alloc_next_t": 0.0,
+            "reach_plan_next_t": 0.0,
+            "target_milestone_j": None, "target_progress_gap": 0.0,
+            "target_timestep_gap": 0,   "target_net_payment": 0.0,
+            "target_required_alloc": 0.0, "target_payment_rate": 0.0,
+            "target_npv": 0.0,
+            "spi": 1.0, "cpi": 1.0, "tcpi": 1.0,
+            "eac": proj["bac"],
+            "projected_finish": float(proj["planned_finish"]),
+            "projected_finish_delay": 0.0, "projected_cost_overrun": 1.0,
             "breach_flags": {
-                "over_progress_delay":  False,
-                "over_finish_delay":    False,
-                "over_cost_overrun":    False,
-                "over_duration_window": False,
-                "over_any":             False,
+                "over_progress_delay": False, "over_finish_delay": False,
+                "over_cost_overrun": False,   "over_duration_window": False,
+                "over_any": False,
             },
-            "tolerance_remain":         proj["termination_tolerance"],
+            "tolerance_remain": proj["termination_tolerance"],
         }
+
+
+# ── module-level helper ───────────────────────────────────────────────────────
+
+def _all_certified(milestone_state: list[dict]) -> bool:
+    return all(ms["certified"] for ms in milestone_state)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DB LOGGER  (SQLite audit ledger — inlined from db_logger.py)
+# All writes are fire-and-forget; callers wrap in try/except.
+# Column names match schema.sql exactly.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _db_write_profiles(conn: sqlite3.Connection, episode_id: str, config_id: str,
+                       projects: list[dict], milestones_list: list[list[dict]]) -> None:
+    try:
+        for proj in projects:
+            conn.execute("""
+                INSERT INTO projects_profile (
+                    episode_id, config_id, i,
+                    planned_start, planned_finish, planned_duration,
+                    bac, profit_percent, price,
+                    scurve_a, scurve_b,
+                    advance_percent, advance_trigger, advance_recovery,
+                    retention_rate,
+                    progress_delay_cap, finish_delay_cap,
+                    cost_overrun_cap, termination_tolerance
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                episode_id, config_id, proj["i"],
+                proj["planned_start"], proj["planned_finish"], proj["planned_duration"],
+                proj["bac"], proj["profit_percent"], proj["price"],
+                proj["scurve_a"], proj["scurve_b"],
+                proj["advance_percent"], proj["advance_trigger"], proj["advance_recovery"],
+                proj["retention_rate"],
+                proj["progress_delay_cap"], proj["finish_delay_cap"],
+                proj["cost_overrun_cap"], proj["termination_tolerance"],
+            ))
+        for i, ms_list in enumerate(milestones_list):
+            for ms in ms_list:
+                conn.execute("""
+                    INSERT INTO milestones_profile (
+                        episode_id, i, j,
+                        progress_threshold, timestep_threshold, payment_weight,
+                        gross_payment, advance_recovery, advance_recovery_remain,
+                        retention_withheld, retention_released, net_payment
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                """, (
+                    episode_id, i, ms["j"],
+                    ms["progress_threshold"], ms["timestep_threshold"],
+                    ms["payment_weight"], ms["gross_payment"],
+                    ms["advance_recovery"], ms["advance_recovery_remain"],
+                    ms["retention_withheld"], ms["retention_released"], ms["net_payment"],
+                ))
+        conn.commit()
+    except Exception:
+        pass
+
+
+def _db_write_step(conn: sqlite3.Connection, episode_id: str, config_id: str,
+                   t: int, method: str, budget: float, net_cashflow: float,
+                   reward: float, done: bool,
+                   projects: list[dict], proj_state: list[dict],
+                   milestones_list: list[list[dict]],
+                   milestone_state_list: list[list[dict]],
+                   proj_cf: list[dict]) -> None:
+    try:
+        conn.execute("""
+            INSERT INTO portfolios (
+                episode_id, config_id, t_episode, method,
+                budget_available, net_cashflow, reward, done
+            ) VALUES (?,?,?,?,?,?,?,?)
+        """, (episode_id, config_id, t, method, budget, net_cashflow, reward, int(done)))
+
+        conn.execute("""
+            INSERT INTO portfolio_observation (
+                episode_id, t_episode, method, net_cashflow, budget_available
+            ) VALUES (?,?,?,?,?)
+        """, (episode_id, t, method, net_cashflow, budget))
+
+        for proj, ps, milestones, ms_sl, cf in zip(
+                projects, proj_state, milestones_list, milestone_state_list, proj_cf):
+            flags = ps.get("breach_flags", {})
+            conn.execute("""
+                INSERT INTO projects_status (
+                    episode_id, i, t_episode, t_project, method,
+                    status,
+                    inflow, outflow, termination_settlement, net_cashflow,
+                    allocation_action, deficit, interest_cost, allocation,
+                    efficiency,
+                    spi, cpi, eac,
+                    progress_actual,
+                    progress_plan_t, progress_delay_t,
+                    progress_space_t, min_prog_t,
+                    progress_needed_t, catchup_alloc_t, reach_plan_t,
+                    progress_plan_next_t, progress_delay_next_t,
+                    progress_space_next_t, min_prog_next_t,
+                    progress_needed_next_t, catchup_alloc_next_t, reach_plan_next_t,
+                    target_milestone_j,
+                    target_progress_gap, target_timestep_gap,
+                    target_net_payment, target_required_alloc,
+                    target_payment_rate, target_npv,
+                    projected_cost_overrun, projected_finish, projected_finish_delay,
+                    over_duration_window,
+                    over_progress_delay, over_finish_delay, over_cost_overrun,
+                    over_any,
+                    tolerance_remain
+                ) VALUES (
+                    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+                )
+            """, (
+                episode_id, proj["i"], t, ps.get("t_project"), method,
+                ps.get("status"),
+                ps.get("inflow", 0.0), ps.get("outflow", 0.0),
+                ps.get("termination_settlement", 0.0),
+                (cf.get("milestone_net", 0.0) + cf.get("advance", 0.0)
+                 + cf.get("settlement", 0.0)
+                 - cf.get("allocation", 0.0) - cf.get("interest", 0.0)),
+                cf.get("allocation", 0.0), cf.get("treasury_draw", 0.0),
+                cf.get("interest", 0.0),
+                cf.get("allocation", 0.0) + cf.get("interest", 0.0),
+                ps.get("efficiency", 1.0),
+                ps.get("spi", 1.0), ps.get("cpi", 1.0), ps.get("eac", proj["bac"]),
+                ps.get("progress_actual", 0.0),
+                ps.get("progress_plan_t", 0.0),   ps.get("progress_delay_t", 0.0),
+                ps.get("progress_space_t", 0.0),  ps.get("min_prog_t", 0.0),
+                ps.get("progress_needed_t", 0.0), ps.get("catchup_alloc_t", 0.0),
+                ps.get("reach_plan_t", 0.0),
+                ps.get("progress_plan_next_t", 0.0),   ps.get("progress_delay_next_t", 0.0),
+                ps.get("progress_space_next_t", 0.0),  ps.get("min_prog_next_t", 0.0),
+                ps.get("progress_needed_next_t", 0.0), ps.get("catchup_alloc_next_t", 0.0),
+                ps.get("reach_plan_next_t", 0.0),
+                ps.get("target_milestone_j"),
+                ps.get("target_progress_gap", 0.0),   ps.get("target_timestep_gap", 0),
+                ps.get("target_net_payment", 0.0),    ps.get("target_required_alloc", 0.0),
+                ps.get("target_payment_rate", 0.0),   ps.get("target_npv", 0.0),
+                ps.get("projected_cost_overrun", 1.0),
+                ps.get("projected_finish", float(proj["planned_finish"])),
+                ps.get("projected_finish_delay", 0.0),
+                int(flags.get("over_duration_window", False)),
+                int(flags.get("over_progress_delay",  False)),
+                int(flags.get("over_finish_delay",    False)),
+                int(flags.get("over_cost_overrun",    False)),
+                int(flags.get("over_any",             False)),
+                ps.get("tolerance_remain", proj["termination_tolerance"]),
+            ))
+
+            conn.execute("""
+                INSERT INTO projects_observation (
+                    episode_id, i, t_episode, t_project, method,
+                    net_cashflow, tolerance_remain,
+                    catchup_alloc_t, catchup_alloc_next_t,
+                    reach_plan_t, reach_plan_next_t,
+                    target_progress_gap, target_timestep_gap,
+                    target_required_alloc, target_npv
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                episode_id, proj["i"], t, ps.get("t_project"), method,
+                ps.get("inflow", 0.0) - ps.get("outflow", 0.0),
+                ps.get("tolerance_remain", proj["termination_tolerance"]),
+                ps.get("catchup_alloc_t", 0.0),    ps.get("catchup_alloc_next_t", 0.0),
+                ps.get("reach_plan_t", 0.0),        ps.get("reach_plan_next_t", 0.0),
+                ps.get("target_progress_gap", 0.0), ps.get("target_timestep_gap", 0),
+                ps.get("target_required_alloc", 0.0), ps.get("target_npv", 0.0),
+            ))
+
+            for ms, ms_state in zip(milestones, ms_sl):
+                if not ms_state["certified"] or ms_state["certified_t"] != t:
+                    continue
+                delay = (ms_state["certified_t"] - ms["timestep_threshold"]
+                         if ms_state["certified_t"] is not None else None)
+                conn.execute("""
+                    INSERT OR REPLACE INTO milestones_status (
+                        episode_id, i, j, method,
+                        certified_t, certification_delay, net_payment
+                    ) VALUES (?,?,?,?,?,?,?)
+                """, (
+                    episode_id, proj["i"], ms["j"], method,
+                    ms_state["certified_t"], delay, ms_state["payment_released"],
+                ))
+    except Exception:
+        pass
+
+
+def _db_commit(conn: sqlite3.Connection) -> None:
+    try:
+        conn.commit()
+    except Exception:
+        pass
