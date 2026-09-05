@@ -26,12 +26,7 @@ CREATE TABLE IF NOT EXISTS environment_config (
     n_projects_p3               REAL,
     n_projects_p4               REAL,
 
-    budget_available_dist       TEXT NOT NULL,
-    budget_available_p1         REAL NOT NULL,
-    budget_available_p2         REAL,
-    budget_available_p3         REAL,
-    budget_available_p4         REAL,
-
+    -- budget_available = sum(bac) * budget_tightness
     budget_tightness_dist       TEXT NOT NULL,
     budget_tightness_p1         REAL NOT NULL,
     budget_tightness_p2         REAL,
@@ -119,13 +114,6 @@ CREATE TABLE IF NOT EXISTS environment_config (
     finish_delay_cap_p3         REAL,
     finish_delay_cap_p4         REAL,
 
-    -- cost_overrun_cap : max tolerated EAC / BAC ratio; e.g. 1.30 = 30% overrun
-    cost_overrun_cap_dist       TEXT NOT NULL,
-    cost_overrun_cap_p1         REAL NOT NULL,
-    cost_overrun_cap_p2         REAL,
-    cost_overrun_cap_p3         REAL,
-    cost_overrun_cap_p4         REAL,
-
     termination_tolerance_dist  TEXT NOT NULL,
     termination_tolerance_p1    REAL NOT NULL,
     termination_tolerance_p2    REAL,
@@ -198,7 +186,6 @@ CREATE TABLE IF NOT EXISTS projects_profile (
     -- breach caps
     progress_delay_cap       REAL    NOT NULL,
     finish_delay_cap         INTEGER NOT NULL,
-    cost_overrun_cap         REAL    NOT NULL,
     termination_tolerance    INTEGER NOT NULL,
 
     PRIMARY KEY (episode_id, i)
@@ -239,6 +226,7 @@ CREATE TABLE IF NOT EXISTS portfolios (
     t_episode            INTEGER NOT NULL,
     method               TEXT    NOT NULL,
 
+    -- budget_available = sum(bac) * budget_tightness
     budget_available     REAL    NOT NULL,
     net_cashflow         REAL    NOT NULL,        -- inflow - outflow over all the project
 
@@ -310,16 +298,9 @@ CREATE TABLE IF NOT EXISTS projects_status (
     target_payment_rate       REAL,     -- target_net_payment / target_required_alloc
     target_npv                REAL,     -- PV(target_net_payment, timestep_gap, discount) - target_required_alloc
 
-    -- finish projections
-    projected_cost_overrun    REAL,     -- EAC / BAC; compared against cost_overrun_cap
-    projected_finish          REAL,     -- start + duration / SPI(t)
-    projected_finish_delay    REAL,     -- projected_finish - planned_finish
-
     -- breach flags
     over_duration_window     INTEGER,   -- 1 if t >= planned_finish + finish_delay_cap
     over_progress_delay      INTEGER,   -- 1 if progress_delay > progress_delay_cap
-    over_finish_delay        INTEGER,   -- 1 if projected_finish_delay > finish_delay_cap
-    over_cost_overrun        INTEGER,   -- 1 if projected_cost_overrun > cost_overrun_cap
     over_any                 INTEGER,   -- 1 if any breach fired this period
 
     -- termination
