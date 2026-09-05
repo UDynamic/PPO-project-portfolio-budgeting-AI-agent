@@ -40,11 +40,11 @@ OUT_DIR = HERE / "configs"
 
 # ── schema: all _dist / _p1..p4 stems (order matches CONFIGS sheet) ──────────
 PARAM_STEMS = [
-    "n_projects", "budget_available", "budget_tightness", "discount",
+    "n_projects", "budget_tightness", "discount",
     "bac", "profit_percent", "planned_start", "planned_duration",
     "scurve_a", "scurve_b",
     "advance_percent", "advance_trigger", "advance_recovery", "retention_rate",
-    "progress_delay_cap", "finish_delay_cap", "cost_overrun_cap",
+    "progress_delay_cap", "finish_delay_cap",
     "termination_tolerance", "efficiency",
     "n_milestones", "progress_threshold", "payment_weight", "timestep_threshold",
 ]
@@ -85,12 +85,6 @@ CONFIG = {{
     "n_projects_p2"           : {n_projects_p2},
     "n_projects_p3"           : {n_projects_p3},
     "n_projects_p4"           : {n_projects_p4},
-
-    "budget_available_dist"   : "{budget_available_dist}",
-    "budget_available_p1"     : {budget_available_p1},
-    "budget_available_p2"     : {budget_available_p2},
-    "budget_available_p3"     : {budget_available_p3},
-    "budget_available_p4"     : {budget_available_p4},
 
     "budget_tightness_dist"   : "{budget_tightness_dist}",
     "budget_tightness_p1"     : {budget_tightness_p1},
@@ -176,12 +170,6 @@ CONFIG = {{
     "finish_delay_cap_p2"     : {finish_delay_cap_p2},
     "finish_delay_cap_p3"     : {finish_delay_cap_p3},
     "finish_delay_cap_p4"     : {finish_delay_cap_p4},
-
-    "cost_overrun_cap_dist"   : "{cost_overrun_cap_dist}",
-    "cost_overrun_cap_p1"     : {cost_overrun_cap_p1},
-    "cost_overrun_cap_p2"     : {cost_overrun_cap_p2},
-    "cost_overrun_cap_p3"     : {cost_overrun_cap_p3},
-    "cost_overrun_cap_p4"     : {cost_overrun_cap_p4},
 
     "termination_tolerance_dist": "{termination_tolerance_dist}",
     "termination_tolerance_p1"  : {termination_tolerance_p1},

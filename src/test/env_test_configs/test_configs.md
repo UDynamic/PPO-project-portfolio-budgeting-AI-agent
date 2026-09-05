@@ -1,5 +1,23 @@
 # Test configs
 
+<!-- ⚠️ removed two set's of columns:
+```
+budget_available_dist       TEXT NOT NULL,
+    budget_available_p1         REAL NOT NULL,
+    budget_available_p2         REAL,
+    budget_available_p3         REAL,
+    budget_available_p4         REAL,
+```
+
+the other one is :
+```
+    -- cost_overrun_cap : max tolerated EAC / BAC ratio; e.g. 1.30 = 30% overrun
+    cost_overrun_cap_dist       TEXT NOT NULL,
+    cost_overrun_cap_p1         REAL NOT NULL,
+    cost_overrun_cap_p2         REAL,
+    cost_overrun_cap_p3         REAL,
+    cost_overrun_cap_p4         REAL,
+``` -->
 
 ---
 
