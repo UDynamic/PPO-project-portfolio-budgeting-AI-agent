@@ -173,20 +173,65 @@ def _verify_db(conn: "sqlite3.Connection") -> bool:
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _seed_all_configs(conn: "sqlite3.Connection") -> None:
-    """Seed every known config into the DB upfront so the selection prompt has rows."""
-    _SEEDS = [
-        ("single_project", "single"),
-        ("dual_project",   "dual"),
-    ]
-    for module_name, label in _SEEDS:
+    """Discover and seed every .py config file found in _CFGS_DIR."""
+    import importlib.util
+
+    py_files = sorted(
+        f for f in os.listdir(_CFGS_DIR)
+        if f.endswith(".py") and not f.startswith("__")
+    )
+
+    if not py_files:
+        _warn("No config files found", _CFGS_DIR)
+        return
+
+    seeded = 0
+    for fname in py_files:
+        module_name = fname[:-3]          # strip .py
+        fpath       = os.path.join(_CFGS_DIR, fname)
         try:
-            mod = __import__(module_name)
-            mod.seed(conn)
-            _ok(f"Config seeded", label)
-        except ModuleNotFoundError:
-            pass                          # config file doesn't exist — skip silently
+            spec = importlib.util.spec_from_file_location(module_name, fpath)
+            mod  = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+
+            cfg = getattr(mod, "CONFIG", None)
+            if cfg is None:
+                _warn(f"No CONFIG dict in {fname}")
+                continue
+
+            _insert_config(conn, cfg)
+            seeded += 1
         except Exception as exc:
-            _warn(f"Seed failed for '{label}'", str(exc))
+            _warn(f"Seed failed: {fname}", str(exc))
+
+    _ok(f"Configs seeded", f"{seeded} / {len(py_files)} files in {_CFGS_DIR}")
+
+
+def _insert_config(conn: "sqlite3.Connection", cfg: dict) -> None:
+    """Insert a CONFIG dict into environment_config (skip if already exists)."""
+    from datetime import timezone
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    cols = ["config_id", "config_name", "created_at"] + [
+        k for k in cfg if k not in ("config_id", "config_name")
+    ]
+    placeholders = ", ".join("?" * len(cols))
+    col_names    = ", ".join(cols)
+
+    values = [
+        cfg.get("config_id"),
+        cfg.get("config_name"),
+        created_at,
+    ] + [cfg.get(k) for k in cols[3:]]
+
+    conn.execute(
+        f"""
+        INSERT OR IGNORE INTO environment_config ({col_names})
+        VALUES ({placeholders})
+        """,
+        values,
+    )
+    conn.commit()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -354,25 +399,57 @@ def _prompt_config_selection(conn: sqlite3.Connection) -> "str | None":
 
 
 def _load_config_by_id(config_id: str) -> "dict | None":
-    if "SINGLE" in config_id.upper():
-        from single_project import CONFIG
-        return CONFIG
-    if "DUAL" in config_id.upper():
-        from dual_project import CONFIG
-        return CONFIG
-    print(f"  [!] Cannot resolve config_id {config_id!r}.")
-    return None
+    """Find the .py file in _CFGS_DIR whose CONFIG['config_id'] matches."""
+    import importlib.util
+
+    # filename convention: TC-10SF-P  →  TC_10SF_P.py
+    candidate = config_id.replace("-", "_") + ".py"
+    fpath     = os.path.join(_CFGS_DIR, candidate)
+
+    if not os.path.exists(fpath):
+        # fallback: scan all files for a matching config_id value
+        fpath = None
+        for fname in os.listdir(_CFGS_DIR):
+            if not fname.endswith(".py") or fname.startswith("__"):
+                continue
+            full = os.path.join(_CFGS_DIR, fname)
+            spec = importlib.util.spec_from_file_location(fname[:-3], full)
+            mod  = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            cfg  = getattr(mod, "CONFIG", {})
+            if cfg.get("config_id") == config_id:
+                fpath = full
+                break
+
+    if fpath is None:
+        print(f"  [!] Cannot resolve config_id {config_id!r}.")
+        return None
+
+    module_name = os.path.basename(fpath)[:-3]
+    spec        = importlib.util.spec_from_file_location(module_name, fpath)
+    mod         = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return getattr(mod, "CONFIG", None)
 
 
 def _load_config_by_name(name: str) -> "dict | None":
-    n = name.strip().lower()
-    if n == "single":
-        from single_project import CONFIG
-        return CONFIG
-    if n == "dual":
-        from dual_project import CONFIG
-        return CONFIG
-    print(f"  [!] Unknown config name {name!r}. Use 'single' or 'dual'.")
+    """Match by config_id or config_name substring across all files in _CFGS_DIR."""
+    import importlib.util
+
+    name_upper = name.strip().upper()
+    for fname in sorted(os.listdir(_CFGS_DIR)):
+        if not fname.endswith(".py") or fname.startswith("__"):
+            continue
+        fpath = os.path.join(_CFGS_DIR, fname)
+        spec  = importlib.util.spec_from_file_location(fname[:-3], fpath)
+        mod   = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cfg   = getattr(mod, "CONFIG", {})
+        if (name_upper in cfg.get("config_id",   "").upper() or
+                name_upper in cfg.get("config_name", "").upper()):
+            return cfg
+
+    print(f"  [!] No config matching {name!r} found in {_CFGS_DIR}.")
     return None
 
 
