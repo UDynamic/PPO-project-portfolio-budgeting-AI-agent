@@ -32,7 +32,7 @@ CONFIG = {
 
     # ── project ────────────────────────────────────────────────────────────────
     "bac_dist"                : "custom_ordinal",
-    "bac_p1"                  : None,
+    "bac_p1"                  : [100, 200, 300],
     "bac_p2"                  : None,
     "bac_p3"                  : None,
     "bac_p4"                  : None,
@@ -110,7 +110,7 @@ CONFIG = {
     "termination_tolerance_p4"  : None,
 
     "efficiency_dist"         : "custom_ordinal",
-    "efficiency_p1"           : None,
+    "efficiency_p1"           : [[0.91, 1.17, 0.83 ,0.91, 1.17, 0.83],[1.09, 0.84, 1.18 ,1.09, 0.84, 1.18],[0.97,1.13,0.86 ,0.97,1.13,0.86]],
     "efficiency_p2"           : None,
     "efficiency_p3"           : None,
     "efficiency_p4"           : None,

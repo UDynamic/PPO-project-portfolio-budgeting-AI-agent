@@ -32,7 +32,7 @@ CONFIG = {
 
     # ── project ────────────────────────────────────────────────────────────────
     "bac_dist"                : "custom_ordinal",
-    "bac_p1"                  : None,
+    "bac_p1"                  : [100, 200, 300],
     "bac_p2"                  : None,
     "bac_p3"                  : None,
     "bac_p4"                  : None,
@@ -44,7 +44,7 @@ CONFIG = {
     "profit_percent_p4"       : None,
 
     "planned_start_dist"      : "custom_ordinal",
-    "planned_start_p1"        : None,
+    "planned_start_p1"        : [0, 2, 4],
     "planned_start_p2"        : None,
     "planned_start_p3"        : None,
     "planned_start_p4"        : None,

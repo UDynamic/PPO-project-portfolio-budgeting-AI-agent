@@ -123,19 +123,19 @@ CONFIG = {
     "n_milestones_p4"         : None,
 
     "progress_threshold_dist" : "custom_ordinal",
-    "progress_threshold_p1"   : None,
+    "progress_threshold_p1"   : [0.3, 0.6, 1.0],
     "progress_threshold_p2"   : None,
     "progress_threshold_p3"   : None,
     "progress_threshold_p4"   : None,
 
     "payment_weight_dist"     : "custom_ordinal",
-    "payment_weight_p1"       : None,
+    "payment_weight_p1"       : [0.3, 0.6, 1.0],
     "payment_weight_p2"       : None,
     "payment_weight_p3"       : None,
     "payment_weight_p4"       : None,
 
     "timestep_threshold_dist" : "custom_ordinal",
-    "timestep_threshold_p1"   : None,
+    "timestep_threshold_p1"   : [2, 3, 4],
     "timestep_threshold_p2"   : None,
     "timestep_threshold_p3"   : None,
     "timestep_threshold_p4"   : None,

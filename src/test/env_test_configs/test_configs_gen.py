@@ -51,13 +51,21 @@ PARAM_STEMS = [
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 def to_float_or_none(v):
-    """Convert cell value to float or None."""
+    """
+    Convert a cell value to float when possible, or return it as a string
+    when it contains a list literal (e.g. '[0.91, 1.17, 0.83]').
+    Returns None only for genuinely empty cells.
+    """
     if v is None or v == "":
         return None
+    # List literals used by custom_ordinal distributions must stay as strings.
+    s = str(v).strip()
+    if s.startswith("["):
+        return s
     try:
         return float(v)
     except (TypeError, ValueError):
-        return None
+        return str(v)  # preserve any other unexpected string as-is
 
 def cell_val(row, col_idx):
     """Return the value of a cell at (row, col_idx) from a list of cells."""

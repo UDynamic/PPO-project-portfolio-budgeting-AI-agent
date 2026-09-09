@@ -32,7 +32,7 @@ CONFIG = {
 
     # ── project ────────────────────────────────────────────────────────────────
     "bac_dist"                : "custom_ordinal",
-    "bac_p1"                  : None,
+    "bac_p1"                  : [100, 200, 300],
     "bac_p2"                  : None,
     "bac_p3"                  : None,
     "bac_p4"                  : None,

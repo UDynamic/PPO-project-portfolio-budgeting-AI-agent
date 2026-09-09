@@ -185,6 +185,20 @@ def _seed_all_configs(conn: "sqlite3.Connection") -> None:
         _warn("No config files found", _CFGS_DIR)
         return
 
+    # ── DIAGNOSTIC: inspect first file ────────────────────────────────────────
+    if py_files:
+        fpath = os.path.join(_CFGS_DIR, py_files[0])
+        spec  = importlib.util.spec_from_file_location(py_files[0][:-3], fpath)
+        mod   = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cfg   = getattr(mod, "CONFIG", None)
+        print(f"\n  [DIAG] First file : {py_files[0]}")
+        print(f"  [DIAG] CONFIG keys: {list(cfg.keys()) if cfg else 'NO CONFIG FOUND'}")
+        print(f"  [DIAG] config_id  : {cfg.get('config_id')  if cfg else '—'}")
+        print(f"  [DIAG] config_name: {cfg.get('config_name') if cfg else '—'}")
+        print()
+    # ── END DIAGNOSTIC ─────────────────────────────────────────────────────────
+
     seeded = 0
     for fname in py_files:
         module_name = fname[:-3]          # strip .py
@@ -208,8 +222,16 @@ def _seed_all_configs(conn: "sqlite3.Connection") -> None:
 
 
 def _insert_config(conn: "sqlite3.Connection", cfg: dict) -> None:
-    """Insert a CONFIG dict into environment_config (skip if already exists)."""
+    import json
     from datetime import timezone
+
+    def _to_sqlite(v):
+        """SQLite only accepts None, int, float, str, bytes.
+        Serialize lists and dicts to a JSON string so they survive the round-trip."""
+        if isinstance(v, (list, dict)):
+            return json.dumps(v)
+        return v
+
     created_at = datetime.now(timezone.utc).isoformat()
 
     cols = ["config_id", "config_name", "created_at"] + [
@@ -222,16 +244,19 @@ def _insert_config(conn: "sqlite3.Connection", cfg: dict) -> None:
         cfg.get("config_id"),
         cfg.get("config_name"),
         created_at,
-    ] + [cfg.get(k) for k in cols[3:]]
+    ] + [_to_sqlite(cfg.get(k)) for k in cols[3:]]
 
-    conn.execute(
-        f"""
-        INSERT OR IGNORE INTO environment_config ({col_names})
-        VALUES ({placeholders})
-        """,
-        values,
-    )
-    conn.commit()
+    try:
+        conn.execute(
+            f"""
+            INSERT OR IGNORE INTO environment_config ({col_names})
+            VALUES ({placeholders})
+            """,
+            values,
+        )
+        conn.commit()
+    except Exception as exc:
+        print(f"  [!] Insert failed for {cfg.get('config_id')}: {exc}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

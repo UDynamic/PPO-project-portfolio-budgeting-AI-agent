@@ -110,7 +110,7 @@ CONFIG = {
     "termination_tolerance_p4"  : None,
 
     "efficiency_dist"         : "custom_ordinal",
-    "efficiency_p1"           : None,
+    "efficiency_p1"           : [0.91, 1.17, 0.83],
     "efficiency_p2"           : None,
     "efficiency_p3"           : None,
     "efficiency_p4"           : None,
