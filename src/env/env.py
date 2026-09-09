@@ -89,13 +89,6 @@ class PortfolioBudgetingEnv(gym.Env):
             cfg["n_projects_p3"], cfg["n_projects_p4"],
         )
 
-        self.initial_budget = max(0.0, h.sample(
-            self.np_random, cfg["budget_available_dist"],
-            cfg["budget_available_p1"], cfg["budget_available_p2"],
-            cfg["budget_available_p3"], cfg["budget_available_p4"],
-        ))
-        self.budget = self.initial_budget
-
         if n_projects != self._n_projects_hint:
             self._declare_spaces(n_projects)
             self._n_projects_hint = n_projects
@@ -109,6 +102,17 @@ class PortfolioBudgetingEnv(gym.Env):
             self.projects.append(proj)
             self.milestones.append(ms_list)
             self.milestone_state.append(ms_state)
+
+        # budget_available = sum(BAC) * budget_tightness
+        # budget_tightness < 1 → constrained (less budget than total BAC)
+        budget_tightness = max(0.0, h.sample(
+            self.np_random, cfg["budget_tightness_dist"],
+            cfg["budget_tightness_p1"], cfg["budget_tightness_p2"],
+            cfg["budget_tightness_p3"], cfg["budget_tightness_p4"],
+        ))
+        sum_bac = sum(p["bac"] for p in self.projects)
+        self.initial_budget = sum_bac * budget_tightness
+        self.budget         = self.initial_budget
 
         self.horizon = max(p["planned_finish"] + p["finish_delay_cap"] for p in self.projects)
         self.proj_state = [self._init_proj_state(proj) for proj in self.projects]
@@ -453,9 +457,6 @@ class PortfolioBudgetingEnv(gym.Env):
                 "cpi":                    ps["cpi"],
                 "tcpi":                   ps["tcpi"],
                 "eac":                    ps["eac"],
-                "projected_finish":       ps["projected_finish"],
-                "projected_finish_delay": ps["projected_finish_delay"],
-                "projected_cost_overrun": ps["projected_cost_overrun"],
                 "tolerance_remain":       ps["tolerance_remain"],
                 "t_project":              ps["t_project"],
                 "inflow":                 ps["inflow"],
@@ -506,11 +507,8 @@ class PortfolioBudgetingEnv(gym.Env):
             "target_npv": 0.0,
             "spi": 1.0, "cpi": 1.0, "tcpi": 1.0,
             "eac": proj["bac"],
-            "projected_finish": float(proj["planned_finish"]),
-            "projected_finish_delay": 0.0, "projected_cost_overrun": 1.0,
             "breach_flags": {
-                "over_progress_delay": False, "over_finish_delay": False,
-                "over_cost_overrun": False,   "over_duration_window": False,
+                "over_progress_delay": False, "over_duration_window": False,
                 "over_any": False,
             },
             "tolerance_remain": proj["termination_tolerance"],
@@ -542,8 +540,8 @@ def _db_write_profiles(conn: sqlite3.Connection, episode_id: str, config_id: str
                     advance_percent, advance_trigger, advance_recovery,
                     retention_rate,
                     progress_delay_cap, finish_delay_cap,
-                    cost_overrun_cap, termination_tolerance
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    termination_tolerance
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 episode_id, config_id, proj["i"],
                 proj["planned_start"], proj["planned_finish"], proj["planned_duration"],
@@ -552,7 +550,7 @@ def _db_write_profiles(conn: sqlite3.Connection, episode_id: str, config_id: str
                 proj["advance_percent"], proj["advance_trigger"], proj["advance_recovery"],
                 proj["retention_rate"],
                 proj["progress_delay_cap"], proj["finish_delay_cap"],
-                proj["cost_overrun_cap"], proj["termination_tolerance"],
+                proj["termination_tolerance"],
             ))
         for i, ms_list in enumerate(milestones_list):
             for ms in ms_list:
@@ -618,14 +616,13 @@ def _db_write_step(conn: sqlite3.Connection, episode_id: str, config_id: str,
                     target_progress_gap, target_timestep_gap,
                     target_net_payment, target_required_alloc,
                     target_payment_rate, target_npv,
-                    projected_cost_overrun, projected_finish, projected_finish_delay,
                     over_duration_window,
-                    over_progress_delay, over_finish_delay, over_cost_overrun,
+                    over_progress_delay,
                     over_any,
                     tolerance_remain
                 ) VALUES (
                     ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-                    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+                    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
                 )
             """, (
                 episode_id, proj["i"], t, ps.get("t_project"), method,
@@ -653,13 +650,8 @@ def _db_write_step(conn: sqlite3.Connection, episode_id: str, config_id: str,
                 ps.get("target_progress_gap", 0.0),   ps.get("target_timestep_gap", 0),
                 ps.get("target_net_payment", 0.0),    ps.get("target_required_alloc", 0.0),
                 ps.get("target_payment_rate", 0.0),   ps.get("target_npv", 0.0),
-                ps.get("projected_cost_overrun", 1.0),
-                ps.get("projected_finish", float(proj["planned_finish"])),
-                ps.get("projected_finish_delay", 0.0),
                 int(flags.get("over_duration_window", False)),
                 int(flags.get("over_progress_delay",  False)),
-                int(flags.get("over_finish_delay",    False)),
-                int(flags.get("over_cost_overrun",    False)),
                 int(flags.get("over_any",             False)),
                 ps.get("tolerance_remain", proj["termination_tolerance"]),
             ))

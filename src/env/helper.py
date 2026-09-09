@@ -125,7 +125,6 @@ def sample_project(rng, cfg: dict, i: int) -> dict:
     retention_rate   = max(0.0, min(0.1, _s(rng, cfg, "retention_rate")))
     progress_delay_cap   = max(0.0, min(1.0, _s(rng, cfg, "progress_delay_cap")))
     finish_delay_cap     = max(1, _si(rng, cfg, "finish_delay_cap"))
-    cost_overrun_cap     = max(1.0, _s(rng, cfg, "cost_overrun_cap"))
     termination_tolerance = max(1, _si(rng, cfg, "termination_tolerance"))
     return {
         "i": i,
@@ -137,7 +136,6 @@ def sample_project(rng, cfg: dict, i: int) -> dict:
         "advance_recovery": advance_recovery, "retention_rate": retention_rate,
         "progress_delay_cap": progress_delay_cap,
         "finish_delay_cap": finish_delay_cap,
-        "cost_overrun_cap": cost_overrun_cap,
         "termination_tolerance": termination_tolerance,
     }
 
@@ -223,10 +221,9 @@ def _spi(progress: float, t_project: int, duration: int, a: float, b: float) -> 
 def _cpi(bcwp: float, acwp: float) -> float:
     return bcwp / acwp if acwp > 1e-9 else 1.0
 
-def _eac(acwp: float, bac: float, bcwp: float, cpi: float, spi: float,
-         cost_overrun_cap: float) -> float:
+def _eac(acwp: float, bac: float, bcwp: float, cpi: float, spi: float) -> float:
     composite = cpi * spi
-    return (acwp + (bac - bcwp) / composite) if composite > 1e-9 else bac * cost_overrun_cap
+    return (acwp + (bac - bcwp) / composite) if composite > 1e-9 else bac
 
 def _tcpi(bac: float, bcwp: float, acwp: float) -> float:
     work_rem   = bac - bcwp
@@ -250,20 +247,14 @@ def update_evm(ps: dict, proj: dict) -> None:
     spi  = _spi(ps["progress_actual"], ps["t_project"],
                 proj["planned_duration"], proj["scurve_a"], proj["scurve_b"])
     cpi  = _cpi(bcwp, acwp)
-    eac  = _eac(acwp, bac, bcwp, cpi, spi, proj["cost_overrun_cap"])
+    eac  = _eac(acwp, bac, bcwp, cpi, spi)
     tcpi = _tcpi(bac, bcwp, acwp)
 
-    proj_finish = _forecast_finish(proj["planned_start"], proj["planned_duration"],
-                                   spi, proj["planned_finish"], proj["finish_delay_cap"])
-
-    ps["spi"]                    = spi
-    ps["cpi"]                    = cpi
-    ps["eac"]                    = eac
-    ps["tcpi"]                   = tcpi
-    ps["projected_finish"]       = proj_finish
-    ps["projected_finish_delay"] = proj_finish - float(proj["planned_finish"])
-    ps["projected_cost_overrun"] = eac / bac
-    ps["progress_delay_t"]       = ps["progress_plan_t"] - ps["progress_actual"]
+    ps["spi"]              = spi
+    ps["cpi"]              = cpi
+    ps["eac"]              = eac
+    ps["tcpi"]             = tcpi
+    ps["progress_delay_t"] = ps["progress_plan_t"] - ps["progress_actual"]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -271,15 +262,12 @@ def update_evm(ps: dict, proj: dict) -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def evaluate_breaches(ps: dict, proj: dict) -> dict:
-    """Evaluate breach flags (pre- or post-allocation). over_duration_window always False here."""
-    op = ps["progress_delay_t"]       > proj["progress_delay_cap"]
-    of = ps["projected_finish_delay"] > proj["finish_delay_cap"]
-    oc = ps["projected_cost_overrun"] > proj["cost_overrun_cap"]
+    """Evaluate breach flags. Only progress delay is checked here;
+    over_duration_window is set later in check_termination."""
+    op = ps["progress_delay_t"] > proj["progress_delay_cap"]
     return {
         "over_progress_delay":  op,
-        "over_finish_delay":    of,
-        "over_cost_overrun":    oc,
-        "over_any":             op or of or oc,
+        "over_any":             op,
         "over_duration_window": False,
     }
 
