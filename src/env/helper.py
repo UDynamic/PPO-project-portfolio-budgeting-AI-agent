@@ -20,6 +20,18 @@ import math
 # DISTRIBUTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def sample_ordinal(seq, idx: int, proj_idx: int = 0) -> float:
+    """Index a fixed ordinal sequence (1-D or 2-D list-of-lists).
+
+    seq      — list[float] or list[list[float]] from config _p1
+    idx      — sequential position (t_project for efficiency)
+    proj_idx — project index i; only used when seq is 2-D
+    """
+    if seq and isinstance(seq[0], (list, tuple)):
+        seq = seq[proj_idx % len(seq)]
+    return float(seq[idx % len(seq)])
+
+
 def sample(rng, dist: str, p1, p2=None, p3=None, p4=None) -> float:
     """Draw one float from the named distribution using rng (numpy Generator).
 
@@ -31,6 +43,7 @@ def sample(rng, dist: str, p1, p2=None, p3=None, p4=None) -> float:
     truncated_normal → N(p1, p2) clipped to [p3, p4]
     beta             → Beta(p1, p2)
     categorical      → p1 chance of int(p3), p2 chance of int(p4), else int(p3)
+    custom_ordinal   → NOT handled here; use sample_ordinal() directly.
     """
     if dist == "fixed":             return float(p1)
     if dist == "uniform":           return float(rng.uniform(p1, p2))
@@ -48,6 +61,11 @@ def sample(rng, dist: str, p1, p2=None, p3=None, p4=None) -> float:
             v = float(rng.normal(p1, p2))
             if p3 <= v <= p4:
                 return v
+    if dist == "custom_ordinal":
+        raise ValueError(
+            "custom_ordinal cannot be sampled via sample(); "
+            "call sample_ordinal(seq, idx, proj_idx) directly."
+        )
     raise ValueError(f"Unknown distribution: {dist!r}")
 
 
@@ -97,35 +115,47 @@ def earned_schedule(progress_actual: float, duration: int, a: float, b: float) -
 # SAMPLERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _s(rng, cfg, key):
-    """Shorthand: sample one field using cfg[key_dist/p1..p4] pattern."""
-    return sample(rng, cfg[f"{key}_dist"],
+def _s(rng, cfg, key, proj_idx: int = 0):
+    """Shorthand: sample one field using cfg[key_dist/p1..p4] pattern.
+
+    For custom_ordinal fields, p1 is a list indexed by proj_idx (project i).
+    """
+    dist = cfg[f"{key}_dist"]
+    if dist == "custom_ordinal":
+        return sample_ordinal(cfg[f"{key}_p1"], idx=proj_idx, proj_idx=0)
+    return sample(rng, dist,
                   cfg[f"{key}_p1"], cfg[f"{key}_p2"],
                   cfg[f"{key}_p3"], cfg[f"{key}_p4"])
 
-def _si(rng, cfg, key):
-    return sample_int(rng, cfg[f"{key}_dist"],
+def _si(rng, cfg, key, proj_idx: int = 0):
+    dist = cfg[f"{key}_dist"]
+    if dist == "custom_ordinal":
+        return max(1, round(sample_ordinal(cfg[f"{key}_p1"], idx=proj_idx, proj_idx=0)))
+    return sample_int(rng, dist,
                       cfg[f"{key}_p1"], cfg[f"{key}_p2"],
                       cfg[f"{key}_p3"], cfg[f"{key}_p4"])
 
 
 def sample_project(rng, cfg: dict, i: int) -> dict:
-    """Draw all project-level parameters from cfg distributions."""
-    bac              = max(1.0, _s(rng, cfg, "bac"))
-    profit_percent   = max(0.0, _s(rng, cfg, "profit_percent"))
+    """Draw all project-level parameters from cfg distributions.
+
+    For custom_ordinal fields, p1 is a list-of-values indexed by i (project index).
+    """
+    bac              = max(1.0, _s(rng, cfg, "bac", proj_idx=i))
+    profit_percent   = max(0.0, _s(rng, cfg, "profit_percent", proj_idx=i))
     price            = bac * (1.0 + profit_percent)
-    planned_start    = max(0, int(round(_s(rng, cfg, "planned_start"))))
-    planned_duration = max(1, _si(rng, cfg, "planned_duration"))
+    planned_start    = max(0, int(round(_s(rng, cfg, "planned_start", proj_idx=i))))
+    planned_duration = max(1, _si(rng, cfg, "planned_duration", proj_idx=i))
     planned_finish   = planned_start + planned_duration
-    scurve_a         = max(0.5, _s(rng, cfg, "scurve_a"))
-    scurve_b         = max(0.5, _s(rng, cfg, "scurve_b"))
-    advance_percent  = max(0.0, min(0.3, _s(rng, cfg, "advance_percent")))
-    advance_trigger  = max(0.0, min(1.0, _s(rng, cfg, "advance_trigger")))
-    advance_recovery = max(0.0, min(1.0, _s(rng, cfg, "advance_recovery")))
-    retention_rate   = max(0.0, min(0.1, _s(rng, cfg, "retention_rate")))
-    progress_delay_cap   = max(0.0, min(1.0, _s(rng, cfg, "progress_delay_cap")))
-    finish_delay_cap     = max(1, _si(rng, cfg, "finish_delay_cap"))
-    termination_tolerance = max(1, _si(rng, cfg, "termination_tolerance"))
+    scurve_a         = max(0.5, _s(rng, cfg, "scurve_a", proj_idx=i))
+    scurve_b         = max(0.5, _s(rng, cfg, "scurve_b", proj_idx=i))
+    advance_percent  = max(0.0, min(0.3, _s(rng, cfg, "advance_percent", proj_idx=i)))
+    advance_trigger  = max(0.0, min(1.0, _s(rng, cfg, "advance_trigger", proj_idx=i)))
+    advance_recovery = max(0.0, min(1.0, _s(rng, cfg, "advance_recovery", proj_idx=i)))
+    retention_rate   = max(0.0, min(0.1, _s(rng, cfg, "retention_rate", proj_idx=i)))
+    progress_delay_cap   = max(0.0, min(1.0, _s(rng, cfg, "progress_delay_cap", proj_idx=i)))
+    finish_delay_cap     = max(1, _si(rng, cfg, "finish_delay_cap", proj_idx=i))
+    termination_tolerance = max(1, _si(rng, cfg, "termination_tolerance", proj_idx=i))
     return {
         "i": i,
         "planned_start": planned_start, "planned_finish": planned_finish,
@@ -140,16 +170,62 @@ def sample_project(rng, cfg: dict, i: int) -> dict:
     }
 
 
+def _ordinal_list(rng, cfg: dict, key: str, n: int, proj_idx: int = 0) -> list:
+    """Return a list of n values for a milestone field.
+
+    If the field dist is custom_ordinal:
+      - 1-D list  → use as-is (all projects share the same milestone values)
+      - 2-D list  → outer index = proj_idx, inner = milestone position
+    Otherwise draw n times from the standard distribution.
+    """
+    dist = cfg.get(f"{key}_dist", "fixed")
+    p1   = cfg.get(f"{key}_p1")
+    if dist == "custom_ordinal":
+        if isinstance(p1, (list, tuple)):
+            seq = p1
+            # 2-D: outer = project, inner = milestones
+            if seq and isinstance(seq[0], (list, tuple)):
+                seq = seq[proj_idx % len(seq)]
+            base = list(seq)
+            while len(base) < n:
+                base.append(base[-1])
+            return base[:n]
+        return [float(p1)] * n
+    return [_s(rng, cfg, key, proj_idx=proj_idx) for _ in range(n)]
+
+
 def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
-    """Build the full milestone profile (j=0 advance + j=1..n milestones)."""
-    n_ms = max(1, _si(rng, cfg, "n_milestones"))
+    """Build the full milestone profile (j=0 advance + j=1..n milestones).
 
-    thresholds = [round((j + 1) / n_ms, 4) for j in range(n_ms)]
+    For milestone fields (progress_threshold, payment_weight,
+    timestep_threshold) that use custom_ordinal, p1 is a list of
+    per-milestone values indexed by milestone position (0-based),
+    or a 2-D list [per-project][per-milestone].
+    """
+    i    = proj.get("i", 0)
+    n_ms = max(1, _si(rng, cfg, "n_milestones", proj_idx=i))
+
+    # ── per-milestone arrays ─────────────────────────────────────────────────
+    thresholds_cfg = _ordinal_list(rng, cfg, "progress_threshold", n_ms, proj_idx=i)
+    weights_cfg    = _ordinal_list(rng, cfg, "payment_weight",     n_ms, proj_idx=i)
+    ts_raw_cfg     = _ordinal_list(rng, cfg, "timestep_threshold", n_ms, proj_idx=i)
+
+    # Normalise thresholds: last must be 1.0, must be strictly increasing
+    thresholds = [max(0.0, min(1.0, float(v))) for v in thresholds_cfg]
     thresholds[-1] = 1.0
-    weights = [round(1.0 / n_ms, 6)] * n_ms
-    weights[-1] = round(1.0 - sum(weights[:-1]), 6)
 
-    ts_frac = max(0.0, min(1.0, _s(rng, cfg, "timestep_threshold")))
+    # Normalise weights: must sum to 1.0
+    raw_w  = [max(0.0, float(v)) for v in weights_cfg]
+    total_w = sum(raw_w)
+    if total_w > 1e-9:
+        weights = [w / total_w for w in raw_w]
+    else:
+        weights = [1.0 / n_ms] * n_ms
+    weights[-1] = max(0.0, 1.0 - sum(weights[:-1]))
+
+    # timestep_threshold: when custom_ordinal provides absolute step numbers
+    # use them directly; for the scalar fraction path keep old behaviour
+    ts_is_ordinal = cfg.get("timestep_threshold_dist") == "custom_ordinal"
 
     price          = proj["price"]
     advance_amount = proj["advance_percent"] * price
@@ -176,9 +252,15 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
         j        = idx + 1
         is_final = (idx == n_ms - 1)
 
-        ts = (proj["planned_finish"] if is_final else
-              proj["planned_start"] + max(1, round(
-                  thresholds[idx] * proj["planned_duration"] * ts_frac)))
+        if is_final:
+            ts = proj["planned_finish"]
+        elif ts_is_ordinal:
+            # custom_ordinal gives absolute episode timestep directly
+            ts = int(round(float(ts_raw_cfg[idx])))
+        else:
+            ts_frac = max(0.0, min(1.0, float(ts_raw_cfg[idx])))
+            ts = proj["planned_start"] + max(1, round(
+                thresholds[idx] * proj["planned_duration"] * ts_frac))
 
         gross    = weights[idx] * price
         recovery = remaining_advance if is_final else min(gross * adv_rec_rate, remaining_advance)
@@ -204,8 +286,19 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
     return milestones
 
 
-def sample_efficiency(rng, cfg: dict) -> float:
-    """Draw period efficiency η; clamped to min 0.01."""
+def sample_efficiency(rng, cfg: dict, proj_idx: int = 0, t_project: int = 0) -> float:
+    """Draw period efficiency η; clamped to min 0.01.
+
+    If efficiency_dist == "custom_ordinal", efficiency_p1 is a 1-D or 2-D
+    list of pre-generated values.  The draw is deterministic:
+      - 2-D list  → seq = efficiency_p1[proj_idx],  value = seq[t_project]
+      - 1-D list  → seq = efficiency_p1,             value = seq[t_project]
+    Index wraps with modulo so out-of-bound steps reuse the last segment.
+    """
+    dist = cfg.get("efficiency_dist", "fixed")
+    if dist == "custom_ordinal":
+        seq = cfg.get("efficiency_p1", [1.0])
+        return max(0.01, sample_ordinal(seq, t_project, proj_idx))
     return max(0.01, float(_s(rng, cfg, "efficiency")))
 
 

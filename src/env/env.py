@@ -260,7 +260,7 @@ class PortfolioBudgetingEnv(gym.Env):
             period_outflow += interest
 
             # Allocation & progress
-            eta       = h.sample_efficiency(self.np_random, cfg)
+            eta       = h.sample_efficiency(self.np_random, cfg, proj_idx=i, t_project=ps["t_project"])
             increment = (alloc / proj["bac"]) * eta if proj["bac"] > 0 else 0.0
             ps["progress_actual"]   = min(1.0, ps["progress_actual"] + increment)
             ps["outflow"]          += alloc + interest
@@ -622,7 +622,7 @@ def _db_write_step(conn: sqlite3.Connection, episode_id: str, config_id: str,
                     tolerance_remain
                 ) VALUES (
                     ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-                    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+                    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
                 )
             """, (
                 episode_id, proj["i"], t, ps.get("t_project"), method,
