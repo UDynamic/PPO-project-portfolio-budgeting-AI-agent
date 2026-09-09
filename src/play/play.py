@@ -396,7 +396,14 @@ def _list_db_configs(conn: sqlite3.Connection) -> list[dict]:
         return []
 
 
+_BASELINE_SENTINEL = "__BASELINE__"
+
+
 def _prompt_config_selection(conn: sqlite3.Connection) -> "str | None":
+    """
+    Returns a config_id string, _BASELINE_SENTINEL to trigger baseline mode,
+    or None to quit.
+    """
     configs = _list_db_configs(conn)
     if not configs:
         print("  [!] No configs found in database.")
@@ -409,11 +416,16 @@ def _prompt_config_selection(conn: sqlite3.Connection) -> "str | None":
     for idx, c in enumerate(configs):
         print(f"  {idx:>3}  {c['config_id']:<40}  {c['config_name']}")
     print()
+    print("  " + "─" * 70)
+    print(f"  {'b':>3}  {'[Run baseline solvers on test configs]':<40}")
+    print()
 
     while True:
-        raw = input("  Select config number (or q to quit): ").strip()
+        raw = input("  Select config number, 'b' for baselines, or q to quit: ").strip()
         if raw.lower() in ("q", "quit", "exit"):
             return None
+        if raw.lower() == "b":
+            return _BASELINE_SENTINEL
         try:
             sel = int(raw)
             if 0 <= sel < len(configs):
@@ -660,6 +672,26 @@ def main() -> None:
             print("  Exiting.")
             conn.close()
             sys.exit(0)
+
+        # ── BASELINE MODE ─────────────────────────────────────────────────────
+        if config_id == _BASELINE_SENTINEL:
+            sys.path.insert(0, _ENV_DIR)
+            from baseline_solvers import run_baselines
+            run_baselines(
+                conn       = conn,
+                run_dir    = run_dir,
+                db_path    = db_path,
+                args       = args,
+                _CFGS_DIR  = _CFGS_DIR,
+                _banner    = _banner,
+                _ok        = _ok,
+                _warn      = _warn,
+                _render    = _render,
+                run_export = run_export,
+            )
+            return
+        # ── END BASELINE MODE ─────────────────────────────────────────────────
+
         cfg = _load_config_by_id(config_id)
         if cfg is None:
             conn.close()
