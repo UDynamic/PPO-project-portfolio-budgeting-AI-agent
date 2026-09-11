@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import sqlite3
-import uuid
 from typing import Any, Optional
 
 import numpy as np
@@ -30,12 +29,14 @@ class PortfolioBudgetingEnv(gym.Env):
     def __init__(self, config: dict,
                  render_mode: Optional[str] = None,
                  conn=None,
-                 method: str = "rl"):
+                 method: str = "rl",
+                 run_id: str = ""):
         super().__init__()
         self.config      = config
         self.render_mode = render_mode
         self.conn        = conn
         self.method      = method
+        self.run_id      = run_id
 
         n = max(1, round(config.get("n_projects_p1", 1)))
         self._n_projects_hint = n
@@ -72,7 +73,9 @@ class PortfolioBudgetingEnv(gym.Env):
               options: Optional[dict] = None) -> tuple[np.ndarray, dict]:
         super().reset(seed=seed)
         cfg             = self.config
-        self.episode_id = str(uuid.uuid4())
+        config_id = self.config.get("config_id", "unknown")
+        self.episode_id = f"{config_id}__{self.method}__{self.run_id}"
+        
         self.t          = 0
         self._last_net_cashflow      = 0.0
         self._pending_advance_inflow = 0.0
