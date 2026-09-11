@@ -550,6 +550,25 @@ def _render(env, cum_reward: float, net_cashflow: float = 0.0) -> None:
         cum_reward      = cum_reward,
     )
 
+def _render_with_allocation(env, cum_reward: float, net_cashflow: float,
+                            action: np.ndarray) -> None:
+    """Re-render the current timestep showing what was just allocated."""
+    import helper as rnd
+    allocations = action * env.budget
+    rnd.render(
+        t               = env.t,
+        budget          = env.budget,
+        horizon         = env.horizon,
+        initial_budget  = env.initial_budget,
+        projects        = env.projects,
+        proj_state      = env.proj_state,
+        milestones      = env.milestones,
+        milestone_state = env.milestone_state,
+        episode_id      = env.episode_id,
+        net_cashflow    = net_cashflow,
+        cum_reward      = cum_reward,
+        allocations     = allocations,   # pass decided amounts to render
+    )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ACTION PROMPT
@@ -727,13 +746,16 @@ def main() -> None:
 
     terminated = False
     truncated  = False
-
+    
     # ── GAME LOOP ─────────────────────────────────────────────────────────────
     while not (terminated or truncated):
         action = _prompt(env)
         if action is None:
             print("  Quitting.")
             break
+
+        # Re-render the current period with the chosen allocation before stepping
+        _render_with_allocation(env, cum_reward, net_cashflow=0.0, action=action)
 
         obs, reward, terminated, truncated, info = env.step(action)
         cum_reward += reward
