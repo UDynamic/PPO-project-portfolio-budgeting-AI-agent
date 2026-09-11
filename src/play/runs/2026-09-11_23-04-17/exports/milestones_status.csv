@@ -1,0 +1,4 @@
+episode_id,i,j,method,certified_t,certification_delay,net_payment
+TC-20MAF-R__manual__,0,0,manual,0,0,24.0
+TC-20MAF-R__manual__,1,0,manual,0,0,48.0
+TC-20MAF-R__manual__,0,1,manual,4,0,96.0

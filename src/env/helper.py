@@ -5,46 +5,34 @@
 #
 # Sections
 # --------
-#   DISTRIBUTIONS   — sample / sample_int
-#   S-CURVE         — beta_cdf / planned_progress / earned_schedule
-#   SAMPLERS        — sample_project / sample_milestones / sample_efficiency
-#   EVM             — compute_* / update_evm
-#   BREACHES        — evaluate_breaches / update_tolerance / check_termination
-#   PAYMENTS        — check_certifications / deliver_payments / compute_termination_settlement
-#   RENDER          — reset_history / render
+#   DISTRIBUTIONS        — sample / sample_int
+#   S-CURVE              — beta_cdf / planned_progress / earned_schedule
+#   SAMPLERS             — sample_project / sample_milestones / sample_efficiency
+#   EVM                  — compute_* / update_evm
+#   BREACHES             — evaluate_breaches / update_tolerance / check_termination
+#   PAYMENTS             — check_certifications / deliver_payments / compute_termination_settlement
+#   RENDER               — reset_history / render
+#   PLAY INFRASTRUCTURE  — db init, config seeding, export, config loading
 
 from __future__ import annotations
 import math
+import os
+import sqlite3
+import sys
+from datetime import datetime
+from typing import Optional
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DISTRIBUTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def sample_ordinal(seq, idx: int, proj_idx: int = 0) -> float:
-    """Index a fixed ordinal sequence (1-D or 2-D list-of-lists).
-
-    seq      — list[float] or list[list[float]] from config _p1
-    idx      — sequential position (t_project for efficiency)
-    proj_idx — project index i; only used when seq is 2-D
-    """
     if seq and isinstance(seq[0], (list, tuple)):
         seq = seq[proj_idx % len(seq)]
     return float(seq[idx % len(seq)])
 
 
 def sample(rng, dist: str, p1, p2=None, p3=None, p4=None) -> float:
-    """Draw one float from the named distribution using rng (numpy Generator).
-
-    fixed            → p1
-    uniform          → U(p1, p2)
-    normal           → N(p1, p2)
-    lognormal        → LogN(p1, p2)
-    triangular       → Tri(p1=low, p2=high, p3=mode)
-    truncated_normal → N(p1, p2) clipped to [p3, p4]
-    beta             → Beta(p1, p2)
-    categorical      → p1 chance of int(p3), p2 chance of int(p4), else int(p3)
-    custom_ordinal   → NOT handled here; use sample_ordinal() directly.
-    """
     if dist == "fixed":             return float(p1)
     if dist == "uniform":           return float(rng.uniform(p1, p2))
     if dist == "normal":            return float(rng.normal(p1, p2))
@@ -70,17 +58,14 @@ def sample(rng, dist: str, p1, p2=None, p3=None, p4=None) -> float:
 
 
 def sample_int(rng, dist: str, p1, p2=None, p3=None, p4=None) -> int:
-    """Round the float draw to the nearest integer; always >= 1."""
     return max(1, round(sample(rng, dist, p1, p2, p3, p4)))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# S-CURVE  (Beta CDF — no scipy)
+# S-CURVE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def beta_cdf(x: float, a: float, b: float) -> float:
-    """Regularised incomplete beta I_x(a,b) via 200-point midpoint quadrature.
-    Error < 1e-4 for a,b ∈ [0.5, 10]."""
     if x <= 0.0: return 0.0
     if x >= 1.0: return 1.0
     dx    = x / 200
@@ -93,12 +78,10 @@ def beta_cdf(x: float, a: float, b: float) -> float:
 
 
 def planned_progress(t_project: int, duration: int, a: float, b: float) -> float:
-    """Planned cumulative progress at project-period t_project: BetaCDF(t/duration, a, b)."""
     return beta_cdf(t_project / duration, a, b)
 
 
 def earned_schedule(progress_actual: float, duration: int, a: float, b: float) -> float:
-    """Earned Schedule via binary search over [0, duration] (50 iterations)."""
     if progress_actual <= 0.0: return 0.0
     if progress_actual >= 1.0: return float(duration)
     lo, hi = 0.0, float(duration)
@@ -116,10 +99,6 @@ def earned_schedule(progress_actual: float, duration: int, a: float, b: float) -
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _s(rng, cfg, key, proj_idx: int = 0):
-    """Shorthand: sample one field using cfg[key_dist/p1..p4] pattern.
-
-    For custom_ordinal fields, p1 is a list indexed by proj_idx (project i).
-    """
     dist = cfg[f"{key}_dist"]
     if dist == "custom_ordinal":
         return sample_ordinal(cfg[f"{key}_p1"], idx=proj_idx, proj_idx=0)
@@ -137,10 +116,6 @@ def _si(rng, cfg, key, proj_idx: int = 0):
 
 
 def sample_project(rng, cfg: dict, i: int) -> dict:
-    """Draw all project-level parameters from cfg distributions.
-
-    For custom_ordinal fields, p1 is a list-of-values indexed by i (project index).
-    """
     bac              = max(1.0, _s(rng, cfg, "bac", proj_idx=i))
     profit_percent   = max(0.0, _s(rng, cfg, "profit_percent", proj_idx=i))
     price            = bac * (1.0 + profit_percent)
@@ -149,13 +124,13 @@ def sample_project(rng, cfg: dict, i: int) -> dict:
     planned_finish   = planned_start + planned_duration
     scurve_a         = max(0.5, _s(rng, cfg, "scurve_a", proj_idx=i))
     scurve_b         = max(0.5, _s(rng, cfg, "scurve_b", proj_idx=i))
-    advance_percent  = max(0.0, min(0.3, _s(rng, cfg, "advance_percent", proj_idx=i)))
-    advance_trigger  = max(0.0, min(1.0, _s(rng, cfg, "advance_trigger", proj_idx=i)))
-    advance_recovery = max(0.0, min(1.0, _s(rng, cfg, "advance_recovery", proj_idx=i)))
-    retention_rate   = max(0.0, min(0.1, _s(rng, cfg, "retention_rate", proj_idx=i)))
-    progress_delay_cap   = max(0.0, min(1.0, _s(rng, cfg, "progress_delay_cap", proj_idx=i)))
-    finish_delay_cap     = max(1, _si(rng, cfg, "finish_delay_cap", proj_idx=i))
-    termination_tolerance = max(1, _si(rng, cfg, "termination_tolerance", proj_idx=i))
+    advance_percent  = max(0.0, min(0.3,  _s(rng, cfg, "advance_percent",  proj_idx=i)))
+    advance_trigger  = max(0.0, min(1.0,  _s(rng, cfg, "advance_trigger",  proj_idx=i)))
+    advance_recovery = max(0.0, min(1.0,  _s(rng, cfg, "advance_recovery", proj_idx=i)))
+    retention_rate   = max(0.0, min(0.1,  _s(rng, cfg, "retention_rate",   proj_idx=i)))
+    progress_delay_cap    = max(0.0, min(1.0, _s(rng, cfg,  "progress_delay_cap",    proj_idx=i)))
+    finish_delay_cap      = max(1,           _si(rng, cfg,  "finish_delay_cap",       proj_idx=i))
+    termination_tolerance = max(1,           _si(rng, cfg,  "termination_tolerance",  proj_idx=i))
     return {
         "i": i,
         "planned_start": planned_start, "planned_finish": planned_finish,
@@ -171,19 +146,11 @@ def sample_project(rng, cfg: dict, i: int) -> dict:
 
 
 def _ordinal_list(rng, cfg: dict, key: str, n: int, proj_idx: int = 0) -> list:
-    """Return a list of n values for a milestone field.
-
-    If the field dist is custom_ordinal:
-      - 1-D list  → use as-is (all projects share the same milestone values)
-      - 2-D list  → outer index = proj_idx, inner = milestone position
-    Otherwise draw n times from the standard distribution.
-    """
     dist = cfg.get(f"{key}_dist", "fixed")
     p1   = cfg.get(f"{key}_p1")
     if dist == "custom_ordinal":
         if isinstance(p1, (list, tuple)):
             seq = p1
-            # 2-D: outer = project, inner = milestones
             if seq and isinstance(seq[0], (list, tuple)):
                 seq = seq[proj_idx % len(seq)]
             base = list(seq)
@@ -195,27 +162,17 @@ def _ordinal_list(rng, cfg: dict, key: str, n: int, proj_idx: int = 0) -> list:
 
 
 def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
-    """Build the full milestone profile (j=0 advance + j=1..n milestones).
-
-    For milestone fields (progress_threshold, payment_weight,
-    timestep_threshold) that use custom_ordinal, p1 is a list of
-    per-milestone values indexed by milestone position (0-based),
-    or a 2-D list [per-project][per-milestone].
-    """
     i    = proj.get("i", 0)
     n_ms = max(1, _si(rng, cfg, "n_milestones", proj_idx=i))
 
-    # ── per-milestone arrays ─────────────────────────────────────────────────
     thresholds_cfg = _ordinal_list(rng, cfg, "progress_threshold", n_ms, proj_idx=i)
     weights_cfg    = _ordinal_list(rng, cfg, "payment_weight",     n_ms, proj_idx=i)
     ts_raw_cfg     = _ordinal_list(rng, cfg, "timestep_threshold", n_ms, proj_idx=i)
 
-    # Normalise thresholds: last must be 1.0, must be strictly increasing
     thresholds = [max(0.0, min(1.0, float(v))) for v in thresholds_cfg]
     thresholds[-1] = 1.0
 
-    # Normalise weights: must sum to 1.0
-    raw_w  = [max(0.0, float(v)) for v in weights_cfg]
+    raw_w   = [max(0.0, float(v)) for v in weights_cfg]
     total_w = sum(raw_w)
     if total_w > 1e-9:
         weights = [w / total_w for w in raw_w]
@@ -223,8 +180,6 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
         weights = [1.0 / n_ms] * n_ms
     weights[-1] = max(0.0, 1.0 - sum(weights[:-1]))
 
-    # timestep_threshold: when custom_ordinal provides absolute step numbers
-    # use them directly; for the scalar fraction path keep old behaviour
     ts_is_ordinal = cfg.get("timestep_threshold_dist") == "custom_ordinal"
 
     price          = proj["price"]
@@ -255,7 +210,6 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
         if is_final:
             ts = proj["planned_finish"]
         elif ts_is_ordinal:
-            # custom_ordinal gives absolute episode timestep directly
             ts = int(round(float(ts_raw_cfg[idx])))
         else:
             ts_frac = max(0.0, min(1.0, float(ts_raw_cfg[idx])))
@@ -287,14 +241,6 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
 
 
 def sample_efficiency(rng, cfg: dict, proj_idx: int = 0, t_project: int = 0) -> float:
-    """Draw period efficiency η; clamped to min 0.01.
-
-    If efficiency_dist == "custom_ordinal", efficiency_p1 is a 1-D or 2-D
-    list of pre-generated values.  The draw is deterministic:
-      - 2-D list  → seq = efficiency_p1[proj_idx],  value = seq[t_project]
-      - 1-D list  → seq = efficiency_p1,             value = seq[t_project]
-    Index wraps with modulo so out-of-bound steps reuse the last segment.
-    """
     dist = cfg.get("efficiency_dist", "fixed")
     if dist == "custom_ordinal":
         seq = cfg.get("efficiency_p1", [1.0])
@@ -332,7 +278,6 @@ def _forecast_finish(planned_start: int, planned_duration: int, spi: float,
 
 
 def update_evm(ps: dict, proj: dict) -> None:
-    """Recompute all EVM signals in ps in-place."""
     bac  = proj["bac"]
     bcwp = ps["progress_actual"] * bac
     acwp = ps["outflow"]
@@ -355,8 +300,6 @@ def update_evm(ps: dict, proj: dict) -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def evaluate_breaches(ps: dict, proj: dict) -> dict:
-    """Evaluate breach flags. Only progress delay is checked here;
-    over_duration_window is set later in check_termination."""
     op = ps["progress_delay_t"] > proj["progress_delay_cap"]
     return {
         "over_progress_delay":  op,
@@ -366,7 +309,6 @@ def evaluate_breaches(ps: dict, proj: dict) -> dict:
 
 
 def update_tolerance(ps: dict, proj: dict, flags: dict) -> None:
-    """Decrement tolerance on any breach; reset to max when fully healthy."""
     if flags["over_any"]:
         ps["tolerance_remain"] = max(0, ps["tolerance_remain"] - 1)
     else:
@@ -375,7 +317,6 @@ def update_tolerance(ps: dict, proj: dict, flags: dict) -> None:
 
 def check_termination(t: int, ps: dict, proj: dict,
                       flags: dict) -> tuple[bool, bool]:
-    """Return (terminated, over_duration_window). Mutates flags['over_duration_window']."""
     odw = t >= proj["planned_finish"] + proj["finish_delay_cap"]
     flags["over_duration_window"] = odw
     if odw:
@@ -392,7 +333,6 @@ def check_termination(t: int, ps: dict, proj: dict,
 def check_certifications(t: int, ps: dict,
                          milestones: list[dict],
                          milestone_state: list[dict]) -> list[int]:
-    """Return j indices of milestones qualifying for certification this period."""
     result = []
     for ms, ms_state in zip(milestones, milestone_state):
         if ms["j"] == 0 or ms_state["certified"]:
@@ -406,7 +346,6 @@ def check_certifications(t: int, ps: dict,
 def deliver_payments(certified_js: list[int], t: int, ps: dict,
                      milestones: list[dict],
                      milestone_state: list[dict]) -> float:
-    """Deliver net payments for certified milestones; mutate ms_state and ps['inflow']."""
     total = 0.0
     for ms, ms_state in zip(milestones, milestone_state):
         if ms["j"] not in certified_js:
@@ -419,7 +358,6 @@ def deliver_payments(certified_js: list[int], t: int, ps: dict,
 
 
 def compute_termination_settlement(proj: dict, ps: dict) -> float:
-    """settlement = progress_actual × price − cumulative_inflow."""
     return ps["progress_actual"] * proj["price"] - ps["inflow"]
 
 
@@ -468,7 +406,8 @@ def render(t: int, budget: float, horizon: int, initial_budget: float,
             zip(projects, proj_state, milestones, milestone_state)):
         tol     = ps.get("tolerance_remain", proj["termination_tolerance"])
         tol_max = proj["termination_tolerance"]
-        alloc_amount = allocations[idx] if allocations is not None else None
+        alloc_amount = (allocations[idx] if allocations is not None
+                        else ps.get("allocation_action"))
         print(f"  [{_tag(ps.get('status','pending'))}]  Project {proj['i']}")
         print(_row("BAC",    _fmt(proj["bac"]),   "Price",             _fmt(proj["price"])))
         print(_row("t_proj", str(ps.get("t_project", 0)),
@@ -483,7 +422,7 @@ def render(t: int, budget: float, horizon: int, initial_budget: float,
         print(_row("reach_plan_t",      _fmt(ps.get("reach_plan_t",      0.0)),
                    "reach_plan_next_t", _fmt(ps.get("reach_plan_next_t", 0.0))))
         print(_sep("─"))
-        j       = ps.get("target_milestone_j")
+        j = ps.get("target_milestone_j")
         print(_row("target",         f"j={j}" if j is not None else "none",
                    "net_payment",    _fmt(ps.get("target_net_payment",    0.0))))
         print(_row("progress_gap",   _fmt(ps.get("target_progress_gap",   0.0), 4),
@@ -491,3 +430,423 @@ def render(t: int, budget: float, horizon: int, initial_budget: float,
         print(_row("required_alloc", _fmt(ps.get("target_required_alloc", 0.0)),
                    "target_npv",     _fmt(ps.get("target_npv",            0.0), 4)))
         print(_sep())
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PLAY INFRASTRUCTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Everything below is used exclusively by play.py.
+# It is NOT part of the gymnasium environment API.
+#
+# Public surface
+# --------------
+#   play_startup(no_db, runs_dir, schema_path)  → run_dir | None
+#   play_init_db(run_dir, schema_path)           → conn | None
+#   play_seed_configs(conn, cfgs_dir)            → None
+#   play_select_config(conn, cfgs_dir, name)     → cfg dict | None
+#   play_export(db_path, fmt, out_dir, ...)      → None
+#   parse_action(raw, n, budget)                 → np.ndarray | None
+#   default_action(n, active_mask)               → np.ndarray
+
+import numpy as np   # already a project dependency; safe to import here
+
+
+# ── console helpers ───────────────────────────────────────────────────────────
+
+def _banner(text: str, width: int = 60) -> None:
+    print("\n" + "═" * width)
+    print(f"  {text}")
+    print("═" * width)
+
+def _ok(label: str, detail: str = "") -> None:
+    print(f"  ✓  {label}" + (f"  ({detail})" if detail else ""))
+
+def _warn(label: str, detail: str = "") -> None:
+    print(f"  ⚠  {label}" + (f"  ({detail})" if detail else ""))
+
+def _fail(label: str, detail: str = "") -> None:
+    print(f"  ✗  {label}" + (f"  — {detail}" if detail else ""))
+
+
+# ── run folder ────────────────────────────────────────────────────────────────
+
+def play_startup(no_db: bool, runs_dir: str, schema_path: str) -> "str | None":
+    """
+    Create the timestamped run folder.
+    Returns run_dir on success, None if --no-db or schema missing.
+    """
+    _banner("STARTUP")
+
+    if no_db:
+        _warn("DB disabled", "--no-db flag set; skipping run folder")
+        return None
+
+    if not os.path.exists(schema_path):
+        _fail("schema.sql not found", schema_path)
+        return None
+
+    stamp   = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_dir = os.path.join(runs_dir, stamp)
+    os.makedirs(run_dir, exist_ok=True)
+    _ok("Run folder created", run_dir)
+    return run_dir
+
+
+# ── DB init ───────────────────────────────────────────────────────────────────
+
+_ALL_TABLES = [
+    "environment_config",
+    "projects_profile",
+    "milestones_profile",
+    "portfolios",
+    "projects_status",
+    "projects_observation",
+    "portfolio_observation",
+    "milestones_status",
+    "training_log",
+]
+
+
+def play_init_db(run_dir: str,
+                 schema_path: str) -> "sqlite3.Connection | None":
+    """
+    Create database.db inside run_dir, apply schema, verify tables.
+    Returns open connection or None on failure.
+    """
+    _banner("DATABASE INIT")
+
+    db_path = os.path.join(run_dir, "database.db")
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        with open(schema_path) as f:
+            conn.executescript(f.read())
+        conn.commit()
+        _ok("Database created & schema applied", db_path)
+    except Exception as exc:
+        _fail("Database init failed", str(exc))
+        return None
+
+    # verify
+    rows  = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+    ).fetchall()
+    found = {row["name"] for row in rows}
+    all_ok = True
+    for table in _ALL_TABLES:
+        if table in found:
+            _ok(f"table: {table}")
+        else:
+            _fail(f"table: {table}", "MISSING")
+            all_ok = False
+    if not all_ok:
+        print("\n  [!] Schema verification failed. Check schema.sql.")
+
+    return conn
+
+
+# ── config seeding ────────────────────────────────────────────────────────────
+
+def play_seed_configs(conn: sqlite3.Connection, cfgs_dir: str) -> None:
+    """
+    Discover every .py CONFIG dict in cfgs_dir and INSERT OR IGNORE into
+    environment_config.  Safe to call multiple times.
+    """
+    import importlib.util
+    import json
+    from datetime import timezone
+
+    py_files = sorted(
+        f for f in os.listdir(cfgs_dir)
+        if f.endswith(".py") and not f.startswith("__")
+    )
+    if not py_files:
+        _warn("No config files found", cfgs_dir)
+        return
+
+    seeded = 0
+    for fname in py_files:
+        fpath = os.path.join(cfgs_dir, fname)
+        try:
+            spec = importlib.util.spec_from_file_location(fname[:-3], fpath)
+            mod  = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            cfg = getattr(mod, "CONFIG", None)
+            if cfg is None:
+                _warn(f"No CONFIG dict in {fname}")
+                continue
+            _seed_one_config(conn, cfg, json, timezone)
+            seeded += 1
+        except Exception as exc:
+            _warn(f"Seed failed: {fname}", str(exc))
+
+    _ok("Configs seeded", f"{seeded} / {len(py_files)} files")
+
+
+def _seed_one_config(conn: sqlite3.Connection, cfg: dict,
+                     json_mod, timezone_mod) -> None:
+    """Insert a single CONFIG dict; silently skips duplicates (INSERT OR IGNORE)."""
+
+    def _to_sqlite(v):
+        if isinstance(v, (list, dict)):
+            return json_mod.dumps(v)
+        return v
+
+    created_at = datetime.now(timezone_mod.utc).isoformat()
+
+    cols = ["config_id", "config_name", "created_at"] + [
+        k for k in cfg if k not in ("config_id", "config_name")
+    ]
+    values = (
+        [cfg.get("config_id"), cfg.get("config_name"), created_at]
+        + [_to_sqlite(cfg.get(k)) for k in cols[3:]]
+    )
+    placeholders = ", ".join("?" * len(cols))
+    col_names    = ", ".join(cols)
+
+    try:
+        conn.execute(
+            f"INSERT OR IGNORE INTO environment_config ({col_names}) "
+            f"VALUES ({placeholders})",
+            values,
+        )
+        conn.commit()
+    except Exception as exc:
+        print(f"  [!] Insert failed for {cfg.get('config_id')}: {exc}")
+
+
+# ── config selection / loading ────────────────────────────────────────────────
+
+def play_list_configs(conn: sqlite3.Connection) -> list[dict]:
+    try:
+        rows = conn.execute(
+            "SELECT config_id, config_name, created_at "
+            "FROM environment_config ORDER BY created_at"
+        ).fetchall()
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def play_prompt_config(conn: sqlite3.Connection) -> "str | None":
+    """
+    Interactive config selector.
+    Returns a config_id string, or None to quit.
+    """
+    configs = play_list_configs(conn)
+    if not configs:
+        print("  [!] No configs found in database.")
+        return None
+
+    print()
+    print("  Available configurations:")
+    print(f"  {'#':>3}  {'Config ID':<40}  {'Name'}")
+    print("  " + "─" * 70)
+    for idx, c in enumerate(configs):
+        print(f"  {idx:>3}  {c['config_id']:<40}  {c['config_name']}")
+    print()
+
+    while True:
+        raw = input("  Select config number (or q to quit): ").strip()
+        if raw.lower() in ("q", "quit", "exit"):
+            return None
+        try:
+            sel = int(raw)
+            if 0 <= sel < len(configs):
+                return configs[sel]["config_id"]
+            print(f"  [!] Enter a number between 0 and {len(configs)-1}.")
+        except ValueError:
+            print("  [!] Enter a valid number.")
+
+
+def play_load_config_by_id(config_id: str, cfgs_dir: str) -> "dict | None":
+    """
+    Load the CONFIG dict for a given config_id from cfgs_dir.
+    Tries filename convention first, then scans all files.
+    """
+    import importlib.util
+
+    candidate = os.path.join(cfgs_dir, config_id.replace("-", "_") + ".py")
+    fpath     = candidate if os.path.exists(candidate) else None
+
+    if fpath is None:
+        for fname in os.listdir(cfgs_dir):
+            if not fname.endswith(".py") or fname.startswith("__"):
+                continue
+            full = os.path.join(cfgs_dir, fname)
+            spec = importlib.util.spec_from_file_location(fname[:-3], full)
+            mod  = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            if getattr(mod, "CONFIG", {}).get("config_id") == config_id:
+                fpath = full
+                break
+
+    if fpath is None:
+        print(f"  [!] Cannot resolve config_id {config_id!r}.")
+        return None
+
+    module_name = os.path.basename(fpath)[:-3]
+    spec        = importlib.util.spec_from_file_location(module_name, fpath)
+    mod         = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return getattr(mod, "CONFIG", None)
+
+
+def play_load_config_by_name(name: str, cfgs_dir: str) -> "dict | None":
+    """Match by config_id or config_name substring."""
+    import importlib.util
+
+    name_upper = name.strip().upper()
+    for fname in sorted(os.listdir(cfgs_dir)):
+        if not fname.endswith(".py") or fname.startswith("__"):
+            continue
+        fpath = os.path.join(cfgs_dir, fname)
+        spec  = importlib.util.spec_from_file_location(fname[:-3], fpath)
+        mod   = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cfg   = getattr(mod, "CONFIG", {})
+        if (name_upper in cfg.get("config_id",   "").upper() or
+                name_upper in cfg.get("config_name", "").upper()):
+            return cfg
+
+    print(f"  [!] No config matching {name!r} found in {cfgs_dir}.")
+    return None
+
+
+# ── export ────────────────────────────────────────────────────────────────────
+
+def play_export(db_path: str,
+                fmt: str = "csv",
+                out_dir: "str | None" = None,
+                tables_subset: "list[str] | None" = None,
+                episode_id: "str | None" = None) -> None:
+    """Export tables from db_path into out_dir."""
+    _banner("EXPORT")
+
+    if not os.path.exists(db_path):
+        _fail("Database not found", db_path)
+        return
+
+    if out_dir is None:
+        out_dir = os.path.join(os.path.dirname(db_path), "exports")
+
+    try:
+        import pandas as pd
+    except ImportError:
+        _fail("pandas missing", "pip install pandas")
+        return
+
+    os.makedirs(out_dir, exist_ok=True)
+    tables_to_export = tables_subset or _ALL_TABLES
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+
+    existing = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+    }
+    tables_to_export = [t for t in tables_to_export if t in existing]
+
+    if not tables_to_export:
+        _fail("No tables to export")
+        conn.close()
+        return
+
+    print(f"  Format : {fmt}")
+    print(f"  Output : {out_dir}")
+    if episode_id:
+        print(f"  Filter : episode_id = {episode_id}")
+
+    data: dict = {}
+    for table in tables_to_export:
+        try:
+            cols = [r[1] for r in conn.execute(
+                f"PRAGMA table_info({table})").fetchall()]
+            if episode_id and "episode_id" in cols:
+                data[table] = pd.read_sql_query(
+                    f"SELECT * FROM {table} WHERE episode_id = ?",
+                    conn, params=(episode_id,))
+            else:
+                data[table] = pd.read_sql_query(
+                    f"SELECT * FROM {table}", conn)
+        except Exception as exc:
+            _warn(f"Failed to load {table}", str(exc))
+
+    conn.close()
+
+    if fmt == "csv":
+        for name, df in data.items():
+            path = os.path.join(out_dir, f"{name}.csv")
+            df.to_csv(path, index=False)
+            _ok(f"{name:<30} → {os.path.basename(path)}", f"{len(df)} rows")
+    elif fmt == "excel":
+        try:
+            import openpyxl  # noqa: F401
+        except ImportError:
+            _fail("openpyxl missing", "pip install openpyxl")
+            return
+        path = os.path.join(out_dir, "database_export.xlsx")
+        with pd.ExcelWriter(path, engine="openpyxl") as writer:
+            for name, df in data.items():
+                df.to_excel(writer, sheet_name=name[:31], index=False)
+                _ok(f"{name:<30} → sheet '{name[:31]}'", f"{len(df)} rows")
+        print(f"\n  Saved: {path}")
+    elif fmt == "parquet":
+        try:
+            import pyarrow  # noqa: F401
+        except ImportError:
+            _fail("pyarrow missing", "pip install pyarrow")
+            return
+        for name, df in data.items():
+            path = os.path.join(out_dir, f"{name}.parquet")
+            df.to_parquet(path, index=False)
+            _ok(f"{name:<30} → {os.path.basename(path)}", f"{len(df)} rows")
+
+    print(f"\n  Done. Files written to: {out_dir}")
+
+
+# ── action helpers ────────────────────────────────────────────────────────────
+
+def parse_action(raw: str, n: int, budget: float) -> "np.ndarray | None":
+    """
+    Parse a comma-separated string of monetary amounts into a fraction vector.
+    Returns None if input is malformed.
+    """
+    parts = [p.strip() for p in raw.strip().split(",")]
+    if len(parts) != n:
+        print(f"  [!] Expected {n} value(s), got {len(parts)}.")
+        return None
+    try:
+        amounts = [float(p) for p in parts]
+    except ValueError:
+        print("  [!] Non-numeric input.")
+        return None
+    if any(a < 0 for a in amounts):
+        print("  [!] Allocations must be non-negative.")
+        return None
+
+    total = sum(amounts)
+    if total <= 0.0:
+        return np.zeros(n, dtype=np.float32)
+
+    fractions = [a / budget for a in amounts] if budget > 0 else [0.0] * n
+    frac_sum  = sum(fractions)
+    if frac_sum > 1.0 + 1e-9:
+        fractions = [f / frac_sum for f in fractions]
+    return np.array(fractions, dtype=np.float32)
+
+
+def default_action(n: int, active_mask: "list[bool]") -> np.ndarray:
+    """Equal split across active projects."""
+    n_active = sum(active_mask)
+    if n_active == 0:
+        return np.zeros(n, dtype=np.float32)
+    share = 1.0 / n_active
+    return np.array(
+        [share if active_mask[i] else 0.0 for i in range(n)],
+        dtype=np.float32,
+    )

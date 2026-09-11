@@ -54,6 +54,7 @@ class PortfolioBudgetingEnv(gym.Env):
         self.proj_state             : list[dict] = []
         self._last_net_cashflow     : float      = 0.0
         self._pending_advance_inflow: float      = 0.0
+        self._cum_reward            : float      = 0.0
 
     # ── spaces ────────────────────────────────────────────────────────────────
 
@@ -79,6 +80,7 @@ class PortfolioBudgetingEnv(gym.Env):
         self.t          = 0
         self._last_net_cashflow      = 0.0
         self._pending_advance_inflow = 0.0
+        self._cum_reward             = 0.0
 
         self.discount = max(0.0, min(1.0, h.sample(
             self.np_random, cfg["discount_dist"],
@@ -149,6 +151,8 @@ class PortfolioBudgetingEnv(gym.Env):
             except Exception:
                 pass
 
+        self._cum_reward = self._pending_advance_inflow   # advance already in budget
+
         h.reset_history(self.episode_id, len(self.projects))
         return self._build_obs(), self._build_info()
 
@@ -158,16 +162,53 @@ class PortfolioBudgetingEnv(gym.Env):
         cfg = self.config
         n   = len(self.projects)
 
-        raw          = np.clip(np.asarray(action, dtype=np.float64), 0.0, None)
-        active_mask  = np.array([ps["status"] == "active" for ps in self.proj_state], dtype=bool)
-        active_sum   = float(raw[active_mask].sum())
+        raw         = np.clip(np.asarray(action, dtype=np.float64), 0.0, None)
+        active_mask = np.array([ps["status"] == "active" for ps in self.proj_state], dtype=bool)
+
+        # ── RULE 1: zero out non-active projects before anything else ─────────
+        # Applies to both RL and manual play; completed/terminated slots get nothing.
+        raw[~active_mask] = 0.0
+
+        # ── RULE 2: per-project BAC cap ───────────────────────────────────────
+        # Convert to absolute amounts, cap each at BAC, convert back to fractions.
+        # Prevents allocating more than a project can absorb in one step.
+        budget_ref = max(self.budget, 1e-9)
+        raw_abs    = raw * budget_ref
+        for i, proj in enumerate(self.projects):
+            if active_mask[i]:
+                raw_abs[i] = min(raw_abs[i], proj["bac"])
+        raw = raw_abs / budget_ref
+
+        # ── RULE 3: total allocation cannot exceed available budget ───────────
+        # Normalise so the sum of fractions ≤ 1.0, then scale to budget.
+        active_sum = float(raw[active_mask].sum())
         if active_sum > 1.0 + 1e-9:
-            raw = raw / active_sum
+            raw = raw / active_sum   # rescale proportionally, preserving relative weights
 
         allocations = raw * self.budget
-        for i in range(n):
-            if not active_mask[i]:
-                allocations[i] = 0.0
+        # Hard floor: if budget is non-positive no spending is possible at all.
+        if self.budget <= 0.0:
+            allocations[:] = 0.0
+
+        # ── RULE 4: bankrupt episode termination ──────────────────────────────
+        # If the budget is exhausted AND there are no pending inflows this period
+        # (advances for projects starting now), the portfolio cannot progress.
+        # Truncate immediately so the agent doesn't spin on a dead state.
+        # We check this BEFORE spending so a zero-budget period that happens to
+        # receive an advance inflow is still allowed to continue.
+        pending_advances = sum(
+            milestones[0]["net_payment"]
+            for proj, ps, milestones, ms_sl in zip(
+                self.projects, self.proj_state, self.milestones, self.milestone_state)
+            if (proj["planned_start"] == self.t
+                and ps["status"] != "completed"
+                and not ms_sl[0]["certified"])
+        )
+        if self.budget <= 0.0 and pending_advances <= 0.0:
+            obs  = self._build_obs()
+            info = self._build_info()
+            info["truncation_reason"] = "budget_exhausted"
+            return obs, 0.0, False, True, info
 
         discount_factor = self.discount ** self.t
         period_inflow   = 0.0
@@ -180,11 +221,16 @@ class PortfolioBudgetingEnv(gym.Env):
             for _ in self.projects
         ]
 
-        # Restore advance already credited at reset into proj_cf for t=0 DB row
+        # Restore advance already credited at reset into proj_cf for t=0 DB row.
+        # Also accumulate into _t0_display_inflow so the post-action render shows
+        # the correct net_cashflow without touching budget or reward (already done at reset).
+        _t0_display_inflow = 0.0
         for i, (proj, ps, ms_list, ms_sl) in enumerate(zip(
                 self.projects, self.proj_state, self.milestones, self.milestone_state)):
             if proj["planned_start"] == 0 and self.t == 0 and ms_sl[0]["certified_t"] == 0:
-                proj_cf[i]["advance"] = ms_sl[0]["payment_released"]
+                adv = ms_sl[0]["payment_released"]
+                proj_cf[i]["advance"]  = adv
+                _t0_display_inflow    += adv
 
         # ── EARLY PHASE ──────────────────────────────────────────────────────
         # Hard deadline fires here. Other breaches update obs only (no tolerance,
@@ -299,16 +345,13 @@ class PortfolioBudgetingEnv(gym.Env):
             elif ps["progress_actual"] >= 1.0 and _all_certified(ms_sl):
                 ps["status"] = "completed"
 
-            # Increment t_project AFTER breach eval so plan target matches observation
-            ps["t_project"] += 1
-            self._update_obs_fields(ps, proj, ms_list, ms_sl)
-
         # ── RECORD ───────────────────────────────────────────────────────────
 
         net_cashflow            = period_inflow - period_outflow
         self._last_net_cashflow = net_cashflow
         self.budget            += net_cashflow
         reward                  = float(discount_factor * net_cashflow)
+        self._cum_reward       += reward
 
         all_terminal  = all(ps["status"] in ("completed", "terminated") for ps in self.proj_state)
         terminated_ep = all_terminal
@@ -327,17 +370,52 @@ class PortfolioBudgetingEnv(gym.Env):
             except Exception:
                 pass
 
-        self.t += 1
+        # Snapshot BEFORE incrementing t_project so render_post shows the
+        # period-T view: progress, plan fields, and breach state as they stood
+        # when the allocation was applied — not the T+1 lookahead.
+        # _recorded_ncf adds back the t=0 advance for display only — it was
+        # already in budget and _cum_reward from reset, so it must not re-enter
+        # period_inflow, budget, or reward.
+        _recorded_t          = self.t
+        _recorded_ncf        = net_cashflow + _t0_display_inflow
+        _recorded_reward     = reward
+        _recorded_proj_state = [dict(ps) for ps in self.proj_state]
+        _recorded_budget     = self.budget
 
+        # Advance t_project and refresh obs fields for T+1 pre-action view
+        self.t += 1
         for ps, proj, ms_list, ms_sl in zip(
                 self.proj_state, self.projects, self.milestones, self.milestone_state):
-            if ps["status"] in ("active", "completed", "terminated"):
+            if ps["status"] == "active":
+                ps["t_project"] += 1
+            if ps["status"] != "pending":
                 self._update_obs_fields(ps, proj, ms_list, ms_sl)
 
         info = self._build_info()
-        info["cashflow"]       = proj_cf
-        info["period_inflow"]  = period_inflow
-        info["period_outflow"] = period_outflow
+        info["cashflow"]              = proj_cf
+        info["period_inflow"]         = period_inflow
+        info["period_outflow"]        = period_outflow
+        info["recorded_t"]            = _recorded_t
+        info["recorded_net_cashflow"] = _recorded_ncf
+        info["recorded_reward"]       = _recorded_reward
+        info["recorded_proj_state"]   = _recorded_proj_state
+        info["recorded_budget"]       = _recorded_budget
+        info["cum_reward"]            = self._cum_reward
+        info["render_post"]           = self._build_render_state(
+            t=_recorded_t,
+            budget=_recorded_budget,
+            proj_state=_recorded_proj_state,
+            net_cashflow=_recorded_ncf,
+            cum_reward=self._cum_reward,
+        )
+        if not (terminated_ep or truncated_ep):
+            info["render_pre"] = self._build_render_state(
+                t=self.t,
+                budget=self.budget,
+                proj_state=self.proj_state,
+                net_cashflow=0.0,
+                cum_reward=self._cum_reward,
+            )
         return obs, reward, terminated_ep, truncated_ep, info
 
     # ── gymnasium API ─────────────────────────────────────────────────────────
@@ -357,6 +435,26 @@ class PortfolioBudgetingEnv(gym.Env):
 
     def close(self) -> None:
         pass
+
+    # ── play interface ────────────────────────────────────────────────────────
+
+    @property
+    def prompt_hint(self) -> dict:
+        """State the prompt needs — no env internals leak into play.py."""
+        n_active = sum(1 for ps in self.proj_state if ps["status"] == "active")
+        return {"n_projects": len(self.projects), "n_active": n_active}
+
+    def parse_input(self, raw: str) -> "np.ndarray | None":
+        """
+        Parse a raw input string into an action array.
+        Empty string → equal split across active projects.
+        Invalid input → None (caller should re-prompt).
+        """
+        n           = len(self.projects)
+        active_mask = [ps["status"] == "active" for ps in self.proj_state]
+        if raw == "":
+            return h.default_action(n, active_mask)
+        return h.parse_action(raw, n, self.budget)
 
     # ── observation field computation ─────────────────────────────────────────
 
@@ -444,9 +542,44 @@ class PortfolioBudgetingEnv(gym.Env):
 
     # ── info builder ──────────────────────────────────────────────────────────
 
+    def _build_render_state(self, t: int, budget: float,
+                            proj_state: list[dict],
+                            net_cashflow: float,
+                            cum_reward: float) -> dict:
+        """Assemble the kwargs dict that h.render() expects."""
+        return {
+            "t":              t,
+            "budget":         budget,
+            "horizon":        self.horizon,
+            "initial_budget": self.initial_budget,
+            "projects":       self.projects,
+            "proj_state":     proj_state,
+            "milestones":     self.milestones,
+            "milestone_state": self.milestone_state,
+            "episode_id":     self.episode_id,
+            "net_cashflow":   net_cashflow,
+            "cum_reward":     cum_reward,
+        }
+
     def _build_info(self) -> dict:
         return {
             "t_episode": self.t, "budget": self.budget, "horizon": self.horizon,
+            "period_inflow":  self._pending_advance_inflow,
+            "period_outflow": 0.0,
+            "episode_header": {
+                "episode_id": self.episode_id,
+                "n_projects": len(self.projects),
+                "horizon":    self.horizon,
+                "budget":     self.budget,
+                "run_dir":    None,   # play.py fills this in after env.reset()
+            },
+            "render_state": self._build_render_state(
+                t=self.t,
+                budget=self.budget,
+                proj_state=self.proj_state,
+                net_cashflow=self._last_net_cashflow,
+                cum_reward=self._cum_reward,
+            ),
             "projects": [{
                 "i":                      proj["i"],
                 "status":                 ps["status"],
