@@ -50,7 +50,7 @@ CONFIG = {
     "planned_start_p4"        : None,
 
     "planned_duration_dist"   : "fixed",
-    "planned_duration_p1"     : 1.0,
+    "planned_duration_p1"     : 0.0,
     "planned_duration_p2"     : None,
     "planned_duration_p3"     : None,
     "planned_duration_p4"     : None,
@@ -135,7 +135,7 @@ CONFIG = {
     "payment_weight_p4"       : None,
 
     "timestep_threshold_dist" : "fixed",
-    "timestep_threshold_p1"   : 1.0,
+    "timestep_threshold_p1"   : 0.0,
     "timestep_threshold_p2"   : None,
     "timestep_threshold_p3"   : None,
     "timestep_threshold_p4"   : None,

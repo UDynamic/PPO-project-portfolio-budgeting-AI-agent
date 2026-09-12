@@ -1,3 +1,0 @@
-episode_id,i,t_episode,t_project,method,net_cashflow,tolerance_remain,catchup_alloc_t,catchup_alloc_next_t,reach_plan_t,reach_plan_next_t,target_progress_gap,target_timestep_gap,target_required_alloc,target_npv
-TC-10MAF-R__manual__,0,0,1,manual,24.0,2.0,0.0,74.06342772967548,0.0,89.06342772967548,1.0,4,100.0,17.862815662863255
-TC-10MAF-R__manual__,0,1,2,manual,-5.999999016523361,2.0,0.0,49.437967279096235,11.506662374852738,64.43796727909623,0.6490000115066767,3,64.90000115066768,47.06967372905241

@@ -208,7 +208,7 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
         is_final = (idx == n_ms - 1)
 
         if is_final:
-            ts = proj["planned_finish"]
+            ts = proj["planned_finish"] - 1   # completion due after last-step alloc
         elif ts_is_ordinal:
             ts = int(round(float(ts_raw_cfg[idx])))
         else:

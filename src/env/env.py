@@ -300,9 +300,11 @@ class PortfolioBudgetingEnv(gym.Env):
 
             alloc = float(allocations[i])
 
-            # Interest on treasury draw (cumulative deficit before this allocation)
+            # Interest on treasury draw: computed on the deficit AFTER adding this
+            # period's allocation, because the allocation itself is drawn from treasury
+            # when no inflow surplus covers it — it must bear interest this period.
             monthly_rate  = cfg["annual_interest_rate"] / 12.0
-            treasury_draw = max(0.0, ps["outflow"] - ps["inflow"])
+            treasury_draw = max(0.0, ps["outflow"] + alloc - ps["inflow"])
             interest      = monthly_rate * treasury_draw
             proj_cf[i]["treasury_draw"] = treasury_draw
             proj_cf[i]["interest"]      = interest
@@ -324,8 +326,11 @@ class PortfolioBudgetingEnv(gym.Env):
                 proj["scurve_a"], proj["scurve_b"])
             h.update_evm(ps, proj)
 
-            # Payment delivery
-            ms_net = h.deliver_payments(certified_js_by_proj[i], self.t, ps, ms_list, ms_sl)
+            # Payment delivery — re-check after allocation in case progress just crossed
+            # a threshold that was not met in the pre-allocation early-phase check.
+            late_certified = h.check_certifications(self.t, ps, ms_list, ms_sl)
+            all_certified_js = list(set(certified_js_by_proj[i]) | set(late_certified))
+            ms_net = h.deliver_payments(all_certified_js, self.t, ps, ms_list, ms_sl)
             period_inflow              += ms_net
             proj_cf[i]["milestone_net"] = ms_net
 
@@ -389,6 +394,7 @@ class PortfolioBudgetingEnv(gym.Env):
             if ps["status"] == "active":
                 ps["t_project"] += 1
             if ps["status"] != "pending":
+                ps["allocation_action"] = 0.0   # clear stale value before pre-action render
                 self._update_obs_fields(ps, proj, ms_list, ms_sl)
 
         info = self._build_info()
@@ -468,26 +474,30 @@ class PortfolioBudgetingEnv(gym.Env):
         dcap     = proj["progress_delay_cap"]
         plan_t   = ps.get("progress_plan_t", 0.0)
 
-        # Current-period catchup fields
+        # Current-period catchup fields.
+        # delay/space use plan_t (actual delay relative to the plan at this instant).
+        # min/needed/catchup/reach use plan_nt: the allocation made THIS step must
+        # satisfy the plan target at END of this step (= planned_progress(t_project+1)).
+        plan_nt  = h.planned_progress(t_proj + 1, dur, a, b)
         delay_t  = plan_t - prog
         ps["progress_delay_t"]  = delay_t
         ps["progress_space_t"]  = dcap - delay_t
-        ps["min_prog_t"]        = max(0.0, plan_t - dcap)
+        ps["min_prog_t"]        = max(0.0, plan_nt - dcap)
         ps["progress_needed_t"] = max(0.0, ps["min_prog_t"] - prog)
         ps["catchup_alloc_t"]   = ps["progress_needed_t"] * bac
-        ps["reach_plan_t"]      = max(0.0, plan_t - prog) * bac
+        ps["reach_plan_t"]      = max(0.0, plan_nt - prog) * bac
 
-        # Next-period catchup fields
-        plan_nt  = h.planned_progress(t_proj + 1, dur, a, b)
+        # Next-period catchup fields — lookahead one further step (t_project+2).
+        plan_nt2 = h.planned_progress(t_proj + 2, dur, a, b)
         delay_nt = plan_nt - prog
-        min_nt   = max(0.0, plan_nt - dcap)
+        min_nt   = max(0.0, plan_nt2 - dcap)
         ps["progress_plan_next_t"]    = plan_nt
         ps["progress_delay_next_t"]   = delay_nt
         ps["progress_space_next_t"]   = dcap - delay_nt
         ps["min_prog_next_t"]         = min_nt
         ps["progress_needed_next_t"]  = max(0.0, min_nt - prog)
         ps["catchup_alloc_next_t"]    = ps["progress_needed_next_t"] * bac
-        ps["reach_plan_next_t"]       = max(0.0, plan_nt - prog) * bac
+        ps["reach_plan_next_t"]       = max(0.0, plan_nt2 - prog) * bac
 
         # Target milestone
         target_j = target_pg = target_tg = target_np = target_ra = target_pr = target_npv = None
