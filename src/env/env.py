@@ -169,14 +169,19 @@ class PortfolioBudgetingEnv(gym.Env):
         # Applies to both RL and manual play; completed/terminated slots get nothing.
         raw[~active_mask] = 0.0
 
-        # ── RULE 2: per-project BAC cap ───────────────────────────────────────
-        # Convert to absolute amounts, cap each at BAC, convert back to fractions.
-        # Prevents allocating more than a project can absorb in one step.
+        # ── RULE 2: per-project allocation cap ───────────────────────────────
+        # Cap = bac / eta_min so that a full single-step allocation always
+        # guarantees project completion regardless of the efficiency draw.
+        # For fixed/uniform/custom_ordinal this is exact; for other distributions
+        # eta_min falls back to 0.01 (the global floor), making the cap large
+        # and letting Rule 3 (budget cap) dominate instead.
         budget_ref = max(self.budget, 1e-9)
         raw_abs    = raw * budget_ref
         for i, proj in enumerate(self.projects):
             if active_mask[i]:
-                raw_abs[i] = min(raw_abs[i], proj["bac"])
+                eta_min   = h.efficiency_lower_bound(cfg, proj_idx=i)
+                alloc_cap = proj["bac"] / eta_min
+                raw_abs[i] = min(raw_abs[i], alloc_cap)
         raw = raw_abs / budget_ref
 
         # ── RULE 3: total allocation cannot exceed available budget ───────────

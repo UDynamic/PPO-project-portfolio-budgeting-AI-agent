@@ -248,6 +248,44 @@ def sample_efficiency(rng, cfg: dict, proj_idx: int = 0, t_project: int = 0) -> 
     return max(0.01, float(_s(rng, cfg, "efficiency")))
 
 
+def efficiency_lower_bound(cfg: dict, proj_idx: int = 0) -> float:
+    """
+    Return the minimum possible efficiency value for a project, given the
+    configured distribution.  Used to compute a dynamic per-project allocation
+    cap: alloc_cap = bac / eta_min, guaranteeing that a single full allocation
+    is always sufficient to complete the project regardless of the draw.
+
+    Supported distributions
+    -----------------------
+    fixed          → the single value is both min and max
+    uniform        → min(p1, p2)
+    custom_ordinal → min of the sequence (per-project slice honoured)
+
+    All other distributions fall back to 0.01 (the global efficiency floor),
+    which is conservative but safe — the cap becomes very large and Rule 3
+    (budget cap) takes over.
+    """
+    dist = cfg.get("efficiency_dist", "fixed")
+    p1   = cfg.get("efficiency_p1")
+    p2   = cfg.get("efficiency_p2")
+
+    if dist == "fixed":
+        return max(0.01, float(p1))
+
+    if dist == "uniform":
+        return max(0.01, float(min(p1, p2)))
+
+    if dist == "custom_ordinal":
+        seq = p1
+        if seq and isinstance(seq[0], (list, tuple)):
+            seq = seq[proj_idx % len(seq)]
+        return max(0.01, float(min(seq)))
+
+    # triangular, normal, lognormal, beta, etc. — no closed-form lower bound;
+    # fall back to the global efficiency floor so the cap is safely large.
+    return 0.01
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # EVM
 # ═══════════════════════════════════════════════════════════════════════════════
