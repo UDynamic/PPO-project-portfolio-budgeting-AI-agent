@@ -12,10 +12,11 @@ python tests/regression/add_fixture.py \\
     --method  optimal \\
     --actions "[110.0]"
 
---actions must be valid JSON.
-  Single-project, single period:   "[110.0]"
-  Single-project, multi period:    "[85.0, 7.65, 0.0, 0.0]"
-  Multi-project, multi period:     "[[50.0, 30.0], [20.0, 10.0]]"
+--actions must be valid JSON covering ONLY the active (prompted) timesteps.
+  Pending periods are auto-stepped with zeros and must NOT appear in actions.
+  Single-project, single active period:   "[110.0]"
+  Single-project, multi active period:    "[85.0, 7.65, 0.0]"
+  Multi-project, multi active period:     "[[50.0, 30.0], [20.0, 10.0]]"
 
 Copies only the tables the harness asserts:
     portfolios.csv

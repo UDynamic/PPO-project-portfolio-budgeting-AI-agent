@@ -265,7 +265,8 @@ class PortfolioBudgetingEnv(gym.Env):
             h.update_evm(ps, proj)
 
             # Certification check
-            certified_js_by_proj[i] = h.check_certifications(self.t, ps, ms_list, ms_sl)
+            certified_js_by_proj[i] = h.check_certifications(self.t, ps, ms_list, ms_sl,
+                                                              planned_start=proj["planned_start"])
 
             # Breach flags (pre-allocation, obs only)
             flags = h.evaluate_breaches(ps, proj)
@@ -333,7 +334,8 @@ class PortfolioBudgetingEnv(gym.Env):
 
             # Payment delivery — re-check after allocation in case progress just crossed
             # a threshold that was not met in the pre-allocation early-phase check.
-            late_certified = h.check_certifications(self.t, ps, ms_list, ms_sl)
+            late_certified = h.check_certifications(self.t, ps, ms_list, ms_sl,
+                                                     planned_start=proj["planned_start"])
             all_certified_js = list(set(certified_js_by_proj[i]) | set(late_certified))
             ms_net = h.deliver_payments(all_certified_js, self.t, ps, ms_list, ms_sl)
             period_inflow              += ms_net
@@ -398,7 +400,15 @@ class PortfolioBudgetingEnv(gym.Env):
                 self.proj_state, self.projects, self.milestones, self.milestone_state):
             if ps["status"] == "active":
                 ps["t_project"] += 1
-            if ps["status"] != "pending":
+            if ps["status"] == "pending" and self.t == proj["planned_start"]:
+                # Activate now so pre-action render at t=planned_start shows ACTIVE.
+                # _deliver_advance is idempotent (returns 0 if already certified),
+                # so the early phase in the next step() call is safe.
+                adv = self._deliver_advance(ps, proj, ms_list, ms_sl, t=self.t)
+                self.budget                  += adv
+                self._pending_advance_inflow += adv
+                self._update_obs_fields(ps, proj, ms_list, ms_sl)
+            elif ps["status"] != "pending":
                 ps["allocation_action"] = 0.0   # clear stale value before pre-action render
                 self._update_obs_fields(ps, proj, ms_list, ms_sl)
 
@@ -479,6 +489,30 @@ class PortfolioBudgetingEnv(gym.Env):
         dcap     = proj["progress_delay_cap"]
         plan_t   = ps.get("progress_plan_t", 0.0)
 
+        # ── PENDING: zero all catchup/reach fields; suppress target milestone ──
+        if ps["status"] == "pending":
+            ps["progress_delay_t"]        = 0.0
+            ps["progress_space_t"]        = 0.0
+            ps["min_prog_t"]              = 0.0
+            ps["progress_needed_t"]       = 0.0
+            ps["catchup_alloc_t"]         = 0.0
+            ps["reach_plan_t"]            = 0.0
+            ps["progress_plan_next_t"]    = 0.0
+            ps["progress_delay_next_t"]   = 0.0
+            ps["progress_space_next_t"]   = 0.0
+            ps["min_prog_next_t"]         = 0.0
+            ps["progress_needed_next_t"]  = 0.0
+            ps["catchup_alloc_next_t"]    = 0.0
+            ps["reach_plan_next_t"]       = 0.0
+            ps["target_milestone_j"]      = None
+            ps["target_progress_gap"]     = 0.0
+            ps["target_timestep_gap"]     = 0
+            ps["target_net_payment"]      = 0.0
+            ps["target_required_alloc"]   = 0.0
+            ps["target_payment_rate"]     = 0.0
+            ps["target_npv"]              = 0.0
+            return
+
         # Current-period catchup fields.
         # delay/space use plan_t (actual delay relative to the plan at this instant).
         # min/needed/catchup/reach use plan_nt: the allocation made THIS step must
@@ -505,13 +539,14 @@ class PortfolioBudgetingEnv(gym.Env):
         ps["reach_plan_next_t"]       = max(0.0, plan_nt2 - prog) * bac
 
         # Target milestone
+        # timestep_threshold is in project-time; convert to episode-time for the gap.
         target_j = target_pg = target_tg = target_np = target_ra = target_pr = target_npv = None
         for ms, ms_state in zip(milestones, milestone_state):
             if ms["j"] == 0 or ms_state["certified"]:
                 continue
             target_j  = ms["j"]
             target_pg = max(0.0, ms["progress_threshold"] - prog)
-            target_tg = ms["timestep_threshold"] - self.t
+            target_tg = (proj["planned_start"] + ms["timestep_threshold"]) - self.t
             target_np = ms["net_payment"]
             target_ra = target_pg * bac
             gap       = max(0, target_tg)
@@ -577,8 +612,10 @@ class PortfolioBudgetingEnv(gym.Env):
         }
 
     def _build_info(self) -> dict:
+        n_active = sum(1 for ps in self.proj_state if ps["status"] == "active")
         return {
             "t_episode": self.t, "budget": self.budget, "horizon": self.horizon,
+            "n_active":  n_active,
             "period_inflow":  self._pending_advance_inflow,
             "period_outflow": 0.0,
             "episode_header": {
@@ -829,7 +866,8 @@ def _db_write_step(conn: sqlite3.Connection, episode_id: str, config_id: str,
             for ms, ms_state in zip(milestones, ms_sl):
                 if not ms_state["certified"] or ms_state["certified_t"] != t:
                     continue
-                delay = (ms_state["certified_t"] - ms["timestep_threshold"]
+                episode_threshold = proj["planned_start"] + ms["timestep_threshold"]
+                delay = (ms_state["certified_t"] - episode_threshold
                          if ms_state["certified_t"] is not None else None)
                 conn.execute("""
                     INSERT OR REPLACE INTO milestones_status (

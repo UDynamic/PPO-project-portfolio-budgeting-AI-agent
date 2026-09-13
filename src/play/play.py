@@ -181,8 +181,20 @@ def main() -> None:
     h.render(**info["render_state"])
 
     # ── game loop ─────────────────────────────────────────────────────────────
+    import numpy as np
     terminated = truncated = False
     while not (terminated or truncated):
+
+        if info["n_active"] == 0:
+            # No active projects -- auto-step with zeros, no prompt.
+            action = np.zeros(env.prompt_hint["n_projects"], dtype=np.float32)
+            print(f"  [auto] t={info['t_episode']} -- no active projects, skipping.")
+            obs, reward, terminated, truncated, info = env.step(action)
+            h.render(**info["render_post"])
+            if not (terminated or truncated):
+                h.render(**info["render_pre"])
+            continue
+
         action = _prompt(env)
         if action is None:
             print("  Quitting.")

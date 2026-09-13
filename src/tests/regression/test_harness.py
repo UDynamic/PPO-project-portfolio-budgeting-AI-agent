@@ -200,13 +200,16 @@ def run_episode(config_id: str, actions_raw: list) -> dict:
         "milestones_status":    [],
     }
 
-    t = 0
+    action_idx = 0   # only advances for active (prompted) steps
     done = False
 
     while not done:
-        # Build action — use zeros if we've run out of scripted actions
-        if t < len(actions_raw):
-            action = _parse_actions(actions_raw[t], n_projects, env.budget)
+        # Auto-step zeros during pending gaps; actions_raw only covers active steps.
+        if info["n_active"] == 0:
+            action = np.zeros(n_projects, dtype=np.float32)
+        elif action_idx < len(actions_raw):
+            action = _parse_actions(actions_raw[action_idx], n_projects, env.budget)
+            action_idx += 1
         else:
             action = np.zeros(n_projects, dtype=np.float32)
 
@@ -267,7 +270,8 @@ def run_episode(config_id: str, actions_raw: list) -> dict:
                 env.projects, env.milestones, env.milestone_state):
             for ms, ms_state in zip(ms_list, ms_sl):
                 if ms_state["certified"] and ms_state["certified_t"] == rt:
-                    delay = (ms_state["certified_t"] - ms["timestep_threshold"]
+                    episode_threshold = proj["planned_start"] + ms["timestep_threshold"]
+                    delay = (ms_state["certified_t"] - episode_threshold
                              if ms_state["certified_t"] is not None else None)
                     records["milestones_status"].append({
                         "i":                    proj["i"],
@@ -276,8 +280,6 @@ def run_episode(config_id: str, actions_raw: list) -> dict:
                         "certification_delay":  delay,
                         "net_payment":          ms_state["payment_released"],
                     })
-
-        t += 1
 
     env.close()
     return {k: pd.DataFrame(v) for k, v in records.items()}

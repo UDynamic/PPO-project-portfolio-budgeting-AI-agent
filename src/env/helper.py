@@ -208,12 +208,12 @@ def sample_milestones(rng, cfg: dict, proj: dict) -> list[dict]:
         is_final = (idx == n_ms - 1)
 
         if is_final:
-            ts = proj["planned_finish"] - 1   # completion due after last-step alloc
+            ts = proj["planned_duration"] - 1   # project-time: last step of project
         elif ts_is_ordinal:
             ts = int(round(float(ts_raw_cfg[idx])))
         else:
             ts_frac = max(0.0, min(1.0, float(ts_raw_cfg[idx])))
-            ts = proj["planned_start"] + max(1, round(
+            ts = max(1, round(
                 thresholds[idx] * proj["planned_duration"] * ts_frac))
 
         gross    = weights[idx] * price
@@ -370,13 +370,16 @@ def check_termination(t: int, ps: dict, proj: dict,
 
 def check_certifications(t: int, ps: dict,
                          milestones: list[dict],
-                         milestone_state: list[dict]) -> list[int]:
+                         milestone_state: list[dict],
+                         planned_start: int = 0) -> list[int]:
     result = []
     for ms, ms_state in zip(milestones, milestone_state):
         if ms["j"] == 0 or ms_state["certified"]:
             continue
+        # timestep_threshold is in project-time; convert to episode-time
+        episode_threshold = planned_start + ms["timestep_threshold"]
         if (ps["progress_actual"] >= ms["progress_threshold"]
-                and t >= ms["timestep_threshold"]):
+                and t >= episode_threshold):
             result.append(ms["j"])
     return result
 
