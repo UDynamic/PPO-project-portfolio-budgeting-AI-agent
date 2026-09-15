@@ -1,0 +1,9 @@
+episode_id,t_episode,method,net_cashflow,budget_available
+TC-1LMAIF-R__manual__,0,manual,0.0,300.0
+TC-1LMAIF-R__manual__,1,manual,0.0,300.0
+TC-1LMAIF-R__manual__,2,manual,0.0,324.0
+TC-1LMAIF-R__manual__,3,manual,-71.8741747967193,252.1258252032807
+TC-1LMAIF-R__manual__,4,manual,27.942310883611754,280.0681360868924
+TC-1LMAIF-R__manual__,5,manual,-0.1993186391310755,279.86881744776133
+TC-1LMAIF-R__manual__,6,manual,-0.20131182552238627,279.66750562223893
+TC-1LMAIF-R__manual__,7,manual,53.36830259912891,333.03580822136786

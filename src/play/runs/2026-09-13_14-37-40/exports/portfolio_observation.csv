@@ -1,0 +1,5 @@
+episode_id,t_episode,method,net_cashflow,budget_available
+TC-1LSF-R__manual__,0,manual,0.0,300.0
+TC-1LSF-R__manual__,1,manual,0.0,300.0
+TC-1LSF-R__manual__,2,manual,-101.00000301003456,198.99999698996544
+TC-1LSF-R__manual__,3,manual,17.989999209979402,216.98999619994484
