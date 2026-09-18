@@ -73,31 +73,29 @@ def _amounts_to_action(env: PortfolioBudgetingEnv,
     return fracs
 
 
-def act_greedy_catchup(env: PortfolioBudgetingEnv) -> np.ndarray:
+def act_catchup_t(env: PortfolioBudgetingEnv) -> np.ndarray:
+    """Allocate enough to reach plan_t - delay_cap (stay within tolerance this period)."""
     amounts = [ps.get("catchup_alloc_t", 0.0) for ps in env.proj_state]
     return _amounts_to_action(env, amounts)
 
 
-def act_greedy_reach_plan(env: PortfolioBudgetingEnv) -> np.ndarray:
+def act_reach_t(env: PortfolioBudgetingEnv) -> np.ndarray:
+    """Allocate enough to fully reach plan_t (close the gap to the plan this period)."""
     amounts = [ps.get("reach_plan_t", 0.0) for ps in env.proj_state]
     return _amounts_to_action(env, amounts)
 
 
-def act_uniform(env: PortfolioBudgetingEnv) -> np.ndarray:
-    amounts = []
-    for proj, ps in zip(env.projects, env.proj_state):
-        if ps["status"] == "active":
-            dur = max(1.0, float(proj.get("planned_duration", 1.0)))
-            amounts.append(proj["bac"] / dur)
-        else:
-            amounts.append(0.0)
+def act_catchup_next_t(env: PortfolioBudgetingEnv) -> np.ndarray:
+    """Allocate enough now so that after this period's progress, the project
+    will be within tolerance of next period's plan (plan_next_t - delay_cap)."""
+    amounts = [ps.get("catchup_alloc_next_t", 0.0) for ps in env.proj_state]
     return _amounts_to_action(env, amounts)
 
 
 SOLVERS = {
-    "greedy_catchup":    act_greedy_catchup,
-    "greedy_reach_plan": act_greedy_reach_plan,
-    "uniform":           act_uniform,
+    "catchup_t":      act_catchup_t,
+    "reach_t":        act_reach_t,
+    "catchup_next_t": act_catchup_next_t,
 }
 
 
