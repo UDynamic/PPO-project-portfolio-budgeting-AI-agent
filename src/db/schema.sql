@@ -1,4 +1,4 @@
--- schema.sql
+-- src/db/schema.sql
 --
 -- =============================================================
 -- PPM Training Database Schema
