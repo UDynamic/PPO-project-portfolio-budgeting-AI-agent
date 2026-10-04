@@ -7,3 +7,4 @@ from pathlib import Path
 env_dir = Path(__file__).parent / "env"
 if str(env_dir) not in sys.path:
     sys.path.insert(0, str(env_dir))
+    
