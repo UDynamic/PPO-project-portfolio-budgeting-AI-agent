@@ -1,5 +1,5 @@
-t_episode,net_cashflow,reward,budget_available
-0,0.0,0.0,300.0
-1,0.0,0.0,300.0
-2,-101.00000301003456,-91.15250271655619,198.99999698996544
-3,109.90000235739399,94.22551452117065,308.8999993473594
+episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
+TC-1LSF-R__reach_t__,TC-1LSF-R,0,reach_t,300.0,0.0,0.0,0
+TC-1LSF-R__reach_t__,TC-1LSF-R,1,reach_t,300.0,0.0,0.0,0
+TC-1LSF-R__reach_t__,TC-1LSF-R,2,reach_t,198.99999698996544,-101.00000301003456,-91.15250271655619,0
+TC-1LSF-R__reach_t__,TC-1LSF-R,3,reach_t,308.8999993473594,109.90000235739399,94.22551452117065,1

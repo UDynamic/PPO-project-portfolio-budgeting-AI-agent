@@ -4,14 +4,16 @@ tests/solvers/add_baseline_fixtures.py
 Runs the three deterministic baseline solvers over every config in
 db/configs/ and writes the results as regression fixtures.
 
-Solvers
--------
-  catchup_t      — allocate catchup_alloc_t      per active project
-  reach_t        — allocate reach_plan_t         per active project
-  catchup_next_t — allocate catchup_alloc_next_t per active project
+Rather than duplicating the episode loop, this script drives the solvers
+through the same infrastructure used by play.py / baseline_solvers.py:
 
-Pending periods are auto-stepped with zeros (no action consumed).
-actions.json only records the active-period actions.
+  1. Initialise DB + run dir (same as play.py startup).
+  2. For each config × solver: run the solver via PortfolioBudgetingEnv,
+     log to the DB, then export via h.play_export().
+  3. Copy each exported file into the ground_truth tree:
+       ground_truth/<config_id>/<method>/<table>.csv
+
+The exported files are the canonical ground truth — no bespoke harvesting.
 
 Usage
 -----
@@ -25,13 +27,13 @@ Options
   --methods  catchup_t reach_t ...     only run these methods    (default: all)
   --overwrite                           overwrite existing fixtures without prompt
   --seed N                              RNG seed passed to env.reset() (default: 0)
+  --no-db                               disable DB logging (export step is skipped)
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib.util
-import json
 import os
 import shutil
 import sys
@@ -40,63 +42,32 @@ from pathlib import Path
 import numpy as np
 
 # ── path bootstrap ─────────────────────────────────────────────────────────────
-_SOLVERS_DIR    = Path(__file__).parent          # src/tests/solvers
-_TESTS_DIR      = _SOLVERS_DIR.parent            # src/tests
-_SRC_DIR        = _TESTS_DIR.parent              # src/
-_CFGS_DIR       = _SRC_DIR / "db" / "configs"
-_ENV_DIR        = _SRC_DIR / "env"
-_GT_DIR         = _TESTS_DIR / "regression" / "ground_truth"
+_SOLVERS_DIR = Path(__file__).parent          # src/tests/solvers
+_TESTS_DIR   = _SOLVERS_DIR.parent            # src/tests
+_SRC_DIR     = _TESTS_DIR.parent              # src/
+_CFGS_DIR    = _SRC_DIR / "db" / "configs"
+_ENV_DIR     = _SRC_DIR / "env"
+_DB_DIR      = _SRC_DIR / "db"
+_RUNS_DIR    = _ENV_DIR / "runs"
+_GT_DIR      = _TESTS_DIR / "regression" / "ground_truth"
+_SCHEMA_PATH = str(_DB_DIR / "schema.sql")
 
-if str(_SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(_SRC_DIR))
-if str(_ENV_DIR) not in sys.path:
-    sys.path.append(str(_ENV_DIR))
+# src/env must be on the path so that env.py's own `import helper as h` resolves.
+# We do NOT add src/ because that would make Python treat src/env as a package
+# named "env" and shadow the bare module names inside it.
+for _d in (str(_ENV_DIR), str(_DB_DIR), str(_SOLVERS_DIR)):
+    if _d not in sys.path:
+        sys.path.insert(0, _d)
 
-from env.env import PortfolioBudgetingEnv  # noqa: E402
+import helper as h                            # src/env/helper.py
+from baseline_solvers import ALL_SOLVERS      # src/tests/solvers/baseline_solvers.py
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# SOLVERS
-# ══════════════════════════════════════════════════════════════════════════════
-
-def _amounts_to_action(env: PortfolioBudgetingEnv,
-                        amounts: list[float]) -> np.ndarray:
-    """Convert raw monetary amounts → budget-fraction action vector."""
-    budget = env.budget if env.budget > 0 else 1.0
-    fracs  = np.zeros(len(env.projects), dtype=np.float32)
-    for i, (ps, amt) in enumerate(zip(env.proj_state, amounts)):
-        if ps["status"] == "active":
-            fracs[i] = max(0.0, float(amt)) / budget
-    total = float(fracs.sum())
-    if total > 1.0 + 1e-9:
-        fracs /= total
-    return fracs
-
-
-def act_catchup_t(env: PortfolioBudgetingEnv) -> np.ndarray:
-    """Allocate enough to reach plan_t - delay_cap (stay within tolerance this period)."""
-    amounts = [ps.get("catchup_alloc_t", 0.0) for ps in env.proj_state]
-    return _amounts_to_action(env, amounts)
-
-
-def act_reach_t(env: PortfolioBudgetingEnv) -> np.ndarray:
-    """Allocate enough to fully reach plan_t (close the gap to the plan this period)."""
-    amounts = [ps.get("reach_plan_t", 0.0) for ps in env.proj_state]
-    return _amounts_to_action(env, amounts)
-
-
-def act_catchup_next_t(env: PortfolioBudgetingEnv) -> np.ndarray:
-    """Allocate enough now so that after this period's progress, the project
-    will be within tolerance of next period's plan (plan_next_t - delay_cap)."""
-    amounts = [ps.get("catchup_alloc_next_t", 0.0) for ps in env.proj_state]
-    return _amounts_to_action(env, amounts)
-
-
-SOLVERS = {
-    "catchup_t":      act_catchup_t,
-    "reach_t":        act_reach_t,
-    "catchup_next_t": act_catchup_next_t,
-}
+# Load PortfolioBudgetingEnv directly from file to avoid package/module name clash
+import importlib.util as _ilu
+_env_spec = _ilu.spec_from_file_location("_env_module", _ENV_DIR / "env.py")
+_env_mod  = _ilu.module_from_spec(_env_spec)
+_env_spec.loader.exec_module(_env_mod)
+PortfolioBudgetingEnv = _env_mod.PortfolioBudgetingEnv
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -124,138 +95,68 @@ def _load_configs(only: list[str] | None) -> list[dict]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# EPISODE RUNNER — returns (actions_json, export_tables)
+# EPISODE RUNNER — uses the real env + solver, logs to DB, exports
 # ══════════════════════════════════════════════════════════════════════════════
 
-HARNESS_TABLES = [
-    "portfolios",
-    "projects_status",
-    "projects_observation",
-    "milestones_status",
-]
-
-
-def _run_episode(cfg: dict, method: str, seed: int) -> tuple[list, dict]:
+def _run_episode(cfg: dict, solver, conn, seed: int) -> None:
     """
-    Run one episode with the given solver.
-    Returns:
-        actions  — list of per-active-step allocations (monetary amounts)
-        tables   — dict of table_name → list[dict] rows
+    Run one episode using the solver's act() method.
+    Logging is handled by the env itself (via conn).
+    Pending periods are auto-stepped with zeros.
     """
-    act_fn = SOLVERS[method]
-
     env = PortfolioBudgetingEnv(
-        config=cfg, render_mode=None, conn=None, method=method,
+        config=cfg,
+        render_mode=None,
+        conn=conn,
+        method=solver.METHOD_NAME,
     )
     obs, info = env.reset(seed=seed)
 
-    n  = len(env.projects)
-    actions: list = []
-    tables: dict[str, list] = {k: [] for k in HARNESS_TABLES}
-
+    n = len(env.projects)
     terminated = truncated = False
-    while not (terminated or truncated):
 
+    while not (terminated or truncated):
         if info["n_active"] == 0:
-            # Pending gap — auto-step, don't record action
             action = np.zeros(n, dtype=np.float32)
         else:
-            action = act_fn(env)
-            # Record as monetary amounts (budget * fraction), rounded to 4dp
-            amounts = [round(float(action[i]) * env.budget, 4) for i in range(n)]
-            actions.append(amounts if n > 1 else amounts[0])
+            action = solver.act(env)
 
         obs, reward, terminated, truncated, info = env.step(action)
 
-        rt          = info["recorded_t"]
-        proj_states = info["recorded_proj_state"]
-
-        # portfolios
-        tables["portfolios"].append({
-            "t_episode":        rt,
-            "net_cashflow":     info["recorded_net_cashflow"],
-            "reward":           info["recorded_reward"],
-            "budget_available": info["recorded_budget"],
-        })
-
-        # projects_status + projects_observation
-        for proj, ps in zip(env.projects, proj_states):
-            i = proj["i"]
-            tables["projects_status"].append({
-                "i":                     i,
-                "t_episode":             rt,
-                "status":                ps.get("status", ""),
-                "progress_actual":       ps.get("progress_actual", 0.0),
-                "allocation_action":     ps.get("allocation_action", 0.0),
-                "inflow":                ps.get("inflow", 0.0),
-                "outflow":               ps.get("outflow", 0.0),
-            })
-            tables["projects_observation"].append({
-                "i":                     i,
-                "t_episode":             rt,
-                "catchup_alloc_t":       ps.get("catchup_alloc_t", 0.0),
-                "catchup_alloc_next_t":  ps.get("catchup_alloc_next_t", 0.0),
-                "reach_plan_t":          ps.get("reach_plan_t", 0.0),
-                "reach_plan_next_t":     ps.get("reach_plan_next_t", 0.0),
-                "target_progress_gap":   ps.get("target_progress_gap", 0.0),
-                "target_timestep_gap":   ps.get("target_timestep_gap", 0),
-                "target_required_alloc": ps.get("target_required_alloc", 0.0),
-                "target_npv":            ps.get("target_npv", 0.0),
-            })
-
-        # milestones_status — only certified this period
-        for proj, ms_list, ms_sl in zip(
-                env.projects, env.milestones, env.milestone_state):
-            for ms, ms_state in zip(ms_list, ms_sl):
-                if ms_state["certified"] and ms_state["certified_t"] == rt:
-                    ep_thresh = proj["planned_start"] + ms["timestep_threshold"]
-                    delay = (ms_state["certified_t"] - ep_thresh
-                             if ms_state["certified_t"] is not None else None)
-                    tables["milestones_status"].append({
-                        "i":                   proj["i"],
-                        "j":                   ms["j"],
-                        "certified_t":         ms_state["certified_t"],
-                        "certification_delay": delay,
-                        "net_payment":         ms_state["payment_released"],
-                    })
-
     env.close()
-    return actions, tables
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# FIXTURE WRITER
+# FIXTURE WRITER — copies exports → ground_truth/<config_id>/<method>/
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _write_fixture(config_id: str, method: str,
-                   actions: list, tables: dict,
-                   overwrite: bool) -> bool:
-    """Write actions.json + CSVs into ground_truth/config_id/method/."""
-    import csv
-
+def _copy_to_fixture(exports_dir: Path, config_id: str, method: str,
+                     overwrite: bool) -> bool:
+    """
+    Copy every file from exports_dir into ground_truth/<config_id>/<method>/.
+    Returns True if files were written, False if skipped.
+    """
     dest = _GT_DIR / config_id / method
 
-    if dest.exists() and not overwrite:
-        ans = input(f"  Fixture {config_id}/{method} exists. Overwrite? [y/N] ").strip().lower()
+    if dest.exists() and any(dest.iterdir()) and not overwrite:
+        ans = input(
+            f"  Fixture {config_id}/{method} exists. Overwrite? [y/N] "
+        ).strip().lower()
         if ans != "y":
             print(f"  Skipped {config_id}/{method}.")
             return False
 
     dest.mkdir(parents=True, exist_ok=True)
 
-    # actions.json
-    with open(dest / "actions.json", "w") as f:
-        json.dump(actions, f, indent=4)
+    copied = 0
+    for src_file in exports_dir.iterdir():
+        if src_file.is_file():
+            shutil.copy2(src_file, dest / src_file.name)
+            copied += 1
 
-    # CSVs
-    for table_name, rows in tables.items():
-        if not rows:
-            continue
-        fpath = dest / f"{table_name}.csv"
-        with open(fpath, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=rows[0].keys())
-            writer.writeheader()
-            writer.writerows(rows)
+    if copied == 0:
+        print(f"  [!] No exported files found in {exports_dir}")
+        return False
 
     return True
 
@@ -273,8 +174,10 @@ def main() -> None:
         help="Config IDs to run (default: all).",
     )
     parser.add_argument(
-        "--methods", nargs="+", default=list(SOLVERS),
-        choices=list(SOLVERS), metavar="METHOD",
+        "--methods", nargs="+", default=[s.METHOD_NAME for s in
+                                         [cls() for cls in ALL_SOLVERS]],
+        choices=[cls.METHOD_NAME for cls in ALL_SOLVERS],
+        metavar="METHOD",
         help="Solver methods to run (default: all).",
     )
     parser.add_argument(
@@ -285,44 +188,98 @@ def main() -> None:
         "--seed", type=int, default=0,
         help="RNG seed for env.reset() (default: 0).",
     )
+    parser.add_argument(
+        "--no-db", action="store_true",
+        help="Disable DB logging (export/fixture step is skipped).",
+    )
     args = parser.parse_args()
 
     cfgs = _load_configs(args.configs)
     if not cfgs:
         sys.exit("[!] No configs found.")
 
-    methods = args.methods
+    method_names = args.methods
+    solver_map   = {cls.METHOD_NAME: cls() for cls in ALL_SOLVERS}
+    solvers      = [solver_map[m] for m in method_names]
 
-    total   = len(cfgs) * len(methods)
+    total   = len(cfgs) * len(solvers)
     written = 0
     skipped = 0
     failed  = 0
 
-    print(f"\n  {len(cfgs)} config(s) × {len(methods)} method(s) = {total} fixture(s)\n")
+    print(f"\n  {len(cfgs)} config(s) × {len(solvers)} solver(s) = {total} fixture(s)\n")
 
+    # ── one run dir + DB for the whole batch ──────────────────────────────────
+    run_dir = h.play_startup(args.no_db, str(_RUNS_DIR), _SCHEMA_PATH)
+    conn    = None
+    db_path = None
+
+    if run_dir is not None:
+        conn = h.play_init_db(run_dir, _SCHEMA_PATH)
+        if conn is None:
+            print("\n  [!] DB init failed — falling back to --no-db mode.\n")
+        else:
+            db_path = os.path.join(run_dir, "database.db")
+            h.play_seed_configs(conn, str(_CFGS_DIR))
+
+    # ── main loop ─────────────────────────────────────────────────────────────
     for cfg in cfgs:
-        config_id = cfg["config_id"]
-        for method in methods:
-            label = f"{config_id}__{method}"
+        config_id = cfg.get("config_id", "unknown")
+
+        for solver in solvers:
+            label = f"{config_id}__{solver.METHOD_NAME}"
             print(f"  ▶  {label} ... ", end="", flush=True)
+
             try:
-                actions, tables = _run_episode(cfg, method, seed=args.seed)
-                ok = _write_fixture(config_id, method, actions, tables,
-                                    overwrite=args.overwrite)
+                # -- run episode (logs to DB via env internals) ----------------
+                _run_episode(cfg, solver, conn, seed=args.seed)
+
+                if conn is None or db_path is None:
+                    # No DB — nothing to export.
+                    print("(no-db, skipped export)")
+                    skipped += 1
+                    continue
+
+                # -- export this episode's tables to a temp folder -------------
+                exports_dir = Path(run_dir) / "exports" / config_id / solver.METHOD_NAME
+                exports_dir.mkdir(parents=True, exist_ok=True)
+
+                # episode_id mirrors env.py line 78:
+                #   f"{config_id}__{self.method}__{self.run_id}"
+                # run_id defaults to "" so the id is fully deterministic.
+                episode_id = f"{config_id}__{solver.METHOD_NAME}__"
+                h.play_export(
+                    db_path,
+                    fmt="csv",
+                    out_dir=str(exports_dir),
+                    tables_subset=None,
+                    episode_id=episode_id,
+                )
+
+                # -- copy exports → ground_truth -------------------------------
+                ok = _copy_to_fixture(exports_dir, config_id,
+                                      solver.METHOD_NAME, overwrite=args.overwrite)
                 if ok:
                     written += 1
                     print("✓")
                 else:
                     skipped += 1
+
             except Exception as exc:
                 failed += 1
                 print(f"✗  {exc}")
+
+    # ── cleanup ───────────────────────────────────────────────────────────────
+    if conn is not None:
+        conn.close()
 
     print()
     print("═" * 60)
     print(f"  written : {written}")
     print(f"  skipped : {skipped}")
     print(f"  failed  : {failed}")
+    if run_dir:
+        print(f"  run dir : {run_dir}")
     print("═" * 60)
 
 

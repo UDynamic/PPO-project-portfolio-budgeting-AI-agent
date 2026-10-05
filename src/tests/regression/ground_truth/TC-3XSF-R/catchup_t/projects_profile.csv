@@ -1,0 +1,4 @@
+episode_id,config_id,i,planned_start,planned_finish,planned_duration,bac,profit_percent,price,scurve_a,scurve_b,advance_percent,advance_trigger,advance_recovery,retention_rate,progress_delay_cap,finish_delay_cap,termination_tolerance
+TC-3XSF-R__catchup_t__,TC-3XSF-R,0,0,1,1,100.0,0.2,120.0,2.0,5.0,0.0,0.0,0.0,0.05,0.15,2,2
+TC-3XSF-R__catchup_t__,TC-3XSF-R,1,2,3,1,200.0,0.2,240.0,2.0,5.0,0.0,0.0,0.0,0.05,0.15,2,2
+TC-3XSF-R__catchup_t__,TC-3XSF-R,2,4,5,1,300.0,0.2,360.0,2.0,5.0,0.0,0.0,0.0,0.05,0.15,2,2

@@ -1,7 +1,7 @@
-i,j,certified_t,certification_delay,net_payment
-0,0,0,0,0.0
-0,1,1,1,120.0
-1,0,2,-2,0.0
-1,1,2,0,240.0
-2,0,4,-4,0.0
-2,1,5,1,360.0
+episode_id,i,j,method,certified_t,certification_delay,net_payment
+TC-3XSF-R__reach_t__,0,0,reach_t,0,0,0.0
+TC-3XSF-R__reach_t__,0,1,reach_t,1,1,120.0
+TC-3XSF-R__reach_t__,1,0,reach_t,2,-2,0.0
+TC-3XSF-R__reach_t__,1,1,reach_t,2,0,240.0
+TC-3XSF-R__reach_t__,2,0,reach_t,4,-4,0.0
+TC-3XSF-R__reach_t__,2,1,reach_t,5,1,360.0
