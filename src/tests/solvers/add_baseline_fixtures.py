@@ -1,14 +1,14 @@
 """
-tests/regression/add_baseline_fixtures.py
+tests/solvers/add_baseline_fixtures.py
 
 Runs the three deterministic baseline solvers over every config in
 db/configs/ and writes the results as regression fixtures.
 
 Solvers
 -------
-  greedy_catchup    — allocate catchup_alloc_t  per active project
-  greedy_reach_plan — allocate reach_plan_t     per active project
-  uniform           — allocate bac / planned_duration per active project
+  catchup_t      — allocate catchup_alloc_t      per active project
+  reach_t        — allocate reach_plan_t         per active project
+  catchup_next_t — allocate catchup_alloc_next_t per active project
 
 Pending periods are auto-stepped with zeros (no action consumed).
 actions.json only records the active-period actions.
@@ -17,12 +17,12 @@ Usage
 -----
 Run from src/ or any directory:
 
-    python tests/regression/add_baseline_fixtures.py
+    python tests/solvers/add_baseline_fixtures.py
 
 Options
 -------
   --configs  TC-10SF-R TC-1LSF-R ...   only run these config IDs (default: all)
-  --methods  greedy_catchup uniform ... only run these methods    (default: all)
+  --methods  catchup_t reach_t ...     only run these methods    (default: all)
   --overwrite                           overwrite existing fixtures without prompt
   --seed N                              RNG seed passed to env.reset() (default: 0)
 """
@@ -40,12 +40,12 @@ from pathlib import Path
 import numpy as np
 
 # ── path bootstrap ─────────────────────────────────────────────────────────────
-_REGRESSION_DIR = Path(__file__).parent          # src/tests/regression
-_TESTS_DIR      = _REGRESSION_DIR.parent         # src/tests
+_SOLVERS_DIR    = Path(__file__).parent          # src/tests/solvers
+_TESTS_DIR      = _SOLVERS_DIR.parent            # src/tests
 _SRC_DIR        = _TESTS_DIR.parent              # src/
 _CFGS_DIR       = _SRC_DIR / "db" / "configs"
 _ENV_DIR        = _SRC_DIR / "env"
-_GT_DIR         = _REGRESSION_DIR / "ground_truth"
+_GT_DIR         = _TESTS_DIR / "regression" / "ground_truth"
 
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))

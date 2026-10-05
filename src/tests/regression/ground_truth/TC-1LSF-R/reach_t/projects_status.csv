@@ -1,0 +1,5 @@
+i,t_episode,status,progress_actual,allocation_action,inflow,outflow
+0,0,pending,0.0,0.0,0.0,0.0
+0,1,pending,0.0,0.0,0.0,0.0
+0,2,active,0.9100000271201134,100.00000298023224,0.0,101.00000301003456
+0,3,completed,1.0,8.999997636144219,120.0,111.10000065264057

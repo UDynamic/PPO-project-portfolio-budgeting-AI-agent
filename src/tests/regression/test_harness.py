@@ -41,6 +41,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -302,7 +303,10 @@ def _assert_df(actual: pd.DataFrame, expected: pd.DataFrame,
     missing   = [f for f in fields
                  if f not in actual.columns or f not in expected.columns]
     if missing:
-        pytest.warns(None)   # not a failure — just note it
+        warnings.warn(
+            f"[{fixture_label}] {table}: fields not present in both frames, skipped: {missing}",
+            stacklevel=2,
+        )
 
     if actual.empty and expected.empty:
         return
