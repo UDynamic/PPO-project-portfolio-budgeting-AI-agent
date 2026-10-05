@@ -1,5 +1,0 @@
-episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
-TC-1LSF-R__manual__,TC-1LSF-R,0,manual,300.0,0.0,0.0,0
-TC-1LSF-R__manual__,TC-1LSF-R,1,manual,300.0,0.0,0.0,0
-TC-1LSF-R__manual__,TC-1LSF-R,2,manual,198.99999698996544,-101.00000301003456,-91.15250271655619,0
-TC-1LSF-R__manual__,TC-1LSF-R,3,manual,216.98999619994484,17.989999209979402,15.424175572656088,1

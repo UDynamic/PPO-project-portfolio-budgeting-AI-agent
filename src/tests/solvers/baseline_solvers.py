@@ -7,9 +7,9 @@
 #
 # Solvers
 # -------
-#   GreedyPlanMatchSolver      — allocate reach_plan_t  per active project
-#   GreedyTerminationSolver    — allocate reach_plan_next_t per active project
-#   UniformDurationSolver      — allocate bac / planned_duration per active project
+#   CatchupTSolver      — allocate catchup_alloc_t     per active project
+#   ReachTSolver        — allocate reach_plan_t        per active project
+#   CatchupNextTSolver  — allocate catchup_alloc_next_t per active project
 #
 # Integration
 # -----------
@@ -63,20 +63,39 @@ class _BaseSolver:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SOLVER 1 — Greedy Plan-Match
+# SOLVER 1 — Catchup-T
 # ══════════════════════════════════════════════════════════════════════════════
 
-class GreedyPlanMatchSolver(_BaseSolver):
+class CatchupTSolver(_BaseSolver):
     """
-    Allocate exactly reach_plan_t to each active project.
+    Allocate catchup_alloc_t to each active project.
 
-    reach_plan_t = max(0, plan_t - progress_actual) * bac
-
-    This closes the gap between current planned progress and actual
-    progress in one step — no more, no less.
+    Brings the project to plan_t minus the delay tolerance cap —
+    stays within breach threshold this period without over-allocating.
     """
 
-    METHOD_NAME = "greedy_plan_match"
+    METHOD_NAME = "catchup_t"
+
+    def act(self, env: "PortfolioBudgetingEnv") -> np.ndarray:
+        amounts = [
+            ps.get("catchup_alloc_t", 0.0)
+            for ps in env.proj_state
+        ]
+        return self._amounts_to_action(env, amounts)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SOLVER 2 — Reach-T
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ReachTSolver(_BaseSolver):
+    """
+    Allocate reach_plan_t to each active project.
+
+    Fully closes the gap to plan_t this period — no breach, no carry-over.
+    """
+
+    METHOD_NAME = "reach_t"
 
     def act(self, env: "PortfolioBudgetingEnv") -> np.ndarray:
         amounts = [
@@ -87,53 +106,25 @@ class GreedyPlanMatchSolver(_BaseSolver):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SOLVER 2 — Greedy Termination-Risk Minimiser
+# SOLVER 3 — Catchup-Next-T
 # ══════════════════════════════════════════════════════════════════════════════
 
-class GreedyTerminationSolver(_BaseSolver):
+class CatchupNextTSolver(_BaseSolver):
     """
-    Allocate reach_plan_next_t to each active project.
+    Allocate catchup_alloc_next_t to each active project.
 
-    reach_plan_next_t = max(0, plan_next_t - progress_actual) * bac
-
-    Stays one period ahead of the plan, minimising the chance that any
-    breach ever opens a termination pathway.
+    Allocates enough now so that after this period's progress the project
+    will be within tolerance of next period's plan — one step ahead of
+    the minimum required to avoid a future breach.
     """
 
-    METHOD_NAME = "greedy_termination_risk"
+    METHOD_NAME = "catchup_next_t"
 
     def act(self, env: "PortfolioBudgetingEnv") -> np.ndarray:
         amounts = [
-            ps.get("reach_plan_next_t", 0.0)
+            ps.get("catchup_alloc_next_t", 0.0)
             for ps in env.proj_state
         ]
-        return self._amounts_to_action(env, amounts)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# SOLVER 3 — Uniform Duration Allocator
-# ══════════════════════════════════════════════════════════════════════════════
-
-class UniformDurationSolver(_BaseSolver):
-    """
-    Allocate bac / planned_duration each period to every active project,
-    regardless of actual progress, until the project completes or is terminated.
-
-    This is the naïve equal-spread baseline — it ignores cashflow timing,
-    milestone incentives, and plan deviations entirely.
-    """
-
-    METHOD_NAME = "uniform_duration"
-
-    def act(self, env: "PortfolioBudgetingEnv") -> np.ndarray:
-        amounts = []
-        for proj, ps in zip(env.projects, env.proj_state):
-            if ps["status"] == "active":
-                dur = proj.get("planned_duration", 1.0)
-                dur = max(1.0, float(dur))
-                amounts.append(proj["bac"] / dur)
-            else:
-                amounts.append(0.0)
         return self._amounts_to_action(env, amounts)
 
 
@@ -142,9 +133,9 @@ class UniformDurationSolver(_BaseSolver):
 # ══════════════════════════════════════════════════════════════════════════════
 
 ALL_SOLVERS: list[type[_BaseSolver]] = [
-    GreedyPlanMatchSolver,
-    GreedyTerminationSolver,
-    UniformDurationSolver,
+    CatchupTSolver,
+    ReachTSolver,
+    CatchupNextTSolver,
 ]
 
 
