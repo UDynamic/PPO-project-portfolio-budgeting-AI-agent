@@ -1,6 +1,0 @@
-episode_id,i,t_episode,t_project,method,net_cashflow,tolerance_remain,catchup_alloc_t,catchup_alloc_next_t,reach_plan_t,reach_plan_next_t,target_progress_gap,target_timestep_gap,target_required_alloc,target_npv
-TC-1LSF-R__manual__,0,0,0,manual,0.0,2.0,0.0,0.0,0.0,0.0,0.0,0,0.0,0.0
-TC-1LSF-R__manual__,0,1,0,manual,0.0,2.0,0.0,0.0,0.0,0.0,0.0,0,0.0,0.0
-TC-1LSF-R__manual__,0,2,0,manual,-101.00000301003456,2.0,85.0,85.0,100.0,100.0,1.0,2,100.0,32.9639889196676
-TC-1LSF-R__manual__,0,3,1,manual,-112.11000296637772,2.0,0.0,0.0,8.99999728798866,8.99999728798866,0.08999997287988659,1,8.99999728798866,117.31579218569556
-TC-1LSF-R__manual__,0,4,2,manual,6.7688970039585,2.0,0.0,0.0,0.0,0.0,0.0,0,0.0,120.0

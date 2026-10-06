@@ -1,0 +1,5 @@
+episode_id,t_episode,method,net_cashflow,budget_available
+TC-1LSF-R__catchup_t__,0,catchup_t,0.0,300.0
+TC-1LSF-R__catchup_t__,1,catchup_t,0.0,300.0
+TC-1LSF-R__catchup_t__,2,catchup_t,-85.84999939799309,214.1500006020069
+TC-1LSF-R__catchup_t__,3,catchup_t,96.26499917753836,310.41499977954527

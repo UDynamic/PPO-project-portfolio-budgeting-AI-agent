@@ -1,4 +1,4 @@
-# src/env/baseline_solvers.py
+# src/tests/solvers/baseline_solvers.py
 #
 # Three deterministic baseline solvers for PortfolioBudgetingEnv.
 # Each solver implements a single `act(env) -> np.ndarray` method that
@@ -72,15 +72,24 @@ class CatchupTSolver(_BaseSolver):
 
     Brings the project to plan_t minus the delay tolerance cap —
     stays within breach threshold this period without over-allocating.
+
+    At or beyond planned_duration, switches to reach_plan_t to express
+    finishing intent and prevent naive termination from over_duration_window.
     """
 
     METHOD_NAME = "catchup_t"
 
     def act(self, env: "PortfolioBudgetingEnv") -> np.ndarray:
-        amounts = [
-            ps.get("catchup_alloc_t", 0.0)
-            for ps in env.proj_state
-        ]
+        amounts = []
+        for ps, proj in zip(env.proj_state, env.projects):
+            if (ps["status"] == "active"
+                    and ps.get("t_project", 0) >= proj["planned_duration"]):
+                # Past planned end: catchup_alloc_t collapses to zero because
+                # plan_nt saturates at 1.0. Use reach_plan_t instead to push
+                # progress to completion.
+                amounts.append(ps.get("reach_plan_t", 0.0))
+            else:
+                amounts.append(ps.get("catchup_alloc_t", 0.0))
         return self._amounts_to_action(env, amounts)
 
 

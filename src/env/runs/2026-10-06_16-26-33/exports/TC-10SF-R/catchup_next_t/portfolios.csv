@@ -1,0 +1,5 @@
+episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
+TC-10SF-R__catchup_next_t__,TC-10SF-R,0,catchup_next_t,214.1500006020069,-85.84999939799309,-85.84999939799309,0
+TC-10SF-R__catchup_next_t__,TC-10SF-R,1,catchup_next_t,205.56499974123946,-8.585000860767455,-8.155750817729082,0
+TC-10SF-R__catchup_next_t__,TC-10SF-R,2,catchup_next_t,204.62064973865185,-0.9443500025876054,-0.8522758773353138,0
+TC-10SF-R__catchup_next_t__,TC-10SF-R,3,catchup_next_t,308.1812502926896,103.56060055403776,88.79026990001812,1
