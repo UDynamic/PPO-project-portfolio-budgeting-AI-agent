@@ -17,7 +17,7 @@ def beta_cdf(x: float, a: float, b: float) -> float:
     return min(1.0, total / B)
 
 
-def plan_values(duration: int, a: float = 6.0, b: float = 6.0) -> list[float]:
+def plan_values(duration: int, a: float = 1.5, b: float = 3.0) -> list[float]:
     """
     Returns cumulative planned progress fractions, one per timestep action.
 
@@ -37,6 +37,6 @@ def plan_values(duration: int, a: float = 6.0, b: float = 6.0) -> list[float]:
 if __name__ == "__main__":
     duration = int(input("Enter project duration: "))
     values = plan_values(duration)
-    print(f"\nPlan values for duration={duration} (a=6, b=6):")
+    print(f"\nPlan values for duration={duration} (a=1.5, b=3):")
     for t, v in enumerate(values):
         print(f"  timestep {t}: {v:.4f}")
