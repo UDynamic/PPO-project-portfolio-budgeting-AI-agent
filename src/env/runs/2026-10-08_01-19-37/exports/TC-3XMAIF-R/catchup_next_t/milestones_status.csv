@@ -1,7 +1,0 @@
-episode_id,i,j,method,certified_t,certification_delay,net_payment
-TC-3XMAIF-R__catchup_next_t__,0,0,catchup_next_t,0,0,24.0
-TC-3XMAIF-R__catchup_next_t__,0,1,catchup_next_t,1,0,13.5
-TC-3XMAIF-R__catchup_next_t__,1,0,catchup_next_t,6,-6,48.0
-TC-3XMAIF-R__catchup_next_t__,1,1,catchup_next_t,7,0,27.0
-TC-3XMAIF-R__catchup_next_t__,2,0,catchup_next_t,7,-7,72.0
-TC-3XMAIF-R__catchup_next_t__,2,1,catchup_next_t,8,0,40.5

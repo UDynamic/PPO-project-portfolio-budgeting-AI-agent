@@ -1,6 +1,0 @@
-episode_id,i,t_episode,t_project,method,net_cashflow,tolerance_remain,catchup_alloc_t,catchup_alloc_next_t,reach_plan_t,reach_plan_next_t,target_progress_gap,target_timestep_gap,target_required_alloc,target_npv
-TC-1LMAIF-R__reach_t__,0,0,0,reach_t,0.0,2.0,0.0,0.0,0.0,0.0,0.0,0,0.0,0.0
-TC-1LMAIF-R__reach_t__,0,1,0,reach_t,0.0,2.0,0.0,0.0,0.0,0.0,0.0,0,0.0,0.0
-TC-1LMAIF-R__reach_t__,0,2,0,reach_t,-41.29265765547753,2.0,49.88381772905428,83.2182441532923,64.88381772905429,98.2182441532923,0.3,1,30.0,-15.041551246537397
-TC-1LMAIF-R__reach_t__,0,3,1,reach_t,-67.06076768451166,2.0,24.17396844390166,25.95572429060936,39.173968443901664,40.95572429060936,0.0,0,0.0,14.210526315789473
-TC-1LMAIF-R__reach_t__,0,4,2,reach_t,14.058098322853738,2.0,0.0,0.0,0.0,0.0,0.0,0,0.0,28.421052631578945

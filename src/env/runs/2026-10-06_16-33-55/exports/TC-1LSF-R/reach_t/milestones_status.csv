@@ -1,3 +1,0 @@
-episode_id,i,j,method,certified_t,certification_delay,net_payment
-TC-1LSF-R__reach_t__,0,0,reach_t,2,-2,0.0
-TC-1LSF-R__reach_t__,0,1,reach_t,3,1,120.0

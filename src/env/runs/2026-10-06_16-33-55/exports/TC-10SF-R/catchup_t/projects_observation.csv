@@ -1,3 +1,0 @@
-episode_id,i,t_episode,t_project,method,net_cashflow,tolerance_remain,catchup_alloc_t,catchup_alloc_next_t,reach_plan_t,reach_plan_next_t,target_progress_gap,target_timestep_gap,target_required_alloc,target_npv
-TC-10SF-R__catchup_t__,0,0,0,catchup_t,-85.84999939799309,2.0,85.0,85.0,100.0,100.0,1.0,0,100.0,20.0
-TC-10SF-R__catchup_t__,0,1,1,catchup_t,10.41499977954527,2.0,7.650000542402258,7.650000542402258,22.65000054240226,22.65000054240226,0.2265000054240226,-1,22.65000054240226,97.34999945759773

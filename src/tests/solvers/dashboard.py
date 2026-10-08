@@ -57,24 +57,25 @@ import numpy as np
 import pandas as pd
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Colour palette (matches Appendix B LaTeX conventions)
+# Colour palette  – refined, perceptually distinct, print-friendly
 # ─────────────────────────────────────────────────────────────────────────────
 C = dict(
-    bcws      = "#1a6bbf",   # blue   – planned value
-    bcwp      = "#2da84a",   # green  – earned value
-    acwp      = "#d4720a",   # orange – actual cost
-    spi       = "#2da84a",   # green  – SPI line
-    cpi       = "#d4720a",   # orange – CPI line
-    ref_line  = "#e05050",   # red dashed – reference = 1
-    threshold = "#2da84a",   # green dashed – milestone thresholds
-    inflow    = "#2da84a",   # green bars  – inflows
-    outflow   = "#e05050",   # red bars    – outflows
-    net       = "#1a6bbf",   # blue line   – net cash flow
-    balance   = "#0097a7",   # teal        – cash balance
-    reward    = "#7b4fa6",   # purple      – cumul. discounted NCF / reward
-    alloc     = "#e05050",   # red bars    – budget allocation spend
-    bg        = "#f7f7f9",
-    grid      = "#d0d0d8",
+    bcws      = "#4361ee",   # indigo-blue  – planned value / BCWS
+    bcwp      = "#06d6a0",   # emerald      – earned value  / BCWP
+    acwp      = "#f77f00",   # amber        – actual cost   / ACWP
+    spi       = "#06d6a0",   # emerald      – SPI line
+    cpi       = "#f77f00",   # amber        – CPI line
+    ref_line  = "#ef233c",   # red          – reference = 1
+    threshold = "#06d6a0",   # emerald      – milestone thresholds
+    inflow    = "#06d6a0",   # emerald bars – inflows
+    outflow   = "#ef233c",   # red bars     – outflows
+    net       = "#4361ee",   # indigo       – net cash flow
+    balance   = "#0096c7",   # cerulean     – cash balance
+    reward    = "#7b2d8b",   # violet       – cumul. discounted NCF / reward
+    alloc     = "#ef233c",   # red bars     – budget allocation spend
+    ms_step   = "#8338ec",   # purple       – milestone profile staircase
+    bg        = "#f8f9fb",   # near-white panel background
+    grid      = "#d8dce8",   # subtle blue-grey grid
 )
 
 FIGSIZE_WIDE  = (16, 4.5)
@@ -139,8 +140,19 @@ def _s_curve(planned_start: int, planned_finish: int, bac: float,
 #   • Yellow line + ○    → BCWS  cumulative planned progress  (progress_plan_t)
 #   • White/grey line+○  → BCWP  cumulative earned value      (progress_actual)
 #   • Teal line + △      → ACWP  cumulative actual cost / BAC
-#   • Dashed green step  → Milestone profile: planned payment schedule
-#                          (progress_threshold at timestep_threshold, /price)
+#   • Dashed violet step → MS Plan: full planned payment schedule
+#                          (cumulative net_payment / price, at timestep_threshold)
+#                          — always drawn in full, regardless of outcome.
+#   • Solid  violet step → MS Certified: cumulative payments that were
+#                          *actually* certified (at certified_t). Drawn on
+#                          top of the dashed plan line, so wherever a
+#                          milestone has been certified the solid line
+#                          visually "covers" the dashed one. The line simply
+#                          stops at the last certification — everything
+#                          beyond that (e.g. after a project is terminated)
+#                          is only visible as the uncovered dashed plan,
+#                          flagging payments that were scheduled but never
+#                          received.
 #   • Orange line + ◇    → Net cash flow per period            (net_cashflow/BAC)
 #
 # Right y-axis – absolute currency units:
@@ -172,6 +184,9 @@ def _project_snapshot_ax(
     planned_start  = int(pp_i["planned_start"])
     planned_finish = int(pp_i["planned_finish"])
 
+    # Single-action project: planned_duration == 0 or 1 step with start==0
+    is_single_action = (planned_finish - planned_start) <= 1 and planned_start == 0
+
     ps_sorted = ps_i.sort_values("t_episode").copy()
 
     # ── dynamic x-window ─────────────────────────────────────────────────
@@ -179,22 +194,41 @@ def _project_snapshot_ax(
         ps_sorted["status"].isin(["active", "completed", "terminated"])
     ]
     if not non_pending.empty:
-        actual_start  = int(non_pending["t_episode"].min())
-        actual_finish = int(non_pending["t_episode"].max())
+        actual_start = int(non_pending["t_episode"].min())
+
+        # The environment keeps emitting "completed" rows for every subsequent
+        # episode timestep after a project finishes, inflating actual_finish far
+        # beyond the true end.  We want the chart to stop at the timestep the
+        # project actually finished, not at the last episode timestep.
+        #
+        # Strategy: find the last *active* row; the project finished one step
+        # later (the first "completed/terminated" row after the active period).
+        active_rows = ps_sorted[ps_sorted["status"] == "active"]
+        if not active_rows.empty:
+            last_active_t = int(active_rows["t_episode"].max())
+            first_done = ps_sorted[
+                ps_sorted["status"].isin(["completed", "terminated"]) &
+                (ps_sorted["t_episode"] > last_active_t)
+            ]
+            actual_finish = int(first_done["t_episode"].min()) \
+                            if not first_done.empty else last_active_t + 1
+        else:
+            # Never went active — terminated before start, or instant completion
+            first_done = ps_sorted[ps_sorted["status"].isin(["completed", "terminated"])]
+            actual_finish = int(first_done["t_episode"].min()) \
+                            if not first_done.empty else planned_finish
     else:
         actual_start  = planned_start
         actual_finish = planned_finish
 
-    # x_lo: one tick before the project starts (but never < 0)
-    # x_hi: the LAST timestep that actually has data — no padding beyond that
     x_lo   = max(0, min(planned_start, actual_start) - 1)
-    x_hi   = max(planned_finish, actual_finish)          # ends at last data point
+    x_hi   = max(planned_finish, actual_finish)
     x_span = max(x_hi - x_lo, 1)
 
-    # Small visual padding on right so the last marker isn't clipped by the frame
-    x_lim_r = x_hi + max(0.55, x_span * 0.05)
+    # Small visual padding on right so markers aren't clipped
+    x_lim_r = x_hi + max(0.65, x_span * 0.06)
 
-    # Slice to the window (only timesteps with data)
+    # Slice to the window
     win   = ps_sorted[
         (ps_sorted["t_episode"] >= x_lo) &
         (ps_sorted["t_episode"] <= x_hi)
@@ -202,222 +236,228 @@ def _project_snapshot_ax(
     t_win = win["t_episode"].values
 
     # ── responsive sizing ─────────────────────────────────────────────────
-    # bar_w: two side-by-side bars fit in 80 % of one unit; each bar = 40 %
-    bar_w = float(np.clip(0.38 / max(x_span, 1), 0.05, 0.36))
-    msize = float(np.clip(5.5 - x_span * 0.12, 2.5, 5.5))
-    lw    = float(np.clip(2.2 - x_span * 0.04, 1.2, 2.2))
+    msize   = float(np.clip(5.5 - x_span * 0.12, 2.5, 5.5))
+    lw      = float(np.clip(2.2 - x_span * 0.04, 1.2, 2.2))
     fs_tick = max(6, min(8, 8 - x_span // 10))
 
-    # ── left-axis data (normalised, fraction of BAC / price) ─────────────
-    bcws_cum = win["progress_plan_t"].values   # cumulative planned progress 0..1
-    bcwp_cum = win["progress_actual"].values   # cumulative earned value    0..1
+    # ── EVM series (normalised 0..1) ──────────────────────────────────────
+    bcwp_cum = win["progress_actual"].values
     acwp_cum = win["allocation"].cumsum().values / (bac + 1e-9)
-    ncf_norm = win["net_cashflow"].values / (bac + 1e-9)   # can be negative
 
-    # ── milestone profile: planned payment staircase (dashed green step) ──
-    # Anchor at (x_lo, 0) then step up at each certified_t.
-    # This gives the correct "flat then spike" shape even for single-period
-    # projects where timestep_threshold == 0 but the payment arrives at t=1.
-    ms_step_t: list[int]   = [x_lo]
-    ms_step_y: list[float] = [0.0]
+    # BCWS: for a single-action project the plan is immediately 100 % at t=0,
+    # so progress_plan_t jumps from 0→1 in one step and shows an ugly
+    # vertical line at t=0.  Instead we draw a flat horizontal at y=1.0
+    # from x_lo to planned_finish (the project was always expected to finish
+    # in one action, so the "plan" is 100 % from the start).
+    bcws_t: np.ndarray
+    bcws_y: np.ndarray
+    if is_single_action:
+        bcws_t = np.array([x_lo, planned_finish], dtype=float)
+        bcws_y = np.array([1.0, 1.0])
+    else:
+        bcws_t = t_win.astype(float)
+        bcws_y = win["progress_plan_t"].values
+
+    # ── milestone payment schedule: PLANNED (dashed) vs CERTIFIED (solid) ──
+    #
+    # PLANNED  → built from milestones_profile.csv using the milestone's
+    #            planned trigger timestep (timestep_threshold). This is the
+    #            *complete* schedule and is always drawn in full as a dashed
+    #            step, independent of what actually happened.
+    #
+    # CERTIFIED → built from milestones_status.csv using the timestep the
+    #            milestone was *actually* certified (certified_t). Only
+    #            milestones that really got certified contribute. Drawn as a
+    #            SOLID step, on top of the dashed plan line (same colour).
+    #            Wherever a payment has been certified, the solid segment
+    #            visually "covers" the dashed one up to that spike; the solid
+    #            line then simply stops — any further (uncertified) vertical
+    #            jumps remain visible only as dashed, flagging money that was
+    #            scheduled but never received (e.g. after project
+    #            termination). For fully completed projects every milestone
+    #            is eventually certified, so the solid line tracks the dashed
+    #            one the whole way and the plan appears fully "filled".
+    plan_step_t: list[float] = [x_lo]
+    plan_step_y: list[float] = [0.0]
+    if not ms_profile_i.empty:
+        time_col = next(
+            (c for c in ("timestep_threshold", "planned_t", "threshold_t", "t_threshold")
+             if c in ms_profile_i.columns),
+            None,
+        )
+        if time_col is not None and "net_payment" in ms_profile_i.columns:
+            ms_plan  = ms_profile_i.sort_values(time_col)
+            cum_pay  = 0.0
+            for _, row in ms_plan.iterrows():
+                pt       = row[time_col]
+                if pd.isna(pt):
+                    continue
+                pt       = float(pt)
+                cum_pay += float(row["net_payment"])
+                if x_lo <= pt <= x_hi:
+                    plan_step_t.append(pt)
+                    plan_step_y.append(cum_pay / (price + 1e-9))
+
+    cert_step_t: list[float] = [x_lo]
+    cert_step_y: list[float] = [0.0]
     if not ms_status_i.empty:
         ms_cert = ms_status_i.copy()
-        if not ms_profile_i.empty:
-            ms_cert = ms_status_i.merge(
+        if "certified" in ms_cert.columns:
+            ms_cert = ms_cert[ms_cert["certified"].astype(bool)]
+        if "certified_t" in ms_cert.columns:
+            ms_cert = ms_cert[ms_cert["certified_t"].notna()]
+            ms_cert = ms_cert[ms_cert["certified_t"] >= 0]
+        if not ms_profile_i.empty and "net_payment" in ms_profile_i.columns:
+            ms_cert = ms_cert.merge(
                 ms_profile_i[["j", "net_payment"]],
                 on="j", how="left", suffixes=("", "_prof"),
             )
-        pay_col  = "net_payment" if "net_payment" in ms_cert.columns else "net_payment_prof"
-        ms_cert  = ms_cert.sort_values("certified_t")
-        cum_pay  = 0.0
-        for _, row in ms_cert.iterrows():
-            ct       = int(row["certified_t"])
-            cum_pay += float(row[pay_col])
-            if x_lo <= ct <= x_hi:
-                ms_step_t.append(ct)
-                ms_step_y.append(cum_pay / (price + 1e-9))
+        pay_col = "net_payment" if "net_payment" in ms_cert.columns else "net_payment_prof"
+        if "certified_t" in ms_cert.columns and pay_col in ms_cert.columns:
+            ms_cert  = ms_cert.sort_values("certified_t")
+            cum_pay  = 0.0
+            for _, row in ms_cert.iterrows():
+                ct = row["certified_t"]
+                if pd.isna(ct):
+                    continue
+                ct       = int(ct)
+                cum_pay += float(row[pay_col])
+                if x_lo <= ct <= x_hi:
+                    cert_step_t.append(ct)
+                    cert_step_y.append(cum_pay / (price + 1e-9))
 
-    # ── right-axis data (absolute currency) ──────────────────────────────
-    alloc_vals = win["allocation"].values   # one value per timestep in window
-
-    # Actual milestone payment received at each certified_t (j > 0 only)
-    ms_pay_t: list[int]   = []
-    ms_pay_v: list[float] = []
-    if not ms_status_i.empty:
-        ms_merged = ms_status_i.copy()
-        if not ms_profile_i.empty:
-            ms_merged = ms_status_i.merge(
-                ms_profile_i[["j", "net_payment"]],
-                on="j", how="left", suffixes=("", "_prof"),
-            )
-        pay_col = "net_payment" if "net_payment" in ms_merged.columns else "net_payment_prof"
-        for _, row in ms_merged[ms_merged["j"] > 0].iterrows():
-            ct = int(row["certified_t"])
-            if x_lo <= ct <= x_hi:
-                ms_pay_t.append(ct)
-                ms_pay_v.append(float(row[pay_col]))
-
-    # ── right-axis scaling ────────────────────────────────────────────────
-    # The right axis always starts at 0 and its scale is chosen so the
-    # tallest bar reaches ~40 % of the panel height.  This keeps bars in the
-    # lower portion and leaves the upper portion for normalised line charts.
-    alloc_peak = float(alloc_vals.max()) if len(alloc_vals) else 0.0
-    pay_peak   = max(ms_pay_v) if ms_pay_v else 0.0
-    right_peak = max(alloc_peak, pay_peak, 1.0)
-    right_max  = right_peak / 0.40   # bars occupy ≤ 40 % of panel height
-
-    # ── left-axis y-limits (computed before plotting so we can align zeros) ─
-    all_left_vals = np.concatenate([
-        bcws_cum, bcwp_cum, acwp_cum, ncf_norm,
-        np.array(ms_step_y),
+    # ── y-axis limits ─────────────────────────────────────────────────────
+    all_vals = np.concatenate([
+        bcwp_cum, acwp_cum, bcws_y,
+        np.array(plan_step_y), np.array(cert_step_y),
     ])
-    left_y_min = min(float(all_left_vals.min()), 0.0)
-    left_y_max = max(float(all_left_vals.max()), 1.0)
-    left_margin_top = (left_y_max - left_y_min) * 0.20
-    left_margin_bot = (left_y_max - left_y_min) * 0.08
-    left_bot = left_y_min - left_margin_bot
-    left_top = left_y_max + left_margin_top
+    y_min = min(float(all_vals.min()), 0.0)
+    y_max = max(float(all_vals.max()), 1.0)
+    margin_top = (y_max - y_min) * 0.22
+    margin_bot = (y_max - y_min) * 0.10
+    ax.set_ylim(y_min - margin_bot, y_max + margin_top)
 
-    # ── align right-axis zero with left-axis zero ─────────────────────────
-    # The right axis must be set so that right_y = 0 maps to the same pixel
-    # as left_y = 0.  Given the left axis spans [left_bot, left_top], the
-    # fraction of the panel that corresponds to y=0 is:
-    #   zero_frac = (0 - left_bot) / (left_top - left_bot)
-    # The right axis needs:
-    #   right_bot = -zero_frac * right_max / (1 - zero_frac)  [negative baseline]
-    #   right_top = right_max
-    left_span  = left_top - left_bot
-    zero_frac  = (0.0 - left_bot) / left_span          # 0..1 position of zero
-    # Extend right axis downward so its zero aligns; bars are still drawn from 0
-    right_bot  = -zero_frac * right_max / max(1.0 - zero_frac, 1e-6)
-
-    # ══════════════════════ twin right axis ══════════════════════════════
-    ax_r = ax.twinx()
-    ax_r.set_ylim(right_bot, right_max)
-    ax_r.set_xlim(x_lo - 0.6, x_lim_r)
-
-    # Milestone payment bars — green, left of centre at certified_t
-    if ms_pay_t:
-        ax_r.bar(
-            np.array(ms_pay_t, dtype=float) - bar_w * 0.55,
-            ms_pay_v,
-            width=bar_w, color="#2ecc71", alpha=0.82,
-            label="MS Payment (received)",
-            zorder=3,
-        )
-
-    # Allocation bars — red, right of centre at each active timestep
-    if len(alloc_vals):
-        ax_r.bar(
-            t_win + bar_w * 0.55,
-            alloc_vals,
-            width=bar_w, color="#e74c3c", alpha=0.75,
-            label="Allocation (spent)",
-            zorder=3,
-        )
-
-    ax_r.set_ylabel("Absolute amount", fontsize=7, color="#555555")
-    ax_r.tick_params(axis="y", labelsize=fs_tick, labelcolor="#777777")
-    ax_r.yaxis.set_major_locator(MaxNLocator(integer=False, nbins=5, min_n_ticks=3))
-    ax_r.grid(False)
-
-    # ══════════════════════ primary left axis ════════════════════════════
-
-    # Reference lines
-    ax.axhline(1.0, color="#bbbbbb", linewidth=0.8, linestyle=":", alpha=0.7, zorder=1)
-    ax.axhline(0.0, color="#888888", linewidth=0.8, linestyle="-",  alpha=0.4, zorder=1)
-
-    # BCWS — yellow step chart (pre: the plan is set at the START of each period)
-    ax.step(t_win, bcws_cum,
-            where="pre", linewidth=lw, color="#f1c40f",
-            marker="o", markersize=msize,
-            markeredgecolor="#b7950b", markeredgewidth=0.6,
-            label="BCWS  (planned progress)", zorder=5)
-
-    # BCWP — light grey step chart
-    ax.step(t_win, bcwp_cum,
-            where="post", linewidth=lw, color="#bdc3c7",
-            marker="o", markersize=msize,
-            markeredgecolor="#7f8c8d", markeredgewidth=0.6,
-            label="BCWP  (earned value)", zorder=5)
-
-    # ACWP — teal step chart + triangles
-    ax.step(t_win, acwp_cum,
-            where="post", linewidth=lw, color="#1abc9c",
-            marker="^", markersize=msize,
-            markeredgecolor="#148f77", markeredgewidth=0.6,
-            label="ACWP  (actual cost / BAC)", zorder=5)
-
-    # Milestone profile — dashed green step anchored from x_lo
-    if len(ms_step_t) > 1:
-        ax.step(ms_step_t, ms_step_y,
-                where="post", linewidth=lw * 0.85, linestyle="--",
-                color="#27ae60", alpha=0.88,
-                label="MS Profile  (planned pmts / price)", zorder=4)
-
-    # Net cash flow — orange step chart (can be negative)
-    ax.step(t_win, ncf_norm,
-            where="post", linewidth=max(lw * 0.8, 1.0),
-            color="#e67e22", linestyle="-.",
-            marker="D", markersize=max(msize * 0.75, 2.0),
-            markeredgecolor="#ca6f1e", markeredgewidth=0.5,
-            label="Net Cash Flow / BAC", zorder=5)
-
-    # ── planned finish marker ─────────────────────────────────────────────
-    ax.axvline(planned_finish, color="#5d6d7e", linewidth=1.0,
-               linestyle=":", alpha=0.6, zorder=2)
-    ax.text(planned_finish + 0.05, 0.98,
-            f"fᵢ={planned_finish}",
-            fontsize=max(6, min(8, 8 - x_span // 8)),
-            color="#5d6d7e", va="top", ha="left",
-            transform=ax.get_xaxis_transform(), zorder=6)
-
-    # ── metrics box ───────────────────────────────────────────────────────
+    # ── derive final status metrics (used in both plotting and title) ────
     last_row   = non_pending.sort_values("t_episode").iloc[-1] \
                  if not non_pending.empty else win.iloc[-1]
     cpi_val    = float(last_row["cpi"])
     spi_val    = float(last_row["spi"])
     status_val = str(last_row["status"]).upper()
+    status_color = {"COMPLETED": "#039972", "TERMINATED": "#ef233c"}.get(status_val, "#4a5568")
 
-    ax.text(0.01, 0.99,
+    # ══════════════════════ plotting ══════════════════════════════════════
+
+    # Subtle reference lines
+    ax.axhline(1.0, color="#c8ccd6", linewidth=0.9, linestyle="--", alpha=0.8, zorder=1)
+    ax.axhline(0.0, color="#b0b4be", linewidth=0.6, linestyle="-",  alpha=0.5, zorder=1)
+
+    # BCWS – indigo line (horizontal for single-action, step otherwise)
+    if is_single_action:
+        ax.plot(bcws_t, bcws_y,
+                linewidth=lw, color=C["bcws"],
+                linestyle="-", alpha=0.9,
+                label="BCWS  (planned progress)", zorder=5)
+        # Mark both endpoints
+        ax.scatter(bcws_t, bcws_y,
+                   s=msize ** 2, color=C["bcws"],
+                   edgecolors="#2340b8", linewidths=0.7,
+                   zorder=6)
+    else:
+        ax.step(bcws_t, bcws_y,
+                where="pre", linewidth=lw, color=C["bcws"],
+                marker="o", markersize=msize,
+                markeredgecolor="#2340b8", markeredgewidth=0.7,
+                label="BCWS  (planned progress)", zorder=5)
+
+    # BCWP – emerald step chart
+    ax.step(t_win, bcwp_cum,
+            where="post", linewidth=lw, color=C["bcwp"],
+            marker="o", markersize=msize,
+            markeredgecolor="#039972", markeredgewidth=0.7,
+            label="BCWP  (earned value)", zorder=5)
+
+    # ACWP – amber step chart + triangles
+    ax.step(t_win, acwp_cum,
+            where="post", linewidth=lw, color=C["acwp"],
+            marker="^", markersize=msize,
+            markeredgecolor="#c06200", markeredgewidth=0.7,
+            label="ACWP  (actual cost / BAC)", zorder=5)
+
+    # MS Plan – violet DASHED step: full planned payment schedule, always
+    # drawn in full so any un-certified remainder stays visible.
+    if len(plan_step_t) > 1:
+        ax.step(plan_step_t, plan_step_y,
+                where="post", linewidth=lw * 0.85, linestyle="--",
+                color=C["ms_step"], alpha=0.65,
+                label="MS Plan  (scheduled pmts / price)", zorder=4)
+
+    # MS Certified – violet SOLID step: actually-received payments, drawn on
+    # top of the dashed plan line. It "covers" the dashed line wherever a
+    # milestone has been certified, and simply stops where certification
+    # ends (e.g. at a termination timestep), exposing the dashed remainder.
+    if len(cert_step_t) > 1:
+        ax.step(cert_step_t, cert_step_y,
+                where="post", linewidth=lw * 1.05, linestyle="-",
+                color=C["ms_step"], alpha=0.95,
+                label="MS Certified  (received pmts / price)", zorder=4.5)
+
+    # ── planned-finish marker ─────────────────────────────────────────────
+    ax.axvline(planned_finish, color="#8892a4", linewidth=1.0,
+               linestyle=":", alpha=0.7, zorder=2)
+    ax.text(planned_finish + 0.07, 0.97,
+            f"fᵢ = {planned_finish}",
+            fontsize=max(6, min(8, 8 - x_span // 8)),
+            color="#6b758a", va="top", ha="left",
+            transform=ax.get_xaxis_transform(), zorder=6)
+
+    # ── termination marker ────────────────────────────────────────────────
+    if status_val == "TERMINATED":
+        ax.axvline(actual_finish, color=C["ref_line"], linewidth=1.4,
+                   linestyle="--", alpha=0.9, zorder=7)
+        ax.text(actual_finish + 0.07, 0.80,
+                f"terminated\nt = {actual_finish}",
+                fontsize=max(6, min(7, 7 - x_span // 12)),
+                color=C["ref_line"], va="top", ha="left",
+                transform=ax.get_xaxis_transform(), zorder=8)
+
+    # ── metrics box ───────────────────────────────────────────────────────
+    ax.text(0.012, 0.985,
             f"Status : {status_val}\nCPI    = {cpi_val:.3f}\nSPI    = {spi_val:.3f}",
             transform=ax.transAxes, fontsize=7.5,
             verticalalignment="top", fontfamily="monospace",
-            bbox=dict(facecolor="white", alpha=0.85,
-                      edgecolor="#aaaaaa", boxstyle="round,pad=0.3"),
+            color=status_color,
+            bbox=dict(facecolor="white", alpha=0.88,
+                      edgecolor="#d0d4de", boxstyle="round,pad=0.35"),
             zorder=8)
 
-    # ── axis limits & ticks ───────────────────────────────────────────────
+    # ── axis styling ──────────────────────────────────────────────────────
     ax.set_xlim(x_lo - 0.6, x_lim_r)
-    ax.set_ylim(left_bot, left_top)
 
     tick_step = max(1, x_span // 15)
     ax.set_xticks(range(x_lo, x_hi + 1, tick_step))
     ax.tick_params(axis="x", labelsize=fs_tick)
     ax.tick_params(axis="y", labelsize=7)
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=6, prune="both"))
 
-    ax.set_xlabel("Episode Timestep", fontsize=8)
-    ax.set_ylabel("Normalised (fraction of BAC / price)", fontsize=8)
+    ax.set_xlabel("Episode Timestep", fontsize=8, color="#4a5568")
+    ax.set_ylabel("Fraction of BAC / price", fontsize=8, color="#4a5568")
     ax.set_title(
         f"Project {proj_i}  ·  BAC = {bac:.0f}  ·  "
         f"Plan [{planned_start} → {planned_finish}]  ·  {status_val}",
-        fontsize=9, fontweight="bold", pad=6,
+        fontsize=9, fontweight="bold", pad=7, color="#1a202c",
     )
     ax.set_facecolor(C["bg"])
-    ax.grid(True, linestyle=":", color=C["grid"], alpha=0.6, zorder=0)
+    ax.grid(True, linestyle=":", color=C["grid"], alpha=0.65, zorder=0)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.spines[["left", "bottom"]].set_color("#c8ccd6")
 
-    # ── combined legend outside right ─────────────────────────────────────
-    h_l, lb_l = ax.get_legend_handles_labels()
-    h_r, lb_r = ax_r.get_legend_handles_labels()
-    all_h  = [h for h, lb in zip(h_l + h_r, lb_l + lb_r) if not lb.startswith("_")]
-    all_lb = [lb for lb in lb_l + lb_r if not lb.startswith("_")]
-    ax.legend(all_h, all_lb,
-              loc="upper left", bbox_to_anchor=(1.07, 1.0),
-              fontsize=7.5, framealpha=0.92, edgecolor="#cccccc",
-              title="Legend", title_fontsize=8, borderpad=0.7,
-              labelspacing=0.5)
-    if ax_r.get_legend():
-        ax_r.get_legend().remove()
+    # ── legend outside right ──────────────────────────────────────────────
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles, labels,
+              loc="upper left", bbox_to_anchor=(1.03, 1.0),
+              fontsize=7.5, framealpha=0.95, edgecolor="#d0d4de",
+              title="Legend", title_fontsize=8, borderpad=0.8,
+              labelspacing=0.55, handlelength=1.8)
 
 
 def plot_project_snapshot(
@@ -456,10 +496,12 @@ def plot_project_snapshot(
         # 4 in base + proportional growth, capped at 7
         row_heights.append(float(np.clip(4.0 + x_span * 0.06, 4.0, 7.0)))
 
-    # Reserve fixed space at the top for the figure-level suptitle
-    SUPTITLE_H = 0.55    # inches
     HSPACE_PER = 0.90    # inches of vertical gap between subplots
-    fig_h = SUPTITLE_H + sum(row_heights) + HSPACE_PER * n_proj
+    # Add a generous top pad (in inches) that sits between the suptitle and
+    # the first subplot title.  This becomes the sole source of that spacing —
+    # we no longer rely on bbox_inches arithmetic.
+    TOP_PAD_IN = 0.70
+    fig_h = TOP_PAD_IN + sum(row_heights) + HSPACE_PER * n_proj
 
     fig, axes = plt.subplots(
         n_proj, 1,
@@ -483,187 +525,34 @@ def plot_project_snapshot(
         _project_snapshot_ax(ax, proj_i, ps_i, pp_rows.iloc[0],
                               ms_stat_i, ms_prof_i)
 
-    # top fraction: leave SUPTITLE_H inches above the top subplot
-    top_frac = 1.0 - SUPTITLE_H / fig_h
+    # top_frac: the fraction of the figure height that subplots occupy.
+    # Subplots start just below the TOP_PAD_IN band and fill the rest.
+    top_frac = 1.0 - TOP_PAD_IN / fig_h
+
     fig.subplots_adjust(
-        hspace   = HSPACE_PER * n_proj / sum(row_heights),
-        right    = 0.78,    # 22 % margin for outside legend
-        left     = 0.06,
-        top      = top_frac,
-        bottom   = 0.04,
+        hspace = HSPACE_PER * n_proj / sum(row_heights),
+        right  = 0.80,
+        left   = 0.06,
+        top    = top_frac,
+        bottom = 0.04,
     )
 
-    # suptitle sits in the reserved space above top_frac (y=1 in figure coords)
-    suptitle_y = top_frac + (SUPTITLE_H / fig_h) * 0.55
+    # Place suptitle in the centre of the top pad band.
+    # top_frac is the bottom of the pad; 1.0 is the top of the figure.
+    # Midpoint in figure coords = top_frac + TOP_PAD_IN / fig_h * 0.5
+    suptitle_y = top_frac + (TOP_PAD_IN / fig_h) * 0.50
     fig.suptitle(
         f"Project-Level Snapshot  |  config: {config_name}  |  solver: {solver}",
         fontsize=11, fontweight="bold", y=suptitle_y,
     )
-    # Use savefig without a second suptitle call
+
     out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=C["bg"])
+    # bbox_inches="tight" would re-crop and break the spacing we just set,
+    # so we save without it and let the pre-allocated margins do their job.
+    fig.savefig(out, dpi=DPI, facecolor=C["bg"])
     plt.close(fig)
     print(f"  saved → {out.relative_to(out.parents[4]) if out.parents[4].exists() else out}")
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Figure 1 – Portfolio overview  (cash balance · period flows · cumul. reward)
-# ─────────────────────────────────────────────────────────────────────────────
-
-def plot_portfolio_overview(
-    portfolios: pd.DataFrame,
-    config_name: str,
-    solver: str,
-    out: Path,
-) -> None:
-    fig, axes = plt.subplots(1, 3, figsize=FIGSIZE_WIDE)
-    fig.patch.set_facecolor(C["bg"])
-
-    t = portfolios["t_episode"].values
-    bal = portfolios["budget_available"].values
-    ncf = portfolios["net_cashflow"].values
-    rew = portfolios["reward"].values
-    cum_rew = np.cumsum(rew)
-
-    # ── Panel A: cash balance ─────────────────────────────────────────────
-    ax = axes[0]
-    ax.step(t, bal, where="post", color=C["balance"], linewidth=2)
-    ax.axhline(bal[0], linestyle="--", color="grey", linewidth=1, label=f"B₀ = {bal[0]:.0f}")
-    _style_ax(ax, ylabel="Budget Available", title="Cash Balance  Bₜ")
-    ax.legend(fontsize=7)
-
-    # ── Panel B: period cash flows (inflow / outflow bars + net line) ─────
-    ax = axes[1]
-    bar_w = 0.4
-    pos_ncf = np.clip(ncf, 0, None)
-    neg_ncf = np.clip(ncf, None, 0)
-    ax.bar(t, pos_ncf, width=bar_w, color=C["inflow"],  alpha=0.85, label="Net inflow",  zorder=2)
-    ax.bar(t, neg_ncf, width=bar_w, color=C["outflow"], alpha=0.85, label="Net outflow", zorder=2)
-    ax.plot(t, ncf, marker="o", markersize=3, color=C["net"],
-            linewidth=1.2, label="Net CF", zorder=3)
-    ax.axhline(0, color="black", linewidth=0.5)
-    _style_ax(ax, ylabel="Amount", title="Period Net Cash Flow")
-    ax.legend(fontsize=7)
-
-    # ── Panel C: cumulative discounted reward ─────────────────────────────
-    ax = axes[2]
-    ax.plot(t, cum_rew, marker="o", markersize=3, color=C["reward"],
-            linewidth=2, label="Cumul. reward")
-    ax.axhline(0, linestyle="--", color=C["ref_line"], linewidth=0.8, alpha=0.6)
-    _style_ax(ax, ylabel="Amount", title="Cumulative Reward  Σrₜ")
-    ax.legend(fontsize=7)
-
-    title = f"Portfolio Overview  |  config: {config_name}  |  solver: {solver}"
-    _savefig(fig, out, title)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Figure 2 – Per-project EVM panel  (BCWS · BCWP · ACWP · SPI · CPI)
-# ─────────────────────────────────────────────────────────────────────────────
-
-def plot_project_evm(
-    proj_i: int,
-    ps_i: pd.DataFrame,          # projects_status filtered to project i
-    pp_i: pd.Series,             # projects_profile row for project i
-    ms_i: pd.DataFrame,          # milestones_profile for project i
-    config_name: str,
-    solver: str,
-    out: Path,
-) -> None:
-    bac            = pp_i["bac"]
-    planned_start  = int(pp_i["planned_start"])
-    planned_finish = int(pp_i["planned_finish"])
-    scurve_a       = pp_i.get("scurve_a", 1.5)
-    scurve_b       = pp_i.get("scurve_b", 3.0)
-
-    # active rows only (status != pending before project start)
-    active = ps_i[ps_i["status"].isin(["active", "completed", "terminated"])].copy()
-    t_ep   = ps_i["t_episode"].values           # all episode timesteps
-
-    # Earned value (BCWP) and actual cost (ACWP) – normalised to BAC fraction
-    t_act  = active["t_episode"].values
-    bcwp   = active["progress_actual"].values            # already a fraction
-    acwp   = active["allocation"].cumsum().values / (bac + 1e-9)   # cumulative spend fraction
-
-    # BCWS from s-curve
-    t_sc, y_sc = _s_curve(planned_start, planned_finish, bac, a=scurve_a, b=scurve_b)
-
-    # SPI & CPI
-    spi = active["spi"].values
-    cpi = active["cpi"].values
-
-    # milestone thresholds
-    thresholds = ms_i[ms_i["j"] > 0]["progress_threshold"].values  # skip advance (j=0)
-
-    fig, axes = plt.subplots(1, 3, figsize=FIGSIZE_WIDE)
-    fig.patch.set_facecolor(C["bg"])
-
-    # ── Panel A: EVM curves ───────────────────────────────────────────────
-    ax = axes[0]
-    ax.plot(t_sc, y_sc, color=C["bcws"], linewidth=2, label="BCWS (planned)")
-    if len(t_act):
-        ax.step(t_act, bcwp, where="post", color=C["bcwp"], linewidth=2,
-                marker="o", markersize=3, label="BCWP (earned)")
-        ax.plot(t_act, acwp, color=C["acwp"], linewidth=2,
-                marker="^", markersize=3, linestyle="--", label="ACWP (actual)")
-
-    # milestone threshold lines
-    for θ in thresholds:
-        ax.axhline(θ, color=C["threshold"], linestyle=":", linewidth=0.9, alpha=0.8)
-        ax.text(planned_finish + 0.1, θ, f"θ={θ:.2f}", fontsize=6,
-                color=C["threshold"], va="center")
-
-    # planned finish marker
-    ax.axvline(planned_finish, color=C["bcws"], linestyle="--",
-               linewidth=0.9, alpha=0.7)
-    ax.text(planned_finish + 0.1, 1.05, f"fᵢ={planned_finish}", fontsize=6,
-            color=C["bcws"])
-
-    ax.set_ylim(0, 1.35)
-    _style_ax(ax, ylabel="Fraction of BAC", title=f"Project {proj_i} – EVM Signals")
-    ax.legend(fontsize=7, loc="upper left")
-
-    # ── Panel B: allocation (outflow) bars + milestone inflow bars ────────
-    ax = axes[1]
-    alloc = active["allocation"].values
-
-    ax.bar(t_act, -alloc / (bac + 1e-9), width=0.4,
-           color=C["alloc"], alpha=0.85, label="Allocation xᵢₜ")
-    # milestone inflows at certification times
-    for _, ms_row in ms_i.iterrows():
-        # find certified_t from milestones_status if available
-        net_pay = ms_row["net_payment"]
-        j       = int(ms_row["j"])
-        t_thresh = int(ms_row["timestep_threshold"])
-        ax.bar(t_thresh, net_pay / (bac + 1e-9), width=0.4,
-               color=C["inflow"], alpha=0.85)
-        ax.text(t_thresh, net_pay / (bac + 1e-9) + 0.03,
-                f"MS{j}", fontsize=6, ha="center", color=C["inflow"])
-
-    ax.axhline(0, color="black", linewidth=0.5)
-    ymax = max(abs(ax.get_ylim()[0]), ax.get_ylim()[1])
-    ax.set_ylim(-ymax * 1.15, ymax * 1.15)
-    _style_ax(ax, ylabel="Fraction of BAC  (outflow↓ / inflow↑)",
-              title=f"Project {proj_i} – Cashflow Profile")
-    ax.legend(fontsize=7)
-
-    # ── Panel C: SPI / CPI ────────────────────────────────────────────────
-    ax = axes[2]
-    if len(t_act):
-        ax.plot(t_act, spi, color=C["spi"], linewidth=1.8,
-                marker="o", markersize=3, label="SPI")
-        ax.plot(t_act, cpi, color=C["cpi"], linewidth=1.8,
-                marker="s", markersize=3, linestyle="--", label="CPI")
-    ax.axhline(1.0, color=C["ref_line"], linestyle="--",
-               linewidth=1, alpha=0.7, label="ref = 1")
-    ax.set_ylim(0, max(2.2, (spi.max() if len(spi) else 2.2) * 1.1))
-    _style_ax(ax, ylabel="Index", title=f"Project {proj_i} – SPI / CPI")
-    ax.legend(fontsize=7)
-
-    title = (f"Project {proj_i} EVM  |  BAC={bac:.0f}  |  "
-             f"plan [{planned_start}–{planned_finish}]  |  "
-             f"config: {config_name}  |  solver: {solver}")
-    _savefig(fig, out, title)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -703,7 +592,21 @@ def plot_project_cashflow(
     _style_ax(ax, ylabel="Amount", title=f"Project {proj_i} – Gross Flows")
     ax.legend(fontsize=7)
 
-    # ── Panel B: milestone payment breakdown ──────────────────────────────
+    # ── Panel B: milestone payment breakdown ───────────────────────────────
+    #
+    # "Apartment levels" design:
+    #   • Gross payment  → solid, faint, FULL-width background bar. This is
+    #                      the total envelope / context: the building itself.
+    #   • Net payment    → NARROW white box, green outline   (ground floor)
+    #   • Adv. recovery  → NARROW white box, yellow outline  (next floor up)
+    #   • Retention      → NARROW white box, purple outline  (top floor)
+    #
+    # The three narrow boxes are stacked bottom-to-top (Net → Recovery →
+    # Retention) at the *same* narrow width, directly on top of one another
+    # like floors of a building. Because their heights sum exactly to the
+    # Gross amount, the stack visually proves
+    #     Gross = Net + Advance-recovery + Retention
+    # and the thickness of each floor shows its share of the total.
     ax = axes[1]
     if not ms_status_i.empty and not ms_profile_i.empty:
         ms = ms_status_i.merge(
@@ -717,19 +620,39 @@ def plot_project_cashflow(
         rec    = ms.get("advance_recovery", pd.Series(np.zeros_like(net_p))).values
         ret_w  = ms.get("retention_withheld", pd.Series(np.zeros_like(net_p))).values
 
-        width = 0.3
-        ax.bar(t_cert, gross, width=width, color=C["inflow"], alpha=0.8,  label="Gross")
-        ax.bar(t_cert, -rec,  width=width, color="#ffaa00",   alpha=0.75, label="Adv. recovery",
-               bottom=-gross, align="center")
-        ax.bar(t_cert, -ret_w, width=width, color="#aa44cc",  alpha=0.7,  label="Retention",
-               bottom=-gross + rec, align="center")
-        ax.bar(t_cert, net_p, width=width * 0.5, color="white",
-               edgecolor=C["inflow"], linewidth=1, label="Net pay.", zorder=3)
+        width        = 0.3
+        narrow_width = width * 0.5   # shared width for Net / Recovery / Retention
+
+        col_net = C["inflow"]   # green  – net payment (ground floor)
+        col_rec = "#f4c430"     # yellow – advance recovery (middle floor)
+        col_ret = "#aa44cc"     # purple – retention withheld (top floor)
+
+        # Gross – solid, faint, full-width backdrop (the "building")
+        ax.bar(t_cert, gross, width=width, color=C["inflow"], alpha=0.80,
+               label="Gross", zorder=1)
+
+        # Stacked floor levels — Net (bottom) → Recovery → Retention (top)
+        bottom_net = np.zeros_like(net_p, dtype=float)
+        bottom_rec = net_p
+        bottom_ret = net_p + rec
+
+        ax.bar(t_cert, net_p, width=narrow_width, bottom=bottom_net,
+               facecolor="white", edgecolor=col_net, linewidth=1.6,
+               label="Net pay.", zorder=3)
+        ax.bar(t_cert, rec, width=narrow_width, bottom=bottom_rec,
+               facecolor="white", edgecolor=col_rec, linewidth=1.6,
+               label="Adv. recovery", zorder=3)
+        ax.bar(t_cert, ret_w, width=narrow_width, bottom=bottom_ret,
+               facecolor="white", edgecolor=col_ret, linewidth=1.6,
+               label="Retention", zorder=3)
+
         ax.axhline(0, color="black", linewidth=0.5)
         for j_row, ms_row in enumerate(ms.itertuples()):
             ax.text(ms_row.certified_t, float(gross[j_row]) + 1,
                     f"MS{ms_row.j}", fontsize=6, ha="center", color=C["inflow"])
-    _style_ax(ax, ylabel="Amount", title=f"Project {proj_i} – Milestone Payments")
+    _style_ax(ax, ylabel="Amount",
+              title=f"Project {proj_i} – Milestone Payments  "
+                    f"(Gross = Net + Recovery + Retention)")
     ax.legend(fontsize=6, loc="upper left")
 
     # ── Panel C: cumulative net cash flow ─────────────────────────────────
@@ -928,13 +851,7 @@ def run_one(data_dir: Path, config_name: str, solver: str) -> None:
         out=figures_dir / "project_snapshot.png",
     )
 
-    # ── Fig 1: portfolio overview ──────────────────────────────────────────
-    plot_portfolio_overview(
-        portfolios, config_name, solver,
-        out=figures_dir / "portfolio_overview.png",
-    )
-
-    # ── Figs 2 & 3: per-project ───────────────────────────────────────────
+    # ── Figs 2: per-project cashflow ─────────────────────────────────────
     for proj_i in sorted(ps["i"].unique()):
         ps_i        = ps[ps["i"] == proj_i].copy()
         pp_rows     = pp[pp["i"] == proj_i]
@@ -945,11 +862,6 @@ def run_one(data_dir: Path, config_name: str, solver: str) -> None:
             continue
         pp_i = pp_rows.iloc[0]
 
-        plot_project_evm(
-            proj_i, ps_i, pp_i, ms_prof_i,
-            config_name, solver,
-            out=figures_dir / f"project_{proj_i}_evm.png",
-        )
         plot_project_cashflow(
             proj_i, ps_i, pp_i,
             ms_stat_i, ms_prof_i,

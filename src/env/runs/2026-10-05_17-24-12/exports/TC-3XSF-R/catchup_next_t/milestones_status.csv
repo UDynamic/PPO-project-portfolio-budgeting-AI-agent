@@ -1,4 +1,0 @@
-episode_id,i,j,method,certified_t,certification_delay,net_payment
-TC-3XSF-R__catchup_next_t__,0,0,catchup_next_t,0,0,0.0
-TC-3XSF-R__catchup_next_t__,1,0,catchup_next_t,2,-2,0.0
-TC-3XSF-R__catchup_next_t__,2,0,catchup_next_t,4,-4,0.0
