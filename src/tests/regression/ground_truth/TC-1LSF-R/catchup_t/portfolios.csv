@@ -1,5 +1,0 @@
-episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
-TC-1LSF-R__catchup_t__,TC-1LSF-R,0,catchup_t,300.0,0.0,0.0,0
-TC-1LSF-R__catchup_t__,TC-1LSF-R,1,catchup_t,300.0,0.0,0.0,0
-TC-1LSF-R__catchup_t__,TC-1LSF-R,2,catchup_t,214.1500006020069,-85.84999939799309,-77.47962445668875,0
-TC-1LSF-R__catchup_t__,TC-1LSF-R,3,catchup_t,310.41499977954527,96.26499917753836,82.53520366984193,1

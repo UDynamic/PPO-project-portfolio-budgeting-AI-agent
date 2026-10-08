@@ -1,9 +1,9 @@
 episode_id,t_episode,method,net_cashflow,budget_available
 TC-1LMAIF-R__catchup_next_t__,0,catchup_next_t,0.0,300.0
 TC-1LMAIF-R__catchup_next_t__,1,catchup_next_t,0.0,300.0
-TC-1LMAIF-R__catchup_next_t__,2,catchup_next_t,-83.81042507171631,240.1895749282837
-TC-1LMAIF-R__catchup_next_t__,3,catchup_next_t,4.248308698022388,244.43788362630607
-TC-1LMAIF-R__catchup_next_t__,4,catchup_next_t,27.865431467842004,272.3033150941481
-TC-1LMAIF-R__catchup_next_t__,5,catchup_next_t,-0.27696684905851926,272.0263482450896
-TC-1LMAIF-R__catchup_next_t__,6,catchup_next_t,-0.2797365175491045,271.7466117275405
-TC-1LMAIF-R__catchup_next_t__,7,catchup_next_t,37.259786741396255,309.0063984689367
+TC-1LMAIF-R__catchup_next_t__,2,catchup_next_t,-78.53768558442593,245.46231441557407
+TC-1LMAIF-R__catchup_next_t__,3,catchup_next_t,-6.607683241856789,238.85463117371728
+TC-1LMAIF-R__catchup_next_t__,4,catchup_next_t,-0.6114536882628271,238.24317748545445
+TC-1LMAIF-R__catchup_next_t__,5,catchup_next_t,-0.6175682251454554,237.625609260309
+TC-1LMAIF-R__catchup_next_t__,6,catchup_next_t,-0.62374390739691,237.0018653529121
+TC-1LMAIF-R__catchup_next_t__,7,catchup_next_t,72.76050576648979,309.7623711194019

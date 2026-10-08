@@ -56,13 +56,13 @@ CONFIG = {
     "planned_duration_p4"     : None,
 
     "scurve_a_dist"           : "fixed",
-    "scurve_a_p1"             : 2.0,
+    "scurve_a_p1"             : 1.5,
     "scurve_a_p2"             : None,
     "scurve_a_p3"             : None,
     "scurve_a_p4"             : None,
 
     "scurve_b_dist"           : "fixed",
-    "scurve_b_p1"             : 5.0,
+    "scurve_b_p1"             : 3.0,
     "scurve_b_p2"             : None,
     "scurve_b_p3"             : None,
     "scurve_b_p4"             : None,

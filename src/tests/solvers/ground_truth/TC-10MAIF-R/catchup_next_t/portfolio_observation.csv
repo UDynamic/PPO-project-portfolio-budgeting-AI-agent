@@ -1,0 +1,6 @@
+episode_id,t_episode,method,net_cashflow,budget_available
+TC-10MAIF-R__catchup_next_t__,0,catchup_next_t,-78.53768558442593,245.46231441557407
+TC-10MAIF-R__catchup_next_t__,1,catchup_next_t,1.943424482320788,247.40573889789485
+TC-10MAIF-R__catchup_next_t__,2,catchup_next_t,-1.5169505064434483,245.8887883914514
+TC-10MAIF-R__catchup_next_t__,3,catchup_next_t,-0.9870656858415946,244.9017227056098
+TC-10MAIF-R__catchup_next_t__,4,catchup_next_t,63.45890984515958,308.3606325507694

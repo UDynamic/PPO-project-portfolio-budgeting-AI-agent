@@ -44,7 +44,7 @@ CONFIG = {
     "profit_percent_p4"       : None,
 
     "planned_start_dist"      : "custom_ordinal",
-    "planned_start_p1"        : [0, 2, 4],
+    "planned_start_p1"        : [0, 6, 7],
     "planned_start_p2"        : None,
     "planned_start_p3"        : None,
     "planned_start_p4"        : None,
@@ -56,13 +56,13 @@ CONFIG = {
     "planned_duration_p4"     : None,
 
     "scurve_a_dist"           : "fixed",
-    "scurve_a_p1"             : 2.0,
+    "scurve_a_p1"             : 1.5,
     "scurve_a_p2"             : None,
     "scurve_a_p3"             : None,
     "scurve_a_p4"             : None,
 
     "scurve_b_dist"           : "fixed",
-    "scurve_b_p1"             : 5.0,
+    "scurve_b_p1"             : 3.0,
     "scurve_b_p2"             : None,
     "scurve_b_p3"             : None,
     "scurve_b_p4"             : None,
@@ -123,13 +123,13 @@ CONFIG = {
     "n_milestones_p4"         : None,
 
     "progress_threshold_dist" : "custom_ordinal",
-    "progress_threshold_p1"   : [[0.3, 0.6, 1.0],[0.3, 0.6, 1.0],[0.3, 0.6, 1.0]],
+    "progress_threshold_p1"   : [[0.4, 0.97, 1.0],[0.4, 0.97, 1.0],[0.4, 0.97, 1.0]],
     "progress_threshold_p2"   : None,
     "progress_threshold_p3"   : None,
     "progress_threshold_p4"   : None,
 
     "payment_weight_dist"     : "custom_ordinal",
-    "payment_weight_p1"       : [[0.3, 0.6, 1.0],[0.3, 0.6, 1.0],[0.3, 0.6, 1.0]],
+    "payment_weight_p1"       : [[0.3, 0.7, 1.0],[0.3, 0.7, 1.0],[0.3, 0.7, 1.0]],
     "payment_weight_p2"       : None,
     "payment_weight_p3"       : None,
     "payment_weight_p4"       : None,
