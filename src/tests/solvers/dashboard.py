@@ -260,25 +260,24 @@ def _project_snapshot_ax(
 
     # ── milestone payment schedule: PLANNED (dashed) vs CERTIFIED (solid) ──
     #
-    # PLANNED  → built from milestones_profile.csv using the milestone's
-    #            planned trigger timestep (timestep_threshold). This is the
-    #            *complete* schedule and is always drawn in full as a dashed
-    #            step, independent of what actually happened.
+    # PLANNED (dashed step):
+    #   Built from milestones_profile using timestep_threshold.
+    #   The step chart is drawn manually as horizontal-then-vertical segments
+    #   so the horizontal dashes travel *to* the payment timestep, then jump
+    #   up to the new cumulative value — matching the visual intent described
+    #   in the spec.  Advance payments (timestep_threshold == 0) produce an
+    #   immediate vertical rise at the left edge (x_lo).
     #
-    # CERTIFIED → built from milestones_status.csv using the timestep the
-    #            milestone was *actually* certified (certified_t). Only
-    #            milestones that really got certified contribute. Drawn as a
-    #            SOLID step, on top of the dashed plan line (same colour).
-    #            Wherever a payment has been certified, the solid segment
-    #            visually "covers" the dashed one up to that spike; the solid
-    #            line then simply stops — any further (uncertified) vertical
-    #            jumps remain visible only as dashed, flagging money that was
-    #            scheduled but never received (e.g. after project
-    #            termination). For fully completed projects every milestone
-    #            is eventually certified, so the solid line tracks the dashed
-    #            one the whole way and the plan appears fully "filled".
-    plan_step_t: list[float] = [x_lo]
-    plan_step_y: list[float] = [0.0]
+    # CERTIFIED (solid step):
+    #   Built from milestones_status using certified_t.  Drawn as a solid
+    #   filled line up to the last certified milestone.  After that, if not
+    #   all milestones were certified (e.g. termination), the solid line
+    #   holds its last certified level as a dashed bridge to the next planned
+    #   jump, then the dashed plan continues — achieved by emitting a trailing
+    #   dashed segment from the last certified point to the end of the plan.
+
+    # ── build planned sequence ────────────────────────────────────────────
+    plan_records: list[tuple[float, float]] = []   # (timestep, net_payment)
     if not ms_profile_i.empty:
         time_col = next(
             (c for c in ("timestep_threshold", "planned_t", "threshold_t", "t_threshold")
@@ -286,20 +285,40 @@ def _project_snapshot_ax(
             None,
         )
         if time_col is not None and "net_payment" in ms_profile_i.columns:
-            ms_plan  = ms_profile_i.sort_values(time_col)
-            cum_pay  = 0.0
-            for _, row in ms_plan.iterrows():
-                pt       = row[time_col]
+            for _, row in ms_profile_i.sort_values(time_col).iterrows():
+                pt = row[time_col]
                 if pd.isna(pt):
                     continue
-                pt       = float(pt)
-                cum_pay += float(row["net_payment"])
-                if x_lo <= pt <= x_hi:
-                    plan_step_t.append(pt)
-                    plan_step_y.append(cum_pay / (price + 1e-9))
+                plan_records.append((float(pt), float(row["net_payment"])))
 
-    cert_step_t: list[float] = [x_lo]
-    cert_step_y: list[float] = [0.0]
+    # cumulative plan values at each planned timestep
+    plan_cum_t:   list[float] = []
+    plan_cum_val: list[float] = []
+    cum = 0.0
+    for pt, pay in plan_records:
+        cum += pay
+        plan_cum_t.append(pt)
+        plan_cum_val.append(cum / (price + 1e-9))
+
+    # Build the dashed step polyline: start at (x_lo, 0), then for each
+    # payment: extend horizontally to pt, then jump vertically.
+    plan_step_t: list[float] = [float(x_lo)]
+    plan_step_y: list[float] = [0.0]
+    prev_val = 0.0
+    for pt, val in zip(plan_cum_t, plan_cum_val):
+        if pt > float(x_lo):
+            plan_step_t.append(pt)       # horizontal leg ends here
+            plan_step_y.append(prev_val) # still at old level
+        plan_step_t.append(pt)           # vertical jump at pt
+        plan_step_y.append(val)
+        prev_val = val
+    # extend to x_hi so the final dashed segment reaches chart edge
+    if plan_step_t and plan_step_t[-1] < float(x_hi):
+        plan_step_t.append(float(x_hi))
+        plan_step_y.append(plan_step_y[-1])
+
+    # ── build certified sequence ──────────────────────────────────────────
+    cert_records: list[tuple[int, float]] = []   # (certified_t, net_payment)
     if not ms_status_i.empty:
         ms_cert = ms_status_i.copy()
         if "certified" in ms_cert.columns:
@@ -307,6 +326,7 @@ def _project_snapshot_ax(
         if "certified_t" in ms_cert.columns:
             ms_cert = ms_cert[ms_cert["certified_t"].notna()]
             ms_cert = ms_cert[ms_cert["certified_t"] >= 0]
+        # pick up net_payment from profile if not in status
         if not ms_profile_i.empty and "net_payment" in ms_profile_i.columns:
             ms_cert = ms_cert.merge(
                 ms_profile_i[["j", "net_payment"]],
@@ -314,17 +334,59 @@ def _project_snapshot_ax(
             )
         pay_col = "net_payment" if "net_payment" in ms_cert.columns else "net_payment_prof"
         if "certified_t" in ms_cert.columns and pay_col in ms_cert.columns:
-            ms_cert  = ms_cert.sort_values("certified_t")
-            cum_pay  = 0.0
-            for _, row in ms_cert.iterrows():
+            for _, row in ms_cert.sort_values("certified_t").iterrows():
                 ct = row["certified_t"]
                 if pd.isna(ct):
                     continue
-                ct       = int(ct)
-                cum_pay += float(row[pay_col])
-                if x_lo <= ct <= x_hi:
-                    cert_step_t.append(ct)
-                    cert_step_y.append(cum_pay / (price + 1e-9))
+                cert_records.append((int(ct), float(row[pay_col])))
+
+    # cumulative certified values
+    cert_cum_t:   list[int]   = []
+    cert_cum_val: list[float] = []
+    cum = 0.0
+    for ct, pay in cert_records:
+        cum += pay
+        cert_cum_t.append(ct)
+        cert_cum_val.append(cum / (price + 1e-9))
+
+    # Solid polyline — same manual horizontal-then-vertical construction
+    cert_step_t: list[float] = [float(x_lo)]
+    cert_step_y: list[float] = [0.0]
+    prev_val = 0.0
+    for ct, val in zip(cert_cum_t, cert_cum_val):
+        if ct > x_lo:
+            cert_step_t.append(float(ct))
+            cert_step_y.append(prev_val)
+        cert_step_t.append(float(ct))
+        cert_step_y.append(val)
+        prev_val = val
+
+    # If certified sequence is shorter than planned, we need a dashed
+    # "bridge" from the last certified level onward.  We store the
+    # bridge as a separate list drawn with a dashed style after the
+    # solid portion — it starts at the last certified point and follows
+    # the plan's remaining shape (holding the certified level until
+    # each planned jump, then stepping from the certified level rather
+    # than from the plan level, because the gap represents the
+    # uncertified delta).
+    #
+    # Implementation: collect the plan jumps that happen *after* the
+    # last certified timestep and re-emit the same horizontal/vertical
+    # pattern, but starting from last_cert_val (not from the plan cum).
+    # This means the bridge horizontal segments sit at the certified
+    # plateau, and the planned-but-uncertified jumps show as dashed
+    # verticals rising from that plateau — the plan line already covers
+    # those, so they overlap cleanly.
+    bridge_t: list[float] = []
+    bridge_y: list[float] = []
+    all_certified = len(cert_cum_t) == len(plan_cum_t)
+    if cert_cum_t and not all_certified:
+        last_ct  = cert_cum_t[-1]
+        last_val = cert_cum_val[-1]
+        # emit horizontal hold from last certified t to x_hi
+        # (the plan's dashed line already provides the jumps)
+        bridge_t = [float(last_ct), float(x_hi)]
+        bridge_y = [last_val, last_val]
 
     # ── y-axis limits ─────────────────────────────────────────────────────
     all_vals = np.concatenate([
@@ -383,23 +445,27 @@ def _project_snapshot_ax(
             markeredgecolor="#c06200", markeredgewidth=0.7,
             label="ACWP  (actual cost / BAC)", zorder=5)
 
-    # MS Plan – violet DASHED step: full planned payment schedule, always
-    # drawn in full so any un-certified remainder stays visible.
+    # MS Plan – violet DASHED polyline (manually constructed H→V segments)
+    # drawn in full so uncertified portions remain visible.
     if len(plan_step_t) > 1:
-        ax.step(plan_step_t, plan_step_y,
-                where="post", linewidth=lw * 0.85, linestyle="--",
+        ax.plot(plan_step_t, plan_step_y,
+                linewidth=lw * 0.85, linestyle="--",
                 color=C["ms_step"], alpha=0.65,
                 label="MS Plan  (scheduled pmts / price)", zorder=4)
 
-    # MS Certified – violet SOLID step: actually-received payments, drawn on
-    # top of the dashed plan line. It "covers" the dashed line wherever a
-    # milestone has been certified, and simply stops where certification
-    # ends (e.g. at a termination timestep), exposing the dashed remainder.
+    # MS Certified – violet SOLID polyline up to the last certified payment.
     if len(cert_step_t) > 1:
-        ax.step(cert_step_t, cert_step_y,
-                where="post", linewidth=lw * 1.05, linestyle="-",
+        ax.plot(cert_step_t, cert_step_y,
+                linewidth=lw * 1.05, linestyle="-",
                 color=C["ms_step"], alpha=0.95,
                 label="MS Certified  (received pmts / price)", zorder=4.5)
+
+    # Bridge – dashed plateau from last certified level to chart edge
+    # (only present when some milestones were NOT certified).
+    if len(bridge_t) > 1:
+        ax.plot(bridge_t, bridge_y,
+                linewidth=lw * 0.85, linestyle="--",
+                color=C["ms_step"], alpha=0.95, zorder=4.6)
 
     # ── planned-finish marker ─────────────────────────────────────────────
     ax.axvline(planned_finish, color="#8892a4", linewidth=1.0,
@@ -584,10 +650,16 @@ def plot_project_cashflow(
     fig.patch.set_facecolor(C["bg"])
 
     # ── Panel A: inflow / outflow bars ───────────────────────────────────
+    # Both bars are centred on the same x-position so that, at any given
+    # timestep, the green (inflow) and red (outflow) bars share the same
+    # tick label.  A slight overlap is intentional — the narrower bar on
+    # top makes clear they belong to the same period.
     ax = axes[0]
-    bar_w = 0.35
-    ax.bar(t_act - bar_w / 2, inflow,   width=bar_w, color=C["inflow"],  alpha=0.85, label="Inflow")
-    ax.bar(t_act + bar_w / 2, -outflow, width=bar_w, color=C["outflow"], alpha=0.85, label="Outflow")
+    bar_w = 0.55          # full-width "base" bar
+    inflow_w  = bar_w
+    outflow_w = bar_w * 0.55   # outflow bar slightly narrower → sits visibly inside inflow bar
+    ax.bar(t_act, inflow,   width=inflow_w,  color=C["inflow"],  alpha=0.70, label="Inflow",  zorder=2)
+    ax.bar(t_act, -outflow, width=outflow_w, color=C["outflow"], alpha=0.90, label="Outflow", zorder=3)
     ax.axhline(0, color="black", linewidth=0.5)
     _style_ax(ax, ylabel="Amount", title=f"Project {proj_i} – Gross Flows")
     ax.legend(fontsize=7)
@@ -595,18 +667,22 @@ def plot_project_cashflow(
     # ── Panel B: milestone payment breakdown ───────────────────────────────
     #
     # "Apartment levels" design:
-    #   • Gross payment  → solid, faint, FULL-width background bar. This is
-    #                      the total envelope / context: the building itself.
-    #   • Net payment    → NARROW white box, green outline   (ground floor)
-    #   • Adv. recovery  → NARROW white box, yellow outline  (next floor up)
-    #   • Retention      → NARROW white box, purple outline  (top floor)
+    #   • Gross payment      → solid, faint, FULL-width background bar.
+    #   • Net payment        → NARROW white box, green outline   (ground floor)
+    #   • Adv. recovery      → NARROW white box, yellow outline  (next floor up)
+    #   • Retention (net)    → NARROW white box, purple outline  (top floor)
+    #                          At timesteps where BOTH retention_withheld and
+    #                          retention_released are non-zero the two cancel
+    #                          and only the signed difference is drawn:
+    #                            diff > 0  → retention block (withheld > released)
+    #                            diff < 0  → release block   (released > withheld)
+    #                            diff = 0  → nothing drawn
+    #   • Ret. release (net) → NARROW white box, teal outline  — shown when
+    #                          the release exceeds the withheld amount at that
+    #                          timestep.  Sits on top of the existing stack
+    #                          so it is always inside the gross bar.
     #
-    # The three narrow boxes are stacked bottom-to-top (Net → Recovery →
-    # Retention) at the *same* narrow width, directly on top of one another
-    # like floors of a building. Because their heights sum exactly to the
-    # Gross amount, the stack visually proves
-    #     Gross = Net + Advance-recovery + Retention
-    # and the thickness of each floor shows its share of the total.
+    # All narrow boxes sit inside the gross bar; their heights sum to gross.
     ax = axes[1]
     if not ms_status_i.empty and not ms_profile_i.empty:
         ms = ms_status_i.merge(
@@ -616,25 +692,41 @@ def plot_project_cashflow(
         )
         t_cert = ms["certified_t"].values
         net_p  = ms["net_payment_x"].values if "net_payment_x" in ms.columns else ms["net_payment"].values
-        gross  = ms.get("gross_payment", pd.Series(net_p)).values
-        rec    = ms.get("advance_recovery", pd.Series(np.zeros_like(net_p))).values
-        ret_w  = ms.get("retention_withheld", pd.Series(np.zeros_like(net_p))).values
+        gross  = ms.get("gross_payment", pd.Series(net_p)).fillna(0).values
+        rec    = ms.get("advance_recovery",   pd.Series(np.zeros_like(net_p, dtype=float))).fillna(0).values
+        ret_w  = ms.get("retention_withheld", pd.Series(np.zeros_like(net_p, dtype=float))).fillna(0).values
+        ret_r  = ms.get("retention_released", pd.Series(np.zeros_like(net_p, dtype=float))).fillna(0).values
+
+        # ── Net retention / release per timestep ──────────────────────────
+        # At any timestep both withheld and released may be non-zero.
+        # We cancel them and draw only the signed remainder so the bars
+        # always fit inside the gross envelope.
+        ret_net   = np.zeros(len(net_p), dtype=float)   # >0 → draw as retention
+        rel_net   = np.zeros(len(net_p), dtype=float)   # >0 → draw as release
+
+        for idx in range(len(net_p)):
+            diff = float(ret_w[idx]) - float(ret_r[idx])
+            if diff > 1e-9:
+                ret_net[idx] = diff        # more withheld than released
+            elif diff < -1e-9:
+                rel_net[idx] = -diff       # more released than withheld
 
         width        = 0.3
-        narrow_width = width * 0.5   # shared width for Net / Recovery / Retention
+        narrow_width = width * 0.5
 
-        col_net = C["inflow"]   # green  – net payment (ground floor)
-        col_rec = "#f4c430"     # yellow – advance recovery (middle floor)
-        col_ret = "#aa44cc"     # purple – retention withheld (top floor)
+        col_net = C["inflow"]   # green  – net payment
+        col_rec = "#f4c430"     # yellow – advance recovery
+        col_ret = "#aa44cc"     # purple – net retention withheld
+        col_rel = "#0096c7"     # teal   – net retention release
 
-        # Gross – solid, faint, full-width backdrop (the "building")
+        # Gross backdrop
         ax.bar(t_cert, gross, width=width, color=C["inflow"], alpha=0.80,
                label="Gross", zorder=1)
 
-        # Stacked floor levels — Net (bottom) → Recovery → Retention (top)
+        # Floor stack: Net → Recovery → (Retention or Release)
         bottom_net = np.zeros_like(net_p, dtype=float)
-        bottom_rec = net_p
-        bottom_ret = net_p + rec
+        bottom_rec = net_p.copy()
+        bottom_top = net_p + rec          # starting y for the top tier
 
         ax.bar(t_cert, net_p, width=narrow_width, bottom=bottom_net,
                facecolor="white", edgecolor=col_net, linewidth=1.6,
@@ -642,18 +734,46 @@ def plot_project_cashflow(
         ax.bar(t_cert, rec, width=narrow_width, bottom=bottom_rec,
                facecolor="white", edgecolor=col_rec, linewidth=1.6,
                label="Adv. recovery", zorder=3)
-        ax.bar(t_cert, ret_w, width=narrow_width, bottom=bottom_ret,
-               facecolor="white", edgecolor=col_ret, linewidth=1.6,
-               label="Retention", zorder=3)
+
+        # Retention tier: only where withheld > released
+        mask_ret = ret_net > 1e-9
+        if mask_ret.any():
+            ax.bar(t_cert[mask_ret], ret_net[mask_ret], width=narrow_width,
+                   bottom=bottom_top[mask_ret],
+                   facecolor="white", edgecolor=col_ret, linewidth=1.6,
+                   label="Retention (net)", zorder=3)
+
+        # Release tier: only where released > withheld
+        mask_rel = rel_net > 1e-9
+        if mask_rel.any():
+            ax.bar(t_cert[mask_rel], rel_net[mask_rel], width=narrow_width,
+                   bottom=bottom_top[mask_rel],
+                   facecolor="white", edgecolor=col_rel, linewidth=1.6,
+                   label="Ret. release (net)", zorder=3)
+
+        # Build legend manually so both retention colours always appear
+        # even if only one is present in this episode.
+        legend_handles = [
+            mpatches.Patch(facecolor="white", edgecolor=col_net,  label="Net pay.",         linewidth=1.6),
+            mpatches.Patch(facecolor=C["inflow"], alpha=0.80,     label="Gross",            linewidth=0),
+            mpatches.Patch(facecolor="white", edgecolor=col_rec,  label="Adv. recovery",    linewidth=1.6),
+            mpatches.Patch(facecolor="white", edgecolor=col_ret,  label="Retention (net)",  linewidth=1.6),
+            mpatches.Patch(facecolor="white", edgecolor=col_rel,  label="Ret. release (net)", linewidth=1.6),
+        ]
 
         ax.axhline(0, color="black", linewidth=0.5)
         for j_row, ms_row in enumerate(ms.itertuples()):
             ax.text(ms_row.certified_t, float(gross[j_row]) + 1,
                     f"MS{ms_row.j}", fontsize=6, ha="center", color=C["inflow"])
+
+        ax.legend(handles=legend_handles, fontsize=6, loc="upper left")
+    else:
+        legend_handles = []
+
     _style_ax(ax, ylabel="Amount",
-              title=f"Project {proj_i} – Milestone Payments  "
-                    f"(Gross = Net + Recovery + Retention)")
-    ax.legend(fontsize=6, loc="upper left")
+              title=f"Project {proj_i} – Milestone Payments")
+    if not legend_handles:
+        ax.legend(fontsize=6, loc="upper left")
 
     # ── Panel C: cumulative net cash flow ─────────────────────────────────
     ax = axes[2]
