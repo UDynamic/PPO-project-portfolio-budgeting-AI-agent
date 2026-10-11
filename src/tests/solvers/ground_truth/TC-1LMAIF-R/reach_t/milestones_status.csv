@@ -1,5 +1,0 @@
-episode_id,i,j,method,certified_t,certification_delay,net_payment
-TC-1LMAIF-R__reach_t__,0,0,reach_t,2,-2,24.0
-TC-1LMAIF-R__reach_t__,0,1,reach_t,3,0,8.1
-TC-1LMAIF-R__reach_t__,0,2,reach_t,4,0,24.9
-TC-1LMAIF-R__reach_t__,0,3,reach_t,4,0,63.0

@@ -1,0 +1,7 @@
+episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
+TC-1LMAIF-R__optimal__,TC-1LMAIF-R,0,optimal,300,0,0,0
+TC-1LMAIF-R__optimal__,TC-1LMAIF-R,1,optimal,300,0,0,0
+TC-1LMAIF-R__optimal__,TC-1LMAIF-R,2,optimal,324,0,0,0
+TC-1LMAIF-R__optimal__,TC-1LMAIF-R,3,optimal,246.0051953,-77.99480471,-66.87079569,0
+TC-1LMAIF-R__optimal__,TC-1LMAIF-R,4,optimal,270.3652472,24.36005195,19.84141457,0
+TC-1LMAIF-R__optimal__,TC-1LMAIF-R,5,optimal,333.0688997,62.70365247,48.51889099,1

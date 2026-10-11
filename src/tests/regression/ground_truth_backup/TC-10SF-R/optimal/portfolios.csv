@@ -1,0 +1,2 @@
+episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
+TC-10SF-R__optimal__,TC-10SF-R,0,optimal,309.0009993,9.000999302,9.000999302,1

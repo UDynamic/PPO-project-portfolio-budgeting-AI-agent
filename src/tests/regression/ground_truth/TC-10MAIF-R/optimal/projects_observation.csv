@@ -1,0 +1,4 @@
+episode_id,i,t_episode,t_project,method,net_cashflow,tolerance_remain,catchup_alloc_t,catchup_alloc_next_t,reach_plan_t,reach_plan_next_t,target_progress_gap,target_timestep_gap,target_required_alloc,target_npv
+TC-10MAIF-R__optimal__,0,0,0,optimal,24,2,39.53027101,77.99770914,54.53027101,92.99770914,0.4,1,40,-25.78947368
+TC-10MAIF-R__optimal__,0,1,1,optimal,24,1,77.99770914,85,92.99770914,100,0.4,0,40,-26.5
+TC-10MAIF-R__optimal__,0,2,2,optimal,0,0,85,85,100,100,0.4,-1,40,-26.5

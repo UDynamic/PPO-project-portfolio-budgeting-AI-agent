@@ -1,0 +1,4 @@
+episode_id,i,j,method,certified_t,certification_delay,net_payment
+TC-10MAIF-R__reach_t__,0,0,reach_t,0,0,24.0
+TC-10MAIF-R__reach_t__,0,1,reach_t,1,0,13.5
+TC-10MAIF-R__reach_t__,0,2,reach_t,3,1,31.5

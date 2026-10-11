@@ -1,0 +1,5 @@
+episode_id,i,j,method,certified_t,certification_delay,net_payment
+TC-1LMAIF-R__catchup_t__,0,0,catchup_t,2,0,24.0
+TC-1LMAIF-R__catchup_t__,0,1,catchup_t,3,0,8.1
+TC-1LMAIF-R__catchup_t__,0,2,catchup_t,5,1,24.9
+TC-1LMAIF-R__catchup_t__,0,3,catchup_t,6,1,63.0

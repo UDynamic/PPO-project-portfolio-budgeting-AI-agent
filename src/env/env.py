@@ -280,8 +280,12 @@ class PortfolioBudgetingEnv(gym.Env):
                 ps["status"] = "terminated"
                 s = h.compute_termination_settlement(proj, ps)
                 ps["termination_settlement"] = s
-                ps["inflow"]  += max(0.0, s)
-                period_inflow += max(0.0, s)
+                if s >= 0:
+                    ps["inflow"]   += s
+                    period_inflow  += s
+                else:
+                    ps["outflow"]  -= s
+                    period_outflow -= s
                 proj_cf[i]["settlement"] = s
                 self._update_obs_fields(ps, proj, ms_list, ms_sl)
                 continue
@@ -351,8 +355,12 @@ class PortfolioBudgetingEnv(gym.Env):
                 ps["status"] = "terminated"
                 s = h.compute_termination_settlement(proj, ps)
                 ps["termination_settlement"] = s
-                ps["inflow"]  += max(0.0, s)
-                period_inflow += max(0.0, s)
+                if s >= 0:
+                    ps["inflow"]   += s
+                    period_inflow  += s
+                else:
+                    ps["outflow"]  -= s
+                    period_outflow -= s
                 proj_cf[i]["settlement"] = s
             elif ps["progress_actual"] >= 1.0 and _all_certified(ms_sl):
                 ps["status"] = "completed"
@@ -866,7 +874,7 @@ def _db_write_step(conn: sqlite3.Connection, episode_id: str, config_id: str,
             for ms, ms_state in zip(milestones, ms_sl):
                 if not ms_state["certified"] or ms_state["certified_t"] != t:
                     continue
-                episode_threshold = proj["planned_start"] + ms["timestep_threshold"]
+                episode_threshold = ms["timestep_threshold"] if ms["j"] == 0 else proj["planned_start"] + ms["timestep_threshold"]
                 delay = (ms_state["certified_t"] - episode_threshold
                          if ms_state["certified_t"] is not None else None)
                 conn.execute("""

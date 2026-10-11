@@ -2,4 +2,4 @@ episode_id,i,j,progress_threshold,timestep_threshold,payment_weight,gross_paymen
 TC-10MAIF-R__catchup_t__,0,0,0.0,0,0.0,24.0,0.0,24.0,0.0,0.0,24.0
 TC-10MAIF-R__catchup_t__,0,1,0.4,1,0.15,18.0,3.6,20.4,0.9,0.0,13.5
 TC-10MAIF-R__catchup_t__,0,2,0.97,2,0.35,42.0,8.4,11.999999999999998,2.1,0.0,31.5
-TC-10MAIF-R__catchup_t__,0,3,1.0,2,0.5,60.0,11.999999999999998,0.0,3.0,6.0,51.0
+TC-10MAIF-R__catchup_t__,0,3,1.0,3,0.5,60.0,11.999999999999998,0.0,3.0,6.0,51.0
