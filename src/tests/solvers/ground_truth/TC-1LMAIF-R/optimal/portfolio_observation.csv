@@ -1,0 +1,7 @@
+episode_id,t_episode,method,net_cashflow,budget_available
+TC-1LMAIF-R__optimal__,0,optimal,0,300
+TC-1LMAIF-R__optimal__,1,optimal,0,300
+TC-1LMAIF-R__optimal__,2,optimal,0,324
+TC-1LMAIF-R__optimal__,3,optimal,-77.99480471,246.0051953
+TC-1LMAIF-R__optimal__,4,optimal,24.36005195,270.3652472
+TC-1LMAIF-R__optimal__,5,optimal,62.70365247,333.0688997

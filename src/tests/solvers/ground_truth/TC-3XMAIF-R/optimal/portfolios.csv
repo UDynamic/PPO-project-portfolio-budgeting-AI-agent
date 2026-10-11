@@ -1,0 +1,12 @@
+episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,0,optimal,1824,0,0,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,1,optimal,1751.405197,-72.59480255,-68.96506242,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,2,optimal,1782.419249,31.01405197,27.99018191,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,3,optimal,1833.243442,50.82419249,43.57539204,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,4,optimal,1833.243442,0,0,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,5,optimal,1833.243442,0,0,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,6,optimal,1881.243442,0,0,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,7,optimal,1953.243442,0,0,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,8,optimal,1645.603535,-307.6399065,-204.0945994,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,9,optimal,1840.227136,194.6236009,122.6614096,0
+TC-3XMAIF-R__optimal__,TC-3XMAIF-R,10,optimal,1992.607395,152.3802584,91.23568954,1

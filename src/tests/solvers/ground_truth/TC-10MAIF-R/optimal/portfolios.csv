@@ -1,0 +1,4 @@
+episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
+TC-10MAIF-R__optimal__,TC-10MAIF-R,0,optimal,324,0,0,0
+TC-10MAIF-R__optimal__,TC-10MAIF-R,1,optimal,324,0,0,0
+TC-10MAIF-R__optimal__,TC-10MAIF-R,2,optimal,300,-24,-21.66,1

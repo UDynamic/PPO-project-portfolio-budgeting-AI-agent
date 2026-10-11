@@ -1,0 +1,12 @@
+episode_id,t_episode,method,net_cashflow,budget_available
+TC-3XMAIF-R__optimal__,0,optimal,0,1824
+TC-3XMAIF-R__optimal__,1,optimal,-72.59480255,1751.405197
+TC-3XMAIF-R__optimal__,2,optimal,31.01405197,1782.419249
+TC-3XMAIF-R__optimal__,3,optimal,50.82419249,1833.243442
+TC-3XMAIF-R__optimal__,4,optimal,0,1833.243442
+TC-3XMAIF-R__optimal__,5,optimal,0,1833.243442
+TC-3XMAIF-R__optimal__,6,optimal,0,1881.243442
+TC-3XMAIF-R__optimal__,7,optimal,0,1953.243442
+TC-3XMAIF-R__optimal__,8,optimal,-307.6399065,1645.603535
+TC-3XMAIF-R__optimal__,9,optimal,194.6236009,1840.227136
+TC-3XMAIF-R__optimal__,10,optimal,152.3802584,1992.607395

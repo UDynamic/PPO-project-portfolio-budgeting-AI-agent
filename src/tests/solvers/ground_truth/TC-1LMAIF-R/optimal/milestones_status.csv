@@ -1,0 +1,5 @@
+episode_id,i,j,method,certified_t,certification_delay,net_payment
+TC-1LMAIF-R__optimal__,0,0,optimal,2,-2,24
+TC-1LMAIF-R__optimal__,0,1,optimal,3,0,8.1
+TC-1LMAIF-R__optimal__,0,2,optimal,4,0,24.9
+TC-1LMAIF-R__optimal__,0,3,optimal,5,0,63
