@@ -1,417 +1,837 @@
 # notation.yaml
-# Mapping between documentation (LaTeX) notation and Python coding notation
-# Model: Portfolio Budget Allocation CMDP — Relaxations A & B applied
-# Relaxation A: kappa >> 1 (liquidity constraint non-binding)
-# Relaxation B: no payment delay (payments received in certification period)
-# Last updated: post-relaxation parameter table
+# ─────────────────────────────────────────────────────────────────────────────
+# Canonical mapping between code identifiers and academic mathematical notation
+# for the Project Portfolio Budgeting MDP environment.
+#
+# Structure per entry:
+#   code:        exact identifier used in env.py / helper.py / CSV exports
+#   symbol:      LaTeX math-mode symbol
+#   name:        plain-English term (for use in prose / table captions)
+#   domain:      value domain (LaTeX)
+#   description: one-sentence definition
+#   source:      where the value lives  [config | project_profile | project_state |
+#                                         milestone_profile | milestone_state |
+#                                         portfolio_state | obs_vector | action |
+#                                         reward | evm | breach | solver]
+# ─────────────────────────────────────────────────────────────────────────────
 
-parameters:
+# ═══════════════════════════════════════════════════════════════════════════════
+# INDICES
+# ═══════════════════════════════════════════════════════════════════════════════
 
-  # ── Portfolio-level ────────────────────────────────────────────────────────
+indices:
+  - code: i
+    symbol: "i"
+    name: project index
+    domain: "i \\in \\{0,\\ldots,N-1\\}"
+    description: Zero-based index of a project within the portfolio.
+    source: project_profile
 
-  - symbol: "n"
-    latex: "n"
-    python: "n_projects"
-    scope: portfolio
-    type: int
-    description: "Number of active projects in the portfolio."
-
-  - symbol: "H"
-    latex: "H"
-    python: "horizon"
-    scope: portfolio
-    type: int
+  - code: j
+    symbol: "j"
+    name: milestone index
+    domain: "j \\in \\{0,\\ldots,M_i\\}"
     description: >
-      Planning horizon in periods, derived as
-      max(f_i) - min(s_i) + 1 across all projects.
+      Zero-based index of a milestone for project i.  j=0 is always the
+      advance-payment milestone triggered at planned_start.
+    source: milestone_profile
 
-  - symbol: "B_1"
-    latex: "B_1"
-    python: "initial_balance"
-    scope: portfolio
-    type: float
-    description: "Initial portfolio cash balance at period 1."
+  - code: t_episode
+    symbol: "t"
+    name: episode time-step
+    domain: "t \\in \\{0,\\ldots,T\\}"
+    description: Global calendar period index counted from the start of the episode.
+    source: portfolio_state
 
-  - symbol: "kappa"
-    latex: "\\kappa"
-    python: "budget_stress_ratio"
-    scope: portfolio
-    type: float
+  - code: t_project
+    symbol: "\\tau_i"
+    name: project time-step
+    domain: "\\tau_i \\in \\{0,\\ldots,D_i + \\delta^{\\max}_i\\}"
     description: >
-      Budget stress ratio: B_1 / sum(BAC_i).
-      kappa >> 1: relaxed regime (liquidity non-binding, Relaxation A);
-      kappa ≈ 1: tight regime;
-      kappa << 1: scarce regime.
+      Number of active periods elapsed for project i since its planned start;
+      incremented only while status = active.
+    source: project_state
 
-  - symbol: "gamma"
-    latex: "\\gamma"
-    python: "discount_factor"
-    scope: portfolio
-    type: float
-    description: "Per-period discount factor (0 < gamma <= 1)."
 
-  # ── Project-level ──────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# EPISODE / MDP PARAMETERS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-  - symbol: "BAC_i"
-    latex: "\\mathrm{BAC}_i"
-    python: "bac"
-    scope: project
-    type: float
+episode:
+  - code: horizon
+    symbol: "T"
+    name: episode horizon
+    domain: "T \\in \\mathbb{Z}_{>0}"
     description: >
-      Budget at completion — EVM cost basis and progress denominator.
+      Maximum episode length; equals max over all projects of
+      planned_finish + finish_delay_cap.
+    source: portfolio_state
 
-  - symbol: "CP_i"
-    latex: "CP_i"
-    python: "contract_price"
-    scope: project
-    type: float
-    description: "Contract price — payment accumulation baseline only."
+  - code: discount
+    symbol: "\\gamma"
+    name: discount factor
+    domain: "\\gamma \\in [0,1]"
+    description: Per-period discount factor applied to net cash-flow rewards.
+    source: config
 
-  - symbol: "pi_i"
-    latex: "\\pi_i"
-    python: "profit_margin"
-    scope: project
-    type: float
+  - code: annual_interest_rate
+    symbol: "r"
+    name: annual interest rate
+    domain: "r \\in [0,1]"
     description: >
-      Profit margin fraction; CP_i = BAC_i * (1 + pi_i).
+      Annual rate used to compute treasury-draw interest.
+      Monthly rate is r/12.
+    source: config
 
-  - symbol: "s_i"
-    latex: "s_i"
-    python: "start_period"
-    scope: project
-    type: int
-    description: "Planned start period for project i."
-
-  - symbol: "f_i"
-    latex: "f_i"
-    python: "planned_finish"
-    scope: project
-    type: int
-    description: "Planned finish period for project i."
-
-  - symbol: "D_i_plan"
-    latex: "D_i^{\\mathrm{plan}}"
-    python: "planned_duration"
-    scope: project
-    type: int
-    description: "Planned duration: f_i - s_i + 1."
-
-  - symbol: "a_i"
-    latex: "a_i"
-    python: "scurve_a"
-    scope: project
-    type: float
-    description: "Beta CDF shape parameter alpha for planned S-curve expenditure profile."
-
-  - symbol: "b_i"
-    latex: "b_i"
-    python: "scurve_b"
-    scope: project
-    type: float
-    description: "Beta CDF shape parameter beta for planned S-curve expenditure profile."
-
-  - symbol: "theta_ij"
-    latex: "\\theta_{i,j}"
-    python: "milestone_threshold"
-    scope: project
-    type: float
+  - code: budget_tightness
+    symbol: "\\kappa"
+    name: budget tightness
+    domain: "\\kappa \\in (0,1]"
     description: >
-      Cumulative progress fraction required to certify milestone j
+      Scalar multiplier on the sum of all BACs that sets the initial
+      portfolio budget: B_0 = kappa * sum_i BAC_i.
+    source: config
+
+  - code: initial_budget
+    symbol: "B_0"
+    name: initial budget
+    domain: "B_0 \\in \\mathbb{R}_{\\geq 0}"
+    description: >
+      Portfolio cash reserve at episode start, before any advance payments.
+      B_0 = kappa * sum_i BAC_i.
+    source: portfolio_state
+
+  - code: budget_available   # column name in portfolios / portfolio_observation
+    symbol: "B_t"
+    name: available budget
+    domain: "B_t \\in \\mathbb{R}"
+    description: >
+      Portfolio cash reserve at the start of period t after all inflows and
+      outflows of the previous period have settled.
+    source: portfolio_state
+
+  - code: net_cashflow
+    symbol: "\\Delta B_t"
+    name: net cash-flow
+    domain: "\\Delta B_t \\in \\mathbb{R}"
+    description: >
+      Period-t portfolio net cash-flow: total inflows minus total outflows
+      across all projects.  Budget update: B_{t+1} = B_t + Delta B_t.
+    source: portfolio_state
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ACTION & REWARD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+action_reward:
+  - code: action[i]    # raw fraction element i of the action vector
+    symbol: "\\alpha_{i,t}"
+    name: allocation fraction
+    domain: "\\alpha_{i,t} \\in [0,1],\\; \\sum_i \\alpha_{i,t} \\leq 1"
+    description: >
+      Fraction of the available budget B_t the agent assigns to project i
+      in period t.  Only active projects receive non-zero fractions.
+    source: action
+
+  - code: allocation   # monetary amount after scaling; proj_cf["allocation"]
+    symbol: "x_{i,t}"
+    name: budget allocation
+    domain: "x_{i,t} \\in [0, BAC_i / \\eta^{\\min}_i]"
+    description: >
+      Monetary allocation to project i in period t:
+      x_{i,t} = alpha_{i,t} * B_t, capped at BAC_i / eta^min_i.
+    source: project_state
+
+  - code: reward
+    symbol: "r_t"
+    name: period reward
+    domain: "r_t \\in \\mathbb{R}"
+    description: >
+      Discounted net cash-flow reward for period t:
+      r_t = gamma^t * Delta B_t.
+    source: reward
+
+  - code: _cum_reward   # env attribute; "cum_reward" in info dict
+    symbol: "G"
+    name: cumulative (episode) reward / NPV
+    domain: "G \\in \\mathbb{R}"
+    description: >
+      Sum of discounted net cash-flows over the full episode:
+      G = sum_{t=0}^{T} gamma^t * Delta B_t.
+      Used as the primary performance metric (episode NPV).
+    source: reward
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROJECT PROFILE  (sampled once per episode at reset)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+project_profile:
+  - code: bac
+    symbol: "BAC_i"
+    name: budget at completion
+    domain: "BAC_i \\in \\mathbb{R}_{>0}"
+    description: Total planned cost (Budget At Completion) for project i.
+    source: project_profile
+
+  - code: profit_percent
+    symbol: "\\pi_i"
+    name: profit percentage
+    domain: "\\pi_i \\in [0,1]"
+    description: Mark-up rate; contract price = BAC_i * (1 + pi_i).
+    source: project_profile
+
+  - code: price
+    symbol: "P_i"
+    name: contract price
+    domain: "P_i \\in \\mathbb{R}_{>0}"
+    description: >
+      Total contractual revenue from project i upon full delivery:
+      P_i = BAC_i * (1 + pi_i).
+    source: project_profile
+
+  - code: planned_start
+    symbol: "s_i"
+    name: planned start
+    domain: "s_i \\in \\mathbb{Z}_{\\geq 0}"
+    description: Episode period at which project i is scheduled to begin.
+    source: project_profile
+
+  - code: planned_finish
+    symbol: "f_i"
+    name: planned finish
+    domain: "f_i = s_i + D_i"
+    description: Episode period at which project i is scheduled to complete.
+    source: project_profile
+
+  - code: planned_duration
+    symbol: "D_i"
+    name: planned duration
+    domain: "D_i \\in \\mathbb{Z}_{>0}"
+    description: Number of active periods planned for project i.
+    source: project_profile
+
+  - code: scurve_a
+    symbol: "a_i"
+    name: S-curve shape parameter alpha
+    domain: "a_i \\geq 0.5"
+    description: >
+      First shape parameter of the Beta CDF used as the planned progress
+      S-curve for project i.
+    source: project_profile
+
+  - code: scurve_b
+    symbol: "b_i"
+    name: S-curve shape parameter beta
+    domain: "b_i \\geq 0.5"
+    description: >
+      Second shape parameter of the Beta CDF used as the planned progress
+      S-curve for project i.
+    source: project_profile
+
+  - code: advance_percent
+    symbol: "\\phi_i"
+    name: advance payment rate
+    domain: "\\phi_i \\in [0, 0.3]"
+    description: >
+      Fraction of contract price P_i paid as an advance at project start:
+      Adv_i = phi_i * P_i.
+    source: project_profile
+
+  - code: advance_recovery
+    symbol: "\\rho_i"
+    name: advance recovery rate
+    domain: "\\rho_i \\in [0,1]"
+    description: >
+      Fraction of each milestone's gross payment withheld to recover the
+      advance; recovered amount per milestone j = rho_i * gross_{i,j}.
+    source: project_profile
+
+  - code: retention_rate
+    symbol: "\\nu_i"
+    name: retention rate
+    domain: "\\nu_i \\in [0, 0.1]"
+    description: >
+      Fraction of each milestone's gross payment withheld as retention;
+      released in full at the final milestone.
+    source: project_profile
+
+  - code: progress_delay_cap
+    symbol: "\\delta^{\\max}_i"
+    name: progress delay cap (tolerance threshold)
+    domain: "\\delta^{\\max}_i \\in [0,1]"
+    description: >
+      Maximum allowable lag between planned and actual progress before a
+      breach flag is raised:
+      breach iff (PV_i(t) - EV_i(t)) > delta^max_i.
+    source: project_profile
+
+  - code: finish_delay_cap
+    symbol: "\\Delta^{\\max}_i"
+    name: finish delay cap
+    domain: "\\Delta^{\\max}_i \\in \\mathbb{Z}_{>0}"
+    description: >
+      Maximum additional periods beyond planned_finish before the
+      over_duration_window hard termination fires:
+      hard deadline = f_i + Delta^max_i.
+    source: project_profile
+
+  - code: termination_tolerance
+    symbol: "\\theta_i"
+    name: termination tolerance
+    domain: "\\theta_i \\in \\mathbb{Z}_{>0}"
+    description: >
+      Number of consecutive breach periods allowed before the project is
+      terminated.  tolerance_remain counts down from theta_i each breach.
+    source: project_profile
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROJECT STATE  (updated each step)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+project_state:
+  - code: status
+    symbol: "\\sigma_{i,t}"
+    name: project status
+    domain: "\\{\\text{pending, active, completed, terminated}\\}"
+    description: Lifecycle status of project i at the start of period t.
+    source: project_state
+
+  - code: progress_actual
+    symbol: "EV_{i,t}"   # Earned Value as fraction of BAC
+    name: actual progress (fraction complete)
+    domain: "EV_{i,t} \\in [0,1]"
+    description: >
+      Cumulative fraction of work completed for project i by end of period t;
+      equal to BCWP_i / BAC_i in EVM terms.
+    source: project_state
+
+  - code: progress_plan_t
+    symbol: "PV_{i,t}"
+    name: planned progress at t
+    domain: "PV_{i,t} \\in [0,1]"
+    description: >
+      Beta-CDF planned progress at project-time tau_i:
+      PV_{i,t} = F_Beta(tau_i / D_i; a_i, b_i).
+    source: project_state
+
+  - code: progress_delay_t
+    symbol: "\\delta_{i,t}"
+    name: progress delay
+    domain: "\\delta_{i,t} \\in [-1,1]"
+    description: >
+      Signed lag of actual behind planned progress in period t:
+      delta_{i,t} = PV_{i,t} - EV_{i,t}.
+      Positive means behind plan.
+    source: project_state
+
+  - code: efficiency
+    symbol: "\\eta_{i,t}"
+    name: work efficiency
+    domain: "\\eta_{i,t} \\geq 0.01"
+    description: >
+      Stochastic cost-to-progress conversion factor drawn each active period:
+      progress_increment = (x_{i,t} / BAC_i) * eta_{i,t}.
+    source: project_state
+
+  - code: inflow
+    symbol: "\\text{CF}^{+}_{i}"
+    name: cumulative project inflow
+    domain: "\\in \\mathbb{R}_{\\geq 0}"
+    description: >
+      Total cash received by the portfolio from project i up to and including
+      the current period (advances + milestone net payments + settlements).
+    source: project_state
+
+  - code: outflow
+    symbol: "\\text{CF}^{-}_{i}"
+    name: cumulative project outflow
+    domain: "\\in \\mathbb{R}_{\\geq 0}"
+    description: >
+      Total cash paid out for project i (allocations + interest charges)
+      up to and including the current period.
+    source: project_state
+
+  - code: interest_cost    # proj_cf["interest"]
+    symbol: "c^{r}_{i,t}"
+    name: interest cost
+    domain: "c^{r}_{i,t} \\geq 0"
+    description: >
+      Treasury-draw interest charged to project i in period t:
+      c^r_{i,t} = (r/12) * max(0, CF^-_i + x_{i,t} - CF^+_i).
+    source: project_state
+
+  - code: tolerance_remain
+    symbol: "\\theta^{\\text{rem}}_{i,t}"
+    name: tolerance remaining
+    domain: "\\theta^{\\text{rem}}_{i,t} \\in \\{0,\\ldots,\\theta_i\\}"
+    description: >
+      Breach-periods remaining before termination.  Decrements by 1 each
+      period a breach flag is active; resets to theta_i when no breach.
+    source: project_state
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EVM METRICS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+evm:
+  - code: spi
+    symbol: "SPI_i"
+    name: schedule performance index
+    domain: "SPI_i \\in \\mathbb{R}_{>0}"
+    description: >
+      Earned-Schedule SPI: ratio of earned schedule ES_i to actual time tau_i.
+      SPI_i = ES_i / tau_i.
+    source: evm
+
+  - code: cpi
+    symbol: "CPI_i"
+    name: cost performance index
+    domain: "CPI_i \\in \\mathbb{R}_{>0}"
+    description: >
+      CPI_i = BCWP_i / ACWP_i = (EV_{i} * BAC_i) / CF^-_i.
+    source: evm
+
+  - code: eac
+    symbol: "EAC_i"
+    name: estimate at completion
+    domain: "EAC_i \\in \\mathbb{R}_{>0}"
+    description: >
+      Composite EVM forecast of total cost:
+      EAC_i = ACWP_i + (BAC_i - BCWP_i) / (CPI_i * SPI_i).
+    source: evm
+
+  - code: tcpi
+    symbol: "TCPI_i"
+    name: to-complete performance index
+    domain: "TCPI_i \\in \\mathbb{R}_{\\geq 0}"
+    description: >
+      Efficiency needed on remaining work to finish within BAC:
+      TCPI_i = (BAC_i - BCWP_i) / (BAC_i - ACWP_i).
+    source: evm
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# S-CURVE & CATCHUP FIELDS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+scurve_catchup:
+  - code: planned_progress(t_project, ...)   # function call result
+    symbol: "PV_i(\\tau)"
+    name: planned progress function
+    domain: "PV_i : [0,D_i] \\to [0,1]"
+    description: >
+      Beta CDF evaluated at tau/D_i: PV_i(tau) = F_Beta(tau/D_i; a_i, b_i).
+    source: project_state
+
+  - code: progress_space_t
+    symbol: "\\sigma^{\\text{sp}}_{i,t}"
+    name: progress space (current)
+    domain: "\\sigma^{\\text{sp}}_{i,t} \\in [-1,1]"
+    description: >
+      Remaining tolerance headroom at period t:
+      sigma^sp_{i,t} = delta^max_i - delta_{i,t}.
+    source: project_state
+
+  - code: min_prog_t
+    symbol: "\\underline{EV}_{i,t}"
+    name: minimum required progress (current)
+    domain: "\\underline{EV}_{i,t} \\in [0,1]"
+    description: >
+      Minimum cumulative progress needed by end of period t to avoid a
+      breach: underline{EV}_{i,t} = max(0, PV_i(tau_i+1) - delta^max_i).
+    source: project_state
+
+  - code: progress_needed_t
+    symbol: "\\Delta EV^{\\text{need}}_{i,t}"
+    name: progress increment needed (current)
+    domain: "\\Delta EV^{\\text{need}}_{i,t} \\geq 0"
+    description: >
+      Additional progress required this period to reach minimum_prog_t:
+      max(0, underline{EV}_{i,t} - EV_{i,t}).
+    source: project_state
+
+  - code: catchup_alloc_t
+    symbol: "x^{\\text{cu}}_{i,t}"
+    name: catchup allocation (current)
+    domain: "x^{\\text{cu}}_{i,t} \\geq 0"
+    description: >
+      Monetary allocation required to supply exactly progress_needed_t units
+      of progress (assuming unit efficiency):
+      x^cu_{i,t} = Delta EV^need_{i,t} * BAC_i.
+    source: project_state
+
+  - code: reach_plan_t
+    symbol: "x^{\\text{rp}}_{i,t}"
+    name: reach-plan allocation (current)
+    domain: "x^{\\text{rp}}_{i,t} \\geq 0"
+    description: >
+      Allocation required to bring EV_{i,t} exactly to PV_i(tau_i+1)
+      (on-plan progress) this period:
+      x^rp_{i,t} = max(0, PV_i(tau_i+1) - EV_{i,t}) * BAC_i.
+    source: project_state
+
+  - code: progress_plan_next_t
+    symbol: "PV_i(\\tau_i+2)"
+    name: planned progress next period
+    domain: "[0,1]"
+    description: Planned progress two project-steps ahead (lookahead horizon).
+    source: project_state
+
+  - code: progress_delay_next_t
+    symbol: "\\delta^{+1}_{i,t}"
+    name: projected progress delay next period
+    domain: "\\in [-1,1]"
+    description: >
+      Progress delay projected for t+1 assuming zero allocation this period:
+      delta^+1_{i,t} = PV_i(tau_i+1) - EV_{i,t}.
+    source: project_state
+
+  - code: catchup_alloc_next_t
+    symbol: "x^{\\text{cu}+1}_{i,t}"
+    name: catchup allocation (next-period lookahead)
+    domain: "x^{\\text{cu}+1}_{i,t} \\geq 0"
+    description: >
+      Allocation this period required so that the projected delay at t+1
+      does not exceed delta^max_i (one-step ahead breach prevention).
+    source: project_state
+
+  - code: reach_plan_next_t
+    symbol: "x^{\\text{rp}+1}_{i,t}"
+    name: reach-plan allocation (next-period lookahead)
+    domain: "x^{\\text{rp}+1}_{i,t} \\geq 0"
+    description: >
+      Allocation required to bring EV_{i,t} to PV_i(tau_i+2):
+      full on-plan progress for two periods ahead.
+    source: project_state
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MILESTONE PROFILE  (fixed at episode start)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+milestone_profile:
+  - code: progress_threshold
+    symbol: "\\psi_{i,j}"
+    name: progress threshold
+    domain: "\\psi_{i,j} \\in [0,1],\\; \\psi_{i,M_i}=1"
+    description: >
+      Minimum cumulative progress EV_{i,t} required to certify milestone j
       of project i.
+    source: milestone_profile
 
-  - symbol: "e_ij"
-    latex: "e_{i,j}"
-    python: "earliest_cert"
-    scope: project
-    type: int
+  - code: timestep_threshold
+    symbol: "\\tau^{\\text{ms}}_{i,j}"
+    name: timestep threshold (project-time)
+    domain: "\\tau^{\\text{ms}}_{i,j} \\in \\mathbb{Z}_{\\geq 0}"
     description: >
-      Earliest contractual certification period for milestone j
-      of project i.
+      Earliest project-time (tau_i) at which milestone j can be certified;
+      episode-time threshold = s_i + tau^ms_{i,j}.
+    source: milestone_profile
 
-  - symbol: "phi_ij"
-    latex: "\\phi_{i,j}"
-    python: "milestone_fraction"
-    scope: project
-    type: float
+  - code: payment_weight
+    symbol: "w_{i,j}"
+    name: payment weight
+    domain: "w_{i,j} \\geq 0,\\; \\sum_{j=1}^{M_i} w_{i,j} = 1"
     description: >
-      Fraction of CP_i payable at milestone j; sum over j equals 1.
+      Fraction of contract price P_i allocated to the gross payment of
+      milestone j: gross_{i,j} = w_{i,j} * P_i.
+    source: milestone_profile
 
-  - symbol: "alpha_i"
-    latex: "\\alpha_i"
-    python: "advance_fraction"
-    scope: project
-    type: float
-    description: "Advance payment as a fraction of CP_i."
-
-  - symbol: "delta_rec_i"
-    latex: "\\delta_i^{\\mathrm{rec}}"
-    python: "advance_recovery_rate"
-    scope: project
-    type: float
-    description: "Advance deduction rate applied per interim milestone payment."
-
-  - symbol: "psi_i"
-    latex: "\\psi_i"
-    python: "recovery_threshold"
-    scope: project
-    type: float
+  - code: gross_payment
+    symbol: "G_{i,j}"
+    name: gross milestone payment
+    domain: "G_{i,j} \\in \\mathbb{R}_{\\geq 0}"
     description: >
-      Cumulative payment fraction threshold beyond which advance
-      recovery begins.
+      Raw contractual payment for milestone j before deductions:
+      G_{i,j} = w_{i,j} * P_i.  For j=0 (advance): G_{i,0} = phi_i * P_i.
+    source: milestone_profile
 
-  - symbol: "rho_i"
-    latex: "\\rho_i"
-    python: "retention_rate"
-    scope: project
-    type: float
+  - code: advance_recovery    # milestone-level amount
+    symbol: "A^{\\text{rec}}_{i,j}"
+    name: advance recovery amount (per milestone)
+    domain: "A^{\\text{rec}}_{i,j} \\geq 0"
     description: >
-      Retention fraction withheld per milestone payment;
-      released in full at project completion.
+      Portion of the advance repaid at milestone j:
+      A^rec_{i,j} = min(rho_i * G_{i,j},\\; \\text{remaining advance}).
+    source: milestone_profile
 
-  - symbol: "Omega_i"
-    latex: "\\Omega_i"
-    python: "schedule_overrun_cap"
-    scope: project
-    type: int
+  - code: retention_withheld
+    symbol: "R^{\\text{held}}_{i,j}"
+    name: retention withheld
+    domain: "R^{\\text{held}}_{i,j} \\geq 0"
     description: >
-      Maximum forecast finish delay (in periods) before
-      Condition 1 (schedule breach) activates.
+      Retention amount withheld at milestone j:
+      R^held_{i,j} = nu_i * G_{i,j}.
+    source: milestone_profile
 
-  - symbol: "mu_i"
-    latex: "\\mu_i"
-    python: "cost_overrun_cap"
-    scope: project
-    type: float
+  - code: retention_released
+    symbol: "R^{\\text{rel}}_{i,j}"
+    name: retention released
+    domain: "R^{\\text{rel}}_{i,j} \\geq 0"
     description: >
-      Maximum EAC fraction above BAC before Condition 2
-      (cost breach) activates.
+      Cumulative retention released; zero for all non-final milestones;
+      equals sum_{k<=j} R^held_{i,k} at the final milestone.
+    source: milestone_profile
 
-  - symbol: "tau_tol_i"
-    latex: "\\tau_i^{\\mathrm{tol}}"
-    python: "cure_period_tolerance"
-    scope: project
-    type: int
-    description: "Cure period length in periods."
-
-  # ── Stochastic primitive ───────────────────────────────────────────────────
-
-  - symbol: "eta_it"
-    latex: "\\eta_{i,t}"
-    python: "productivity"
-    scope: stochastic
-    type: float
+  - code: net_payment
+    symbol: "\\hat{P}_{i,j}"
+    name: net milestone payment
+    domain: "\\hat{P}_{i,j} \\in \\mathbb{R}"
     description: >
-      Sole uncertainty source — budget-to-progress efficiency.
-      Beta-distributed, project-specific, realised after x_{i,t}
-      is committed.
-      At Level 1, replaced by deterministic bar{eta}_{i,t}.
-      (Relaxation B: payment delay lambda_{i,j} removed entirely.)
+      Cash actually received by the portfolio at milestone j certification:
+      hat{P}_{i,j} = G_{i,j} - A^rec_{i,j} - R^held_{i,j} + R^rel_{i,j}.
+    source: milestone_profile
 
-  # ── Action variables ───────────────────────────────────────────────────────
 
-  - symbol: "x_it"
-    latex: "x_{i,t}"
-    python: "allocation"
-    scope: action
-    type: float
-    description: "Budget allocated to project i at period t."
+# ═══════════════════════════════════════════════════════════════════════════════
+# MILESTONE STATE  (updated during episode)
+# ═══════════════════════════════════════════════════════════════════════════════
 
-  - symbol: "x_t"
-    latex: "\\mathbf{x}_t"
-    python: "allocation_vector"
-    scope: action
-    type: "array[float]"
-    description: "Period-t action vector across all active projects."
+milestone_state:
+  - code: certified
+    symbol: "\\mathbb{1}^{\\text{cert}}_{i,j,t}"
+    name: certification indicator
+    domain: "\\{0,1\\}"
+    description: 1 if milestone j of project i has been certified by period t.
+    source: milestone_state
 
-  # ── State variables ────────────────────────────────────────────────────────
+  - code: certified_t
+    symbol: "t^{\\text{cert}}_{i,j}"
+    name: certification time
+    domain: "t^{\\text{cert}}_{i,j} \\in \\{0,\\ldots,T\\} \\cup \\{\\text{null}\\}"
+    description: Episode period at which milestone j was certified.
+    source: milestone_state
 
-  - symbol: "P_it_actual"
-    latex: "P_{i,t}^{\\mathrm{actual}}"
-    python: "progress"
-    scope: state
-    type: float
-    description: "Cumulative progress fraction for project i at period t."
-
-  - symbol: "ACWP_it"
-    latex: "\\mathrm{ACWP}_{i,t}"
-    python: "acwp"
-    scope: state
-    type: float
-    description: "Actual cost of work performed."
-
-  - symbol: "BCWS_it"
-    latex: "\\mathrm{BCWS}_{i,t}"
-    python: "bcws"
-    scope: state
-    type: float
-    description: "Budgeted cost of work scheduled."
-
-  - symbol: "BCWP_it"
-    latex: "\\mathrm{BCWP}_{i,t}"
-    python: "bcwp"
-    scope: state
-    type: float
-    description: "Budgeted cost of work performed."
-
-  - symbol: "SPI_it"
-    latex: "\\mathrm{SPI}_{i,t}"
-    python: "spi"
-    scope: state
-    type: float
-    description: "Schedule performance index: BCWP / BCWS."
-
-  - symbol: "CPI_it"
-    latex: "\\mathrm{CPI}_{i,t}"
-    python: "cpi"
-    scope: state
-    type: float
-    description: "Cost performance index: BCWP / ACWP."
-
-  - symbol: "EAC_it"
-    latex: "\\mathrm{EAC}_{i,t}"
-    python: "eac"
-    scope: state
-    type: float
-    description: "Estimate at completion."
-
-  - symbol: "Delta_f_it"
-    latex: "\\Delta f_{i,t}"
-    python: "forecast_delay"
-    scope: state
-    type: float
-    description: "Forecast finish deviation from planned finish (periods)."
-
-  - symbol: "Delta_AC_it"
-    latex: "\\Delta AC_{i,t}"
-    python: "cost_overrun_trajectory"
-    scope: state
-    type: float
+  - code: certification_delay    # column in milestones_status CSV
+    symbol: "\\Delta t^{\\text{cert}}_{i,j}"
+    name: certification delay
+    domain: "\\Delta t^{\\text{cert}}_{i,j} \\in \\mathbb{Z}"
     description: >
-      EAC deviation above BAC — mirrors Delta_f_{i,t} in structure
-      but tracks cost overrun trajectory.
+      Signed delay of actual vs planned certification:
+      Delta t^cert_{i,j} = t^cert_{i,j} - (s_i + tau^ms_{i,j}).
+    source: milestone_state
 
-  - symbol: "tau_rem_it"
-    latex: "\\tau_{i,t}^{\\mathrm{rem}}"
-    python: "cure_period_remaining"
-    scope: state
-    type: int
-    description: "Remaining cure period for project i at period t."
+  - code: payment_released    # milestone_state key
+    symbol: "\\hat{P}^{\\text{paid}}_{i,j}"
+    name: payment actually released
+    domain: "\\in \\mathbb{R}_{\\geq 0}"
+    description: Net payment amount credited to the portfolio budget at certification.
+    source: milestone_state
 
-  - symbol: "status_it"
-    latex: "\\mathrm{status}_{i,t}"
-    python: "project_status"
-    scope: state
-    type: "enum[active, completed, terminated]"
-    description: "Project lifecycle status at period t."
 
-  - symbol: "B_t"
-    latex: "B_t"
-    python: "cash_balance"
-    scope: state
-    type: float
+# ═══════════════════════════════════════════════════════════════════════════════
+# TARGET MILESTONE FIELDS  (next uncertified milestone lookahead)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+target_milestone:
+  - code: target_milestone_j
+    symbol: "j^{*}_{i,t}"
+    name: target milestone index
+    domain: "j^{*}_{i,t} \\in \\{1,\\ldots,M_i\\} \\cup \\{\\text{null}\\}"
+    description: Index of the next uncertified milestone for project i at period t.
+    source: project_state
+
+  - code: target_progress_gap
+    symbol: "\\Delta\\psi^{*}_{i,t}"
+    name: target progress gap
+    domain: "\\Delta\\psi^{*}_{i,t} \\in [0,1]"
     description: >
-      Portfolio cash balance at period t.
-      Under Relaxation A (kappa >> 1), the constraint B_t >= 0
-      is non-binding throughout experiments.
+      Additional progress needed to certify the target milestone:
+      Delta psi^*_{i,t} = max(0, psi_{i,j^*} - EV_{i,t}).
+    source: project_state
 
-  # ── Derived quantities ─────────────────────────────────────────────────────
-
-  - symbol: "P_it_plan"
-    latex: "P_{i,t}^{\\mathrm{plan}}"
-    python: "planned_progress"
-    scope: derived
-    type: float
-    description: "S-curve planned cumulative progress fraction at period t."
-
-  - symbol: "Delta_P_it"
-    latex: "\\Delta P_{i,t}"
-    python: "delta_progress"
-    scope: derived
-    type: float
-    description: "Period progress increment for project i at period t."
-
-  - symbol: "f_hat_it"
-    latex: "\\hat{f}_{i,t}"
-    python: "forecast_finish"
-    scope: derived
-    type: float
-    description: "Projected finish period based on current SPI."
-
-  - symbol: "R_ij_net"
-    latex: "R_{i,j}^{\\mathrm{net}}"
-    python: "net_payment"
-    scope: derived
-    type: float
+  - code: target_timestep_gap
+    symbol: "\\Delta\\tau^{*}_{i,t}"
+    name: target timestep gap
+    domain: "\\Delta\\tau^{*}_{i,t} \\in \\mathbb{Z}"
     description: >
-      Net milestone payment after retention and advance
-      recovery deduction.
-      Under Relaxation B, received in the certification period
-      (no delay distribution applied).
+      Periods remaining until the target milestone's episode-time deadline:
+      Delta tau^*_{i,t} = (s_i + tau^ms_{i,j^*}) - t.
+    source: project_state
 
-  - symbol: "R_i_ret"
-    latex: "R_i^{\\mathrm{ret}}"
-    python: "retention_release"
-    scope: derived
-    type: float
-    description: "Retention amount released at project completion."
+  - code: target_net_payment
+    symbol: "\\hat{P}^{*}_{i,t}"
+    name: target net payment
+    domain: "\\hat{P}^{*}_{i,t} \\in \\mathbb{R}"
+    description: Net payment that will be received upon certifying the target milestone.
+    source: project_state
 
-  - symbol: "R_i_term"
-    latex: "R_i^{\\mathrm{term}}"
-    python: "termination_settlement"
-    scope: derived
-    type: float
-    description: "Net settlement payment upon project termination."
-
-  - symbol: "V_t"
-    latex: "V_t"
-    python: "period_inflow"
-    scope: derived
-    type: float
+  - code: target_required_alloc
+    symbol: "x^{*}_{i,t}"
+    name: target required allocation
+    domain: "x^{*}_{i,t} \\geq 0"
     description: >
-      Aggregate cash inflow at period t.
-      Includes: certified milestone net payments (same-period receipt,
-      Relaxation B), advance payments at project start, and
-      termination settlements.
+      Monetary allocation required to close the target progress gap:
+      x^*_{i,t} = Delta psi^*_{i,t} * BAC_i.
+    source: project_state
 
-  - symbol: "A_i"
-    latex: "A_i"
-    python: "advance_payment"
-    scope: derived
-    type: float
-    description: "Advance payment at project start; A_i = alpha_i * CP_i."
-
-  # ── Level 1 MILP variables ─────────────────────────────────────────────────
-
-  - symbol: "u_ijt"
-    latex: "u_{i,j,t}"
-    python: "cert_binary"
-    scope: L1_variable
-    type: "binary"
+  - code: target_payment_rate
+    symbol: "\\rho^{*}_{i,t}"
+    name: target payment rate
+    domain: "\\rho^{*}_{i,t} \\geq 0"
     description: >
-      Binary variable: 1 if milestone j of project i is certified
-      by period t, 0 otherwise. Used in Level 1 MILP only.
+      Ratio of expected net payment to required investment:
+      rho^*_{i,t} = hat{P}^*_{i,t} / x^*_{i,t}.
+    source: project_state
 
-  # ── Evaluation metrics ─────────────────────────────────────────────────────
-
-  - symbol: "Z_L1"
-    latex: "Z^*_{\\mathrm{L1}}"
-    python: "milp_upper_bound"
-    scope: evaluation
-    type: float
+  - code: target_npv
+    symbol: "\\text{NPV}^{*}_{i,t}"
+    name: target milestone NPV
+    domain: "\\in \\mathbb{R}"
     description: >
-      Level 1 MILP optimal value — performance ceiling (clairvoyant
-      bound). The sole uncertainty source (eta_{i,t}) is fixed to its
-      realised value; no payment delay trajectory is needed
-      (Relaxation B).
+      Net present value of unlocking the target milestone:
+      NPV^*_{i,t} = hat{P}^*_{i,t} / gamma^{max(0, Delta tau^*_{i,t})} - x^*_{i,t}.
+    source: project_state
 
-# ── Removed parameters (for audit trail) ──────────────────────────────────────
-removed:
-  - symbol: "lambda_ij"
-    latex: "\\lambda_{i,j}"
-    python: "payment_delay"
-    reason: "Eliminated by Relaxation B — payments received in certification period."
 
-  - symbol: "d_i_max"
-    latex: "d_i^{\\mathrm{max}}"
-    python: "max_delay_support"
-    reason: "Eliminated by Relaxation B — no delay distribution support needed."
+# ═══════════════════════════════════════════════════════════════════════════════
+# BREACH & TERMINATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+breach:
+  - code: over_progress_delay    # breach_flags key
+    symbol: "\\mathbb{1}^{\\delta}_{i,t}"
+    name: progress delay breach flag
+    domain: "\\{0,1\\}"
+    description: >
+      1 if delta_{i,t} > delta^max_i (project is behind plan beyond tolerance).
+    source: breach
+
+  - code: over_duration_window   # breach_flags key
+    symbol: "\\mathbb{1}^{T}_{i,t}"
+    name: hard deadline breach flag
+    domain: "\\{0,1\\}"
+    description: >
+      1 if t >= f_i + Delta^max_i (hard time-out); triggers immediate
+      termination regardless of tolerance_remain.
+    source: breach
+
+  - code: over_any               # breach_flags key
+    symbol: "\\mathbb{1}^{\\text{any}}_{i,t}"
+    name: any breach flag
+    domain: "\\{0,1\\}"
+    description: >
+      1 if any breach condition holds this period (currently equals
+      over_progress_delay).
+    source: breach
+
+  - code: termination_settlement  # proj_cf["settlement"] / ps key
+    symbol: "S_i"
+    name: termination settlement
+    domain: "S_i \\in \\mathbb{R}"
+    description: >
+      Net cash-flow on project termination:
+      S_i = EV_i * P_i - CF^+_i.
+      Positive → portfolio receives funds; negative → portfolio pays out.
+    source: project_state
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OBSERVATION VECTOR  (7 * N + 2 elements)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+observation_vector:
+  description: >
+    The observation o_t in R^{7N+2} is constructed by concatenating
+    per-project features (indices 0..7i+6 for project i) followed by
+    two portfolio-level scalars.  All values are clipped to [low, high]
+    as defined in the Box observation space.
+  per_project_features:
+    - index: 7i+0
+      code: tolerance_remain  (normalised by tol_max in obs space)
+      symbol: "\\tilde{\\theta}^{\\text{rem}}_{i,t}"
+      description: Tolerance remaining, clipped to [0, theta_i].
+    - index: 7i+1
+      code: catchup_alloc_t / initial_budget
+      symbol: "\\tilde{x}^{\\text{cu}}_{i,t}"
+      description: Current catchup allocation, normalised by B_0, clipped [0,1].
+    - index: 7i+2
+      code: catchup_alloc_next_t / initial_budget
+      symbol: "\\tilde{x}^{\\text{cu}+1}_{i,t}"
+      description: Next-period catchup allocation, normalised by B_0, clipped [0,1].
+    - index: 7i+3
+      code: target_progress_gap
+      symbol: "\\Delta\\tilde{\\psi}^{*}_{i,t}"
+      description: Target progress gap, clipped [0,1].
+    - index: 7i+4
+      code: target_timestep_gap / horizon
+      symbol: "\\Delta\\tilde{\\tau}^{*}_{i,t}"
+      description: Target timestep gap normalised by T, clipped [-1,1].
+    - index: 7i+5
+      code: target_required_alloc / initial_budget
+      symbol: "\\tilde{x}^{*}_{i,t}"
+      description: Target required allocation normalised by B_0, clipped [0,1].
+    - index: 7i+6
+      code: target_npv / max_abs(target_npv)
+      symbol: "\\widetilde{\\text{NPV}}^{*}_{i,t}"
+      description: Target milestone NPV normalised by max absolute NPV in portfolio, clipped [-1,1].
+  portfolio_features:
+    - index: 7N+0
+      code: _last_net_cashflow / initial_budget
+      symbol: "\\widetilde{\\Delta B}_{t}"
+      description: Last period net cash-flow normalised by B_0, clipped [-2,2].
+    - index: 7N+1
+      code: budget / initial_budget
+      symbol: "\\tilde{B}_t"
+      description: Current available budget normalised by B_0, clipped [0,2].
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BASELINE SOLVERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+baseline_solvers:
+  - code: METHOD_NAME = "reach_t"
+    symbol: "\\pi^{\\text{rp}}"
+    name: Reach-Plan solver
+    description: >
+      Deterministic policy that allocates x^rp_{i,t} to each active project,
+      fully closing the gap to PV_i(tau_i+1) each period.
+
+  - code: METHOD_NAME = "catchup_t"
+    symbol: "\\pi^{\\text{cu}}"
+    name: Catchup-T solver
+    description: >
+      Deterministic policy that allocates x^cu_{i,t} to each active project,
+      staying within the progress delay cap while minimising expenditure.
+      Switches to x^rp_{i,t} when tau_i >= D_i.
+
+  - code: METHOD_NAME = "catchup_next_t"
+    symbol: "\\pi^{\\text{cu}+1}"
+    name: Catchup-Next-T solver
+    description: >
+      Risk-averse policy that allocates x^{cu+1}_{i,t}, ensuring the
+      projected delay at t+1 also remains within delta^max_i (one-step
+      lookahead breach prevention).
+
+  - code: METHOD_NAME = "optimal"
+    symbol: "\\pi^{*}"
+    name: Full-information optimal (manual)
+    description: >
+      Hand-crafted allocation computed with full knowledge of stochastic
+      realisations.  Serves as an upper-bound reference; not a tractable
+      solver — implementation of an LP or DP solver is left as future work.
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIG DISTRIBUTION FIELDS  (naming convention)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+config_convention:
+  description: >
+    Every stochastic parameter X in the config dict is specified by four
+    fields: X_dist (distribution family), X_p1, X_p2, X_p3, X_p4.
+    For custom_ordinal, X_p1 holds the explicit sequence.
+  distributions:
+    fixed:           "X = p1  (deterministic)"
+    uniform:         "X ~ Uniform(p1, p2)"
+    normal:          "X ~ Normal(p1, p2)"
+    lognormal:       "X ~ LogNormal(p1, p2)"
+    triangular:      "X ~ Triangular(p1, p3, p2)  [min, mode, max]"
+    beta:            "X ~ Beta(p1, p2)"
+    truncated_normal: "X ~ Normal(p1, p2) truncated to [p3, p4]"
+    custom_ordinal:  "X = p1[proj_idx]  (per-project fixed sequence)"
