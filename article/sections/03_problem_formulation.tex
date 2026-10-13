@@ -2,20 +2,18 @@
 %  SECTION 3 — PROBLEM FORMULATION
 % ============================================================
 
-The formulation proceeds across three levels of increasing generality,
-all sharing the environment primitives defined in this section.
-\textbf{Level~1} (Section~\ref{subsec:level1}) establishes the deterministic
-full-foresight MILP whose optimum is a provable upper bound on any causal
-policy. \textbf{Level~2} (Section~\ref{subsec:level2}) introduces stochastic
-contractor efficiency and characterises the resulting multi-stage stochastic
-program, establishing exponential scenario-tree growth. \textbf{Level~3}
-(Section~\ref{subsec:level3}) reformulates the intractable stochastic program
-as a Constrained Markov Decision Process, yielding the Gymnasium-compatible
-environment on which the PPO agent is trained. The three levels form a coherent
-arc --- Level~1 defines the performance ceiling by fixing the sole uncertain
-primitive ($\eta_{i,t}$) to a known scenario value, Level~2 explains why the
-resulting stochastic program is unreachable by causal policies, Level~3
-provides the tractable path.
+This section develops the formal problem specification in three parts.
+Section~\ref{subsec:problem_statement} and \ref{subsec:environment} define
+the environment primitives shared across all subsequent analysis: project
+dynamics, FIDIC contract cash-flow mechanics, EVM performance signals, and
+the termination mechanic. Section~\ref{subsec:parameters} consolidates all
+parameters. Sections~\ref{subsec:level1} and~\ref{subsec:level2} frame the
+deterministic upper bound (Level~1 MILP) and establish why the stochastic
+extension is computationally intractable (Level~2), motivating the CMDP
+reformulation. Section~\ref{subsec:level3} specifies the CMDP and its
+Gymnasium-compatible implementation --- the primary deliverable of this
+paper. Training a policy on this environment is the natural next step and
+is addressed in subsequent work.
 
 % ------------------------------------------------------------
 \subsection{Problem Statement and Scope}
@@ -367,68 +365,60 @@ At each period $t$, the environment evaluates two conditions for every
 active project $i$. Both are forward-looking trajectory estimates,
 symmetric in structure to one another.
 
-\paragraph{Condition 1 --- Schedule tolerance exhausted.}
-The forecast finish date, computed by linear extrapolation of remaining
-planned duration at the current schedule performance rate, is:
+\paragraph{Condition 1 --- Progress delay breach.}
+At each period $t$ the planned cumulative progress is evaluated from the
+S-curve \eqref{eq:scurve} at project-time $\tau_i = t - s_i$:
 \begin{equation}
-  \hat{f}_{i,t}
-    = t + \frac{D_i^{\mathrm{plan}} - (t - s_i)}{\mathrm{SPI}_{i,t}}.
-  \label{eq:fhat}
+  PV_{i,t} = I_{\tau_i / D_i^{\mathrm{plan}}}(a_i, b_i).
+  \label{eq:planned_progress}
 \end{equation}
-The schedule deviation is $\Delta f_{i,t} = \hat{f}_{i,t} - f_i$.
-Condition~1 activates when the projected delay exceeds the contractual
-schedule tolerance $\Omega_i$ (expressed in periods):
+The progress lag is $\delta_{i,t} = PV_{i,t} - EV_{i,t}$, where
+$EV_{i,t} = P_{i,t}^{\mathrm{actual}}$ is actual progress. Condition~1
+activates when this lag exceeds the contractual progress delay cap:
 \begin{equation}
-  \Delta f_{i,t} \;>\; \Omega_i.
+  \delta_{i,t} \;>\; \delta^{\max}_i,
   \label{eq:term_cond1}
 \end{equation}
+where $\delta^{\max}_i \in [0,1]$ is the project-specific tolerance fixed
+at commitment. This condition is grounded in the FIDIC engineer's authority
+to issue a notice when progress falls materially behind programme
+\citep{FIDIC2017}.
 
-\paragraph{Condition 2 --- Cost overrun trajectory unacceptable.}
-The cost deviation trajectory is defined symmetrically to $\Delta f_{i,t}$:
+\paragraph{Condition 2 --- Hard deadline breach.}
+A hard deadline fires unconditionally at:
 \begin{equation}
-  \Delta AC_{i,t} = \mathrm{EAC}_{i,t} - \mathrm{BAC}_i,
-  \label{eq:delta_ac}
-\end{equation}
-measuring the projected cost overrun in absolute cost units at the current
-performance rate. The Estimate at Completion $\mathrm{EAC}_{i,t}$ defined
-in \eqref{eq:EAC} projects the total project cost at the current cost
-performance rate, by scaling remaining planned work by the inverse of
-$\mathrm{CPI}_{i,t}$ --- directly analogous to the schedule extrapolation
-in \eqref{eq:fhat}. Condition~2 activates when the projected total cost
-exceeds the project-specific maximum tolerable cost overrun:
-\begin{equation}
-  \Delta AC_{i,t} \;>\; \mu_i \cdot \mathrm{BAC}_i,
+  t \;\geq\; f_i + \Delta^{\max}_i,
   \label{eq:term_cond2}
 \end{equation}
-where $\mu_i \geq 0$ is the contractually set maximum cost overrun ratio
-for project $i$, fixed at commitment.
+where $\Delta^{\max}_i \in \mathbb{Z}^+$ is the maximum permitted finish
+overrun in periods. This condition triggers immediate termination regardless
+of the cure-period counter state, reflecting the FIDIC Sub-Clause~8.7
+entitlement to terminate when time for completion has definitively expired
+\citep{FIDIC2017}.
 
 \paragraph{Cure-period counter and termination execution.}
-When both conditions hold simultaneously, the environment decrements the
-project-specific cure-period counter, modelling the FIDIC
-Sub-Clause~15.1 obligation to allow a recovery interval before
-termination may be executed \citep{FIDIC2017, Ndekugri2008}:
+When Condition~1 is active the environment decrements a project-specific
+cure-period counter, modelling the FIDIC Sub-Clause~15.1 obligation to allow
+a recovery interval before termination may be executed
+\citep{FIDIC2017, Ndekugri2008}:
 \begin{equation}
-  \tau_{i,t}^{\mathrm{rem}}
+  \theta^{\mathrm{rem}}_{i,t}
     = \begin{cases}
-        \tau_{i,t-1}^{\mathrm{rem}} - 1
-          & \text{if \eqref{eq:term_cond1} and \eqref{eq:term_cond2}
-                  both hold,} \\
-        \tau_i^{\mathrm{tol}}
-          & \text{if either condition lapses.}
+        \theta^{\mathrm{rem}}_{i,t-1} - 1
+          & \text{if \eqref{eq:term_cond1} holds,} \\
+        \theta_i
+          & \text{if \eqref{eq:term_cond1} lapses.}
       \end{cases}
   \label{eq:counter}
 \end{equation}
-The counter initialises at
-$\tau_{i,s_i}^{\mathrm{rem}} = \tau_i^{\mathrm{tol}}$, where
-$\tau_i^{\mathrm{tol}} \in \mathbb{Z}^+$ is the project-specific
-tolerance, fixed at commitment. Termination executes at the period
-immediately following
-$t_i^{\mathrm{term}} = \min\{t : \tau_{i,t}^{\mathrm{rem}} = 0\}$.
-The counter is part of the observable portfolio state; the agent cannot
-override its dynamics but influences both conditions indirectly through
-allocation decisions that drive $\mathrm{SPI}_{i,t}$ and
-$\mathrm{CPI}_{i,t}$.
+The counter initialises at $\theta^{\mathrm{rem}}_{i,s_i} = \theta_i$,
+where $\theta_i \in \mathbb{Z}^+$ is the project-specific tolerance fixed
+at commitment. Soft termination executes when the counter reaches zero:
+$t_i^{\mathrm{term}} = \min\{t : \theta^{\mathrm{rem}}_{i,t} = 0\}$.
+Hard termination \eqref{eq:term_cond2} overrides the counter and executes
+immediately. The counter is part of the observable portfolio state; the
+agent influences it indirectly through allocations that drive progress
+relative to $PV_{i,t}$.
 
 Upon termination at $t_i^{\mathrm{term}}$, the net settlement payment
 is:
@@ -580,31 +570,67 @@ in sensitivity analysis.
 \label{subsubsec:objective}
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-The portfolio state at period $t$ is:
+The observation vector returned to the policy at period $t$ is a
+flattened concatenation of seven per-project signals followed by two
+portfolio-level scalars, giving dimension $7n + 2$:
 \begin{equation}
-  S_t = \Bigl(
+  o_t = \Bigl(
     \bigl\{
-      P_{i,t}^{\mathrm{actual}},\;
-      \mathrm{ACWP}_{i,t},\;
-      \mathrm{SPI}_{i,t},\;
-      \mathrm{CPI}_{i,t},\;
-      \mathrm{TCPI}_{i,t},\;
-      \mathrm{EAC}_{i,t},\;
-      \Delta f_{i,t},\;
-      \mathrm{status}_{i,t},\;
-      \tau_{i,t}^{\mathrm{rem}}
+      \tilde{\theta}^{\mathrm{rem}}_{i,t},\;
+      \tilde{x}^{\mathrm{cu}}_{i,t},\;
+      \tilde{x}^{\mathrm{cu}+1}_{i,t},\;
+      \Delta\tilde{\psi}^{*}_{i,t},\;
+      \Delta\tilde{\tau}^{*}_{i,t},\;
+      \tilde{x}^{*}_{i,t},\;
+      \widetilde{\mathrm{NPV}}^{*}_{i,t}
     \bigr\}_{i \in \mathcal{P}},\;
-    B_t
+    \widetilde{\Delta B}_{t},\;
+    \tilde{B}_t
   \Bigr),
   \label{eq:state}
 \end{equation}
-where $\mathrm{status}_{i,t} \in \{\texttt{active},\,
-\texttt{completed},\, \texttt{terminated}\}$. This gives a state
-dimension of $9n + 1$ per period.. All components are observable.
-One primitive is unobservable at decision time: $\eta_{i,t}$, realised
-only after allocation $x_{i,t}$ is committed. It is not part of the
-state vector; it is an environment-internal draw that the policy must
-act without knowing in advance.
+where all components are normalised to $[-1,1]$ or $[0,1]$ as detailed
+in Table~\ref{tab:obs_vector}. The per-project signals encode: the
+remaining cure-period tolerance $\tilde{\theta}^{\mathrm{rem}}_{i,t}$;
+the current and next-period catchup allocations
+$\tilde{x}^{\mathrm{cu}}_{i,t}$, $\tilde{x}^{\mathrm{cu}+1}_{i,t}$
+(minimum spend to avoid a breach this period and next);
+the target milestone progress gap $\Delta\tilde{\psi}^{*}_{i,t}$,
+timestep gap $\Delta\tilde{\tau}^{*}_{i,t}$, required allocation
+$\tilde{x}^{*}_{i,t}$, and discounted NPV
+$\widetilde{\mathrm{NPV}}^{*}_{i,t}$ for the next uncertified milestone.
+The portfolio-level scalars are the last-period net cash-flow
+$\widetilde{\Delta B}_{t}$ and the available budget $\tilde{B}_t$,
+both normalised by $B_0$. All components are observable at decision
+time. The sole unobservable primitive is $\eta_{i,t}$, realised only
+after $x_{i,t}$ is committed; it drives the stochastic transition but
+is not part of the observation.
+
+\begin{table}[htbp]
+  \centering\small
+  \renewcommand{\arraystretch}{1.3}
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{clcl}
+    \toprule
+    \textbf{Index} & \textbf{Symbol} & \textbf{Clip} & \textbf{Description} \\
+    \midrule
+    $7i$   & $\tilde{\theta}^{\mathrm{rem}}_{i,t}$ & $[0,\theta_i]$ & Tolerance remaining \\
+    $7i+1$ & $\tilde{x}^{\mathrm{cu}}_{i,t}$       & $[0,1]$ & Catchup alloc.\ (current), normalised by $B_0$ \\
+    $7i+2$ & $\tilde{x}^{\mathrm{cu}+1}_{i,t}$     & $[0,1]$ & Catchup alloc.\ (next period), normalised by $B_0$ \\
+    $7i+3$ & $\Delta\tilde{\psi}^{*}_{i,t}$         & $[0,1]$ & Target milestone progress gap \\
+    $7i+4$ & $\Delta\tilde{\tau}^{*}_{i,t}$         & $[-1,1]$ & Target milestone timestep gap, normalised by $T$ \\
+    $7i+5$ & $\tilde{x}^{*}_{i,t}$                  & $[0,1]$ & Target required allocation, normalised by $B_0$ \\
+    $7i+6$ & $\widetilde{\mathrm{NPV}}^{*}_{i,t}$   & $[-1,1]$ & Target milestone NPV, normalised by $\max_i|\mathrm{NPV}^*_{i,t}|$ \\
+    \midrule
+    $7n$   & $\widetilde{\Delta B}_{t}$              & $[-2,2]$ & Last-period net cash-flow, normalised by $B_0$ \\
+    $7n+1$ & $\tilde{B}_t$                           & $[0,2]$  & Available budget, normalised by $B_0$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Observation vector components. Per-project block $i$ occupies
+    indices $7i$ through $7i+6$. All normalisation denominators use
+    $B_0 = \kappa \sum_i \mathrm{BAC}_i$.}
+  \label{tab:obs_vector}
+\end{table}
 
 The decision-maker maximises discounted net cash flow over the horizon:
 \begin{equation}
@@ -1392,130 +1418,78 @@ received in the certification period; no payment delay distribution
 is sampled.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-\subsubsection{PPO Agent and Training Protocol}
+\subsubsection{Outlook: Policy Training}
 \label{subsubsec:l3_ppo}
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-\paragraph{Algorithm selection.}
-Proximal Policy Optimisation \citep{Schulman2017} is selected as the
-solution algorithm for three reasons. First, its clipped surrogate
-objective provides stable updates in continuous action spaces without
-the step-size sensitivity of vanilla policy gradient methods. Second,
-its on-policy sample collection is compatible with the non-stationary
-episode structure of the environment, in which the active project set
-$\mathcal{P}_t^{\mathrm{active}}$ changes endogenously across
-periods. Third, PPO has demonstrated consistent performance in
-operations management domains with similar state-action structure
-\citep{Giannoccaro2002, Peng2021}.
-
-\paragraph{PPO surrogate objective.}
-At each training iteration, PPO collects a batch of trajectories
-$\mathcal{D} = \{\tau_k\}_{k=1}^{N}$ under the current policy
-$\pi_\theta$ and optimises the clipped surrogate:
-\begin{equation}
-  \mathcal{L}^{\mathrm{CLIP}}(\theta)
-    = \mathbb{E}_{\mathcal{D}}\!\left[
-        \min\!\left(
-          \frac{\pi_\theta(a_t \mid s_t)}
-               {\pi_{\theta_{\mathrm{old}}}(a_t \mid s_t)}
-          \hat{A}_t,\;\;
-          \mathrm{clip}\!\left(
-            \frac{\pi_\theta(a_t \mid s_t)}
-                 {\pi_{\theta_{\mathrm{old}}}(a_t \mid s_t)},\,
-            1-\epsilon,\, 1+\epsilon
-          \right)\hat{A}_t
-        \right)
-      \right],
-  \label{eq:ppo_clip}
-\end{equation}
-where $\hat{A}_t$ is the Generalised Advantage Estimate
-\citep{Schulman2016} computed from the value function baseline
-$V_\phi(S_t)$ trained jointly with the policy, and $\epsilon$ is the
-clipping threshold. The value function shares the lower network layers
-with the policy (actor-critic architecture), with separate output
-heads for $\pi_\theta$ and $V_\phi$.
-
-\paragraph{Policy architecture.}
-The policy network maps the observation vector $S_t \in \mathbb{R}^{8n+1}$
-to a raw allocation vector $\tilde{\mathbf{x}}_t \in \mathbb{R}^n$
-through a fully connected network with layer normalisation. The raw
-output is passed through the projection \eqref{eq:projection} before
-being applied to the environment, ensuring constraint satisfaction
-without a penalty term in \eqref{eq:ppo_clip}. The output
-distribution is a diagonal Gaussian with state-dependent mean
-$\mu_\theta(S_t)$ and learned log-standard-deviation
-$\log\sigma_\theta$, consistent with standard continuous-action PPO
-implementations.
-
-\paragraph{Domain randomisation.}
-To ensure the learned policy $\hat{\pi}$ generalises across project
-types, contract structures, and market conditions rather than
-overfitting to a single parameterisation, all parameters in
-Table~\ref{tab:params} are randomised within calibrated ranges at the
-start of each training episode \citep{Tobin2017}. Formally, at each
-episode reset, a parameter vector
-$\boldsymbol{\xi} \sim \mathcal{U}(\boldsymbol{\Xi})$ is sampled from
-a calibrated uniform distribution over the parameter space
-$\boldsymbol{\Xi}$, and the environment is initialised with
-$\boldsymbol{\xi}$. The trained policy $\hat{\pi}$ implicitly
-conditions on the observable consequences of $\boldsymbol{\xi}$ (as
-reflected in $S_t$) rather than on $\boldsymbol{\xi}$ directly,
-producing a policy that is robust to parameter uncertainty without
-requiring an explicit model of the parameter distribution at
-deployment \citep{Tobin2017}.
-
-\paragraph{Validation protocol.}
-Walk-forward validation \citep{Cerqueira2020} is used as the empirical
-evaluation protocol to guard against data leakage given the
-time-series structure of project cash-flow data. The training set
-consists of episodes whose parameter draws fall within the calibrated
-historical range; the test set consists of held-out parameter
-configurations drawn from the tails of $\boldsymbol{\Xi}$,
-representing out-of-distribution contract and market conditions. All
-performance metrics in Section~\ref{sec:experiments} are reported on
-the held-out test set.
+The CMDP $\mathcal{M}$ is designed to be solved by any policy-gradient
+algorithm operating on the standard \texttt{reset()} / \texttt{step()}
+interface. Proximal Policy Optimisation \citep{Schulman2017} is the
+natural candidate: its clipped surrogate objective provides stable
+updates in continuous action spaces, its on-policy sample collection is
+compatible with the non-stationary episode structure of $\mathcal{M}$
+in which $\mathcal{P}_t^{\mathrm{active}}$ changes endogenously, and
+it has demonstrated consistent performance in operations management
+domains with similar state-action structure \citep{Giannoccaro2002,
+Peng2021}. The observation vector \eqref{eq:state} maps directly to a
+fully connected actor-critic network; the projection
+\eqref{eq:projection} enforces feasibility without a penalty term in
+the surrogate objective. Domain randomisation \citep{Tobin2017} over
+the configuration space can be used to train a policy that generalises
+across contract types and portfolio sizes without retraining.
+Training, hyperparameter selection, and evaluation against the Level~1
+upper bound are addressed in subsequent work.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-\subsubsection{Evaluation Baselines}
+\subsubsection{Greedy Baseline Policies}
 \label{subsubsec:l3_baselines}
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-The trained agent $\hat{\pi}$ is evaluated against three baselines
-that span the tractability-optimality spectrum established by the
-three-level arc.
+Three deterministic greedy policies are defined over the observation
+vector \eqref{eq:state} to establish a performance baseline and
+quantify the optimality gap. Each policy reads directly from the
+catchup and reach-plan fields embedded in the observation.
 
-\paragraph{Baseline 1 --- Level~1 MILP oracle.}
-The MILP \eqref{eq:L1} is solved on each test episode's realised
-efficiency trajectory $(\eta_{i,t}(\omega))_{i,t}$ using a
-commercial solver. Its objective value $Z^*_{\mathrm{L1}}(\omega)$
-is the per-episode upper bound from Proposition~\ref{prop:upper_bound}.
-The gap $Z^*_{\mathrm{L1}} - J(\hat{\pi})$ is the primary performance
-metric.
-
-\paragraph{Baseline 2 --- Two-stage stochastic program.}
-A two-stage approximation of \eqref{eq:L2} is solved by fixing
-first-stage decisions $\mathbf{x}_1$ and optimising over the
-expected recourse across $N_s$ sampled scenarios for subsequent
-stages \citep{Birge2011}. This represents the best tractable exact
-method available within the stochastic programming tradition and
-quantifies the value of the full sequential policy over a rolling
-two-stage approximation.
-
-\paragraph{Baseline 3 --- Proportional heuristic.}
-At each period $t$, the available balance $B_t$ is distributed across
-active projects proportionally to their remaining planned expenditure
-$\mathrm{BAC}_i(1 - P_{i,t}^{\mathrm{actual}})$:
+\paragraph{Reach-Plan ($\pi^{\mathrm{rp}}$).}
+At each period, allocate exactly enough to bring every active project
+to its S-curve planned progress:
 \begin{equation}
-  x_{i,t}^{\mathrm{prop}}
-    = B_t \cdot
-      \frac{\mathrm{BAC}_i(1 - P_{i,t}^{\mathrm{actual}})}
-           {\displaystyle\sum_{j \in \mathcal{P}_t^{\mathrm{active}}}
-            \mathrm{BAC}_j(1 - P_{j,t}^{\mathrm{actual}})}.
-  \label{eq:heuristic}
+  x_{i,t}^{\mathrm{rp}}
+    = x^{\mathrm{rp}}_{i,t}
+    = \max\bigl(0,\; PV_i(\tau_i + 1) - EV_{i,t}\bigr) \cdot \mathrm{BAC}_i.
+  \label{eq:reach_plan}
 \end{equation}
-This rule is parameter-free and represents current practice in
-portfolio management information systems: budget is distributed
-in proportion to remaining work without regard to contract
-profitability, schedule urgency, or termination risk. The gap between
-the PPO agent and this baseline quantifies the practical value of the
-learned policy over the incumbent approach.
+This policy closes the progress gap entirely each period but does not
+account for milestone timing, contract profitability, or budget scarcity.
+
+\paragraph{Catchup-T ($\pi^{\mathrm{cu}}$).}
+Allocate only enough to stay within the contractual progress delay cap
+$\delta^{\max}_i$ this period:
+\begin{equation}
+  x_{i,t}^{\mathrm{cu}}
+    = \max\bigl(0,\; PV_i(\tau_i + 1) - \delta^{\max}_i - EV_{i,t}
+      \bigr) \cdot \mathrm{BAC}_i.
+  \label{eq:catchup_t}
+\end{equation}
+This is the minimum spend that avoids a breach flag this period.
+Beyond $\tau_i \geq D_i^{\mathrm{plan}}$ the policy switches to
+$x^{\mathrm{rp}}_{i,t}$ to prevent hard deadline termination.
+
+\paragraph{Catchup-Next-T ($\pi^{\mathrm{cu}+1}$).}
+The most risk-averse policy: pre-emptively allocate enough this period
+so that the projected delay \emph{next} period also remains within
+$\delta^{\max}_i$:
+\begin{equation}
+  x_{i,t}^{\mathrm{cu}+1}
+    = \max\bigl(0,\; PV_i(\tau_i + 2) - \delta^{\max}_i - EV_{i,t}
+      \bigr) \cdot \mathrm{BAC}_i.
+  \label{eq:catchup_next_t}
+\end{equation}
+This one-period lookahead avoids both current and next-period breaches
+at the cost of higher early expenditure and correspondingly lower
+discounted returns.
+
+All three policies are normalised by the available budget $B_t$ before
+application, using the same projection \eqref{eq:projection} as the
+learned agent. Their empirical performance across four benchmark
+configurations is reported in Section~\ref{sec:experiments}.
