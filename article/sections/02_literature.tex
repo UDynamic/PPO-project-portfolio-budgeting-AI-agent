@@ -267,40 +267,37 @@ it involves performance signals, contractual obligations, and timing all at
 once.
 
 The present model integrates all three dimensions into a single environment
-mechanic. The cure period counter $\tau_{i,t}^{\mathrm{rem}}$ decrements by
-exactly one whenever any of three breach conditions is active: zero allocation
-to an active project; simultaneous breach of the contractual schedule tolerance
-$\Omega_i$ by the forecast finish deviation and of the cost cap
-$(1+\mu_i)\cdot\mathrm{BAC}_i$ by $\mathrm{EAC}_{i,t}$; or plan deviation
-exceeding a contractual threshold, grounded in the FIDIC engineer's authority
-to issue a notice when progress falls materially behind programme
-\citep{FIDIC2017}. The schedule--cost condition is forward-looking and
-symmetric in structure: remaining planned work divided by current performance
-rate, projected forward to completion \citep{Fleming2010, christensen1993est}.
-Multiple simultaneous breaches decrement the counter by exactly one. The
-counter resets to $\tau_i^{\mathrm{tol}}$ only when all three conditions are
-fully clear; partial resolution does not reset it. Termination executes when
-the counter reaches zero, or unconditionally at the hard deadline
-$f_i + \Omega_i$ if the project remains active. This mechanic is grounded
+mechanic governed by two conditions. A \emph{progress delay breach} fires
+whenever the lag between planned and actual progress exceeds the contractual
+tolerance $\delta^{\max}_i$, i.e.\ $\delta_{i,t} = PV_i(\tau_i) - EV_{i,t} >
+\delta^{\max}_i$, grounded in the FIDIC engineer's authority to issue a notice
+when progress falls materially behind programme \citep{FIDIC2017}. A
+\emph{hard deadline breach} fires unconditionally at episode period $t \geq
+f_i + \Delta^{\max}_i$, where $\Delta^{\max}_i$ is the contractually permitted
+finish overrun, and triggers immediate termination regardless of the
+cure-period counter state. When a progress delay breach is active, the
+cure-period counter $\theta^{\mathrm{rem}}_{i,t}$ decrements by one; it
+resets to $\theta_i$ only when no breach is present. Termination executes when
+the counter reaches zero. This mechanic is grounded
 simultaneously in FIDIC contract law \citep{FIDIC2017, Ndekugri2008}, the real
 options framing of the abandonment threshold \citep{Dixit1994,
 Huchzermeier2001}, the EVM literature's validation of EAC as a stable
 forward cost signal \citep{christensen1993est, Lipke2003}, and the
 escalation-of-commitment literature's evidence that observable performance
 signals must be sustained --- not transient --- before termination is
-justified \citep{Staw1987}. The tolerance counter is part of the observable portfolio state, giving the
-RL agent an anticipatory signal that reflects contractual reality without
-granting it discretionary control over the termination outcome. From the
-portfolio manager's perspective, this anticipatory signal serves a dual
-function --- it flags projects approaching contractual failure while also
-signalling the point at which continued allocation yields diminishing returns
-relative to the settlement value of work already delivered. A rational manager
-reading a counter approaching zero in a high-opportunity-cost environment
-would recognise that the real value of future milestone payments is eroding
-while the settlement value of work in place is fixed in nominal terms ---
-creating a natural reallocation incentive that the model captures through the
-interaction of $\gamma$ and $R_i^{\mathrm{term}}$ without requiring explicit
-inflation modelling \citep{Dixit1994, FIDIC2017}.
+justified \citep{Staw1987}. The counter $\theta^{\mathrm{rem}}_{i,t}$ is part of the observable portfolio
+state, giving the RL agent an anticipatory signal that reflects contractual
+reality without granting it discretionary control over the termination outcome.
+From the portfolio manager's perspective, this signal serves a dual function:
+it flags projects approaching contractual failure while also marking the point
+at which continued allocation yields diminishing returns relative to the
+settlement value of work already delivered. A rational manager reading a
+counter approaching zero in a high-opportunity-cost environment would recognise
+that the real value of future milestone payments is eroding while the
+settlement value of work in place is fixed in nominal terms --- creating a
+natural reallocation incentive that the model captures through the interaction
+of $\gamma$ and $S_i = EV_{i,t} \cdot P_i - \mathrm{CF}^{+}_{i}$ without
+requiring explicit inflation modelling \citep{Dixit1994, FIDIC2017}.
 
 
 % ------------------------------------------------------------
@@ -377,16 +374,16 @@ Figure~\ref{fig:maturity} situates this progression as three sequential steps.
 reviewed above: contract mechanics, EVM performance signals, S-curve
 expenditure profiles, and portfolio selection models collectively provide the
 inputs and boundary conditions that any operational governance model requires.
-\textbf{Step~2} --- tractable problem formulation --- is the gap. Bridging it
-requires a relaxation hierarchy: the governance problem must first be stated
-precisely under idealised assumptions (a deterministic MILP establishing a
-performance ceiling), then shown to be intractable under realistic stochastic
-assumptions (exponential scenario-tree growth), and finally reformulated into a
-tractable approximation (a CMDP solved by a policy-gradient agent). No existing
-work completes this hierarchy at the portfolio level.
+\textbf{Step~2} --- tractable problem formulation --- is the gap this paper
+closes. The contribution is a verified, configurable CMDP environment that
+encodes the full FIDIC cash-flow cycle and a two-condition termination mechanic,
+released as a Gymnasium-compatible package with a complete audit ledger.
+Baseline greedy heuristics are benchmarked against a full-information optimum,
+producing a quantified optimality gap that grows monotonically with portfolio
+complexity and establishes the performance target for future learned agents.
 \textbf{Step~3} --- validated deployment within incumbent project management
 information systems such as Oracle Primavera~P6 --- remains future work,
-contingent on the tractable formulation that Step~2 must first provide.
+contingent on the trained agents that Step~2 now makes possible.
 
 \begin{figure}[htbp]
   \centering
@@ -411,7 +408,7 @@ contingent on the tractable formulation that Step~2 must first provide.
   
     \node[sub, fill=blue!20, draw=blue!60,
           below=0.45cm of L2] (L3)
-      {\textbf{L3: CMDP + PPO}\\{\scriptsize \textbf{this work}}};
+      {\textbf{CMDP Environment}\\{\scriptsize \textbf{this work}}};
   
     \draw[subarr] (L1.south) -- (L2.north);
     \draw[subarr] (L2.south) -- (L3.north);
