@@ -1,20 +1,16 @@
 """
 infograph.py
 ============
-Renders a self-contained infographic for one episode's problem definition
-and its solution from the standard CSV exports.
+A4-portrait infographic for one episode's optimal portfolio-budgeting solution.
 
 Usage
 -----
-    python infograph.py                        # uses CSVs next to this file
-    python infograph.py --data path/to/csvs/  # explicit folder
-    python infograph.py --out  my_plot.png
+    python infograph.py
+    python infograph.py --data ground_truth/TC-3XMAIF-R/optimal/
+    python infograph.py --data ... --out my_plot.png
 
-Layout (3 rows)
----------------
-  Row 1 │ Config + Project Profile table  │  Milestone Profile table
-  Row 2 │ Episode timeline & cash-flow diagram (full width)
-  Row 3 │ Reward computation table         │  Timeline legend
+Default output: ground_truth/infograph.png  (next to gap_plot.png)
+Canvas: 210 × 297 mm @ 150 dpi
 """
 
 from __future__ import annotations
@@ -23,186 +19,280 @@ import argparse
 from pathlib import Path
 from collections import defaultdict
 
+import matplotlib as mpl
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 import pandas as pd
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.patches import FancyArrowPatch
 
-# ── palette ───────────────────────────────────────────────────────────────────
-BG          = "#f8f9fb"
-SURFACE     = "#f1efe8"
-BORDER      = "#c8c6c0"
-TEXT_PRI    = "#0b0b0b"
-TEXT_SEC    = "#52514e"
-TEXT_MUT    = "#898781"
+# ═══════════════════════════════════════════════════════════════════════════════
+#  TOKENS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-C_PURPLE_BG = "#eeedfe";  C_PURPLE_BD = "#534ab7";  C_PURPLE_TX = "#26215c"
-C_TEAL_BG   = "#e1f5ee";  C_TEAL_BD   = "#0f6e56";  C_TEAL_TX   = "#04342c"
-C_BLUE_BG   = "#e6f1fb";  C_BLUE_BD   = "#185fa5";  C_BLUE_TX   = "#0c447c"
+BG     = "#F9F8F5"
+PANEL  = "#EFEDE5"
+RULE   = "#D4D0C6"
+TH     = "#17161A"   # text heavy
+TB     = "#383530"   # text body
+TM     = "#7A766C"   # text muted
 
-PAY_COLORS  = ["#2a78d6", "#1baf7a", "#eda100", "#e34948"]   # j=0,1,2,3
-ALLOC_COLOR = "#8338ec"
-PROJECT_COLORS = [C_PURPLE_BD, "#0f6e56", "#993c1d"]  # i=0,1,2
+PC   = ["#3A5A82", "#2E7D52", "#944820"]   # project colours
+PCL  = [c + "24" for c in PC]             # translucent fills
+
+MC   = ["#1E5FB5", "#17966A", "#CC8A00", "#B52020"]   # j=0,1,2,3
+
+AC   = "#6B38A0"   # allocation / outflow
+
+# Section accent tuples: (border, header-bg)
+SA = {
+    "pro": ("#453890", "#ECEAF8"),
+    "mil": ("#1A6448", "#E4F2EB"),
+    "tl":  ("#1A4878", "#E5EFF8"),
+    "rew": ("#7A3818", "#F5EAE0"),
+    "leg": ("#3A3630", "#EEECEA"),
+}
 
 FONT = "DejaVu Sans"
+A4W, A4H, DPI = 8.27, 11.69, 150
 
-# ── helpers ───────────────────────────────────────────────────────────────────
-def _fmt(v):
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PRIMITIVES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _fmt(v, dec=2):
     if isinstance(v, float):
-        return f"{v:.2f}" if v != int(v) else str(int(v))
+        return str(int(v)) if v == int(v) else f"{v:.{dec}f}"
     return str(v)
 
-def _table(ax, rows, col_widths, row_height=0.13, header=True,
-           header_bg=SURFACE, cell_bg=BG, border=BORDER,
-           header_tx=TEXT_PRI, cell_tx=TEXT_SEC):
-    """Draw a simple table inside ax (axis units 0-1 x 0-1)."""
-    ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
-    n_rows = len(rows)
-    total_h = n_rows * row_height
-    y0 = 1.0                                # top of table
 
-    for r_idx, row in enumerate(rows):
-        y_top = y0 - r_idx * row_height
-        y_bot = y_top - row_height
-        is_header = (r_idx == 0 and header)
-        bg = header_bg if is_header else (cell_bg if r_idx % 2 == 0 else "#f5f3ec")
-        tx = header_tx if is_header else cell_tx
-        fw = "bold" if is_header else "normal"
+def _sf(v: float, dec=2) -> str:
+    return "—" if v == 0.0 else f"{v:+.{dec}f}"
+
+
+def _hdr_strip(ax, title, sa_key, y=1.0, h=0.038, fs=6.6):
+    """Coloured section-header strip, axes-fraction coords."""
+    brd, bg = SA[sa_key]
+    ax.add_patch(mpatches.Rectangle(
+        (0, y - h), 1, h, lw=0, fc=bg,
+        transform=ax.transAxes, clip_on=False, zorder=8))
+    ax.add_patch(mpatches.Rectangle(
+        (0, y - h), 0.005, h, lw=0, fc=brd,
+        transform=ax.transAxes, clip_on=False, zorder=9))
+    ax.text(0.013, y - h / 2, title,
+            ha="left", va="center", fontsize=fs,
+            fontfamily=FONT, fontweight="bold", color=brd,
+            transform=ax.transAxes, clip_on=False, zorder=10)
+    return y - h   # content starts here
+
+
+def _table(ax, rows, col_w, row_h, sa_key,
+           fs=5.9, align=None, y0=1.0, pad_top=0.010):
+    """
+    Draw table from y0 downward.  Returns y at bottom of last row.
+    rows[0] is the header.  col_w must sum ≤ 1.
+    """
+    brd, hbg = SA[sa_key]
+    y0 -= pad_top
+    if align is None:
+        align = ["center"] * len(col_w)
+
+    for ri, row in enumerate(rows):
+        yt = y0 - ri * row_h
+        yb = yt - row_h
+        is_hdr = ri == 0
+        face = hbg if is_hdr else (BG if ri % 2 == 1 else PANEL)
+        fc   = brd if is_hdr else TB
+        fw   = "bold" if is_hdr else "normal"
+
+        ax.add_patch(mpatches.Rectangle(
+            (0, yb), 1, row_h, lw=0, fc=face,
+            transform=ax.transAxes, clip_on=True, zorder=1))
+        ax.plot([0, 1], [yb, yb], color=RULE, lw=0.3, zorder=2,
+                transform=ax.transAxes, clip_on=True)
 
         x = 0.0
-        for c_idx, (cell, cw) in enumerate(zip(row, col_widths)):
-            rect = mpatches.FancyBboxPatch(
-                (x, y_bot), cw, row_height,
-                boxstyle="square,pad=0", linewidth=0.5,
-                edgecolor=border, facecolor=bg
-            )
-            ax.add_patch(rect)
-            ax.text(x + cw / 2, (y_top + y_bot) / 2, str(cell),
-                    ha="center", va="center", fontsize=7,
-                    fontfamily=FONT, color=tx, fontweight=fw,
-                    clip_on=True)
+        for ci, (cell, cw, ha) in enumerate(zip(row, col_w, align)):
+            if ci:
+                ax.plot([x, x], [yb, yt], color=RULE, lw=0.25, zorder=2,
+                        transform=ax.transAxes, clip_on=True)
+            pad = 0.006
+            tx = (x + pad if ha == "left"
+                  else x + cw - pad if ha == "right"
+                  else x + cw / 2)
+            ax.text(tx, (yt + yb) / 2, str(cell),
+                    ha=ha, va="center", fontsize=fs,
+                    fontfamily=FONT, color=fc, fontweight=fw,
+                    transform=ax.transAxes, clip_on=True, zorder=3)
             x += cw
 
-# ── main ──────────────────────────────────────────────────────────────────────
-def build(data_dir: Path, out: Path):
+    nr = len(rows)
+    h_tot = nr * row_h + pad_top
+    ax.add_patch(mpatches.FancyBboxPatch(
+        (0, y0 - nr * row_h), 1, h_tot,
+        boxstyle="square,pad=0", lw=0.7,
+        ec=brd + "55", fc="none",
+        transform=ax.transAxes, clip_on=True, zorder=4))
+    return y0 - nr * row_h
 
-    # ── load CSVs ─────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  BUILD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def build(data_dir: Path, out: Path) -> None:
+
     pp  = pd.read_csv(data_dir / "projects_profile.csv")
     mp  = pd.read_csv(data_dir / "milestones_profile.csv")
     ms  = pd.read_csv(data_dir / "milestones_status.csv")
     ps  = pd.read_csv(data_dir / "projects_status.csv")
     pf  = pd.read_csv(data_dir / "portfolios.csv")
 
-    episode_id = pp["episode_id"].iloc[0]
-    config_id  = pp["config_id"].iloc[0]
-    method     = ms["method"].iloc[0]
-    n_proj     = len(pp)
-    horizon    = int(pf["t_episode"].max())
-    gamma      = 0.95   # read from env config if available; fallback
-    budget     = pf["budget_available"].iloc[0]
+    cfg_id  = pp["config_id"].iloc[0]
+    ep_id   = pp["episode_id"].iloc[0]
+    method  = ms["method"].iloc[0]
+    n_proj  = len(pp)
+    pf_s    = pf.sort_values("t_episode").reset_index(drop=True)
+    horizon = int(pf_s["t_episode"].max())
+    gamma   = 0.95
+    bud0    = pf_s["budget_available"].iloc[0]
 
-    # efficiency per project: first active row per project
-    eff_map = {}
-    for i, grp in ps[ps["status"] == "active"].groupby("i"):
-        eff_map[i] = grp.sort_values("t_episode")["efficiency"].tolist()
+    eff_map: dict[int, list] = {}
+    for iv, grp in ps[ps["status"] == "active"].groupby("i"):
+        eff_map[int(iv)] = grp.sort_values("t_episode")["efficiency"].tolist()
 
-    # allocations per (i, t_episode)
-    alloc_map = {}
-    for _, row in ps.iterrows():
-        alloc_map[(int(row["i"]), int(row["t_episode"]))] = float(row["allocation_action"])
+    alloc_map: dict[tuple, float] = {
+        (int(r["i"]), int(r["t_episode"])): float(r["allocation_action"])
+        for _, r in ps.iterrows()
+    }
+    proj_ncf: dict[tuple, float] = {
+        (int(r["i"]), int(r["t_episode"])): float(r["net_cashflow"])
+        for _, r in ps.iterrows()
+    }
 
-    # certified payments per t_episode
-    cert = defaultdict(list)  # t -> list of (i, j, net_payment)
-    for _, row in ms.iterrows():
-        cert[int(row["certified_t"])].append(
-            (int(row["i"]), int(row["j"]), float(row["net_payment"]))
-        )
+    cert: dict[int, list] = defaultdict(list)
+    for _, r in ms.sort_values(["certified_t", "j", "i"]).iterrows():
+        cert[int(r["certified_t"])].append(
+            (int(r["i"]), int(r["j"]), float(r["net_payment"])))
 
-    # portfolio reward timeline
-    pf_sorted = pf.sort_values("t_episode").reset_index(drop=True)
-    cum_reward = pf_sorted["reward"].cumsum().iloc[-1]
-
-    # ── figure layout ─────────────────────────────────────────────────────────
-    fig = plt.figure(figsize=(18, 14), facecolor=BG)
-    fig.patch.set_facecolor(BG)
-
-    # GridSpec: row0=tables, row1=timeline, row2=reward+legend
-    gs = fig.add_gridspec(
-        3, 2,
-        height_ratios=[1.0, 1.6, 0.9],
-        width_ratios=[1, 1],
-        hspace=0.38, wspace=0.06,
-        left=0.03, right=0.97, top=0.94, bottom=0.04
+    adv_t0 = sum(
+        float(mp[(mp["i"] == i) & (mp["j"] == 0)]["net_payment"].iloc[0])
+        for i in range(n_proj)
+        if int(pp[pp["i"] == i]["planned_start"].iloc[0]) == 0
     )
 
-    ax_prof  = fig.add_subplot(gs[0, 0])   # config + project profile
-    ax_miles = fig.add_subplot(gs[0, 1])   # milestone profile
-    ax_tl    = fig.add_subplot(gs[1, :])   # timeline (full width)
-    ax_rew   = fig.add_subplot(gs[2, 0])   # reward table
-    ax_leg   = fig.add_subplot(gs[2, 1])   # legend
+    # ── figure ────────────────────────────────────────────────────────────────
+    fig = plt.figure(figsize=(A4W, A4H), facecolor=BG)
 
-    for ax in [ax_prof, ax_miles, ax_tl, ax_rew, ax_leg]:
+    # Row heights (proportions): title | tables | timeline | reward+legend
+    gs = gridspec.GridSpec(
+        4, 2,
+        height_ratios=[0.036, 0.235, 0.430, 0.299],
+        width_ratios=[1, 1],
+        hspace=0.0, wspace=0.04,
+        left=0.032, right=0.968,
+        top=0.978,  bottom=0.014,
+    )
+
+    ax_ttl  = fig.add_subplot(gs[0, :])
+    ax_pro  = fig.add_subplot(gs[1, 0])
+    ax_mil  = fig.add_subplot(gs[1, 1])
+    ax_tl   = fig.add_subplot(gs[2, :])
+    ax_rew  = fig.add_subplot(gs[3, 0])
+    ax_leg  = fig.add_subplot(gs[3, 1])
+
+    for ax in (ax_ttl, ax_pro, ax_mil, ax_tl, ax_rew, ax_leg):
         ax.set_facecolor(BG)
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+        ax.set_xticks([]); ax.set_yticks([])
 
-    # ── title ─────────────────────────────────────────────────────────────────
-    fig.text(0.5, 0.975, f"{episode_id}   ·   solver: {method}",
-             ha="center", va="top", fontsize=13, fontweight="bold",
-             fontfamily=FONT, color=TEXT_PRI)
+    # thin rule under title strip
+    for ax in (ax_pro, ax_mil):
+        ax.add_patch(mpatches.Rectangle(
+            (0, 0.997), 1, 0.003, lw=0, fc=RULE,
+            transform=ax.transAxes, clip_on=False, zorder=0))
 
     # ══════════════════════════════════════════════════════════════════════════
-    # ROW 0-LEFT  —  Config + Project Profile
+    #  TITLE STRIP
     # ══════════════════════════════════════════════════════════════════════════
-    ax_prof.set_title("Config & Project Profile", fontsize=9, color=TEXT_MUT,
-                      fontfamily=FONT, loc="left", pad=4)
+    ax_ttl.axis("off")
+    ax_ttl.set_xlim(0, 1); ax_ttl.set_ylim(0, 1)
+    ax_ttl.add_patch(mpatches.Rectangle(
+        (0, 0), 1, 1, lw=0, fc="#182A48",
+        transform=ax_ttl.transAxes))
+    ax_ttl.text(0.5, 0.65,
+                f"Portfolio Budgeting  ·  {cfg_id}  ·  Solver: {method.upper()}",
+                ha="center", va="center", fontsize=9.0, fontweight="bold",
+                fontfamily=FONT, color="white", transform=ax_ttl.transAxes)
+    ax_ttl.text(0.5, 0.12,
+                (f"episode  {ep_id}   ·   γ = {gamma}   ·   "
+                 f"{n_proj} projects   ·   horizon T = {horizon}   ·   "
+                 f"initial budget = {bud0:,.0f}"),
+                ha="center", va="center", fontsize=5.9,
+                fontfamily=FONT, color="#A4B8CC", transform=ax_ttl.transAxes)
 
-    header = ["", "config_id", "BAC", "price", "start", "finish", "dur",
-              "adv%", "ret%", "profit%"]
-    rows_p = [header]
+    # ══════════════════════════════════════════════════════════════════════════
+    #  ROW 1-LEFT  —  PROJECT PROFILE
+    # ══════════════════════════════════════════════════════════════════════════
+    ax_pro.axis("off"); ax_pro.set_xlim(0, 1); ax_pro.set_ylim(0, 1)
+
+    y0p = _hdr_strip(ax_pro, "PROJECT PROFILE", "pro", y=1.0, h=0.040)
+
+    p_hdr = ["i", "BAC", "price", "start", "fin", "dur",
+             "adv%", "ret%", "profit%", "dcap", "tol"]
+    p_cw  = [0.06, 0.09, 0.09, 0.07, 0.06, 0.06,
+              0.08, 0.07, 0.09,  0.14, 0.09]
+    p_al  = ["center"] * len(p_cw)
+    rows_p = [p_hdr]
     for _, r in pp.iterrows():
         rows_p.append([
-            f"i={int(r['i'])}",
-            config_id,
-            _fmt(r["bac"]),
-            _fmt(r["price"]),
-            int(r["planned_start"]),
-            int(r["planned_finish"]),
+            f"P{int(r['i'])}",
+            _fmt(r["bac"],   0), _fmt(r["price"], 0),
+            int(r["planned_start"]), int(r["planned_finish"]),
             int(r["planned_duration"]),
             f"{r['advance_percent']*100:.0f}%",
             f"{r['retention_rate']*100:.0f}%",
             f"{r['profit_percent']*100:.0f}%",
+            f"{r['progress_delay_cap']:.0%}",
+            int(r["termination_tolerance"]),
         ])
 
-    cw = [0.08, 0.16, 0.08, 0.08, 0.08, 0.08, 0.06, 0.08, 0.08, 0.12]
-    _table(ax_prof, rows_p, cw, row_height=0.19,
-           header_bg=C_PURPLE_BG, cell_bg=BG, border=C_PURPLE_BD,
-           header_tx=C_PURPLE_TX, cell_tx=TEXT_SEC)
+    y_bot_p = _table(ax_pro, rows_p, p_cw, 0.098, "pro",
+                     fs=5.7, align=p_al, y0=y0p)
 
-    # efficiency per project below
-    eff_lines = []
+    # efficiency annotation
+    y_e = y_bot_p - 0.022
     for i in range(n_proj):
         eff = eff_map.get(i, [])
-        eff_str = ", ".join(f"{e:.2f}" for e in eff)
-        eff_lines.append(f"  i={i}  η = [{eff_str}]")
-    ax_prof.text(0.01, 1 - (len(rows_p)) * 0.19 - 0.05,
-                 "Efficiency sequences:\n" + "\n".join(eff_lines),
-                 va="top", ha="left", fontsize=7, fontfamily=FONT,
-                 color=TEXT_SEC)
+        ax_pro.text(0.01, y_e,
+                    f"P{i}  η: " + "  ".join(f"{e:.2f}" for e in eff),
+                    ha="left", va="top", fontsize=5.7, fontfamily=FONT,
+                    color=PC[i % len(PC)], transform=ax_pro.transAxes, zorder=3)
+        y_e -= 0.070
 
     # ══════════════════════════════════════════════════════════════════════════
-    # ROW 0-RIGHT  —  Milestone Profile
+    #  ROW 1-RIGHT  —  MILESTONE PROFILE
     # ══════════════════════════════════════════════════════════════════════════
-    ax_miles.set_title("Milestone Profile", fontsize=9, color=TEXT_MUT,
-                       fontfamily=FONT, loc="left", pad=4)
+    ax_mil.axis("off"); ax_mil.set_xlim(0, 1); ax_mil.set_ylim(0, 1)
 
-    m_header = ["i", "j", "prog_thr", "ts_thr", "gross", "advance_rec",
-                "retention", "net_pay"]
-    rows_m = [m_header]
+    y0m = _hdr_strip(ax_mil, "MILESTONE PROFILE & CERTIFICATIONS",
+                     "mil", y=1.0, h=0.040)
+
+    m_hdr = ["i", "j", "prog≥", "ts≥", "gross", "adv_rec", "ret", "net_pay"]
+    m_cw  = [0.08, 0.07, 0.12,  0.10,  0.14,    0.14,      0.11,  0.24]
+    m_al  = ["center","center","center","center",
+             "right", "right", "right", "right"]
+    rows_m = [m_hdr]
+    prev_i = None
     for _, r in mp.iterrows():
+        ci = int(r["i"])
+        li = f"P{ci}" if ci != prev_i else ""; prev_i = ci
+        pt = float(r["progress_threshold"])
         rows_m.append([
-            int(r["i"]), int(r["j"]),
-            _fmt(r["progress_threshold"]),
+            li, f"j{int(r['j'])}",
+            f"{pt:.0%}" if pt > 0 else "—",
             int(r["timestep_threshold"]),
             _fmt(r["gross_payment"]),
             _fmt(r["advance_recovery"]),
@@ -210,207 +300,323 @@ def build(data_dir: Path, out: Path):
             _fmt(r["net_payment"]),
         ])
 
-    cw_m = [0.07, 0.07, 0.12, 0.10, 0.12, 0.16, 0.16, 0.20]
-    _table(ax_miles, rows_m, cw_m, row_height=0.073,
-           header_bg=C_TEAL_BG, cell_bg=BG, border=C_TEAL_BD,
-           header_tx=C_TEAL_TX, cell_tx=TEXT_SEC)
+    y_bot_m = _table(ax_mil, rows_m, m_cw, 0.059, "mil",
+                     fs=5.7, align=m_al, y0=y0m)
+
+    # certifications — two columns to fit all 12 entries
+    y_c = y_bot_m - 0.022
+    ax_mil.text(0.01, y_c, "Certifications:",
+                ha="left", va="top", fontsize=5.9, fontweight="bold",
+                fontfamily=FONT, color=SA["mil"][0],
+                transform=ax_mil.transAxes, zorder=3)
+    y_c -= 0.044
+
+    cert_entries = ms.sort_values(["certified_t", "i", "j"])
+    cert_list    = cert_entries.to_dict("records")
+    n_cert       = len(cert_list)
+    col_split    = (n_cert + 1) // 2      # entries per column
+    col_x        = [0.01, 0.52]           # x-start of each column
+    col_y        = [y_c,  y_c]            # current y per column
+    DY_CERT      = 0.043
+
+    for k, r in enumerate(cert_list):
+        col_idx = 0 if k < col_split else 1
+        d  = int(r["certification_delay"])
+        ds = f"[+{d}] " if d > 0 else ""
+        tx = (f"P{int(r['i'])} j{int(r['j'])}  "
+              f"t={int(r['certified_t'])}  {ds}"
+              f"net={_fmt(float(r['net_payment']))}")
+        ax_mil.text(col_x[col_idx], col_y[col_idx], tx,
+                    ha="left", va="top", fontsize=5.4, fontfamily=FONT,
+                    color=TB, transform=ax_mil.transAxes, zorder=3)
+        col_y[col_idx] -= DY_CERT
 
     # ══════════════════════════════════════════════════════════════════════════
-    # ROW 1  —  Episode Timeline
+    #  ROW 2  —  TIMELINE  (data coords)
     # ══════════════════════════════════════════════════════════════════════════
-    ax = ax_tl
-    ax.set_title("Episode Cash-Flow Timeline", fontsize=9, color=TEXT_MUT,
-                 fontfamily=FONT, loc="left", pad=4)
-    ax.set_xlim(-0.5, horizon + 0.5)
-    ax.set_ylim(-4.5, 4.0)
-    ax.axis("off")
+    ax_tl.set_xlim(-0.8, horizon + 0.8)
+    ax_tl.set_ylim(-5.6, 5.6)
+    ax_tl.axis("off")
+
+    _hdr_strip(ax_tl, "EPISODE CASH-FLOW TIMELINE",
+               "tl", y=1.0, h=0.028, fs=6.5)
 
     T = list(range(horizon + 1))
-    t_xs = {t: float(t) for t in T}
 
-    # ── timeline axis ──
-    ax.axhline(0, color=BORDER, lw=1.2, zorder=1)
+    # ── spine ──
+    ax_tl.axhline(0, color=RULE, lw=0.9, zorder=1)
+
+    # ── t ticks ──
     for t in T:
-        ax.plot(t, 0, "|", color=BORDER, ms=6, mew=1.2, zorder=2)
-        ax.text(t, -0.32, f"t={t}", ha="center", va="top",
-                fontsize=7.5, fontfamily=FONT, color=TEXT_SEC)
+        ax_tl.plot(t, 0, "|", color=TM, ms=4.5, mew=0.9, zorder=2)
+        ax_tl.text(t, -0.17, f"t{t}",
+                   ha="center", va="top", fontsize=6.3,
+                   fontfamily=FONT, color=TM)
 
-    # ── efficiency labels below t labels ──
-    for i in range(n_proj):
-        proj_row = pp[pp["i"] == i].iloc[0]
-        ps_t    = int(proj_row["planned_start"])
-        pd_dur  = int(proj_row["planned_duration"])
-        eff_seq = eff_map.get(i, [])
-        for k, t in enumerate(range(ps_t, ps_t + pd_dur)):
-            if k < len(eff_seq):
-                offset = -0.62 - i * 0.22
-                ax.text(t, offset, f"η={eff_seq[k]:.2f}",
-                        ha="center", va="top", fontsize=6.5,
-                        fontfamily=FONT,
-                        color=PROJECT_COLORS[i % len(PROJECT_COLORS)])
+    # ── project bars ──
+    BY0 = 0.15; BH = 0.38; BG_ = 0.09
 
-    # ── project active bars ──
-    bar_y_base = 0.18
-    bar_h      = 0.32
-    for i, row in pp.iterrows():
+    for _, row in pp.iterrows():
+        i    = int(row["i"])
         ps_t = int(row["planned_start"])
         pf_t = int(row["planned_finish"])
-        dur  = pf_t - ps_t
-        col  = PROJECT_COLORS[i % len(PROJECT_COLORS)]
-        rect = mpatches.FancyBboxPatch(
-            (ps_t, bar_y_base + i * (bar_h + 0.08)),
-            dur, bar_h,
-            boxstyle="round,pad=0.04",
-            linewidth=0.8, edgecolor=col,
-            facecolor=col + "28",
-            zorder=3
-        )
-        ax.add_patch(rect)
-        ax.text(ps_t + dur / 2,
-                bar_y_base + i * (bar_h + 0.08) + bar_h / 2,
-                f"Project {i}  (BAC={int(row['bac'])}, price={int(row['price'])})",
-                ha="center", va="center", fontsize=7.5,
-                fontfamily=FONT, fontweight="bold", color=col, zorder=4)
+        col  = PC[i % len(PC)]
+        yb   = BY0 + i * (BH + BG_)
+        ax_tl.add_patch(mpatches.FancyBboxPatch(
+            (ps_t, yb), pf_t - ps_t, BH,
+            boxstyle="round,pad=0.035",
+            lw=0.9, ec=col, fc=PCL[i % len(PCL)], zorder=3))
+        ax_tl.text(ps_t + (pf_t - ps_t) / 2, yb + BH / 2,
+                   f"P{i}  BAC {int(row['bac'])}  price {int(row['price'])}",
+                   ha="center", va="center", fontsize=6.4,
+                   fontfamily=FONT, fontweight="bold", color=col, zorder=4)
 
-    # ── inflow arrows + labels ──
-    # group payments by certified_t so stacked ones don't overlap
-    arrow_y_top = bar_y_base + n_proj * (bar_h + 0.08) + 0.15
+    # ── efficiency labels ──
+    for i in range(n_proj):
+        row  = pp[pp["i"] == i].iloc[0]
+        ps_t = int(row["planned_start"])
+        eff  = eff_map.get(i, [])
+        col  = PC[i % len(PC)]
+        for k, et in enumerate(range(ps_t, ps_t + len(eff))):
+            oy = -0.44 - i * 0.28
+            ax_tl.text(et, oy, f"η{eff[k]:.2f}",
+                       ha="center", va="top", fontsize=5.2,
+                       fontfamily=FONT, color=col + "BB")
 
-    for t, pays in cert.items():
-        # stack upward
-        for stack_idx, (i, j, net_pay) in enumerate(pays):
-            col   = PAY_COLORS[j % len(PAY_COLORS)]
-            y_tip = arrow_y_top + stack_idx * 0.72
-            y_base_arrow = arrow_y_top - 0.05
+    # ── inflow arrows ──
+    # Compute max stack depth to know where topmost label ends
+    max_stack = max((len(v) for v in cert.values()), default=1)
+    TOP_BASE  = BY0 + n_proj * (BH + BG_) + 0.10
+    STACK_DY  = 1.00    # vertical spacing between stacked payment labels
 
-            ax.annotate("",
-                xy=(t, y_tip), xytext=(t, y_base_arrow),
-                arrowprops=dict(arrowstyle="->", color=col,
-                                lw=1.4, mutation_scale=10),
+    for t_c, pays in sorted(cert.items()):
+        for si, (i, j, net) in enumerate(pays):
+            col   = MC[j % len(MC)]
+            y_anc = TOP_BASE + si * STACK_DY
+            y_tip = y_anc + 0.58
+
+            ax_tl.annotate(
+                "", xy=(t_c, y_anc), xytext=(t_c, y_tip),
+                arrowprops=dict(
+                    arrowstyle="-|>", color=col,
+                    lw=1.15, mutation_scale=8,
+                    shrinkA=0, shrinkB=2),
                 zorder=5)
 
-            # milestone profile lookup for thresholds
-            mp_row = mp[(mp["i"] == i) & (mp["j"] == j)]
-            prog_thr = float(mp_row["progress_threshold"].iloc[0]) if not mp_row.empty else 0
-            ts_thr   = int(mp_row["timestep_threshold"].iloc[0])   if not mp_row.empty else t
+            j_lbl = "Adv" if j == 0 else f"MS{j}"
+            lbl   = f"+{net:.1f}  P{i}/{j_lbl}"
+            ax_tl.text(t_c, y_tip + 0.06, lbl,
+                       ha="center", va="bottom", fontsize=5.6,
+                       fontfamily=FONT, color=col, zorder=6,
+                       bbox=dict(boxstyle="round,pad=0.15",
+                                 fc=col + "10", ec=col + "50", lw=0.4))
 
-            label = (f"+{net_pay:.1f}\n"
-                     f"i={i} j={j}\n"
-                     f"prog≥{prog_thr:.0%}  ts≥{ts_thr}")
-            ax.text(t, y_tip + 0.08, label,
-                    ha="center", va="bottom", fontsize=6.2,
-                    fontfamily=FONT, color=col, zorder=6,
-                    multialignment="center",
-                    bbox=dict(boxstyle="round,pad=0.15",
-                              facecolor=col + "18",
-                              edgecolor=col + "60", lw=0.5))
+    # ── allocation arrows ──
+    ATOP = BY0 - 0.10
+    ABOT = -2.40
 
-    # ── allocation arrows (downward, red/purple) ──
-    alloc_y_base = bar_y_base - 0.05
-    seen_alloc_t = defaultdict(float)
-    for (i, t), val in alloc_map.items():
-        if val > 0:
-            seen_alloc_t[t] += val
+    per_t: dict[int, dict] = defaultdict(dict)
+    for (i, t_ep), v in alloc_map.items():
+        if v > 0:
+            per_t[t_ep][i] = v
 
-    for t, total_alloc in seen_alloc_t.items():
-        y_tip = -1.5
-        ax.annotate("",
-            xy=(t, y_tip), xytext=(t, alloc_y_base),
-            arrowprops=dict(arrowstyle="->", color=ALLOC_COLOR,
-                            lw=1.4, mutation_scale=10,
-                            linestyle="dashed"),
+    for t_ep, pa in sorted(per_t.items()):
+        total = sum(pa.values())
+        ax_tl.annotate(
+            "", xy=(t_ep, ABOT), xytext=(t_ep, ATOP),
+            arrowprops=dict(
+                arrowstyle="-|>", color=AC,
+                lw=1.1, linestyle="dashed",
+                mutation_scale=8, shrinkA=0, shrinkB=0),
             zorder=5)
-        ax.text(t, y_tip - 0.18,
-                f"−{total_alloc:.1f}",
-                ha="center", va="top", fontsize=7,
-                fontfamily=FONT, color=ALLOC_COLOR, fontweight="bold", zorder=6)
+        ax_tl.text(t_ep, ABOT - 0.13, f"−{total:.0f}",
+                   ha="center", va="top", fontsize=6.3,
+                   fontfamily=FONT, color=AC, fontweight="bold", zorder=6)
+        bdn = "  ".join(f"P{i}:{v:.0f}" for i, v in sorted(pa.items()))
+        ax_tl.text(t_ep, ABOT - 0.50, bdn,
+                   ha="center", va="top", fontsize=4.8,
+                   fontfamily=FONT, color=AC + "AA", zorder=6)
+
+    # ── NCF bar chart ──
+    NCF_Y0 = -3.68
+    SCL    = 0.0040
+    ax_tl.text(-0.75, NCF_Y0, "NCF",
+               ha="left", va="center", fontsize=5.4,
+               fontfamily=FONT, color=TM, fontstyle="italic")
+    ax_tl.axhline(NCF_Y0, xmin=0.02, color=RULE, lw=0.4, ls="--", zorder=1)
+
+    for _, row in pf_s.iterrows():
+        t   = int(row["t_episode"])
+        ncf = float(row["net_cashflow"])
+        if ncf == 0:
+            continue
+        col = "#2060C0" if ncf > 0 else "#B03030"
+        hb  = ncf * SCL
+        ax_tl.bar(t, hb, bottom=NCF_Y0,
+                  color=col + "40", ec=col, lw=0.6, width=0.44, zorder=3)
+        vy = NCF_Y0 + hb + (0.07 if ncf > 0 else -0.07)
+        ax_tl.text(t, vy, f"{ncf:+.1f}",
+                   ha="center", va="bottom" if ncf > 0 else "top",
+                   fontsize=5.0, fontfamily=FONT, color=col, zorder=6)
+
+    # ── budget dotted curve ──
+    bud_v = pf_s["budget_available"].tolist()
+    bud_t = pf_s["t_episode"].tolist()
+    bmin, bmax = min(bud_v), max(bud_v)
+    brng = max(bmax - bmin, 1)
+    BY0b = -4.38
+    bscl = 0.56 / brng
+    bys  = [BY0b + (b - bmin) * bscl for b in bud_v]
+    ax_tl.plot(bud_t, bys, color=TM, lw=0.65, ls=":", marker="o", ms=2.4, zorder=3)
+    ax_tl.text(-0.75, BY0b, "Bud",
+               ha="left", va="center", fontsize=4.9,
+               fontfamily=FONT, color=TM, fontstyle="italic")
 
     # ══════════════════════════════════════════════════════════════════════════
-    # ROW 2-LEFT  —  Reward Computation
+    #  ROW 3-LEFT  —  REWARD TABLE
     # ══════════════════════════════════════════════════════════════════════════
-    ax_rew.set_title("Reward Computation  (γ = 0.95)", fontsize=9,
-                     color=TEXT_MUT, fontfamily=FONT, loc="left", pad=4)
+    ax_rew.axis("off"); ax_rew.set_xlim(0, 1); ax_rew.set_ylim(0, 1)
 
-    rew_header = ["t", "net_cashflow", f"γᵗ", "period_reward", "cum_reward"]
-    rew_rows   = [rew_header]
-    running = 0.0
-    for _, row in pf_sorted.iterrows():
+    y0r = _hdr_strip(ax_rew, f"REWARD COMPUTATION  (γ = {gamma})",
+                     "rew", y=1.0, h=0.042)
+
+    r_hdr = ["t", "γᵗ", "NCF", "P0", "P1", "P2", "r(t)=γᵗ·NCF", "ΣR"]
+    r_cw  = [0.07, 0.10, 0.12, 0.10, 0.10, 0.10, 0.22, 0.19]
+    r_al  = ["center","center","right","right","right","right","right","right"]
+
+    running = adv_t0
+    rows_r  = [r_hdr]
+    for _, row in pf_s.iterrows():
         t    = int(row["t_episode"])
         ncf  = float(row["net_cashflow"])
         disc = gamma ** t
         pr   = float(row["reward"])
         running += pr
-        rew_rows.append([
-            t,
-            f"{ncf:+.3f}",
-            f"{disc:.4f}",
-            f"{pr:+.4f}",
-            f"{running:+.4f}",
+        pcols = [_sf(proj_ncf.get((i, t), 0.0), 1) for i in range(n_proj)]
+        rows_r.append([
+            f"t{t}",
+            f"{disc:.3f}",
+            _sf(ncf, 2) if ncf else "0",
+            *pcols,
+            _sf(pr, 2) if pr else "0",
+            f"{running:+.2f}",
         ])
-    # summary row
-    rew_rows.append(["", "", "", "cum_reward =", f"{running:+.4f}"])
+    rows_r.append(["∑", "", "", "", "", "",
+                   f"ΣR = {running:+.3f}", ""])
 
-    cw_r = [0.08, 0.22, 0.15, 0.28, 0.27]
-    _table(ax_rew, rew_rows, cw_r, row_height=0.083,
-           header_bg=C_BLUE_BG, cell_bg=BG, border=C_BLUE_BD,
-           header_tx=C_BLUE_TX, cell_tx=TEXT_SEC)
+    y_bot_r = _table(ax_rew, rows_r, r_cw, 0.072, "rew",
+                     fs=5.7, align=r_al, y0=y0r)
+
+    ax_rew.text(0.01, y_bot_r - 0.020,
+                f"*  ΣR includes t=0 advance credited at reset  (+{adv_t0:.0f})",
+                ha="left", va="top", fontsize=5.1, fontfamily=FONT,
+                color=TM, transform=ax_rew.transAxes, zorder=3)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # ROW 2-RIGHT  —  Legend
+    #  ROW 3-RIGHT  —  LEGEND + FORMULA
     # ══════════════════════════════════════════════════════════════════════════
-    ax_leg.axis("off")
-    ax_leg.set_title("Legend", fontsize=9, color=TEXT_MUT,
-                     fontfamily=FONT, loc="left", pad=4)
-    ax_leg.set_xlim(0, 1); ax_leg.set_ylim(0, 1)
+    ax_leg.axis("off"); ax_leg.set_xlim(0, 1); ax_leg.set_ylim(0, 1)
 
-    entries = []
-    for j, col in enumerate(PAY_COLORS):
-        entries.append((col, f"Inflow — milestone j={j}", "arrow_up"))
-    entries.append((ALLOC_COLOR, "Outflow — allocation action", "arrow_down_dash"))
-    for i, col in enumerate(PROJECT_COLORS[:n_proj]):
-        entries.append((col, f"Project {i} active window", "bar"))
+    y0l = _hdr_strip(ax_leg, "LEGEND  &  NOTATION",
+                     "leg", y=1.0, h=0.042)
+    y0l -= 0.016
 
-    step = 0.13
-    y    = 0.93
-    for col, label, style in entries:
-        if style == "arrow_up":
-            ax_leg.annotate("", xy=(0.06, y + 0.04), xytext=(0.06, y - 0.04),
-                            arrowprops=dict(arrowstyle="->", color=col, lw=1.3,
-                                            mutation_scale=9))
-        elif style == "arrow_down_dash":
-            ax_leg.annotate("", xy=(0.06, y - 0.04), xytext=(0.06, y + 0.04),
-                            arrowprops=dict(arrowstyle="->", color=col, lw=1.3,
-                                            linestyle="dashed", mutation_scale=9))
-        elif style == "bar":
-            rect = mpatches.FancyBboxPatch(
-                (0.02, y - 0.035), 0.08, 0.07,
-                boxstyle="round,pad=0.01",
-                linewidth=0.8, edgecolor=col, facecolor=col + "28"
-            )
-            ax_leg.add_patch(rect)
+    IX = 0.06; TX = 0.15; FS = 6.1; DY = 0.073
 
-        ax_leg.text(0.14, y, label, va="center", ha="left",
-                    fontsize=8, fontfamily=FONT, color=TEXT_SEC)
-        y -= step
+    def _arw(y, col, up=True, dash=False):
+        ls = "dashed" if dash else "solid"
+        d  = 0.025
+        kw = dict(arrowstyle="-|>", color=col, lw=1.15,
+                  linestyle=ls, mutation_scale=8)
+        if up:
+            ax_leg.annotate("", xy=(IX, y + d), xytext=(IX, y - d),
+                            arrowprops=kw, transform=ax_leg.transAxes)
+        else:
+            ax_leg.annotate("", xy=(IX, y - d), xytext=(IX, y + d),
+                            arrowprops=kw, transform=ax_leg.transAxes)
+
+    def _box(y, col):
+        ax_leg.add_patch(mpatches.FancyBboxPatch(
+            (IX - 0.042, y - 0.022), 0.084, 0.044,
+            boxstyle="round,pad=0.004", lw=0.7,
+            ec=col, fc=col + "28", transform=ax_leg.transAxes))
+
+    def _rect(y, col):
+        ax_leg.add_patch(mpatches.Rectangle(
+            (IX - 0.036, y - 0.018), 0.072, 0.036,
+            lw=0, fc=col + "50", transform=ax_leg.transAxes))
+
+    def _dot_line(y):
+        ax_leg.plot([IX - 0.04, IX + 0.04], [y, y],
+                    color=TM, lw=0.7, ls=":", marker="o", ms=2.4,
+                    transform=ax_leg.transAxes)
+
+    def _lt(y, txt, col=None, fs=FS):
+        ax_leg.text(TX, y, txt, ha="left", va="center",
+                    fontsize=fs, fontfamily=FONT,
+                    color=col or TB, transform=ax_leg.transAxes)
+
+    y = y0l
+    _arw(y, MC[0], up=True);           _lt(y, "Advance payment  (j=0, inflow)"); y -= DY
+    _arw(y, MC[1], up=True);           _lt(y, "Milestone payment  (j=1, inflow)"); y -= DY
+    _arw(y, MC[2], up=True);           _lt(y, "Milestone payment  (j=2, inflow)"); y -= DY
+    _arw(y, MC[3], up=True);           _lt(y, "Milestone payment  (j=3, inflow)"); y -= DY
+    _arw(y, AC, up=False, dash=True);  _lt(y, "Allocation outflow  (Σ per period)"); y -= DY
+    for i in range(n_proj):
+        _box(y, PC[i]);                _lt(y, f"Project P{i} active window"); y -= DY
+    _rect(y, "#2060C0");               _lt(y, "Net cash-flow > 0  (period surplus)"); y -= DY
+    _rect(y, "#B03030");               _lt(y, "Net cash-flow < 0  (period deficit)"); y -= DY
+    _dot_line(y);                      _lt(y, "Portfolio budget  (dotted)"); y -= DY + 0.008
+
+    # formula panel
+    fp_h = 0.200
+    y -= 0.002
+    ax_leg.add_patch(mpatches.FancyBboxPatch(
+        (0.01, y - fp_h), 0.98, fp_h,
+        boxstyle="round,pad=0.008", lw=0.6,
+        ec=SA["rew"][0] + "70", fc=SA["rew"][1],
+        transform=ax_leg.transAxes))
+
+    fy = y - 0.022
+    def _fl(txt, dy, bold=False, col=None, fs=6.0):
+        nonlocal fy
+        ax_leg.text(0.05, fy, txt,
+                    ha="left", va="top", fontsize=fs,
+                    fontfamily=FONT, fontweight="bold" if bold else "normal",
+                    color=col or SA["rew"][0],
+                    transform=ax_leg.transAxes)
+        fy -= dy
+
+    _fl("Reward formula:", 0.034, bold=True)
+    _fl("r(t)  =  γᵗ  ×  NCF(t)", 0.036, col=SA["rew"][0], fs=6.2)
+    _fl("NCF(t)  =  Σ inflow(t)  −  Σ outflow(t)", 0.030, col=TB)
+    _fl("outflow  =  allocation  +  interest(treasury_draw)", 0.030, col=TB)
+    _fl(f"ΣR  =  r₀_adv  +  Σ r(t),   t ∈ [0, {horizon}]", 0.030, col=TM)
 
     # ── save ──────────────────────────────────────────────────────────────────
-    fig.savefig(out, dpi=150, bbox_inches="tight", facecolor=BG)
+    fig.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=BG)
     plt.close(fig)
     print(f"  saved → {out}")
 
 
-# ── entry point ───────────────────────────────────────────────────────────────
-def main():
-    parser = argparse.ArgumentParser(description="RL portfolio infographic")
-    parser.add_argument("--data", default=None,
-                        help="Folder containing the CSV exports.")
-    parser.add_argument("--out",  default=None,
-                        help="Output PNG path.")
-    args = parser.parse_args()
+# ═══════════════════════════════════════════════════════════════════════════════
+#  ENTRY POINT
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    script_dir = Path(__file__).resolve().parent
-    data_dir   = Path(args.data) if args.data else script_dir
-    out_path   = Path(args.out)  if args.out  else data_dir / "infograph.png"
+def main() -> None:
+    p = argparse.ArgumentParser(
+        description="A4-portrait infographic for RL portfolio budgeting")
+    p.add_argument("--data", default=None,
+                   help="CSV folder (default: ground_truth/TC-3XMAIF-R/optimal/)")
+    p.add_argument("--out",  default=None,
+                   help="Output PNG (default: ground_truth/infograph.png)")
+    args = p.parse_args()
+
+    here     = Path(__file__).resolve().parent
+    data_dir = Path(args.data) if args.data else (
+        here / "ground_truth" / "TC-3XMAIF-R" / "optimal")
+    out_path = Path(args.out)  if args.out  else (
+        data_dir.parent.parent / "infograph.png")
 
     build(data_dir, out_path)
     print("Done.")
