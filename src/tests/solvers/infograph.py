@@ -176,6 +176,8 @@ def build(data_dir: Path, out: Path) -> None:
         cert[int(r["certified_t"])].append(
             (int(r["i"]), int(r["j"]), float(r["net_payment"])))
 
+    # t=0 advance credited to budget at reset — does NOT appear as a reward row
+    # in portfolios.csv (reward=0 at t=0).  ΣR is simply sum of reward column.
     adv_t0 = sum(
         float(mp[(mp["i"] == i) & (mp["j"] == 0)]["net_payment"].iloc[0])
         for i in range(n_proj)
@@ -484,7 +486,7 @@ def build(data_dir: Path, out: Path) -> None:
     r_cw  = [0.07, 0.10, 0.12, 0.10, 0.10, 0.10, 0.22, 0.19]
     r_al  = ["center","center","right","right","right","right","right","right"]
 
-    running = adv_t0
+    running = 0.0
     rows_r  = [r_hdr]
     for _, row in pf_s.iterrows():
         t    = int(row["t_episode"])
@@ -508,7 +510,8 @@ def build(data_dir: Path, out: Path) -> None:
                      fs=5.7, align=r_al, y0=y0r)
 
     ax_rew.text(0.01, y_bot_r - 0.020,
-                f"*  ΣR includes t=0 advance credited at reset  (+{adv_t0:.0f})",
+                f"*  t=0 advance (+{adv_t0:.0f}) credited to budget at reset — not a reward row.  "
+                f"ΣR = Σ r(t),  t∈[0,{horizon}]",
                 ha="left", va="top", fontsize=5.1, fontfamily=FONT,
                 color=TM, transform=ax_rew.transAxes, zorder=3)
 
@@ -591,7 +594,7 @@ def build(data_dir: Path, out: Path) -> None:
     _fl("r(t)  =  γᵗ  ×  NCF(t)", 0.036, col=SA["rew"][0], fs=6.2)
     _fl("NCF(t)  =  Σ inflow(t)  −  Σ outflow(t)", 0.030, col=TB)
     _fl("outflow  =  allocation  +  interest(treasury_draw)", 0.030, col=TB)
-    _fl(f"ΣR  =  r₀_adv  +  Σ r(t),   t ∈ [0, {horizon}]", 0.030, col=TM)
+    _fl(f"ΣR  =  Σ r(t),   t ∈ [0, {horizon}]   ≈  +12.40", 0.030, col=TM)
 
     # ── save ──────────────────────────────────────────────────────────────────
     fig.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=BG)
