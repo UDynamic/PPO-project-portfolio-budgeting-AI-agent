@@ -187,34 +187,26 @@ def build(data_dir: Path, out: Path) -> None:
     # ── figure ────────────────────────────────────────────────────────────────
     fig = plt.figure(figsize=(A4W, A4H), facecolor=BG)
 
-    # Row heights (proportions): title | tables | timeline | reward+legend
+    # Row heights (proportions): title | timeline | reward+legend
     gs = gridspec.GridSpec(
-        4, 2,
-        height_ratios=[0.036, 0.235, 0.430, 0.299],
+        3, 2,
+        height_ratios=[0.036, 0.590, 0.374],
         width_ratios=[1, 1],
         hspace=0.0, wspace=0.04,
         left=0.032, right=0.968,
         top=0.978,  bottom=0.014,
     )
 
-    ax_ttl  = fig.add_subplot(gs[0, :])
-    ax_pro  = fig.add_subplot(gs[1, 0])
-    ax_mil  = fig.add_subplot(gs[1, 1])
-    ax_tl   = fig.add_subplot(gs[2, :])
-    ax_rew  = fig.add_subplot(gs[3, 0])
-    ax_leg  = fig.add_subplot(gs[3, 1])
+    ax_ttl = fig.add_subplot(gs[0, :])
+    ax_tl  = fig.add_subplot(gs[1, :])
+    ax_rew = fig.add_subplot(gs[2, 0])
+    ax_leg = fig.add_subplot(gs[2, 1])
 
-    for ax in (ax_ttl, ax_pro, ax_mil, ax_tl, ax_rew, ax_leg):
+    for ax in (ax_ttl, ax_tl, ax_rew, ax_leg):
         ax.set_facecolor(BG)
         for sp in ax.spines.values():
             sp.set_visible(False)
         ax.set_xticks([]); ax.set_yticks([])
-
-    # thin rule under title strip
-    for ax in (ax_pro, ax_mil):
-        ax.add_patch(mpatches.Rectangle(
-            (0, 0.997), 1, 0.003, lw=0, fc=RULE,
-            transform=ax.transAxes, clip_on=False, zorder=0))
 
     # ══════════════════════════════════════════════════════════════════════════
     #  TITLE STRIP
@@ -236,127 +228,29 @@ def build(data_dir: Path, out: Path) -> None:
                 fontfamily=FONT, color="#A4B8CC", transform=ax_ttl.transAxes)
 
     # ══════════════════════════════════════════════════════════════════════════
-    #  ROW 1-LEFT  —  PROJECT PROFILE
-    # ══════════════════════════════════════════════════════════════════════════
-    ax_pro.axis("off"); ax_pro.set_xlim(0, 1); ax_pro.set_ylim(0, 1)
-
-    y0p = _hdr_strip(ax_pro, "PROJECT PROFILE", "pro", y=1.0, h=0.040)
-
-    p_hdr = ["i", "BAC", "price", "start", "fin", "dur",
-             "adv%", "ret%", "profit%", "dcap", "tol"]
-    p_cw  = [0.06, 0.09, 0.09, 0.07, 0.06, 0.06,
-              0.08, 0.07, 0.09,  0.14, 0.09]
-    p_al  = ["center"] * len(p_cw)
-    rows_p = [p_hdr]
-    for _, r in pp.iterrows():
-        rows_p.append([
-            f"P{int(r['i'])}",
-            _fmt(r["bac"],   0), _fmt(r["price"], 0),
-            int(r["planned_start"]), int(r["planned_finish"]),
-            int(r["planned_duration"]),
-            f"{r['advance_percent']*100:.0f}%",
-            f"{r['retention_rate']*100:.0f}%",
-            f"{r['profit_percent']*100:.0f}%",
-            f"{r['progress_delay_cap']:.0%}",
-            int(r["termination_tolerance"]),
-        ])
-
-    y_bot_p = _table(ax_pro, rows_p, p_cw, 0.098, "pro",
-                     fs=5.7, align=p_al, y0=y0p)
-
-    # efficiency annotation
-    y_e = y_bot_p - 0.022
-    for i in range(n_proj):
-        eff = eff_map.get(i, [])
-        ax_pro.text(0.01, y_e,
-                    f"P{i}  η: " + "  ".join(f"{e:.2f}" for e in eff),
-                    ha="left", va="top", fontsize=5.7, fontfamily=FONT,
-                    color=PC[i % len(PC)], transform=ax_pro.transAxes, zorder=3)
-        y_e -= 0.070
-
-    # ══════════════════════════════════════════════════════════════════════════
-    #  ROW 1-RIGHT  —  MILESTONE PROFILE
-    # ══════════════════════════════════════════════════════════════════════════
-    ax_mil.axis("off"); ax_mil.set_xlim(0, 1); ax_mil.set_ylim(0, 1)
-
-    y0m = _hdr_strip(ax_mil, "MILESTONE PROFILE & CERTIFICATIONS",
-                     "mil", y=1.0, h=0.040)
-
-    m_hdr = ["i", "j", "prog≥", "ts≥", "gross", "adv_rec", "ret", "net_pay"]
-    m_cw  = [0.08, 0.07, 0.12,  0.10,  0.14,    0.14,      0.11,  0.24]
-    m_al  = ["center","center","center","center",
-             "right", "right", "right", "right"]
-    rows_m = [m_hdr]
-    prev_i = None
-    for _, r in mp.iterrows():
-        ci = int(r["i"])
-        li = f"P{ci}" if ci != prev_i else ""; prev_i = ci
-        pt = float(r["progress_threshold"])
-        rows_m.append([
-            li, f"j{int(r['j'])}",
-            f"{pt:.0%}" if pt > 0 else "—",
-            int(r["timestep_threshold"]),
-            _fmt(r["gross_payment"]),
-            _fmt(r["advance_recovery"]),
-            _fmt(r["retention_withheld"]),
-            _fmt(r["net_payment"]),
-        ])
-
-    y_bot_m = _table(ax_mil, rows_m, m_cw, 0.059, "mil",
-                     fs=5.7, align=m_al, y0=y0m)
-
-    # certifications — two columns to fit all 12 entries
-    y_c = y_bot_m - 0.022
-    ax_mil.text(0.01, y_c, "Certifications:",
-                ha="left", va="top", fontsize=5.9, fontweight="bold",
-                fontfamily=FONT, color=SA["mil"][0],
-                transform=ax_mil.transAxes, zorder=3)
-    y_c -= 0.044
-
-    cert_entries = ms.sort_values(["certified_t", "i", "j"])
-    cert_list    = cert_entries.to_dict("records")
-    n_cert       = len(cert_list)
-    col_split    = (n_cert + 1) // 2      # entries per column
-    col_x        = [0.01, 0.52]           # x-start of each column
-    col_y        = [y_c,  y_c]            # current y per column
-    DY_CERT      = 0.043
-
-    for k, r in enumerate(cert_list):
-        col_idx = 0 if k < col_split else 1
-        d  = int(r["certification_delay"])
-        ds = f"[+{d}] " if d > 0 else ""
-        tx = (f"P{int(r['i'])} j{int(r['j'])}  "
-              f"t={int(r['certified_t'])}  {ds}"
-              f"net={_fmt(float(r['net_payment']))}")
-        ax_mil.text(col_x[col_idx], col_y[col_idx], tx,
-                    ha="left", va="top", fontsize=5.4, fontfamily=FONT,
-                    color=TB, transform=ax_mil.transAxes, zorder=3)
-        col_y[col_idx] -= DY_CERT
-
-    # ══════════════════════════════════════════════════════════════════════════
     #  ROW 2  —  TIMELINE  (data coords)
     # ══════════════════════════════════════════════════════════════════════════
     ax_tl.set_xlim(-0.8, horizon + 0.8)
-    ax_tl.set_ylim(-5.6, 5.6)
+    ax_tl.set_ylim(-6.2, 6.8)
     ax_tl.axis("off")
 
     _hdr_strip(ax_tl, "EPISODE CASH-FLOW TIMELINE",
-               "tl", y=1.0, h=0.028, fs=6.5)
+               "tl", y=1.0, h=0.022, fs=7.0)
 
     T = list(range(horizon + 1))
 
     # ── spine ──
-    ax_tl.axhline(0, color=RULE, lw=0.9, zorder=1)
+    ax_tl.axhline(0, color=RULE, lw=1.0, zorder=1)
 
     # ── t ticks ──
     for t in T:
-        ax_tl.plot(t, 0, "|", color=TM, ms=4.5, mew=0.9, zorder=2)
-        ax_tl.text(t, -0.17, f"t{t}",
-                   ha="center", va="top", fontsize=6.3,
+        ax_tl.plot(t, 0, "|", color=TM, ms=6, mew=1.0, zorder=2)
+        ax_tl.text(t, -0.22, f"t{t}",
+                   ha="center", va="top", fontsize=7.5,
                    fontfamily=FONT, color=TM)
 
     # ── project bars ──
-    BY0 = 0.15; BH = 0.38; BG_ = 0.09
+    BY0 = 0.18; BH = 0.50; BG_ = 0.12
 
     for _, row in pp.iterrows():
         i    = int(row["i"])
@@ -366,11 +260,11 @@ def build(data_dir: Path, out: Path) -> None:
         yb   = BY0 + i * (BH + BG_)
         ax_tl.add_patch(mpatches.FancyBboxPatch(
             (ps_t, yb), pf_t - ps_t, BH,
-            boxstyle="round,pad=0.035",
-            lw=0.9, ec=col, fc=PCL[i % len(PCL)], zorder=3))
+            boxstyle="round,pad=0.04",
+            lw=1.0, ec=col, fc=PCL[i % len(PCL)], zorder=3))
         ax_tl.text(ps_t + (pf_t - ps_t) / 2, yb + BH / 2,
                    f"P{i}  BAC {int(row['bac'])}  price {int(row['price'])}",
-                   ha="center", va="center", fontsize=6.4,
+                   ha="center", va="center", fontsize=7.5,
                    fontfamily=FONT, fontweight="bold", color=col, zorder=4)
 
     # ── efficiency labels ──
@@ -380,16 +274,15 @@ def build(data_dir: Path, out: Path) -> None:
         eff  = eff_map.get(i, [])
         col  = PC[i % len(PC)]
         for k, et in enumerate(range(ps_t, ps_t + len(eff))):
-            oy = -0.44 - i * 0.28
+            oy = -0.52 - i * 0.34
             ax_tl.text(et, oy, f"η{eff[k]:.2f}",
-                       ha="center", va="top", fontsize=5.2,
+                       ha="center", va="top", fontsize=6.2,
                        fontfamily=FONT, color=col + "BB")
 
     # ── inflow arrows ──
-    # Compute max stack depth to know where topmost label ends
     max_stack = max((len(v) for v in cert.values()), default=1)
-    TOP_BASE  = BY0 + n_proj * (BH + BG_) + 0.10
-    STACK_DY  = 1.00    # vertical spacing between stacked payment labels
+    TOP_BASE  = BY0 + n_proj * (BH + BG_) + 0.14
+    STACK_DY  = 1.10    # vertical spacing between stacked payment labels
 
     for t_c, pays in sorted(cert.items()):
         for si, (i, j, net) in enumerate(pays):
@@ -407,15 +300,15 @@ def build(data_dir: Path, out: Path) -> None:
 
             j_lbl = "Adv" if j == 0 else f"MS{j}"
             lbl   = f"+{net:.1f}  P{i}/{j_lbl}"
-            ax_tl.text(t_c, y_tip + 0.06, lbl,
-                       ha="center", va="bottom", fontsize=5.6,
+            ax_tl.text(t_c, y_tip + 0.08, lbl,
+                       ha="center", va="bottom", fontsize=6.5,
                        fontfamily=FONT, color=col, zorder=6,
-                       bbox=dict(boxstyle="round,pad=0.15",
-                                 fc=col + "10", ec=col + "50", lw=0.4))
+                       bbox=dict(boxstyle="round,pad=0.18",
+                                 fc=col + "10", ec=col + "50", lw=0.5))
 
     # ── allocation arrows ──
-    ATOP = BY0 - 0.10
-    ABOT = -2.40
+    ATOP = BY0 - 0.12
+    ABOT = -2.80
 
     per_t: dict[int, dict] = defaultdict(dict)
     for (i, t_ep), v in alloc_map.items():
@@ -428,24 +321,24 @@ def build(data_dir: Path, out: Path) -> None:
             "", xy=(t_ep, ABOT), xytext=(t_ep, ATOP),
             arrowprops=dict(
                 arrowstyle="-|>", color=AC,
-                lw=1.1, linestyle="dashed",
-                mutation_scale=8, shrinkA=0, shrinkB=0),
+                lw=1.2, linestyle="dashed",
+                mutation_scale=9, shrinkA=0, shrinkB=0),
             zorder=5)
-        ax_tl.text(t_ep, ABOT - 0.13, f"−{total:.0f}",
-                   ha="center", va="top", fontsize=6.3,
+        ax_tl.text(t_ep, ABOT - 0.16, f"−{total:.0f}",
+                   ha="center", va="top", fontsize=7.2,
                    fontfamily=FONT, color=AC, fontweight="bold", zorder=6)
         bdn = "  ".join(f"P{i}:{v:.0f}" for i, v in sorted(pa.items()))
-        ax_tl.text(t_ep, ABOT - 0.50, bdn,
-                   ha="center", va="top", fontsize=4.8,
+        ax_tl.text(t_ep, ABOT - 0.60, bdn,
+                   ha="center", va="top", fontsize=5.8,
                    fontfamily=FONT, color=AC + "AA", zorder=6)
 
     # ── NCF bar chart ──
-    NCF_Y0 = -3.68
-    SCL    = 0.0040
+    NCF_Y0 = -4.00
+    SCL    = 0.0046
     ax_tl.text(-0.75, NCF_Y0, "NCF",
-               ha="left", va="center", fontsize=5.4,
+               ha="left", va="center", fontsize=6.2,
                fontfamily=FONT, color=TM, fontstyle="italic")
-    ax_tl.axhline(NCF_Y0, xmin=0.02, color=RULE, lw=0.4, ls="--", zorder=1)
+    ax_tl.axhline(NCF_Y0, xmin=0.02, color=RULE, lw=0.5, ls="--", zorder=1)
 
     for _, row in pf_s.iterrows():
         t   = int(row["t_episode"])
@@ -455,23 +348,23 @@ def build(data_dir: Path, out: Path) -> None:
         col = "#2060C0" if ncf > 0 else "#B03030"
         hb  = ncf * SCL
         ax_tl.bar(t, hb, bottom=NCF_Y0,
-                  color=col + "40", ec=col, lw=0.6, width=0.44, zorder=3)
-        vy = NCF_Y0 + hb + (0.07 if ncf > 0 else -0.07)
+                  color=col + "40", ec=col, lw=0.7, width=0.46, zorder=3)
+        vy = NCF_Y0 + hb + (0.09 if ncf > 0 else -0.09)
         ax_tl.text(t, vy, f"{ncf:+.1f}",
                    ha="center", va="bottom" if ncf > 0 else "top",
-                   fontsize=5.0, fontfamily=FONT, color=col, zorder=6)
+                   fontsize=6.0, fontfamily=FONT, color=col, zorder=6)
 
     # ── budget dotted curve ──
     bud_v = pf_s["budget_available"].tolist()
     bud_t = pf_s["t_episode"].tolist()
     bmin, bmax = min(bud_v), max(bud_v)
     brng = max(bmax - bmin, 1)
-    BY0b = -4.38
-    bscl = 0.56 / brng
+    BY0b = -5.20
+    bscl = 0.72 / brng
     bys  = [BY0b + (b - bmin) * bscl for b in bud_v]
-    ax_tl.plot(bud_t, bys, color=TM, lw=0.65, ls=":", marker="o", ms=2.4, zorder=3)
+    ax_tl.plot(bud_t, bys, color=TM, lw=0.8, ls=":", marker="o", ms=3.0, zorder=3)
     ax_tl.text(-0.75, BY0b, "Bud",
-               ha="left", va="center", fontsize=4.9,
+               ha="left", va="center", fontsize=5.8,
                fontfamily=FONT, color=TM, fontstyle="italic")
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -480,7 +373,7 @@ def build(data_dir: Path, out: Path) -> None:
     ax_rew.axis("off"); ax_rew.set_xlim(0, 1); ax_rew.set_ylim(0, 1)
 
     y0r = _hdr_strip(ax_rew, f"REWARD COMPUTATION  (γ = {gamma})",
-                     "rew", y=1.0, h=0.042)
+                     "rew", y=1.0, h=0.038)
 
     r_hdr = ["t", "γᵗ", "NCF", "P0", "P1", "P2", "r(t)=γᵗ·NCF", "ΣR"]
     r_cw  = [0.07, 0.10, 0.12, 0.10, 0.10, 0.10, 0.22, 0.19]
@@ -506,13 +399,13 @@ def build(data_dir: Path, out: Path) -> None:
     rows_r.append(["∑", "", "", "", "", "",
                    f"ΣR = {running:+.3f}", ""])
 
-    y_bot_r = _table(ax_rew, rows_r, r_cw, 0.072, "rew",
-                     fs=5.7, align=r_al, y0=y0r)
+    y_bot_r = _table(ax_rew, rows_r, r_cw, 0.070, "rew",
+                     fs=6.3, align=r_al, y0=y0r)
 
-    ax_rew.text(0.01, y_bot_r - 0.020,
+    ax_rew.text(0.01, y_bot_r - 0.018,
                 f"*  t=0 advance (+{adv_t0:.0f}) credited to budget at reset — not a reward row.  "
                 f"ΣR = Σ r(t),  t∈[0,{horizon}]",
-                ha="left", va="top", fontsize=5.1, fontfamily=FONT,
+                ha="left", va="top", fontsize=6.0, fontfamily=FONT,
                 color=TM, transform=ax_rew.transAxes, zorder=3)
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -521,10 +414,10 @@ def build(data_dir: Path, out: Path) -> None:
     ax_leg.axis("off"); ax_leg.set_xlim(0, 1); ax_leg.set_ylim(0, 1)
 
     y0l = _hdr_strip(ax_leg, "LEGEND  &  NOTATION",
-                     "leg", y=1.0, h=0.042)
-    y0l -= 0.016
+                     "leg", y=1.0, h=0.038)
+    y0l -= 0.018
 
-    IX = 0.06; TX = 0.15; FS = 6.1; DY = 0.073
+    IX = 0.06; TX = 0.15; FS = 6.8; DY = 0.082
 
     def _arw(y, col, up=True, dash=False):
         ls = "dashed" if dash else "solid"
@@ -572,16 +465,16 @@ def build(data_dir: Path, out: Path) -> None:
     _dot_line(y);                      _lt(y, "Portfolio budget  (dotted)"); y -= DY + 0.008
 
     # formula panel
-    fp_h = 0.200
-    y -= 0.002
+    fp_h = 0.230
+    y -= 0.004
     ax_leg.add_patch(mpatches.FancyBboxPatch(
         (0.01, y - fp_h), 0.98, fp_h,
         boxstyle="round,pad=0.008", lw=0.6,
         ec=SA["rew"][0] + "70", fc=SA["rew"][1],
         transform=ax_leg.transAxes))
 
-    fy = y - 0.022
-    def _fl(txt, dy, bold=False, col=None, fs=6.0):
+    fy = y - 0.024
+    def _fl(txt, dy, bold=False, col=None, fs=6.5):
         nonlocal fy
         ax_leg.text(0.05, fy, txt,
                     ha="left", va="top", fontsize=fs,
@@ -590,11 +483,11 @@ def build(data_dir: Path, out: Path) -> None:
                     transform=ax_leg.transAxes)
         fy -= dy
 
-    _fl("Reward formula:", 0.034, bold=True)
-    _fl("r(t)  =  γᵗ  ×  NCF(t)", 0.036, col=SA["rew"][0], fs=6.2)
-    _fl("NCF(t)  =  Σ inflow(t)  −  Σ outflow(t)", 0.030, col=TB)
-    _fl("outflow  =  allocation  +  interest(treasury_draw)", 0.030, col=TB)
-    _fl(f"ΣR  =  Σ r(t),   t ∈ [0, {horizon}]   ≈  +12.40", 0.030, col=TM)
+    _fl("Reward formula:", 0.038, bold=True, fs=6.8)
+    _fl("r(t)  =  γᵗ  ×  NCF(t)", 0.042, col=SA["rew"][0], fs=7.2)
+    _fl("NCF(t)  =  Σ inflow(t)  −  Σ outflow(t)", 0.036, col=TB, fs=6.4)
+    _fl("outflow  =  allocation  +  interest(treasury_draw)", 0.036, col=TB, fs=6.4)
+    _fl(f"ΣR  =  Σ r(t),   t ∈ [0, {horizon}]   =  +12.403", 0.036, col=TM, fs=6.4)
 
     # ── save ──────────────────────────────────────────────────────────────────
     fig.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=BG)
