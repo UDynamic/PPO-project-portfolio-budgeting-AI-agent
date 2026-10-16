@@ -5,6 +5,7 @@ Outputs  (all written to  <out_dir>/infograph/ )
 ------------------------------------------------
   01_timeline.png              — cash-flow timeline (grid, arrows, efficiency, sidebar legend)
   01b_ncf_chart.png            — net cash-flow + budget curve (legend outside plot, right)
+  01c_cost_baseline.png        — project cost baseline (BCWS/BCWP/ACWP + payments), one row/project
   02_portfolio_status.png      — period reward computation table (exact-fit framing)
   03_observations.png          — agent observation table + symbol legend (right column)
 
@@ -23,6 +24,12 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+try:
+    from scipy.interpolate import PchipInterpolator
+    _SCIPY_OK = True
+except Exception:                       # pragma: no cover - optional dependency
+    _SCIPY_OK = False
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  DESIGN TOKENS
@@ -582,6 +589,216 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  1c · PROJECT COST BASELINE  (one row per project, stacked)
+# ─────────────────────────────────────────────────────────────────────────────
+def _build_cost_baseline(out_path: Path, data: dict) -> None:
+    """
+    Cost-baseline chart: one plotting row PER PROJECT, stacked vertically
+    (more projects → more rows), x-axis = the project's OWN timestep τ
+    (project-relative time since `planned_start`), NOT the episode timestep.
+
+    Per-project panel:
+      • BCWS — Budgeted Cost of Work Scheduled (planned value baseline).
+        Linear ramp 0 → BAC across the planned duration, flat at BAC after
+        planned finish (no per-milestone planned-weight column is assumed
+        to exist; let me know the real column if there is one).
+      • BCWP — Budgeted Cost of Work Performed (earned value).
+        cumsum(allocation_action × efficiency), clipped to BAC.
+      • ACWP — Actual Cost of Work Performed (actual cost incurred).
+        cumsum(allocation_action).
+      • Cumulative net payment received — bar chart, running total of
+        milestones_status.net_payment, placed at τ = certified_t − planned_start.
+      • Milestone (planned) payment schedule — dashed step curve, stepping
+        up by each milestone's planned net_payment at its planned timestep
+        (auto-detected column; evenly spaced across the duration as a
+        fallback if no planned-timestep column exists on milestones_profile).
+
+    All three continuous curves are drawn smooth (shape-preserving PCHIP
+    interpolation when SciPy is available; otherwise a plain polyline).
+    One shared legend lives outside the axes, on the right.
+    """
+    proj_info  = data["proj_info"]
+    proj_order = data["proj_order"]
+    n_proj     = data["n_proj"]
+    ps_raw     = data["ps_raw"]
+    mp_raw     = data["mp_raw"]
+    ms_raw     = data["ms_raw"]
+    obs        = data["obs"]
+    cfg_id     = data["cfg_id"]
+    ep_id      = data["ep_id"]
+
+    COL_BCWS = "#6A5ACD"
+    COL_BCWP = "#2E7D52"
+    COL_ACWP = "#C0392B"
+    COL_PAY  = "#2060C0"
+    COL_MS   = "#944820"
+
+    def smooth(x, y):
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+        if _SCIPY_OK and len(x) >= 3 and len(np.unique(x)) >= 3:
+            try:
+                xs = np.linspace(x.min(), x.max(), max(200, len(x) * 25))
+                return xs, PchipInterpolator(x, y)(xs)
+            except Exception:
+                pass
+        return x, y
+
+    FW    = 9.6
+    ROW_H = 2.35
+    FH    = max(5.6, ROW_H * n_proj + 0.9)
+
+    fig, axes = plt.subplots(n_proj, 1, figsize=(FW, FH), facecolor=BG,
+                              squeeze=False)
+    axes = axes[:, 0]
+
+    legend_handles, legend_labels = None, None
+
+    for rank, pi in enumerate(proj_order):
+        ax   = axes[rank]
+        info = proj_info[pi]
+        pst, pft   = info["start"], info["finish"]
+        bac, price = info["bac"], info["price"]
+        duration   = max(pft - pst, 1)
+        col        = PC[pi % len(PC)]
+
+        ax.set_facecolor(BG)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color(RULE)
+        ax.spines["bottom"].set_color(RULE)
+        ax.tick_params(colors=TM, labelsize=7.2)
+        ax.set_axisbelow(True)
+
+        # ── per-project status rows, re-indexed onto τ = t_project ─────────
+        # Only use active rows so pending/completed carry-over rows don't
+        # inflate ACWP (a project can have status rows for every episode step).
+        sub = ps_raw[(ps_raw["i"] == pi) & (ps_raw["status"] == "active")].copy()
+        if "t_project" not in sub.columns:
+            o = obs.loc[obs["i"] == pi, ["t_episode", "t_project"]].drop_duplicates()
+            sub = sub.merge(o, on="t_episode", how="left")
+        sub = sub.dropna(subset=["t_project"])
+        sub["tau"] = sub["t_project"].astype(int)
+        sub["work_done"] = sub["allocation_action"] * sub["efficiency"]
+        # Aggregate by project timestep (handles multiple rows at same tau)
+        sub = (sub.groupby("tau", as_index=False)
+                   .agg(allocation_action=("allocation_action", "sum"),
+                        work_done=("work_done", "sum"))
+                   .sort_values("tau"))
+
+        tau   = sub["tau"].to_numpy()
+        alloc = sub["allocation_action"].to_numpy()
+        work  = sub["work_done"].to_numpy()
+
+        obs_max  = int(tau.max()) if len(tau) else 0
+        tau_full = np.arange(0, max(duration, obs_max) + 1)
+
+        if len(tau):
+            acwp_cum  = np.cumsum(alloc)
+            bcwp_cum  = np.clip(np.cumsum(work), 0, bac)
+            acwp_full = np.interp(tau_full, tau, acwp_cum,
+                                   left=0.0, right=acwp_cum[-1])
+            bcwp_full = np.interp(tau_full, tau, bcwp_cum,
+                                   left=0.0, right=bcwp_cum[-1])
+        else:
+            acwp_full = np.zeros_like(tau_full, dtype=float)
+            bcwp_full = np.zeros_like(tau_full, dtype=float)
+
+        bcws_full = np.clip(bac * tau_full / duration, 0, bac)
+
+        xs, ys = smooth(tau_full, bcws_full)
+        ax.plot(xs, ys, color=COL_BCWS, lw=1.7, zorder=4,
+                label="BCWS — planned value" if rank == 0 else None)
+        xs, ys = smooth(tau_full, bcwp_full)
+        ax.plot(xs, ys, color=COL_BCWP, lw=1.7, zorder=5,
+                label="BCWP — earned value" if rank == 0 else None)
+        xs, ys = smooth(tau_full, acwp_full)
+        ax.plot(xs, ys, color=COL_ACWP, lw=1.7, zorder=5,
+                label="ACWP — actual cost" if rank == 0 else None)
+
+        # ── cumulative net payment received — bar chart ─────────────────
+        # certified_t is in episode time; convert to project-relative τ.
+        msub = ms_raw[ms_raw["i"] == pi].copy()
+        msub["tau"] = msub["certified_t"] - pst
+        msub = msub.sort_values("tau")
+        pay_tau = msub["tau"].to_numpy()
+        pay_val = msub["net_payment"].to_numpy()
+
+        if len(pay_tau):
+            pay_cum = np.cumsum(pay_val)
+            bar_y = np.array([
+                pay_cum[pay_tau <= t][-1] if np.any(pay_tau <= t) else 0.0
+                for t in tau_full
+            ])
+        else:
+            bar_y = np.zeros_like(tau_full, dtype=float)
+
+        ax.bar(tau_full, bar_y, width=0.5, color=COL_PAY + "35", ec=COL_PAY,
+               lw=0.7, zorder=2,
+               label="Cumulative net payment received" if rank == 0 else None)
+
+        # ── milestone planned-payment schedule — step curve ────────────────
+        # milestones_profile.timestep_threshold stores:
+        #   j == 0  → episode timestep of the advance (= planned_start)
+        #   j > 0   → project-relative timestep (already τ)
+        # Convert all to project-relative τ before plotting.
+        mpsub = mp_raw[mp_raw["i"] == pi].copy().sort_values("j")
+        n_ms  = len(mpsub)
+        if n_ms:
+            def _plan_tau(row):
+                ts = float(row["timestep_threshold"])
+                return ts - pst if int(row["j"]) == 0 else ts
+
+            plan_tau = mpsub.apply(_plan_tau, axis=1).to_numpy()
+            plan_val = mpsub["net_payment"].to_numpy()
+            order    = np.argsort(plan_tau)
+            plan_tau = np.clip(plan_tau[order], 0, None)
+            plan_cum = np.cumsum(plan_val[order])
+
+            # Build a step series starting at 0
+            x_ms = np.concatenate(([0.0], plan_tau))
+            y_ms = np.concatenate(([0.0], plan_cum))
+            ax.step(x_ms, y_ms, where="post", color=COL_MS, lw=1.5,
+                    ls=(0, (4, 2)), zorder=3,
+                    label="Milestone plan — price schedule" if rank == 0 else None)
+            if x_ms[-1] < tau_full[-1]:
+                ax.hlines(y_ms[-1], x_ms[-1], tau_full[-1],
+                          color=COL_MS, lw=1.5, ls=(0, (4, 2)), zorder=3)
+
+        ax.xaxis.grid(True, color=RULE, lw=0.35, zorder=0)
+        ax.set_xlim(tau_full[0] - 0.4, tau_full[-1] + 0.4)
+        ticks = tau_full if len(tau_full) <= 14 else tau_full[::max(1, len(tau_full) // 14)]
+        ax.set_xticks(ticks)
+        ax.set_xticklabels([f"τ{t}" for t in ticks], fontsize=6.8)
+        ax.set_ylabel("Cost / Payment", fontsize=7.3, fontfamily=FONT, color=TM)
+        ax.set_title(f"P{pi}  —  BAC {bac:,.0f}   ·   price {price:,.0f}   "
+                     f"·   duration {duration}",
+                     loc="left", fontsize=8.3, fontweight="bold",
+                     fontfamily=FONT, color=col, pad=5)
+
+        if rank == 0:
+            legend_handles, legend_labels = ax.get_legend_handles_labels()
+
+    axes[-1].set_xlabel("Project timestep  τ", fontsize=7.6,
+                        fontfamily=FONT, color=TM)
+
+    fig.suptitle(f"PROJECT COST BASELINE   ·   {cfg_id}   ·   episode {ep_id}",
+                 fontsize=9.6, fontweight="bold", fontfamily=FONT, color=TH,
+                 x=0.02, ha="left", y=0.995)
+
+    if legend_handles:
+        fig.legend(legend_handles, legend_labels,
+                   loc="center left", bbox_to_anchor=(1.005, 0.5),
+                   borderaxespad=0.0, fontsize=7.6, frameon=True,
+                   facecolor=BG, edgecolor=RULE, framealpha=0.95,
+                   title="LEGEND", title_fontsize=8.2,
+                   handlelength=1.8, labelspacing=1.0)
+
+    fig.subplots_adjust(right=0.76, hspace=0.62, top=0.92)
+    _save(fig, out_path)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  2 · PORTFOLIO STATUS TABLE
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_portfolio_table(out_path: Path, data: dict) -> None:
@@ -848,7 +1065,7 @@ def build(data_dir: Path, out_root: Path) -> None:
     proj_order = sorted(range(n_proj), key=lambda i: proj_info[i]["start"])
 
     # ── create output folder ───────────────────────────────────────────────────
-    out_dir = out_root / "3xdashboard"
+    out_dir = out_root / "infograph"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # ── shared data bundle ─────────────────────────────────────────────────────
@@ -859,11 +1076,13 @@ def build(data_dir: Path, out_root: Path) -> None:
         alloc_map=alloc_map, status_map=status_map, eff_map=eff_map,
         proj_ncf=proj_ncf, cert=cert, adv_t0=adv_t0,
         pf_s=pf_s, obs=obs,
+        ps_raw=ps, mp_raw=mp, ms_raw=ms,
     )
 
     # ── emit each output ───────────────────────────────────────────────────────
     _build_timeline(         out_dir / "01_timeline.png",          data)
     _build_ncf_chart(        out_dir / "01b_ncf_chart.png",        data)
+    _build_cost_baseline(    out_dir / "01c_cost_baseline.png",    data)
     _build_portfolio_table(  out_dir / "02_portfolio_status.png",  data)
     _build_observation_table(out_dir / "03_observations.png",      data)
 
@@ -886,7 +1105,7 @@ def main() -> None:
     out_root = Path(args.out) if args.out else data_dir.parent.parent
 
     print(f"data : {data_dir}")
-    print(f"out  : {out_root / '3xdashboard'}/")
+    print(f"out  : {out_root / 'infograph'}/")
     build(data_dir, out_root)
     print("Done.")
 
