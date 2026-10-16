@@ -3,13 +3,18 @@
 
 Outputs  (all written to  <out_dir>/3xdashboard/ )
 ------------------------------------------------------------------
-  01_timeline.png              — cash-flow timeline
-  01b_ncf_chart.png            — net cash-flow + budget curve
-  01c_cost_baseline_A.png      — cost baseline · STYLE A: Graphite & Neon
-  01c_cost_baseline_B.png      — cost baseline · STYLE B: Arctic Blueprint
-  01c_cost_baseline_C.png      — cost baseline · STYLE C: Ivory & Saffron
-  02_portfolio_status.png      — period reward computation table
-  03_observations.png          — agent observation table + symbol legend
+  Each figure is generated in 6 variants (no suffix = default global
+  tokens, _A … _E = named style):
+
+  01_timeline[_A|_B|_C|_D|_E].png     — cash-flow timeline
+  01b_ncf_chart[_A|…|_E].png          — net cash-flow + budget curve
+  01c_cost_baseline_A.png             — cost baseline · STYLE A: Graphite & Neon
+  01c_cost_baseline_B.png             — cost baseline · STYLE B: Arctic Blueprint
+  01c_cost_baseline_C.png             — cost baseline · STYLE C: Ivory & Saffron
+  01c_cost_baseline_D.png             — cost baseline · STYLE D: Amber & Slate
+  01c_cost_baseline_E.png             — cost baseline · STYLE E: Print-Ready
+  02_portfolio_status[_A|…|_E].png    — period reward computation table
+  03_observations[_A|…|_E].png        — agent observation table + symbol legend
 
 Usage
 -----
@@ -199,6 +204,79 @@ THEMES: dict[str, dict] = {
 
         legend_fc="#F4EFE4", legend_ec="#C8B99A", legend_tc="#2C1A08",
     ),
+
+    # ── D · AMBER & SLATE ────────────────────────────────────────────────────
+    # Yellow/amber bars replacing blue — warm golden canvas with slate accents.
+    # Bars are amber-filled; line palette shifted to contrast (plum, teal, rose).
+    # Milestone curve in burnt orange.  Square markers.  Medium hatching.
+    "D": dict(
+        name        = "Amber & Slate",
+        bg          = "#FDFAF3",
+        panel_bg    = "#F6F1E4",
+        grid        = "#E4DBC8",
+        spine       = "#B8A880",
+        tick        = "#6A5C40",
+        title_fg    = "#2A2010",
+        subtitle_fg = None,
+        label_fg    = "#4E4228",
+        proj_cols   = ["#6B3FA0", "#1B6B5E", "#B84020"],   # plum / teal / rust
+
+        bcws        = "#6B3FA0",      # plum
+        bcwp        = "#1B6B5E",      # dark teal
+        acwp        = "#B84020",      # rust-red
+
+        pay_face    = "#E8A80030",    # translucent amber yellow
+        pay_edge    = "#C98800",      # amber
+        ms_line     = "#C05010",      # burnt orange
+
+        bcws_lw=1.8, bcwp_lw=2.2, acwp_lw=1.8,
+        bcws_ls="--", bcwp_ls="-",  acwp_ls=(0,(4,1,1,1)),
+        bcws_marker="s", bcwp_marker="o", acwp_marker="s",
+        bcws_ms=3.0, bcwp_ms=3.5, acwp_ms=3.0,
+        ms_ls=(0,(5,2)), ms_lw=1.6,
+        bar_width=0.52, bar_lw=1.0, bar_hatch="\\\\",
+
+        legend_fc="#F6F1E4", legend_ec="#B8A880", legend_tc="#2A2010",
+    ),
+
+    # ── E · PRINT-READY ──────────────────────────────────────────────────────
+    # Inspired by A (bold, high-contrast) but optimised for both B&W and colour
+    # print.  White background, pure black typography, no semi-transparent fills.
+    # Lines are thick and visually distinct by BOTH weight AND dash pattern —
+    # so the chart reads clearly on a monochrome laser print.
+    # Bars use a dense hatch fill (no colour transparency tricks).
+    # Project accent colours stay saturated for colour print but have enough
+    # luminance contrast to survive greyscale conversion.
+    # Milestone curve: solid black step.  Glow effects removed.
+    "E": dict(
+        name        = "Print-Ready",
+        bg          = "#FFFFFF",
+        panel_bg    = "#F2F2F2",
+        grid        = "#D0D0D0",
+        spine       = "#404040",
+        tick        = "#404040",
+        title_fg    = "#000000",
+        subtitle_fg = None,
+        label_fg    = "#202020",
+        proj_cols   = ["#1155AA", "#117744", "#AA2211"],   # blue/green/red — print-safe
+
+        bcws        = "#1155AA",      # blue  — BCWS planned (dotted, thin)
+        bcwp        = "#117744",      # green — BCWP earned  (solid, bold)
+        acwp        = "#AA2211",      # red   — ACWP actual  (dashed, medium)
+
+        pay_face    = "#00000000",    # fully transparent — hatch provides fill
+        pay_edge    = "#1155AA",      # blue edge on bars
+        ms_line     = "#000000",      # solid black milestone step
+
+        bcws_lw=1.4, bcwp_lw=2.8, acwp_lw=2.0,
+        bcws_ls=(0,(2,2)),   bcwp_ls="-",  acwp_ls=(0,(6,2)),
+        bcws_marker="",     bcwp_marker="o", acwp_marker="D",
+        bcws_ms=0,          bcwp_ms=4.0,    acwp_ms=3.5,
+        ms_ls=(0,(1,1)), ms_lw=2.0,
+        bar_width=0.50, bar_lw=1.0, bar_hatch="////",
+
+        legend_fc="#FFFFFF", legend_ec="#404040", legend_tc="#000000",
+    ),
 }
 
 
@@ -292,9 +370,136 @@ def _smooth(x, y):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  GLOBAL-TOKEN OVERRIDE  (for theming timeline / ncf / table figures)
+# ─────────────────────────────────────────────────────────────────────────────
+# Maps each THEME key onto overrides for the module-level design tokens used by
+# the non-cost-baseline figures.  Only visual tokens are changed; logic and
+# paths are untouched.
+
+_GLOBAL_OVERRIDES: dict[str, dict] = {
+    # A — Graphite & Neon  (dark charcoal)
+    "A": dict(
+        BG    = "#1A1C22",
+        PANEL = "#20232B",
+        RULE  = "#2E3240",
+        TH    = "#E8EAF0",
+        TB    = "#C0C4D8",
+        TM    = "#7A8099",
+        PC    = ["#00D4FF", "#39FF6A", "#FF7B2C"],
+        SA    = {
+            "tl":  ("#A8B4FF", "#20232B"),
+            "ps":  ("#FF7B2C", "#22232B"),
+            "obs": ("#39FF6A", "#1E2428"),
+            "leg": ("#7A8099", "#20232B"),
+        },
+        COL_POS = "#00D4FF",
+        COL_NEG = "#FF4D6D",
+        BUD_LINE = "#A8B4FF",
+    ),
+    # B — Arctic Blueprint  (ice-white / navy)
+    "B": dict(
+        BG    = "#F0F4FA",
+        PANEL = "#E6EDF8",
+        RULE  = "#C8D4E8",
+        TH    = "#0D1F3C",
+        TB    = "#2A3A50",
+        TM    = "#4A6080",
+        PC    = ["#1A3F6F", "#0E6655", "#7B3800"],
+        SA    = {
+            "tl":  ("#1A3F6F", "#E6EDF8"),
+            "ps":  ("#7B3800", "#F2ECE4"),
+            "obs": ("#0E6655", "#E2F0EC"),
+            "leg": ("#3A5070", "#E6EDF8"),
+        },
+        COL_POS = "#2C5BA8",
+        COL_NEG = "#9E2A2B",
+        BUD_LINE = "#4A6080",
+    ),
+    # C — Ivory & Saffron  (warm cream)
+    "C": dict(
+        BG    = "#FAF7F0",
+        PANEL = "#F4EFE4",
+        RULE  = "#E2D9C8",
+        TH    = "#2C1A08",
+        TB    = "#3A2810",
+        TM    = "#7A6A52",
+        PC    = ["#7B4B2A", "#3B5E2B", "#5C3A7E"],
+        SA    = {
+            "tl":  ("#7B4B2A", "#F4EFE4"),
+            "ps":  ("#5C3A7E", "#EDE8F4"),
+            "obs": ("#3B5E2B", "#E8F0E4"),
+            "leg": ("#5A4830", "#F4EFE4"),
+        },
+        COL_POS = "#3B6E3A",
+        COL_NEG = "#A83232",
+        BUD_LINE = "#7A6A52",
+    ),
+    # D — Amber & Slate  (golden warm)
+    "D": dict(
+        BG    = "#FDFAF3",
+        PANEL = "#F6F1E4",
+        RULE  = "#E4DBC8",
+        TH    = "#2A2010",
+        TB    = "#3A2E18",
+        TM    = "#6A5C40",
+        PC    = ["#6B3FA0", "#1B6B5E", "#B84020"],
+        SA    = {
+            "tl":  ("#6B3FA0", "#F0EBF8"),
+            "ps":  ("#B84020", "#F8EDE8"),
+            "obs": ("#1B6B5E", "#E4F2EE"),
+            "leg": ("#4E4228", "#F6F1E4"),
+        },
+        COL_POS = "#C98800",
+        COL_NEG = "#B84020",
+        BUD_LINE = "#6A5C40",
+    ),
+    # E — Print-Ready  (white / black / print-safe colours)
+    "E": dict(
+        BG    = "#FFFFFF",
+        PANEL = "#F2F2F2",
+        RULE  = "#C0C0C0",
+        TH    = "#000000",
+        TB    = "#202020",
+        TM    = "#404040",
+        PC    = ["#1155AA", "#117744", "#AA2211"],
+        SA    = {
+            "tl":  ("#000000", "#F2F2F2"),
+            "ps":  ("#AA2211", "#FFF0EE"),
+            "obs": ("#117744", "#EEF8F2"),
+            "leg": ("#202020", "#F2F2F2"),
+        },
+        COL_POS = "#1155AA",
+        COL_NEG = "#AA2211",
+        BUD_LINE = "#404040",
+    ),
+}
+
+import contextlib
+
+@contextlib.contextmanager
+def _theme_context(style_key: str):
+    """Temporarily override module-level design tokens for non-cost-baseline figures."""
+    if style_key not in _GLOBAL_OVERRIDES:
+        yield {}
+        return
+    import sys
+    mod = sys.modules[__name__]
+    ov  = _GLOBAL_OVERRIDES[style_key]
+    saved = {k: getattr(mod, k) for k in ov if hasattr(mod, k)}
+    for k, v in ov.items():
+        if hasattr(mod, k):
+            setattr(mod, k, v)
+    try:
+        yield ov
+    finally:
+        for k, v in saved.items():
+            setattr(mod, k, v)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  1 · TIMELINE
 # ─────────────────────────────────────────────────────────────────────────────
-def _build_timeline(out_path: Path, data: dict) -> None:
+def _build_timeline(out_path: Path, data: dict, style_key: str = "") -> None:
     cfg_id     = data["cfg_id"]
     ep_id      = data["ep_id"]
     method     = data["method"]
@@ -307,6 +512,9 @@ def _build_timeline(out_path: Path, data: dict) -> None:
     alloc_map  = data["alloc_map"]
     eff_map    = data["eff_map"]
     cert       = data["cert"]
+
+    _ctx = _theme_context(style_key)
+    _ctx.__enter__()
 
     ARROW_GREEN = "#1A8C4E"
     ALLOC_RED   = "#C0392B"
@@ -508,75 +716,79 @@ def _build_timeline(out_path: Path, data: dict) -> None:
         (X_SIDE_L, card_bottom), 0.045*din_x, (y0+TOP_INSET)-card_bottom,
         lw=0, fc=brd, zorder=3))
     _save(fig, out_path)
+    _ctx.__exit__(None, None, None)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  1b · NET CASH-FLOW CHART
 # ─────────────────────────────────────────────────────────────────────────────
-def _build_ncf_chart(out_path: Path, data: dict) -> None:
-    cfg_id  = data["cfg_id"]; ep_id = data["ep_id"]
-    horizon = data["horizon"]; pf_s = data["pf_s"]
-    T    = list(range(horizon + 1))
-    ncfs = [float(pf_s[pf_s["t_episode"]==t]["net_cashflow"].iloc[0])
-            if not pf_s[pf_s["t_episode"]==t].empty else 0.0 for t in T]
-    buds = [float(pf_s[pf_s["t_episode"]==t]["budget_available"].iloc[0])
-            if not pf_s[pf_s["t_episode"]==t].empty else 0.0 for t in T]
-    FW = 8.6; FH = max(4.2, min(6.0, 3.0 + horizon * 0.12))
-    fig, (ax_ncf, ax_bud) = plt.subplots(2, 1, figsize=(FW, FH), facecolor=BG,
-        gridspec_kw={"height_ratios": [3, 2], "hspace": 0.55})
-    for ax in (ax_ncf, ax_bud):
-        ax.set_facecolor(BG)
-        ax.spines["top"].set_visible(False); ax.spines["right"].set_visible(False)
-        ax.spines["left"].set_color(RULE); ax.spines["bottom"].set_color(RULE)
-        ax.tick_params(colors=TM, labelsize=7.5)
-        ax.set_xlim(-0.6, horizon+0.6); ax.set_xticks(T)
-        ax.xaxis.grid(True, color=RULE, lw=0.35, zorder=0); ax.set_axisbelow(True)
-    COL_POS = "#2060C0"; COL_NEG = "#B03030"
-    ax_ncf.axhline(0, color="#888", lw=0.8, zorder=2)
-    ax_ncf.set_title("Net Cash-Flow per Period  (ΔBₜ)", fontsize=8.5,
-                     fontfamily=FONT, fontweight="bold", color=SA["ps"][0], pad=6)
-    ax_ncf.set_ylabel("ΔBₜ", fontsize=7.5, fontfamily=FONT, color=TM)
-    for t, ncf in zip(T, ncfs):
-        if ncf == 0: continue
-        col = COL_POS if ncf > 0 else COL_NEG
-        ax_ncf.bar(t, ncf, color=col+"40", ec=col, lw=0.8, width=0.55, zorder=3)
-        ax_ncf.text(t, ncf + ncf*0.03, f"{ncf:+,.0f}", ha="center",
-                    va="bottom" if ncf>0 else "top", fontsize=6.5,
-                    fontfamily=FONT, color=col, fontweight="bold", zorder=4)
-    ax_ncf.set_xticklabels([f"t{t}" for t in T], fontsize=7.0, color=TM)
-    ax_ncf.yaxis.set_tick_params(labelsize=7.0)
-    ncf_abs_max = max(abs(v) for v in ncfs if v!=0)*1.30 if any(ncfs) else 1
-    ax_ncf.set_ylim(-ncf_abs_max, ncf_abs_max)
-    ax_ncf.legend(handles=[
-        mpatches.Patch(fc=COL_POS+"40", ec=COL_POS, lw=0.8, label="Surplus  ΔBₜ > 0"),
-        mpatches.Patch(fc=COL_NEG+"40", ec=COL_NEG, lw=0.8, label="Deficit  ΔBₜ < 0"),
-    ], loc="upper left", bbox_to_anchor=(1.015, 1.02), borderaxespad=0.0,
-       fontsize=6.8, frameon=True, facecolor=BG, edgecolor=RULE,
-       framealpha=0.95, handlelength=1.3, labelspacing=0.8)
-    bmin = min(buds); bmax = max(buds)
-    margin = max((bmax-bmin)*0.18, 1)
-    ax_bud.set_ylim(bmin-margin, bmax+margin)
-    ax_bud.set_title("Portfolio Budget  (Bₜ)", fontsize=8.5, fontfamily=FONT,
-                     fontweight="bold", color=TM, pad=6)
-    ax_bud.set_ylabel("Bₜ", fontsize=7.5, fontfamily=FONT, color=TM)
-    ax_bud.plot(T, buds, color=TM, lw=1.4, ls="-", marker="o",
-                ms=4.5, zorder=4, label="Bₜ  portfolio budget")
-    ax_bud.fill_between(T, buds, bmin-margin, color=TM+"18", zorder=1)
-    for t, b in zip(T, buds):
-        ax_bud.text(t, b+(bmax-bmin)*0.035+margin*0.1, f"{b:,.0f}",
-                    ha="center", va="bottom", fontsize=6.0,
-                    fontfamily=FONT, color=TM, zorder=5)
-    ax_bud.set_xticks(T)
-    ax_bud.set_xticklabels([f"t{t}" for t in T], fontsize=7.0, color=TM)
-    ax_bud.yaxis.set_tick_params(labelsize=7.0)
-    ax_bud.legend(loc="upper left", bbox_to_anchor=(1.015, 1.02),
-                  borderaxespad=0.0, fontsize=6.8, frameon=True,
-                  facecolor=BG, edgecolor=RULE, framealpha=0.95, handlelength=1.6)
-    fig.subplots_adjust(right=0.82)
-    fig.text(0.41, 0.01, f"{cfg_id}  ·  episode {ep_id}  ·  T={horizon}",
-             ha="center", fontsize=7.0, fontfamily=FONT, color=TM)
-    fig.patch.set_facecolor(BG)
-    _save(fig, out_path)
+def _build_ncf_chart(out_path: Path, data: dict, style_key: str = "") -> None:
+    with _theme_context(style_key) as ov:
+        cfg_id  = data["cfg_id"]; ep_id = data["ep_id"]
+        horizon = data["horizon"]; pf_s = data["pf_s"]
+        T    = list(range(horizon + 1))
+        ncfs = [float(pf_s[pf_s["t_episode"]==t]["net_cashflow"].iloc[0])
+                if not pf_s[pf_s["t_episode"]==t].empty else 0.0 for t in T]
+        buds = [float(pf_s[pf_s["t_episode"]==t]["budget_available"].iloc[0])
+                if not pf_s[pf_s["t_episode"]==t].empty else 0.0 for t in T]
+        FW = 8.6; FH = max(4.2, min(6.0, 3.0 + horizon * 0.12))
+        fig, (ax_ncf, ax_bud) = plt.subplots(2, 1, figsize=(FW, FH), facecolor=BG,
+            gridspec_kw={"height_ratios": [3, 2], "hspace": 0.55})
+        for ax in (ax_ncf, ax_bud):
+            ax.set_facecolor(BG)
+            ax.spines["top"].set_visible(False); ax.spines["right"].set_visible(False)
+            ax.spines["left"].set_color(RULE); ax.spines["bottom"].set_color(RULE)
+            ax.tick_params(colors=TM, labelsize=7.5)
+            ax.set_xlim(-0.6, horizon+0.6); ax.set_xticks(T)
+            ax.xaxis.grid(True, color=RULE, lw=0.35, zorder=0); ax.set_axisbelow(True)
+        COL_POS   = ov.get("COL_POS",   "#2060C0")
+        COL_NEG   = ov.get("COL_NEG",   "#B03030")
+        _BUD_LINE = ov.get("BUD_LINE",  TM)
+        ax_ncf.axhline(0, color="#888", lw=0.8, zorder=2)
+        ax_ncf.set_title("Net Cash-Flow per Period  (ΔBₜ)", fontsize=8.5,
+                         fontfamily=FONT, fontweight="bold", color=SA["ps"][0], pad=6)
+        ax_ncf.set_ylabel("ΔBₜ", fontsize=7.5, fontfamily=FONT, color=TM)
+        for t, ncf in zip(T, ncfs):
+            if ncf == 0: continue
+            col = COL_POS if ncf > 0 else COL_NEG
+            ax_ncf.bar(t, ncf, color=col+"40", ec=col, lw=0.8, width=0.55, zorder=3)
+            ax_ncf.text(t, ncf + ncf*0.03, f"{ncf:+,.0f}", ha="center",
+                        va="bottom" if ncf>0 else "top", fontsize=6.5,
+                        fontfamily=FONT, color=col, fontweight="bold", zorder=4)
+        ax_ncf.set_xticklabels([f"t{t}" for t in T], fontsize=7.0, color=TM)
+        ax_ncf.yaxis.set_tick_params(labelsize=7.0)
+        ncf_abs_max = max(abs(v) for v in ncfs if v!=0)*1.30 if any(ncfs) else 1
+        ax_ncf.set_ylim(-ncf_abs_max, ncf_abs_max)
+        ax_ncf.legend(handles=[
+            mpatches.Patch(fc=COL_POS+"40", ec=COL_POS, lw=0.8, label="Surplus  ΔBₜ > 0"),
+            mpatches.Patch(fc=COL_NEG+"40", ec=COL_NEG, lw=0.8, label="Deficit  ΔBₜ < 0"),
+        ], loc="upper left", bbox_to_anchor=(1.015, 1.02), borderaxespad=0.0,
+           fontsize=6.8, frameon=True, facecolor=BG, edgecolor=RULE,
+           framealpha=0.95, handlelength=1.3, labelspacing=0.8)
+        bmin = min(buds); bmax = max(buds)
+        margin = max((bmax-bmin)*0.18, 1)
+        ax_bud.set_ylim(bmin-margin, bmax+margin)
+        ax_bud.set_title("Portfolio Budget  (Bₜ)", fontsize=8.5, fontfamily=FONT,
+                         fontweight="bold", color=TM, pad=6)
+        ax_bud.set_ylabel("Bₜ", fontsize=7.5, fontfamily=FONT, color=TM)
+        ax_bud.plot(T, buds, color=_BUD_LINE, lw=1.4, ls="-", marker="o",
+                    ms=4.5, zorder=4, label="Bₜ  portfolio budget")
+        ax_bud.fill_between(T, buds, bmin-margin, color=_BUD_LINE+"18", zorder=1)
+        for t, b in zip(T, buds):
+            ax_bud.text(t, b+(bmax-bmin)*0.035+margin*0.1, f"{b:,.0f}",
+                        ha="center", va="bottom", fontsize=6.0,
+                        fontfamily=FONT, color=TM, zorder=5)
+        ax_bud.set_xticks(T)
+        ax_bud.set_xticklabels([f"t{t}" for t in T], fontsize=7.0, color=TM)
+        ax_bud.yaxis.set_tick_params(labelsize=7.0)
+        ax_bud.legend(loc="upper left", bbox_to_anchor=(1.015, 1.02),
+                      borderaxespad=0.0, fontsize=6.8, frameon=True,
+                      facecolor=BG, edgecolor=RULE, framealpha=0.95, handlelength=1.6)
+        fig.subplots_adjust(right=0.82)
+        fig.text(0.41, 0.01, f"{cfg_id}  ·  episode {ep_id}  ·  T={horizon}",
+                 ha="center", fontsize=7.0, fontfamily=FONT, color=TM)
+        fig.patch.set_facecolor(BG)
+        _save(fig, out_path)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -586,6 +798,7 @@ def _build_cost_baseline(out_path: Path, data: dict, style_key: str = "A") -> No
     """
     Cost-baseline chart with selectable visual theme.
     style_key: "A" Graphite & Neon  |  "B" Arctic Blueprint  |  "C" Ivory & Saffron
+              "D" Amber & Slate    |  "E" Print-Ready
 
     Data sources (unchanged across all styles):
       BCWS  — projects_status.progress_plan_t × BAC
@@ -811,7 +1024,8 @@ def _build_cost_baseline(out_path: Path, data: dict, style_key: str = "A") -> No
 # ─────────────────────────────────────────────────────────────────────────────
 #  2 · PORTFOLIO STATUS TABLE
 # ─────────────────────────────────────────────────────────────────────────────
-def _build_portfolio_table(out_path: Path, data: dict) -> None:
+def _build_portfolio_table(out_path: Path, data: dict, style_key: str = "") -> None:
+    _ctx = _theme_context(style_key); _ctx.__enter__()
     gamma = data["gamma"]; horizon = data["horizon"]
     adv_t0 = data["adv_t0"]; pf_s = data["pf_s"]
     n_proj = data["n_proj"]; proj_ncf = data["proj_ncf"]
@@ -852,12 +1066,14 @@ def _build_portfolio_table(out_path: Path, data: dict) -> None:
             ha="left", va="top", fontsize=6.3, fontfamily=FONT,
             color=TM, zorder=5)
     _save(fig, out_path)
+    _ctx.__exit__(None, None, None)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  3 · OBSERVATION TABLE
 # ─────────────────────────────────────────────────────────────────────────────
-def _build_observation_table(out_path: Path, data: dict) -> None:
+def _build_observation_table(out_path: Path, data: dict, style_key: str = "") -> None:
+    _ctx = _theme_context(style_key); _ctx.__enter__()
     horizon = data["horizon"]; obs = data["obs"]
     proj_order = data["proj_order"]; status_map = data["status_map"]
 
@@ -937,6 +1153,7 @@ def _build_observation_table(out_path: Path, data: dict) -> None:
         ax.text(LEG_X0+0.02, ly+0.145, d, ha="left", va="top",
                 fontsize=6.0, fontfamily=FONT, color=TB, zorder=4)
     _save(fig, out_path)
+    _ctx.__exit__(None, None, None)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1002,13 +1219,20 @@ def build(data_dir: Path, out_root: Path) -> None:
         pf_s=pf_s, obs=obs, ps_raw=ps, mp_raw=mp, ms_raw=ms,
     )
 
-    _build_timeline(         out_dir / "01_timeline.png",              data)
-    _build_ncf_chart(        out_dir / "01b_ncf_chart.png",            data)
-    _build_cost_baseline(    out_dir / "01c_cost_baseline_A.png",      data, "A")
-    _build_cost_baseline(    out_dir / "01c_cost_baseline_B.png",      data, "B")
-    _build_cost_baseline(    out_dir / "01c_cost_baseline_C.png",      data, "C")
-    _build_portfolio_table(  out_dir / "02_portfolio_status.png",      data)
-    _build_observation_table(out_dir / "03_observations.png",          data)
+    for sk in ("", "A", "B", "C", "D", "E"):
+        sfx = f"_{sk}" if sk else ""
+        _build_timeline(
+            out_dir / f"01_timeline{sfx}.png",         data, sk)
+        _build_ncf_chart(
+            out_dir / f"01b_ncf_chart{sfx}.png",       data, sk)
+        _build_portfolio_table(
+            out_dir / f"02_portfolio_status{sfx}.png", data, sk)
+        _build_observation_table(
+            out_dir / f"03_observations{sfx}.png",     data, sk)
+
+    for sk in ("A", "B", "C", "D", "E"):
+        _build_cost_baseline(
+            out_dir / f"01c_cost_baseline_{sk}.png",   data, sk)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
