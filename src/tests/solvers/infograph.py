@@ -3,11 +3,10 @@ infograph.py  —  Episode infographic output folder.
 
 Outputs  (all written to  <out_dir>/infograph/ )
 ------------------------------------------------
-  01_timeline.png              — cash-flow timeline (arrows, bars, grid)
-  01b_ncf_chart.png            — net cash-flow + budget curve (separate plot)
-  02_portfolio_status.png      — period reward computation table
-  03_observations.png          — agent observation table
-  04_legend.png                — legend & notation card
+  01_timeline.png              — cash-flow timeline (grid, arrows, efficiency, sidebar legend)
+  01b_ncf_chart.png            — net cash-flow + budget curve (legend outside plot, right)
+  02_portfolio_status.png      — period reward computation table (exact-fit framing)
+  03_observations.png          — agent observation table + symbol legend (right column)
 
 Usage
 -----
@@ -36,10 +35,6 @@ TB    = "#363330"
 TM    = "#78746A"
 
 PC   = ["#3A5A82", "#2E7D52", "#944820"]   # project colours 0, 1, 2
-PCL  = [c + "22" for c in PC]              # light fill
-PCM  = [c + "55" for c in PC]              # medium fill
-
-MC   = ["#1854A8", "#17966A", "#CC8A00", "#B52020"]   # milestone j=0..3
 
 SA = {                                      # (border-colour, header-bg)
     "tl":  ("#1A4878", "#E4EEF7"),
@@ -49,13 +44,9 @@ SA = {                                      # (border-colour, header-bg)
 }
 
 FONT = "DejaVu Sans"
-DPI  = 150
+DPI  = 300          # print-quality raster output
 
-# Timeline grid constants
-N_GRID    = 9
-ROW_H     = 1.0
-BAR_PAD   = 0.12
-PROJ_ROWS = 3
+PROJ_ROWS = 3        # payments row / project box row / allocation row
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -65,80 +56,89 @@ def _sf(v: float, d: int = 2) -> str:
     return "—" if v == 0.0 else f"{v:+.{d}f}"
 
 
-def _hdr(ax, title: str, key: str, y: float = 1.0,
-         h: float = 0.048, fs: float = 8.0) -> float:
-    """Draw a coloured header band; return y of its bottom edge."""
+def _hdr(ax, title: str, key: str, y: float, h: float = 0.30,
+         fs: float = 8.0) -> float:
+    """
+    Draw a coloured header band in INCH-SCALE data coordinates where the
+    y-axis is inverted (0 = top of figure, increasing downward).
+    `y` is the top of the band; returns the bottom edge (new y).
+    """
     brd, bg = SA[key]
     ax.add_patch(mpatches.Rectangle(
-        (0, y - h), 1, h, lw=0, fc=bg,
-        transform=ax.transAxes, clip_on=False, zorder=8))
+        (0, y), 1, h, lw=0, fc=bg, clip_on=False, zorder=8))
     ax.add_patch(mpatches.Rectangle(
-        (0, y - h), 0.005, h, lw=0, fc=brd,
-        transform=ax.transAxes, clip_on=False, zorder=9))
-    ax.text(0.012, y - h / 2, title,
+        (0, y), 0.005, h, lw=0, fc=brd, clip_on=False, zorder=9))
+    ax.text(0.012, y + h / 2, title,
             ha="left", va="center", fontsize=fs,
             fontfamily=FONT, fontweight="bold", color=brd,
-            transform=ax.transAxes, clip_on=False, zorder=10)
-    return y - h
+            clip_on=False, zorder=10)
+    return y + h
 
 
 def _table(ax, rows, cw, rh: float, key: str,
-           fs: float = 7.0, align=None, y0: float = 1.0,
-           pad: float = 0.008) -> float:
-    """Render a table; return y of bottom edge."""
+           fs: float = 7.0, align=None, y0: float = 0.0,
+           pad: float = 0.015, x0: float = 0.0, width: float = 1.0) -> float:
+    """
+    Render a table in the same inch-scale / inverted-y convention as `_hdr`.
+    `y0` is the top edge; returns the bottom edge (new y).
+    """
     brd, hbg = SA[key]
-    y0 -= pad
+    y0 += pad
     if align is None:
         align = ["center"] * len(cw)
     for ri, row in enumerate(rows):
-        yt = y0 - ri * rh
-        yb = yt - rh
+        yt = y0 + ri * rh
+        yb = yt + rh
         is_hdr = ri == 0
         face = hbg if is_hdr else (BG if ri % 2 == 1 else PANEL)
         fc   = brd if is_hdr else TB
         fw   = "bold" if is_hdr else "normal"
         ax.add_patch(mpatches.Rectangle(
-            (0, yb), 1, rh, lw=0, fc=face,
-            transform=ax.transAxes, clip_on=True, zorder=1))
-        ax.plot([0, 1], [yb, yb], color=RULE, lw=0.3, zorder=2,
-                transform=ax.transAxes)
-        x = 0.0
+            (x0, yt), width, rh, lw=0, fc=face, clip_on=True, zorder=1))
+        ax.plot([x0, x0 + width], [yb, yb], color=RULE, lw=0.3, zorder=2)
+        x = x0
         for ci, (cell, w, ha) in enumerate(zip(row, cw, align)):
+            colw = w * width
             if ci:
-                ax.plot([x, x], [yb, yt], color=RULE, lw=0.2, zorder=2,
-                        transform=ax.transAxes)
-            p  = 0.006
+                ax.plot([x, x], [yt, yb], color=RULE, lw=0.2, zorder=2)
+            p  = 0.006 * width
             tx = (x + p if ha == "left"
-                  else x + w - p if ha == "right"
-                  else x + w / 2)
+                  else x + colw - p if ha == "right"
+                  else x + colw / 2)
             ax.text(tx, (yt + yb) / 2, str(cell),
                     ha=ha, va="center", fontsize=fs,
                     fontfamily=FONT, color=fc, fontweight=fw,
-                    transform=ax.transAxes, clip_on=True, zorder=3)
-            x += w
+                    clip_on=True, zorder=3)
+            x += colw
     nr = len(rows)
     ax.add_patch(mpatches.FancyBboxPatch(
-        (0, y0 - nr * rh), 1, nr * rh + pad,
+        (x0, y0 - pad), width, nr * rh + pad,
         boxstyle="square,pad=0", lw=0.7, ec=brd + "55", fc="none",
-        transform=ax.transAxes, clip_on=True, zorder=4))
-    return y0 - nr * rh
+        clip_on=True, zorder=4))
+    return y0 + nr * rh
 
 
-def _bare_ax(fw: float, fh: float):
-    """Return (fig, ax) with spines/ticks stripped."""
-    fig, ax = plt.subplots(figsize=(fw, fh), facecolor=BG)
+def _fitted_axes(fw: float, fh: float):
+    """
+    Figure whose single axes fills the canvas exactly (no default mpl
+    margins), using an INVERTED y-axis measured in inches from the top
+    (y=0 top … y=fh bottom).  x stays in [0, 1] = fraction of width.
+    This makes `fh` the true content height — no residual blank space.
+    """
+    fig = plt.figure(figsize=(fw, fh), facecolor=BG)
+    ax  = fig.add_axes([0, 0, 1, 1])
     ax.set_facecolor(BG)
     for sp in ax.spines.values():
         sp.set_visible(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.set_xticks([]); ax.set_yticks([])
     ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    ax.set_ylim(fh, 0)
     return fig, ax
 
 
 def _save(fig, path: Path) -> None:
-    fig.savefig(path, dpi=DPI, bbox_inches="tight", facecolor=BG)
+    fig.savefig(path, dpi=DPI, bbox_inches="tight", pad_inches=0.06,
+                facecolor=BG)
     plt.close(fig)
     print(f"  → {path}")
 
@@ -148,10 +148,23 @@ def _save(fig, path: Path) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_timeline(out_path: Path, data: dict) -> None:
     """
-    Cash-flow timeline — no background row fills, vertical period grid,
-    green upward payment arrows, red solid downward allocation lines,
-    efficiency circles at arrow bases, project bars label-free.
-    NCF chart removed — lives in 01b_ncf_chart.png.
+    Cash-flow timeline. Three-row grid band per project (earliest project on
+    top): payments row / project box row / allocation row.
+
+      • green arrows  — payments.    Base at the project box top edge,
+        pointing UP.  When several payments land on the same project at the
+        same timestep, a single shared arrow is drawn and the VALUES are
+        stacked vertically above it (earliest payment on top), so nothing
+        overlaps regardless of how many payments co-occur.
+      • red arrows    — allocations. Base at the project box bottom edge,
+        pointing DOWN.  Value printed under the arrow.
+      • small circles sit exactly on the project box's bottom edge, one per
+        active timestep, showing the efficiency η for that step.  Circle
+        size is fixed in *physical inches* so the η value always stays
+        inside the circle.
+
+    All headers + the legend live in a single one-column card placed
+    outside the grid, at the top-right of the figure.
     """
     cfg_id     = data["cfg_id"]
     ep_id      = data["ep_id"]
@@ -163,172 +176,291 @@ def _build_timeline(out_path: Path, data: dict) -> None:
     proj_info  = data["proj_info"]
     proj_order = data["proj_order"]
     alloc_map  = data["alloc_map"]
-    status_map = data["status_map"]
     eff_map    = data["eff_map"]
     cert       = data["cert"]
 
-    ARROW_GREEN = "#1A8C4E"   # all payment arrows
-    ALLOC_RED   = "#C0392B"   # all allocation lines
+    ARROW_GREEN = "#1A8C4E"
+    ALLOC_RED   = "#C0392B"
+
+    # ── layout constants (data-y units ≈ inches by construction) ───────────
+    N_GRID    = n_proj * PROJ_ROWS
+    ROW_H     = 0.82
+    BOX_VPAD  = 0.16
+    ARROW_LEN = 0.46
+    LABEL_GAP = 0.10
+    STACK_DY  = 0.23          # vertical spacing between stacked payment values
+
+    FS_TIME   = 8.6
+    FS_PLABEL = 7.8
+    FS_BOX    = 9.8
+    FS_ARROW  = 7.8
+    FS_EFF    = 6.4
+
+    GRID_TOP = N_GRID * ROW_H
 
     def proj_grid_top(rank: int) -> float:
-        return N_GRID - rank * PROJ_ROWS
+        return (N_GRID - rank * PROJ_ROWS) * ROW_H
 
-    SPINE_Y = 0.0
-    Y_LO    = -0.50           # just below spine — NCF removed from this plot
-    Y_HI    = N_GRID + 0.85
+    # ── group payments by (project, certification-t) ───────────────────────
+    pays_by_proj_t: dict[tuple, list] = defaultdict(list)
+    for t_c, pays in cert.items():
+        for pi, j, net in pays:
+            pays_by_proj_t[(pi, t_c)].append((j, net))
+    max_stack = max((len(v) for v in pays_by_proj_t.values()), default=1)
 
-    FW, FH = 8.27, 10.20
-    fig, ax = plt.subplots(figsize=(FW, FH), facecolor=BG)
-    ax.set_facecolor(BG)      # transparent grid — no row fills
+    # ── sidebar layout constants (drives both sizing + drawing) ────────────
+    TOP_INSET      = 0.16
+    BOTTOM_INSET   = 0.12
+    EYEBROW_GAP    = 0.26
+    TITLE_GAP      = 0.26
+    SOLVER_GAP     = 0.24
+    INFO_GAP       = 0.21
+    N_INFO         = 4
+    PRE_DIV_GAP    = 0.08
+    POST_DIV_GAP   = 0.22
+    LEGHDR_GAP     = 0.28
+    ITEM_GAP       = 0.36
+    N_LEGEND       = 4
+    END_GAP        = 0.08
+
+    SIDEBAR_H = (TOP_INSET + EYEBROW_GAP + TITLE_GAP + SOLVER_GAP
+                 + N_INFO * INFO_GAP + PRE_DIV_GAP + POST_DIV_GAP
+                 + LEGHDR_GAP + N_LEGEND * ITEM_GAP + END_GAP + BOTTOM_INSET)
+
+    # ── vertical extent ──────────────────────────────────────────────────
+    box_top_rank0 = GRID_TOP - ROW_H - BOX_VPAD
+    payment_reach = ARROW_LEN + LABEL_GAP + (max_stack - 1) * STACK_DY + 0.20
+    y_need_grid   = box_top_rank0 + payment_reach + 0.14
+
+    TOP_PAD = 0.14
+    Y_LO    = -0.36
+    Y_HI    = TOP_PAD + max(y_need_grid, SIDEBAR_H)
+    FH      = max(4.2, Y_HI - Y_LO)
+
+    # ── horizontal extent (grid stretches with horizon) ────────────────────
+    GRID_W = float(np.clip(0.80 * horizon + 4.2, 10.5, 18.0))
+    X_LO   = -0.9
+    X_HI   = horizon + 0.9
+    din_x_grid = (X_HI - X_LO) / GRID_W
+
+    SIDE_W_IN = 3.4
+    GAP_IN    = 0.28
+    sidebar_w = SIDE_W_IN * din_x_grid
+    gap_w     = GAP_IN * din_x_grid
+    X_SIDE_L  = X_HI + gap_w
+    X_SIDE_R  = X_SIDE_L + sidebar_w
+
+    FW = GRID_W + GAP_IN + SIDE_W_IN
+
+    fig = plt.figure(figsize=(FW, FH), facecolor=BG)
+    ax  = fig.add_axes([0, 0, 1, 1])
+    ax.set_facecolor(BG)
     for sp in ax.spines.values():
         sp.set_visible(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_xlim(-0.75, horizon + 0.75)
+    ax.set_xticks([]); ax.set_yticks([])
+    ax.set_xlim(X_LO, X_SIDE_R)
     ax.set_ylim(Y_LO, Y_HI)
 
-    # ── title band ────────────────────────────────────────────────────────────
-    ttl_y = Y_HI - 0.05
-    span  = horizon + 1.5
-    ax.add_patch(mpatches.Rectangle(
-        (-0.75, ttl_y - 0.58), span, 0.62,
-        lw=0, fc="#182A48", zorder=0, clip_on=False))
-    ax.text(horizon / 2, ttl_y - 0.19,
-            f"Portfolio Budgeting  ·  {cfg_id}  ·  Solver: {method.upper()}",
-            ha="center", va="center", fontsize=10.0, fontweight="bold",
-            fontfamily=FONT, color="white")
-    ax.text(horizon / 2, ttl_y - 0.46,
-            f"episode {ep_id}   ·   γ={gamma}   ·   "
-            f"{n_proj} projects   ·   T={horizon}   ·   B₀={bud0:,.0f}",
-            ha="center", va="center", fontsize=7.0,
-            fontfamily=FONT, color="#A4B8CC")
-
-    # section label
-    ax.text(-0.70, N_GRID + 0.56, "EPISODE CASH-FLOW TIMELINE",
-            ha="left", va="center", fontsize=8.5, fontweight="bold",
-            fontfamily=FONT, color=SA["tl"][0])
+    din_x = (X_SIDE_R - X_LO) / FW
+    din_y = (Y_HI - Y_LO) / FH
 
     T = list(range(horizon + 1))
 
-    # ── vertical period grid (behind everything) ──────────────────────────────
+    # ── vertical period guides — light dotted, classy ───────────────────────
     for t in T:
-        ax.axvline(t, color=RULE, lw=0.35, zorder=0,
-                   ymin=(Y_LO - Y_LO) / (Y_HI - Y_LO),
-                   ymax=(N_GRID - Y_LO) / (Y_HI - Y_LO))
+        ax.plot([t, t], [0, GRID_TOP], color=RULE, lw=0.5,
+                 ls=(0, (1, 2.4)), zorder=0)
 
-    # ── horizontal grid lines (no fills — BG shows through) ──────────────────
-    for row_idx in range(N_GRID + 1):
-        y   = row_idx * ROW_H
-        lw  = 0.7 if row_idx % PROJ_ROWS == 0 else 0.25
-        col = "#A8A29A" if row_idx % PROJ_ROWS == 0 else RULE
-        ax.axhline(y, color=col, lw=lw, zorder=1, xmin=0.04, xmax=0.97)
+    # ── project-band separators (only at project boundaries) ───────────────
+    for b in range(n_proj + 1):
+        y = b * PROJ_ROWS * ROW_H
+        ax.plot([X_LO + 0.05, X_HI - 0.05], [y, y],
+                color="#B7B2A6", lw=0.9, zorder=1)
 
-    # ── project label strip (left margin) ────────────────────────────────────
+    # ── project label strip (left margin) ───────────────────────────────────
     for rank, pi in enumerate(proj_order):
         top_y = proj_grid_top(rank)
-        mid_y = top_y - PROJ_ROWS / 2
-        ax.text(-0.55, mid_y,
+        mid_y = top_y - PROJ_ROWS / 2 * ROW_H
+        ax.text(X_LO + 0.33, mid_y,
                 f"P{pi}\nBAC {proj_info[pi]['bac']}\nprice {proj_info[pi]['price']}",
-                ha="center", va="center", fontsize=6.5,
+                ha="center", va="center", fontsize=FS_PLABEL,
                 fontfamily=FONT, fontweight="bold", color=PC[pi],
                 zorder=6, linespacing=1.35)
 
-    # ── spine & time labels ───────────────────────────────────────────────────
-    ax.axhline(SPINE_Y, color="#888", lw=1.0, zorder=2)
+    # ── spine & time labels ──────────────────────────────────────────────
+    ax.axhline(0, color="#888", lw=1.1, zorder=2)
     for t in T:
-        ax.plot(t, SPINE_Y, "|", color=TM, ms=5, mew=0.9, zorder=3)
-        ax.text(t, SPINE_Y - 0.16, f"t{t}",
-                ha="center", va="top", fontsize=7.2,
-                fontfamily=FONT, color=TM)
+        ax.plot(t, 0, "|", color=TM, ms=5.5, mew=1.0, zorder=3)
+        ax.text(t, -0.07, f"t{t}", ha="center", va="top",
+                fontsize=FS_TIME, fontfamily=FONT, color=TM)
 
-    # ── project bars — label-free, just colour band ───────────────────────────
+    # ── project boxes — narrow / short ──────────────────────────────────
+    box_edges: dict[int, tuple[float, float]] = {}
     for rank, pi in enumerate(proj_order):
-        pst   = proj_info[pi]["start"]
-        pft   = proj_info[pi]["finish"]
+        pst, pft = proj_info[pi]["start"], proj_info[pi]["finish"]
         col   = PC[pi]
         top_y = proj_grid_top(rank)
-        bbot  = top_y - 2 * ROW_H + BAR_PAD
-        btop  = top_y - 1 * ROW_H - BAR_PAD
+        box_top = (top_y - ROW_H) - BOX_VPAD
+        box_bot = (top_y - 2 * ROW_H) + BOX_VPAD
+        box_edges[pi] = (box_top, box_bot)
         ax.add_patch(mpatches.FancyBboxPatch(
-            (pst, bbot), pft - pst, btop - bbot,
-            boxstyle="round,pad=0.04",
-            lw=1.4, ec=col, fc=col + "30", zorder=4))
-        # project name only — no BAC/price clutter
-        ax.text(pst + (pft - pst) / 2, (bbot + btop) / 2,
-                f"P{pi}",
-                ha="center", va="center", fontsize=9.0,
+            (pst, box_bot), pft - pst, box_top - box_bot,
+            boxstyle="round,pad=0.022",
+            lw=1.5, ec=col, fc=col + "30", zorder=4))
+        ax.text(pst + (pft - pst) / 2, (box_top + box_bot) / 2, f"P{pi}",
+                ha="center", va="center", fontsize=FS_BOX,
                 fontfamily=FONT, fontweight="bold", color=col, zorder=5)
 
-    # ── efficiency circles at the base of allocation arrows ──────────────────
-    # drawn before arrows so arrows sit on top
-    ETA_R = 0.18   # circle radius in data units
-    for rank, pi in enumerate(proj_order):
-        top_y        = proj_grid_top(rank)
-        alloc_row_bot = top_y - 3 * ROW_H
-        for t in T:
-            if alloc_map.get((pi, t), 0.0) <= 0:
-                continue
-            if status_map.get((pi, t)) != "active":
-                continue
-            eta = eff_map.get((pi, t), 1.0)
-            cy  = alloc_row_bot + 0.22   # just above very bottom of alloc row
-            # circle
-            circ = plt.Circle((t, cy), ETA_R,
-                               fc=BG, ec=ALLOC_RED, lw=1.1, zorder=7)
-            ax.add_patch(circ)
-            ax.text(t, cy, f"{eta:.2f}",
-                    ha="center", va="center", fontsize=5.8,
-                    fontfamily=FONT, color=ALLOC_RED,
-                    fontweight="bold", zorder=8)
+    # ── payment arrows — green, UP, base on project-box TOP edge ───────────
+    # Multiple payments at the same (project, t): ONE shared arrow, values
+    # stacked vertically above it (earliest payment placed highest) so
+    # nothing overlaps.
+    for (pi, t_c), plist in pays_by_proj_t.items():
+        box_top, _ = box_edges[pi]
+        tip_y = box_top + ARROW_LEN
+        ax.annotate("", xy=(t_c, tip_y), xytext=(t_c, box_top),
+                    arrowprops=dict(arrowstyle="-|>", color=ARROW_GREEN,
+                                    lw=1.6, mutation_scale=10,
+                                    shrinkA=0, shrinkB=0), zorder=6)
+        ordered = sorted(plist, key=lambda jp: jp[0])     # earlier j first
+        n = len(ordered)
+        for idx, (j, net) in enumerate(ordered):
+            y_lbl = tip_y + LABEL_GAP + (n - 1 - idx) * STACK_DY
+            ax.text(t_c, y_lbl, f"{net:+.1f}",
+                    ha="center", va="bottom", fontsize=FS_ARROW,
+                    fontweight="bold", fontfamily=FONT,
+                    color=ARROW_GREEN, zorder=7)
 
-    # ── milestone payment arrows — all green, all upward ─────────────────────
-    LABEL_H = 0.44
-    for t_c, pays in sorted(cert.items()):
-        pays_by_proj: dict[int, list] = defaultdict(list)
-        for pi, j, net in pays:
-            pays_by_proj[pi].append((j, net))
-        for pi, proj_pays in pays_by_proj.items():
-            rank    = proj_order.index(pi)
-            top_y   = proj_grid_top(rank)
-            bar_top = top_y - ROW_H - BAR_PAD
-            for si, (j, net) in enumerate(proj_pays):
-                label_base = top_y - 0.08 - si * LABEL_H
-                # arrow tip lands just below bar top edge
-                ax.annotate("",
-                    xy=(t_c, bar_top),
-                    xytext=(t_c, label_base),
-                    arrowprops=dict(arrowstyle="-|>",
-                                    color=ARROW_GREEN,
-                                    lw=1.5, mutation_scale=10,
-                                    shrinkA=2, shrinkB=2), zorder=6)
-                j_lbl = "Adv" if j == 0 else f"MS{j}"
-                ax.text(t_c + 0.22, (label_base + bar_top) / 2,
-                        f"+{net:.1f} {j_lbl}",
-                        ha="left", va="center", fontsize=6.0,
-                        fontfamily=FONT, color=ARROW_GREEN, zorder=7)
-
-    # ── allocation lines — red, solid, from bar bottom down ──────────────────
-    for rank, pi in enumerate(proj_order):
-        top_y         = proj_grid_top(rank)
-        alloc_row_top = top_y - 2 * ROW_H
-        alloc_row_bot = top_y - 3 * ROW_H
-        alloc_row_mid = (alloc_row_top + alloc_row_bot) / 2
+    # ── allocation arrows — red, DOWN, base on project-box BOTTOM edge ─────
+    for pi in proj_order:
+        _, box_bot = box_edges[pi]
         for t in T:
             alloc = alloc_map.get((pi, t), 0.0)
             if alloc <= 0:
                 continue
-            bar_bot  = top_y - 2 * ROW_H - BAR_PAD + 0.02
-            arrow_tip = alloc_row_bot + ETA_R * 2 + 0.12  # stop above eta circle
-            ax.annotate("",
-                xy=(t, arrow_tip), xytext=(t, bar_bot),
-                arrowprops=dict(arrowstyle="-|>",
-                                color=ALLOC_RED,
-                                lw=1.4, linestyle="solid",
-                                mutation_scale=9,
-                                shrinkA=2, shrinkB=2), zorder=6)
-            ax.text(t + 0.22, alloc_row_mid + 0.10, f"−{alloc:.0f}",
-                    ha="left", va="center", fontsize=6.0,
-                    fontfamily=FONT, color=ALLOC_RED, zorder=7)
+            tip_y = box_bot - ARROW_LEN
+            ax.annotate("", xy=(t, tip_y), xytext=(t, box_bot),
+                        arrowprops=dict(arrowstyle="-|>", color=ALLOC_RED,
+                                        lw=1.5, mutation_scale=9,
+                                        shrinkA=0, shrinkB=0), zorder=6)
+            ax.text(t, tip_y - LABEL_GAP, f"−{alloc:.0f}",
+                    ha="center", va="top", fontsize=FS_ARROW,
+                    fontweight="bold", fontfamily=FONT,
+                    color=ALLOC_RED, zorder=7)
+
+    # ── efficiency circles — fixed physical size, on box bottom edge ──────
+    CIRC_DIAM_IN = 0.30
+    circ_w = CIRC_DIAM_IN * din_x
+    circ_h = CIRC_DIAM_IN * din_y
+    for pi in proj_order:
+        _, box_bot = box_edges[pi]
+        pst, pft = proj_info[pi]["start"], proj_info[pi]["finish"]
+        for t in range(pst, min(pft, horizon) + 1):
+            key = (pi, t)
+            if key not in eff_map:
+                continue
+            eta = eff_map[key]
+            ax.add_patch(mpatches.Ellipse((t, box_bot), circ_w, circ_h,
+                                           fc=BG, ec=ALLOC_RED, lw=1.2,
+                                           zorder=8))
+            ax.text(t, box_bot, f"{eta:.2f}", ha="center", va="center",
+                    fontsize=FS_EFF, fontfamily=FONT, color=ALLOC_RED,
+                    fontweight="bold", zorder=9)
+
+    # ── sidebar card: headers + legend, one column, top-right ──────────────
+    brd, side_bg = SA["tl"]
+    pad_frac  = 0.085
+    content_w = (X_SIDE_R - X_SIDE_L) * (1 - 2 * pad_frac)
+    xc_l = X_SIDE_L + (X_SIDE_R - X_SIDE_L) * pad_frac
+    xc_r = xc_l + content_w
+
+    y0 = Y_HI - TOP_INSET
+
+    def side_text(yy, s, fs, color, weight="normal"):
+        ax.text(xc_l, yy, s, ha="left", va="top", fontsize=fs,
+                fontweight=weight, fontfamily=FONT, color=color, zorder=5)
+
+    y = y0
+    side_text(y, "EPISODE CASH-FLOW TIMELINE", 8.4, brd, "bold")
+    y -= EYEBROW_GAP
+    side_text(y, f"{cfg_id}", 10.4, TH, "bold")
+    y -= TITLE_GAP
+    side_text(y, f"Solver: {method.upper()}", 8.2, TM)
+    y -= SOLVER_GAP
+    info_lines = [
+        f"Episode {ep_id}",
+        f"γ = {gamma}      T = {horizon}",
+        f"{n_proj} projects",
+        f"B₀ = {bud0:,.0f}",
+    ]
+    for line in info_lines:
+        side_text(y, line, 7.9, TB)
+        y -= INFO_GAP
+
+    y -= PRE_DIV_GAP
+    ax.plot([xc_l, xc_r], [y, y], color=brd + "60", lw=0.9, zorder=5)
+    y -= POST_DIV_GAP
+
+    side_text(y, "LEGEND", 8.2, brd, "bold")
+    y -= LEGHDR_GAP
+
+    icon_x = xc_l + 0.095 * content_w
+    text_x = xc_l + 0.22 * content_w
+
+    def icon_arrow(y_mid, up, col):
+        d = 0.15
+        if up:
+            ax.annotate("", xy=(icon_x, y_mid + d), xytext=(icon_x, y_mid - d),
+                        arrowprops=dict(arrowstyle="-|>", color=col, lw=1.7,
+                                        mutation_scale=10), zorder=6)
+        else:
+            ax.annotate("", xy=(icon_x, y_mid - d), xytext=(icon_x, y_mid + d),
+                        arrowprops=dict(arrowstyle="-|>", color=col, lw=1.7,
+                                        mutation_scale=10), zorder=6)
+
+    def icon_circle(y_mid, col):
+        w, h = 0.28 * din_x, 0.28 * din_y
+        ax.add_patch(mpatches.Ellipse((icon_x, y_mid), w, h,
+                                       fc=BG, ec=col, lw=1.3, zorder=6))
+
+    def icon_box(y_mid, col):
+        w, h = 0.30 * din_x, 0.26 * din_y
+        ax.add_patch(mpatches.FancyBboxPatch(
+            (icon_x - w / 2, y_mid - h / 2), w, h,
+            boxstyle="round,pad=0.01", lw=1.3, ec=col, fc=col + "30",
+            zorder=6))
+
+    legend_rows = [
+        ("arrow_up",   ARROW_GREEN, "Payment\n(value on arrow)"),
+        ("arrow_down", ALLOC_RED,   "Allocation\n(value under arrow)"),
+        ("circle",     ALLOC_RED,   "η efficiency\nper timestep"),
+        ("box",        PC[0],       "Project\nactive window"),
+    ]
+    for kind, col, label in legend_rows:
+        y_mid = y - 0.10
+        if kind == "arrow_up":
+            icon_arrow(y_mid, True, col)
+        elif kind == "arrow_down":
+            icon_arrow(y_mid, False, col)
+        elif kind == "circle":
+            icon_circle(y_mid, col)
+        elif kind == "box":
+            icon_box(y_mid, col)
+        ax.text(text_x, y_mid, label, ha="left", va="center",
+                fontsize=7.6, fontfamily=FONT, color=TB, zorder=6,
+                linespacing=1.25)
+        y -= ITEM_GAP
+
+    y -= END_GAP
+    card_bottom = y
+
+    ax.add_patch(mpatches.FancyBboxPatch(
+        (X_SIDE_L, card_bottom), X_SIDE_R - X_SIDE_L, (y0 + TOP_INSET) - card_bottom,
+        boxstyle="round,pad=0.018", lw=1.0, ec=brd + "80", fc=side_bg,
+        zorder=2))
+    ax.add_patch(mpatches.Rectangle(
+        (X_SIDE_L, card_bottom), 0.045 * din_x, (y0 + TOP_INSET) - card_bottom,
+        lw=0, fc=brd, zorder=3))
 
     _save(fig, out_path)
 
@@ -338,10 +470,9 @@ def _build_timeline(out_path: Path, data: dict) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_ncf_chart(out_path: Path, data: dict) -> None:
     """
-    Standalone net-cashflow + budget chart.
-    Two stacked subplots sharing the x-axis:
-      top  — ΔBₜ bar chart with value labels
-      bottom — Bₜ budget curve with value labels
+    Standalone net-cashflow + budget chart.  Legends are placed OUTSIDE the
+    axes on the right (so they never overlap bars / value labels); the
+    saved figure auto-expands to include them (bbox_inches='tight').
     """
     cfg_id  = data["cfg_id"]
     ep_id   = data["ep_id"]
@@ -356,8 +487,7 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
             if not pf_s[pf_s["t_episode"] == t].empty else 0.0
             for t in T]
 
-    FW = 8.27
-    # height proportional to horizon
+    FW = 8.6     # a touch wider to host the outside legend comfortably
     FH = max(4.2, min(6.0, 3.0 + horizon * 0.12))
 
     fig, (ax_ncf, ax_bud) = plt.subplots(
@@ -372,7 +502,6 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
         ax.spines["bottom"].set_color(RULE)
         ax.tick_params(colors=TM, labelsize=7.5)
         ax.set_xlim(-0.6, horizon + 0.6)
-        # vertical grid
         ax.set_xticks(T)
         ax.xaxis.grid(True, color=RULE, lw=0.35, zorder=0)
         ax.set_axisbelow(True)
@@ -393,7 +522,7 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
         ax_ncf.bar(t, ncf, color=col + "40", ec=col,
                    lw=0.8, width=0.55, zorder=3)
         va  = "bottom" if ncf > 0 else "top"
-        off = ncf * 0.03 if ncf > 0 else ncf * 0.03
+        off = ncf * 0.03
         ax_ncf.text(t, ncf + off, f"{ncf:+,.0f}",
                     ha="center", va=va, fontsize=6.5,
                     fontfamily=FONT, color=col, fontweight="bold", zorder=4)
@@ -401,13 +530,22 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
     ax_ncf.set_xticklabels([f"t{t}" for t in T], fontsize=7.0, color=TM)
     ax_ncf.yaxis.set_tick_params(labelsize=7.0)
 
-    # y-axis ticks at nice round values
-    ncf_abs_max = max(abs(v) for v in ncfs if v != 0) * 1.25 if any(ncfs) else 1
+    ncf_abs_max = max(abs(v) for v in ncfs if v != 0) * 1.30 if any(ncfs) else 1
     ax_ncf.set_ylim(-ncf_abs_max, ncf_abs_max)
+
+    pos_patch = mpatches.Patch(fc=COL_POS + "40", ec=COL_POS, lw=0.8,
+                                label="Surplus  ΔBₜ > 0")
+    neg_patch = mpatches.Patch(fc=COL_NEG + "40", ec=COL_NEG, lw=0.8,
+                                label="Deficit  ΔBₜ < 0")
+    ax_ncf.legend(handles=[pos_patch, neg_patch],
+                  loc="upper left", bbox_to_anchor=(1.015, 1.02),
+                  borderaxespad=0.0, fontsize=6.8, frameon=True,
+                  facecolor=BG, edgecolor=RULE, framealpha=0.95,
+                  handlelength=1.3, labelspacing=0.8)
 
     # ── Budget curve ──────────────────────────────────────────────────────────
     bmin = min(buds); bmax = max(buds)
-    margin = max((bmax - bmin) * 0.15, 1)
+    margin = max((bmax - bmin) * 0.18, 1)
     ax_bud.set_ylim(bmin - margin, bmax + margin)
     ax_bud.set_title("Portfolio Budget  (Bₜ)",
                      fontsize=8.5, fontfamily=FONT,
@@ -415,7 +553,7 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
     ax_bud.set_ylabel("Bₜ", fontsize=7.5, fontfamily=FONT, color=TM)
 
     ax_bud.plot(T, buds, color=TM, lw=1.4, ls="-", marker="o",
-                ms=4.5, zorder=4, label="Bₜ")
+                ms=4.5, zorder=4, label="Bₜ  portfolio budget")
     ax_bud.fill_between(T, buds, bmin - margin,
                         color=TM + "18", zorder=1)
 
@@ -428,9 +566,14 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
     ax_bud.set_xticks(T)
     ax_bud.set_xticklabels([f"t{t}" for t in T], fontsize=7.0, color=TM)
     ax_bud.yaxis.set_tick_params(labelsize=7.0)
+    ax_bud.legend(loc="upper left", bbox_to_anchor=(1.015, 1.02),
+                  borderaxespad=0.0, fontsize=6.8, frameon=True,
+                  facecolor=BG, edgecolor=RULE, framealpha=0.95,
+                  handlelength=1.6)
 
-    # shared footer
-    fig.text(0.5, 0.01,
+    fig.subplots_adjust(right=0.82)   # reserve room for outside legends
+
+    fig.text(0.41, 0.01,
              f"{cfg_id}  ·  episode {ep_id}  ·  T={horizon}",
              ha="center", fontsize=7.0, fontfamily=FONT, color=TM)
 
@@ -452,12 +595,10 @@ def _build_portfolio_table(out_path: Path, data: dict) -> None:
     ps_hdr = ["t", "γᵗ", "Bₜ", "ΔBₜ",
               *[f"P{i}·ΔB" for i in range(n_proj)],
               "r(t)=γᵗ·ΔBₜ", "ΣR"]
-    # column widths: distribute evenly for proj cols
     pc_w   = round(0.200 / max(n_proj, 1), 3)
     ps_cw  = ([0.055, 0.075, 0.115, 0.095]
               + [pc_w] * n_proj
               + [0.150, 0.110])
-    # normalise to sum=1
     total  = sum(ps_cw)
     ps_cw  = [w / total for w in ps_cw]
     ps_al  = (["center", "center", "right", "right"]
@@ -475,9 +616,7 @@ def _build_portfolio_table(out_path: Path, data: dict) -> None:
         running += pr
         pcols = [_sf(proj_ncf.get((i, t), 0.0), 1) for i in range(n_proj)]
         rows_ps.append([
-            f"t{t}",
-            f"{disc:.3f}",
-            f"{bud:,.0f}",
+            f"t{t}", f"{disc:.3f}", f"{bud:,.0f}",
             _sf(ncf, 1) if ncf else "0",
             *pcols,
             _sf(pr, 2) if pr else "0",
@@ -486,34 +625,37 @@ def _build_portfolio_table(out_path: Path, data: dict) -> None:
     rows_ps.append(["∑", "", "", ""] + [""] * n_proj
                    + [f"ΣR = {running:+.3f}", ""])
 
-    # auto-size height
-    RH     = 0.052
-    HDR_H  = 0.055
+    # ── exact-fit layout (inches) — no residual blank space ───────────────
+    FW     = 8.27
+    MARGIN = 0.10
+    HDR_H  = 0.28
+    RH     = 0.195
+    FOOT_H = 0.22
     N_ROWS = len(rows_ps)
-    FH     = max((HDR_H + N_ROWS * RH + 0.12) * 9.0, 2.8)
+    FH = MARGIN + HDR_H + N_ROWS * RH + FOOT_H + MARGIN
 
-    fig, ax = _bare_ax(8.27, FH)
-    y0 = _hdr(ax, "PORTFOLIO STATUS  —  Period Reward Computation  (γ = 0.95)",
-              "ps", y=0.97, h=HDR_H, fs=8.5)
-    y_bot = _table(ax, rows_ps, ps_cw, RH, "ps",
-                   fs=7.2, align=ps_al, y0=y0, pad=0.008)
-    ax.text(0.005, y_bot - 0.016,
+    fig, ax = _fitted_axes(FW, FH)
+    y = MARGIN
+    y = _hdr(ax, "PORTFOLIO STATUS  —  Period Reward Computation  (γ = 0.95)",
+             "ps", y=y, h=HDR_H, fs=8.5)
+    y = _table(ax, rows_ps, ps_cw, RH, "ps",
+               fs=7.0, align=ps_al, y0=y, pad=0.015)
+    ax.text(0.006, y + 0.09,
             f"* t=0 advance (+{adv_t0:.0f}) credited to Bₜ at reset — not a reward step.  "
             f"ΣR = Σ r(t), t ∈ [0, {horizon}]",
-            ha="left", va="top", fontsize=6.5, fontfamily=FONT,
-            color=TM, transform=ax.transAxes, zorder=3)
+            ha="left", va="top", fontsize=6.3, fontfamily=FONT,
+            color=TM, zorder=5)
     _save(fig, out_path)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  3 · OBSERVATION TABLE
+#  3 · OBSERVATION TABLE  (table + right-hand one-column legend)
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_observation_table(out_path: Path, data: dict) -> None:
     horizon    = data["horizon"]
     obs        = data["obs"]
     proj_order = data["proj_order"]
     status_map = data["status_map"]
-    n_proj     = data["n_proj"]
 
     OBS_FIELDS = [
         ("t",      "t_episode"),
@@ -542,8 +684,6 @@ def _build_observation_table(out_path: Path, data: dict) -> None:
     ob_al  = ["center", "center", "center", "right", "center",
               "right", "right", "right",
               "right", "right", "right", "right"]
-
-    codes = [c for _, c in OBS_FIELDS]
 
     active_obs = []
     for t in range(horizon + 1):
@@ -583,173 +723,65 @@ def _build_observation_table(out_path: Path, data: dict) -> None:
                 vals.append(f"{v:.1f}")
         rows_ob.append([pi_lbl] + vals)
 
-    RH     = 0.052
-    HDR_H  = 0.055
-    N_ROWS = len(rows_ob)
-    FH     = max((HDR_H + N_ROWS * RH + 0.18) * 9.0, 2.8)
+    # ── layout: table (left) + one-column symbol legend (right) ──────────────
+    TABLE_W = 0.72
+    GAP     = 0.02
+    LEG_X0  = TABLE_W + GAP
+    LEG_W   = 1.0 - LEG_X0
 
-    fig, ax = _bare_ax(8.27, FH)
-    y0 = _hdr(ax, "AGENT OBSERVATION  oₜ  —  Active Periods Only",
-              "obs", y=0.97, h=HDR_H, fs=8.5)
-    y_bot = _table(ax, rows_ob, ob_cw, RH, "obs",
-                   fs=7.2, align=ob_al, y0=y0, pad=0.008)
+    MARGIN = 0.10
+    HDR_H  = 0.28
+    RH     = 0.195
+    N_ROWS = len(rows_ob)
 
     syms = [
-        ("xᶜᵘ",   "catchup alloc (current t)"),
-        ("xᶜᵘ⁺¹", "catchup alloc (next-t lookahead)"),
-        ("xʳᵖ",   "reach-plan alloc"),
-        ("Δψ*",   "target progress gap"),
-        ("Δτ*",   "target timestep gap"),
-        ("x*",    "target required alloc"),
-        ("NPV*",  "target milestone NPV"),
-        ("θᵣₑₘ",  "tolerance remaining"),
+        ("xᶜᵘ",   "Catch-up alloc (t)"),
+        ("xᶜᵘ⁺¹", "Catch-up alloc (t+1)"),
+        ("xʳᵖ",   "Reach-plan alloc"),
+        ("Δψ*",   "Target progress gap"),
+        ("Δτ*",   "Target timestep gap"),
+        ("x*",    "Target required alloc"),
+        ("NPV*",  "Target milestone NPV"),
+        ("θᵣₑₘ",  "Tolerance remaining"),
     ]
-    sym_line = "     ".join(f"{s}: {d}" for s, d in syms)
-    ax.text(0.005, y_bot - 0.018, sym_line,
-            ha="left", va="top", fontsize=6.5, fontfamily=FONT,
-            color=TM, transform=ax.transAxes, zorder=3)
-    _save(fig, out_path)
+    LEG_HDR_H  = 0.26
+    LEG_ITEM_H = 0.33
+    legend_content_h = LEG_HDR_H + len(syms) * LEG_ITEM_H + 0.06
 
+    table_content_h = HDR_H + N_ROWS * RH + 0.02
+    body_h = max(table_content_h, legend_content_h)
+    FW = 8.27
+    FH = MARGIN + body_h + MARGIN
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  4 · LEGEND
-# ─────────────────────────────────────────────────────────────────────────────
-def _build_legend(out_path: Path, data: dict) -> None:
-    n_proj  = data["n_proj"]
-    horizon = data["horizon"]
+    fig, ax = _fitted_axes(FW, FH)
 
-    FW, FH = 8.27, 3.80
-    HDR_H  = 0.062
-    DY     = 0.096          # row pitch
-    ICON_R = 0.036          # icon half-width (axes units)
-    ICON_GAP = 0.026        # gap from icon right edge to text
+    y0 = MARGIN
+    y_after_hdr = _hdr(ax, "AGENT OBSERVATION  oₜ  —  Active Periods Only",
+                        "obs", y=y0, h=HDR_H, fs=8.5)
+    _table(ax, rows_ob, ob_cw, RH, "obs", fs=6.8, align=ob_al,
+           y0=y_after_hdr, pad=0.012, x0=0.0, width=TABLE_W)
 
-    C1_IX = 0.060;  C1_TX = C1_IX + ICON_R + ICON_GAP
-    C2_IX = 0.390;  C2_TX = C2_IX + ICON_R + ICON_GAP
-    C3_IX = 0.715;  C3_TX = C3_IX + ICON_R + ICON_GAP
-
-    Y0    = 1.0 - HDR_H - 0.030   # top of first icon row
-    FS_LBL = 8.0
-
-    fig, ax = _bare_ax(FW, FH)
-    _hdr(ax, "LEGEND & NOTATION", "leg", y=1.0, h=HDR_H, fs=8.5)
-
-    def _icon(kind: str, col: str, x: float, y: float) -> None:
-        d = 0.028
-        if kind == "arrow_up":
-            ax.annotate("", xy=(x, y + d), xytext=(x, y - d),
-                        arrowprops=dict(arrowstyle="-|>", color=col,
-                                        lw=1.5, mutation_scale=11),
-                        transform=ax.transAxes)
-        elif kind == "arrow_dn_d":
-            ax.annotate("", xy=(x, y - d), xytext=(x, y + d),
-                        arrowprops=dict(arrowstyle="-|>", color=col,
-                                        lw=1.5, linestyle="solid",
-                                        mutation_scale=11),
-                        transform=ax.transAxes)
-        elif kind == "box":
-            ax.add_patch(mpatches.FancyBboxPatch(
-                (x - 0.034, y - 0.024), 0.068, 0.048,
-                boxstyle="round,pad=0.004", lw=1.0,
-                ec=col, fc=col + "28", transform=ax.transAxes))
-        elif kind == "rect":
-            ax.add_patch(mpatches.Rectangle(
-                (x - 0.032, y - 0.022), 0.064, 0.044,
-                lw=0, fc=col + "55", transform=ax.transAxes))
-        elif kind == "dotline":
-            ax.plot([x - 0.036, x + 0.036], [y, y],
-                    color=col, lw=1.1, ls=":", marker="o", ms=4.0,
-                    transform=ax.transAxes)
-        elif kind == "shade":
-            ax.add_patch(mpatches.Rectangle(
-                (x - 0.032, y - 0.022), 0.064, 0.044,
-                lw=0, fc=col + "22", transform=ax.transAxes))
-        elif kind == "circle":
-            ax.add_patch(mpatches.Circle(
-                (x, y), 0.026,
-                fc=BG, ec=col, lw=1.1,
-                transform=ax.transAxes))
-            ax.text(x, y, "η", ha="center", va="center",
-                    fontsize=6.5, fontfamily=FONT, color=col,
-                    transform=ax.transAxes)
-
-    def _row(kind: str, col: str, ix: float, tx: float,
-             y: float, label: str) -> None:
-        _icon(kind, col, ix, y)
-        ax.text(tx, y, label, ha="left", va="center", fontsize=FS_LBL,
-                fontfamily=FONT, color=TB, transform=ax.transAxes)
-
-    # ── column 1 — payment arrows (all green) ────────────────────────────
-    ARROW_GREEN_LEG = "#1A8C4E"
-    col1 = [
-        ("arrow_up", ARROW_GREEN_LEG, "Advance payment  (j = 0)"),
-        ("arrow_up", ARROW_GREEN_LEG, "Milestone payment  (j = 1)"),
-        ("arrow_up", ARROW_GREEN_LEG, "Milestone payment  (j = 2)"),
-        ("arrow_up", ARROW_GREEN_LEG, "Milestone payment  (j = 3)"),
-    ]
-    for k, (kind, col, lbl) in enumerate(col1):
-        _row(kind, col, C1_IX, C1_TX, Y0 - k * DY, lbl)
-
-    # ── column 2 — allocation arrows (solid red) + budget ────────────────
-    ALLOC_RED_LEG = "#C0392B"
-    col2 = [
-        ("arrow_dn_d", ALLOC_RED_LEG, "Allocation outflow  (solid ↓, red)"),
-        ("dotline",    TM,            "Bₜ  portfolio budget  (dotted)"),
-    ]
-    for k, (kind, col, lbl) in enumerate(col2):
-        _row(kind, col, C2_IX, C2_TX, Y0 - k * DY, lbl)
-
-    # ── column 3 — bars, cashflow rects, efficiency circle ───────────────
-    col3 = [
-        ("box",    PC[0],     "Project P0  active window"),
-        ("box",    PC[1],     "Project P1  active window"),
-        ("box",    PC[2],     "Project P2  active window"),
-        ("rect",   "#2060C0", "ΔBₜ > 0  (period surplus)"),
-        ("rect",   "#B03030", "ΔBₜ < 0  (period deficit)"),
-        ("circle", "#C0392B", "η  efficiency  (circle at arrow base)"),
-    ]
-    for k, (kind, col, lbl) in enumerate(col3):
-        _row(kind, col, C3_IX, C3_TX, Y0 - k * DY, lbl)
-
-    # ── formula box ───────────────────────────────────────────────────────
-    max_rows   = max(len(col1), len(col2), len(col3))
-    y_last     = Y0 - (max_rows - 1) * DY
-    y_box_top  = y_last - 2 * DY - 0.010   # 2-row gap
-    BOX_H      = 0.210
-    BOX_PAD    = 0.018
-
+    # ── right-hand symbol legend card (sized to its own content) ──────────
+    brd, hbg = SA["obs"]
+    leg_top = y0
+    leg_h   = legend_content_h
     ax.add_patch(mpatches.FancyBboxPatch(
-        (0.010, y_box_top - BOX_H), 0.980, BOX_H,
-        boxstyle="round,pad=0.010", lw=0.8,
-        ec=SA["ps"][0] + "80", fc=SA["ps"][1],
-        transform=ax.transAxes))
-
-    # 3 columns × 2 rows inside the box
-    CX   = [0.025, 0.360, 0.695]
-    FS_F = 7.6;  FS_O = 7.2
-    y_r1 = y_box_top - BOX_PAD - 0.004
-    y_r2 = y_r1 - 0.098
-
-    row1 = [
-        "r(t) = γᵗ × ΔBₜ",
-        "ΔBₜ = Σ inflow(t) − Σ outflow(t)",
-        f"ΣR = Σ r(t),   t ∈ [0, {horizon}]",
-    ]
-    row2 = [
-        "outflow = allocation + interest(treasury_draw)",
-        "o(t) per project: [θᵣₑₘ, xᶜᵘ, xᶜᵘ⁺¹, Δψ*, Δτ*, x*, NPV*]",
-        "o(t) portfolio: [ΔBₜ/B₀, Bₜ/B₀]",
-    ]
-    for txt, cx in zip(row1, CX):
-        ax.text(cx, y_r1, txt, ha="left", va="top",
-                fontsize=FS_F, fontfamily=FONT,
-                color=SA["ps"][0], fontweight="bold",
-                transform=ax.transAxes)
-    for txt, cx in zip(row2, CX):
-        ax.text(cx, y_r2, txt, ha="left", va="top",
-                fontsize=FS_O, fontfamily=FONT,
-                color=SA["obs"][0],
-                transform=ax.transAxes)
+        (LEG_X0, leg_top), LEG_W, leg_h,
+        boxstyle="round,pad=0.008", lw=0.8, ec=brd + "70", fc=hbg,
+        clip_on=True, zorder=3))
+    ax.text(LEG_X0 + LEG_W / 2, leg_top + LEG_HDR_H / 2, "SYMBOLS",
+            ha="center", va="center", fontsize=7.2, fontweight="bold",
+            fontfamily=FONT, color=brd, zorder=4)
+    ax.plot([LEG_X0 + 0.012, LEG_X0 + LEG_W - 0.012],
+            [leg_top + LEG_HDR_H, leg_top + LEG_HDR_H],
+            color=brd + "50", lw=0.6, zorder=4)
+    for i, (s, d) in enumerate(syms):
+        ly = leg_top + LEG_HDR_H + 0.05 + i * LEG_ITEM_H
+        ax.text(LEG_X0 + 0.02, ly, s, ha="left", va="top",
+                fontsize=7.0, fontweight="bold", fontfamily=FONT,
+                color=brd, zorder=4)
+        ax.text(LEG_X0 + 0.02, ly + 0.145, d, ha="left", va="top",
+                fontsize=6.0, fontfamily=FONT, color=TB, zorder=4)
 
     _save(fig, out_path)
 
@@ -834,7 +866,6 @@ def build(data_dir: Path, out_root: Path) -> None:
     _build_ncf_chart(        out_dir / "01b_ncf_chart.png",        data)
     _build_portfolio_table(  out_dir / "02_portfolio_status.png",  data)
     _build_observation_table(out_dir / "03_observations.png",      data)
-    _build_legend(           out_dir / "04_legend.png",            data)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
