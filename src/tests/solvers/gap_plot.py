@@ -11,14 +11,14 @@ src/tests/solvers/ground_truth/
         <solver>/
             portfolios.csv
 
-Output
+Output  (gap_plots/ beside ground_truth/)
 ------
-src/tests/solvers/gap_plots/gap_plot.png        — default palette
-src/tests/solvers/gap_plots/gap_plot_A.png      — Graphite & Neon
-src/tests/solvers/gap_plots/gap_plot_B.png      — Arctic Blueprint
-src/tests/solvers/gap_plots/gap_plot_C.png      — Ivory & Saffron
-src/tests/solvers/gap_plots/gap_plot_D.png      — Amber & Slate
-src/tests/solvers/gap_plots/gap_plot_E.png      — Print-Ready
+gap_plot[_<theme>].png           — annotated  (original labels, may overlap)
+gap_plot[_<theme>]_table.png     — table below plot instead of inline labels
+gap_plot[_<theme>]_clean.png     — overlap-resolved labels
+
+Themes: (none)=default  A=Graphite&Neon  B=Arctic Blueprint
+        C=Ivory&Saffron  D=Amber&Slate  E=Print-Ready
 
 Usage
 -----
@@ -260,126 +260,327 @@ def _collect(ground_root: Path) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-# ── plot ──────────────────────────────────────────────────────────────────────
+# ── plot helpers ──────────────────────────────────────────────────────────────
 
-def plot_gap(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
-    # resolve theme — fall back to legacy global palette when no key given
+_CONFIG_ORDER = ["TC-10SF-R", "TC-1LMAIF-R", "TC-10MAIF-R", "TC-3XMAIF-R"]
+
+
+def _resolve_theme(theme_key: str) -> dict:
+    """Return a flat dict of all styling tokens for the given theme key."""
     if theme_key and theme_key in THEMES:
-        th             = THEMES[theme_key]
-        bg             = th["bg"]
-        grid_col       = th["grid"]
-        spine_col      = th["spine"]
-        tick_col       = th["tick_fg"]
-        label_col      = th["label_fg"]
-        title_col      = th["title_fg"]
-        legend_fc      = th["legend_fc"]
-        legend_ec      = th["legend_ec"]
-        legend_tc      = th["legend_tc"]
-        zero_col       = th["zero_line"]
-        ann_alpha      = th["annotation_alpha"]
-        solver_colours = th["solver_colours"]
-        theme_label    = f"  ·  {th['name']}"
-        # Print-Ready: markers differ by dash pattern too for B&W legibility
-        if theme_key == "E":
-            line_styles = ["-", "--", (0,(5,2)), (0,(2,2)), (0,(6,2,1,2)), (0,(1,1))]
-        else:
-            line_styles = ["-"] * 6
-    else:
-        bg             = C["bg"]
-        grid_col       = C["grid"]
-        spine_col      = "#aaaaaa"
-        tick_col       = "#555555"
-        label_col      = "#333333"
-        title_col      = "#111111"
-        legend_fc      = "#ffffff"
-        legend_ec      = "#cccccc"
-        legend_tc      = "#111111"
-        zero_col       = "#aaaaaa"
-        ann_alpha      = 0.9
-        solver_colours = SOLVER_COLOURS
-        theme_label    = ""
-        line_styles    = ["-"] * 6
+        th = THEMES[theme_key]
+        return dict(
+            bg             = th["bg"],
+            grid_col       = th["grid"],
+            spine_col      = th["spine"],
+            tick_col       = th["tick_fg"],
+            label_col      = th["label_fg"],
+            title_col      = th["title_fg"],
+            legend_fc      = th["legend_fc"],
+            legend_ec      = th["legend_ec"],
+            legend_tc      = th["legend_tc"],
+            zero_col       = th["zero_line"],
+            ann_alpha      = th["annotation_alpha"],
+            solver_colours = th["solver_colours"],
+            theme_label    = f"  ·  {th['name']}",
+            line_styles    = (["-", "--", (0,(5,2)), (0,(2,2)), (0,(6,2,1,2)), (0,(1,1))]
+                              if theme_key == "E" else ["-"] * 6),
+        )
+    return dict(
+        bg             = C["bg"],
+        grid_col       = C["grid"],
+        spine_col      = "#aaaaaa",
+        tick_col       = "#555555",
+        label_col      = "#333333",
+        title_col      = "#111111",
+        legend_fc      = "#ffffff",
+        legend_ec      = "#cccccc",
+        legend_tc      = "#111111",
+        zero_col       = "#aaaaaa",
+        ann_alpha      = 0.9,
+        solver_colours = SOLVER_COLOURS,
+        theme_label    = "",
+        line_styles    = ["-"] * 6,
+    )
 
-    _CONFIG_ORDER = ["TC-10SF-R", "TC-1LMAIF-R", "TC-10MAIF-R", "TC-3XMAIF-R"]
+
+def _build_axes(df: pd.DataFrame, t: dict,
+                fig_height: float = 5.0) -> tuple:
+    """
+    Create figure + axes, draw lines, return
+    (fig, ax, configs, solvers, x_pos, series)
+    where series = [(colour, x_positions, y_values), …].
+    No labels are drawn here.
+    """
+    present = set(df["config"].unique())
+    configs = [c for c in _CONFIG_ORDER if c in present] + \
+              sorted(c for c in present if c not in _CONFIG_ORDER)
+    solvers = sorted(df["solver"].unique())
+    x_pos   = np.arange(len(configs))
+
+    fig, ax = plt.subplots(figsize=(max(8, len(configs) * 2.2), fig_height))
+    fig.patch.set_facecolor(t["bg"])
+    ax.set_facecolor(t["bg"])
+    ax.grid(True, linestyle=":", color=t["grid_col"], alpha=0.8, zorder=0)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(t["spine_col"])
+        ax.spines[side].set_linewidth(0.8)
+    ax.tick_params(colors=t["tick_col"], labelsize=8)
+
+    series = []
+    for s_idx, solver in enumerate(solvers):
+        colour = t["solver_colours"][s_idx % len(t["solver_colours"])]
+        marker = MARKERS[s_idx % len(MARKERS)]
+        ls     = t["line_styles"][s_idx % len(t["line_styles"])]
+        sub    = df[df["solver"] == solver].set_index("config")
+        y      = [sub.loc[c, "cum_reward"] if c in sub.index else np.nan
+                  for c in configs]
+        ax.plot(x_pos, y, color=colour, marker=marker, markersize=7,
+                linewidth=1.8, linestyle=ls, label=solver, zorder=3)
+        series.append((solver, colour, x_pos.tolist(), y))
+
+    ax.axhline(0, color=t["zero_col"], linewidth=0.8, linestyle="--", zorder=1)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(configs, fontsize=9, rotation=15, ha="right",
+                       color=t["tick_col"])
+    ax.set_xlabel("Config", fontsize=10, color=t["label_col"])
+    ax.set_ylabel("Cumulative Reward  (episode NPV)", fontsize=10,
+                  color=t["label_col"])
+    ax.tick_params(labelsize=8)
+    leg = ax.legend(title="Solver", fontsize=8, title_fontsize=8,
+                    loc="best", framealpha=0.9,
+                    facecolor=t["legend_fc"], edgecolor=t["legend_ec"])
+    leg.get_title().set_color(t["legend_tc"])
+    for txt in leg.get_texts():
+        txt.set_color(t["label_col"])
+
+    return fig, ax, configs, solvers, x_pos, series
+
+
+def _set_title(ax, base: str, variant: str, t: dict) -> None:
+    suffix = f"  [{variant}]" if variant else ""
+    ax.set_title(base + suffix,
+                 fontsize=11, fontweight="bold", color=t["title_col"])
+
+
+def _save(fig, out: Path, bg: str) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=bg)
+    plt.close(fig)
+    print(f"  saved → {out}")
+
+
+# ── variant 1: annotated (original — labels may overlap) ─────────────────────
+
+def plot_annotated(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
+    t = _resolve_theme(theme_key)
+    fig, ax, configs, solvers, x_pos, series = _build_axes(df, t)
+    _set_title(ax, f"Solver Comparison — Cumulative Reward per Config{t['theme_label']}",
+               "annotated", t)
+
+    for _solver, colour, xs, ys in series:
+        for xi, yi in zip(xs, ys):
+            if not np.isnan(yi):
+                ax.annotate(f"{yi:.2f}", xy=(xi, yi), xytext=(0, 8),
+                            textcoords="offset points", ha="center",
+                            fontsize=7, color=colour, alpha=t["ann_alpha"])
+    _save(fig, out, t["bg"])
+
+
+# ── variant 2: table — no inline labels, clean data table below ───────────────
+
+def plot_table(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
+    t   = _resolve_theme(theme_key)
     present = set(df["config"].unique())
     configs = [c for c in _CONFIG_ORDER if c in present] + \
               sorted(c for c in present if c not in _CONFIG_ORDER)
     solvers = sorted(df["solver"].unique())
 
-    x_pos   = np.arange(len(configs))
-    x_ticks = configs
-
-    fig, ax = plt.subplots(figsize=(max(8, len(configs) * 2.2), 5))
-    fig.patch.set_facecolor(bg)
-    ax.set_facecolor(bg)
-    ax.grid(True, linestyle=":", color=grid_col, alpha=0.8, zorder=0)
-
-    # style spines
+    # Extra vertical space for the table
+    fig, ax = plt.subplots(figsize=(max(8, len(configs) * 2.2),
+                                    5 + len(solvers) * 0.38 + 0.6))
+    fig.patch.set_facecolor(t["bg"])
+    ax.set_facecolor(t["bg"])
+    ax.grid(True, linestyle=":", color=t["grid_col"], alpha=0.8, zorder=0)
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
     for side in ("left", "bottom"):
-        ax.spines[side].set_color(spine_col)
+        ax.spines[side].set_color(t["spine_col"])
         ax.spines[side].set_linewidth(0.8)
-    ax.tick_params(colors=tick_col, labelsize=8)
+    ax.tick_params(colors=t["tick_col"], labelsize=8)
+
+    x_pos = np.arange(len(configs))
+    table_data   = []
+    table_cols   = configs
+    row_colours  = []
 
     for s_idx, solver in enumerate(solvers):
-        colour = solver_colours[s_idx % len(solver_colours)]
+        colour = t["solver_colours"][s_idx % len(t["solver_colours"])]
         marker = MARKERS[s_idx % len(MARKERS)]
-        ls     = line_styles[s_idx % len(line_styles)]
+        ls     = t["line_styles"][s_idx % len(t["line_styles"])]
+        sub    = df[df["solver"] == solver].set_index("config")
+        y      = [sub.loc[c, "cum_reward"] if c in sub.index else np.nan
+                  for c in configs]
+        ax.plot(x_pos, y, color=colour, marker=marker, markersize=7,
+                linewidth=1.8, linestyle=ls, label=solver, zorder=3)
+        row = [f"{v:.2f}" if not np.isnan(v) else "—" for v in y]
+        table_data.append(row)
+        row_colours.append([colour] * len(configs))
 
-        sub = df[df["solver"] == solver].set_index("config")
-        y   = [sub.loc[c, "cum_reward"] if c in sub.index else np.nan
-               for c in configs]
-
-        ax.plot(
-            x_pos, y,
-            color=colour,
-            marker=marker,
-            markersize=7,
-            linewidth=1.8,
-            linestyle=ls,
-            label=solver,
-            zorder=3,
-        )
-
-        # annotate each point
-        for xi, yi in zip(x_pos, y):
-            if not np.isnan(yi):
-                ax.annotate(
-                    f"{yi:.2f}",
-                    xy=(xi, yi),
-                    xytext=(0, 8),
-                    textcoords="offset points",
-                    ha="center",
-                    fontsize=7,
-                    color=colour,
-                    alpha=ann_alpha,
-                )
-
-    # zero reference
-    ax.axhline(0, color=zero_col, linewidth=0.8, linestyle="--", zorder=1)
-
+    ax.axhline(0, color=t["zero_col"], linewidth=0.8, linestyle="--", zorder=1)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(x_ticks, fontsize=9, rotation=15, ha="right",
-                       color=tick_col)
-    ax.set_xlabel("Config", fontsize=10, color=label_col)
+    ax.set_xticklabels(configs, fontsize=9, rotation=15, ha="right",
+                       color=t["tick_col"])
+    ax.set_xlabel("Config", fontsize=10, color=t["label_col"])
     ax.set_ylabel("Cumulative Reward  (episode NPV)", fontsize=10,
-                  color=label_col)
-    ax.set_title(
-        f"Solver Comparison — Cumulative Reward per Config{theme_label}",
-        fontsize=11, fontweight="bold", color=title_col)
+                  color=t["label_col"])
     ax.tick_params(labelsize=8)
     leg = ax.legend(title="Solver", fontsize=8, title_fontsize=8,
                     loc="best", framealpha=0.9,
-                    facecolor=legend_fc, edgecolor=legend_ec)
-    leg.get_title().set_color(legend_tc)
+                    facecolor=t["legend_fc"], edgecolor=t["legend_ec"])
+    leg.get_title().set_color(t["legend_tc"])
     for txt in leg.get_texts():
-        txt.set_color(label_col)
+        txt.set_color(t["label_col"])
 
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=bg)
-    plt.close(fig)
-    print(f"  saved → {out}")
+    _set_title(ax, f"Solver Comparison — Cumulative Reward per Config{t['theme_label']}",
+               "table", t)
+
+    # ── data table ────────────────────────────────────────────────────────────
+    # Cell text colours: solver colour for values, neutral for empty
+    cell_text   = table_data
+    row_labels  = solvers
+
+    # Background: alternate light / slightly tinted per row
+    bg_hex  = t["bg"]
+    alt_hex = t.get("grid_col", "#e8e8e8") + "44"   # semi-transparent tint
+
+    cell_colours = []
+    for ri in range(len(solvers)):
+        face = bg_hex if ri % 2 == 0 else alt_hex
+        cell_colours.append([face] * len(configs))
+
+    tbl = ax.table(
+        cellText   = cell_text,
+        rowLabels  = row_labels,
+        colLabels  = [c.replace("TC-", "") for c in configs],   # shorten headers
+        cellLoc    = "center",
+        loc        = "bottom",
+        bbox       = [0, -(0.12 + len(solvers) * 0.072), 1,
+                      0.10 + len(solvers) * 0.072],
+    )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(7.5)
+
+    # Style individual cells
+    for (row, col), cell in tbl.get_celld().items():
+        cell.set_edgecolor(t["spine_col"] + "55")
+        cell.set_linewidth(0.4)
+        if row == 0:                          # header row
+            cell.set_facecolor(t["grid_col"])
+            cell.set_text_props(color=t["title_col"], fontweight="bold",
+                                fontsize=7.5)
+        elif col == -1:                       # row-label column
+            solver_colour = t["solver_colours"][(row - 1) % len(t["solver_colours"])]
+            cell.set_facecolor(t["bg"])
+            cell.set_text_props(color=solver_colour, fontweight="bold",
+                                fontsize=7.5)
+        else:
+            cell.set_facecolor(cell_colours[row - 1][col])
+            solver_colour = t["solver_colours"][(row - 1) % len(t["solver_colours"])]
+            cell.set_text_props(color=solver_colour, fontsize=7.5)
+
+    fig.subplots_adjust(bottom=0.08 + len(solvers) * 0.072)
+    _save(fig, out, t["bg"])
+
+
+# ── variant 3: clean — overlap-resolved labels ────────────────────────────────
+
+def _resolve_label_positions(ax, fig, annotations: list) -> None:
+    """
+    Push overlapping annotation bounding boxes apart along the y axis.
+
+    annotations: list of matplotlib Text objects (already added to ax).
+    Strategy:
+      1. Draw the canvas to get real pixel bboxes.
+      2. Sort labels by their natural y position.
+      3. Repeatedly scan for overlapping pairs and nudge the upper one up
+         (and lower one down symmetrically) until no overlaps remain or
+         max iterations hit.
+    """
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+
+    MAX_ITER = 60
+    PAD_PT   = 1.5    # minimum gap in points between boxes
+
+    def _bbox(ann):
+        """Bounding box in display (pixel) coords."""
+        return ann.get_window_extent(renderer=renderer)
+
+    def _overlaps(b1, b2, pad):
+        return not (b1.x1 + pad < b2.x0 or b2.x1 + pad < b1.x0 or
+                    b1.y1 + pad < b2.y0 or b2.y1 + pad < b1.y0)
+
+    # pixels per point
+    dpi    = fig.dpi
+    pt2px  = dpi / 72.0
+    pad_px = PAD_PT * pt2px
+
+    for _ in range(MAX_ITER):
+        moved = False
+        # sort by current y centre so we process bottom-up
+        anns = sorted(annotations, key=lambda a: _bbox(a).y0)
+        for i in range(len(anns)):
+            for j in range(i + 1, len(anns)):
+                b_i = _bbox(anns[i])
+                b_j = _bbox(anns[j])
+                if not _overlaps(b_i, b_j, pad_px):
+                    continue
+                # overlap: push them apart symmetrically
+                overlap_y  = b_i.y1 + pad_px - b_j.y0
+                shift_px   = overlap_y / 2.0
+                # convert pixel shift to offset-points (they use offset points)
+                shift_pt   = shift_px / pt2px
+
+                ox_i, oy_i = anns[i].get_position()   # these are the offset coords
+                ox_j, oy_j = anns[j].get_position()
+                # oy is in offset-points relative to the anchor xy
+                anns[i].set_position((ox_i, oy_i - shift_pt))
+                anns[j].set_position((ox_j, oy_j + shift_pt))
+                moved = True
+        if not moved:
+            break
+
+
+def plot_clean(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
+    t = _resolve_theme(theme_key)
+    fig, ax, configs, solvers, x_pos, series = _build_axes(df, t)
+    _set_title(ax, f"Solver Comparison — Cumulative Reward per Config{t['theme_label']}",
+               "clean labels", t)
+
+    # Place all annotations with a per-column stagger so same-x labels
+    # start at slightly different offsets — reduces the nudge count needed.
+    annotations = []
+    n_solvers = len(series)
+    for s_idx, (_solver, colour, xs, ys) in enumerate(series):
+        # Initial vertical stagger: spread solvers evenly within ±6 pt
+        stagger = (s_idx - (n_solvers - 1) / 2) * (12.0 / max(n_solvers, 1))
+        base_offset = 9 + stagger
+        for xi, yi in zip(xs, ys):
+            if not np.isnan(yi):
+                ann = ax.annotate(
+                    f"{yi:.2f}", xy=(xi, yi),
+                    xytext=(0, base_offset),
+                    textcoords="offset points",
+                    ha="center", fontsize=7,
+                    color=colour, alpha=t["ann_alpha"],
+                )
+                annotations.append(ann)
+
+    _resolve_label_positions(ax, fig, annotations)
+    _save(fig, out, t["bg"])
 
 
 # ── entry point ───────────────────────────────────────────────────────────────
@@ -425,12 +626,12 @@ def main() -> None:
     print(f"  solvers : {sorted(df['solver'].unique())}")
     print()
 
-    # default (no theme key)
-    plot_gap(df, out_dir / "gap_plot.png", theme_key="")
-
-    # one file per named theme
-    for sk in ("A", "B", "C", "D", "E"):
-        plot_gap(df, out_dir / f"gap_plot_{sk}.png", theme_key=sk)
+    for sk in ("", "A", "B", "C", "D", "E"):
+        sfx  = f"_{sk}" if sk else ""
+        stem = f"gap_plot{sfx}"
+        plot_annotated(df, out_dir / f"{stem}.png",        theme_key=sk)
+        plot_table(    df, out_dir / f"{stem}_table.png",  theme_key=sk)
+        plot_clean(    df, out_dir / f"{stem}_clean.png",  theme_key=sk)
 
     print("\n  Done.")
 
