@@ -848,7 +848,7 @@ def build(data_dir: Path, out_root: Path) -> None:
     proj_order = sorted(range(n_proj), key=lambda i: proj_info[i]["start"])
 
     # ── create output folder ───────────────────────────────────────────────────
-    out_dir = out_root / "infograph"
+    out_dir = out_root / "3xdashboard"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # ── shared data bundle ─────────────────────────────────────────────────────
@@ -886,7 +886,7 @@ def main() -> None:
     out_root = Path(args.out) if args.out else data_dir.parent.parent
 
     print(f"data : {data_dir}")
-    print(f"out  : {out_root / 'infograph'}/")
+    print(f"out  : {out_root / '3xdashboard'}/")
     build(data_dir, out_root)
     print("Done.")
 
