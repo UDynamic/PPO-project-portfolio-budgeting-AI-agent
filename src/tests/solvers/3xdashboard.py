@@ -1,7 +1,7 @@
 """
-infograph.py  —  Episode infographic output folder.
+3xdashboard.py  —  Episode infographic output folder.
 
-Outputs  (all written to  <out_dir>/infograph/ )
+Outputs  (all written to  <out_dir>/3xdashboard/ )
 ------------------------------------------------
   01_timeline.png              — cash-flow timeline (grid, arrows, efficiency, sidebar legend)
   01b_ncf_chart.png            — net cash-flow + budget curve (legend outside plot, right)
@@ -11,8 +11,8 @@ Outputs  (all written to  <out_dir>/infograph/ )
 
 Usage
 -----
-  python infograph.py
-  python infograph.py --data ground_truth/TC-3XMAIF-R/optimal/ --out ground_truth/
+  python 3xdashboard.py
+  python 3xdashboard.py --data ground_truth/TC-3XMAIF-R/optimal/ --out ground_truth/
 """
 
 from __future__ import annotations
@@ -65,11 +65,6 @@ def _sf(v: float, d: int = 2) -> str:
 
 def _hdr(ax, title: str, key: str, y: float, h: float = 0.30,
          fs: float = 8.0) -> float:
-    """
-    Draw a coloured header band in INCH-SCALE data coordinates where the
-    y-axis is inverted (0 = top of figure, increasing downward).
-    `y` is the top of the band; returns the bottom edge (new y).
-    """
     brd, bg = SA[key]
     ax.add_patch(mpatches.Rectangle(
         (0, y), 1, h, lw=0, fc=bg, clip_on=False, zorder=8))
@@ -85,10 +80,6 @@ def _hdr(ax, title: str, key: str, y: float, h: float = 0.30,
 def _table(ax, rows, cw, rh: float, key: str,
            fs: float = 7.0, align=None, y0: float = 0.0,
            pad: float = 0.015, x0: float = 0.0, width: float = 1.0) -> float:
-    """
-    Render a table in the same inch-scale / inverted-y convention as `_hdr`.
-    `y0` is the top edge; returns the bottom edge (new y).
-    """
     brd, hbg = SA[key]
     y0 += pad
     if align is None:
@@ -126,12 +117,6 @@ def _table(ax, rows, cw, rh: float, key: str,
 
 
 def _fitted_axes(fw: float, fh: float):
-    """
-    Figure whose single axes fills the canvas exactly (no default mpl
-    margins), using an INVERTED y-axis measured in inches from the top
-    (y=0 top … y=fh bottom).  x stays in [0, 1] = fraction of width.
-    This makes `fh` the true content height — no residual blank space.
-    """
     fig = plt.figure(figsize=(fw, fh), facecolor=BG)
     ax  = fig.add_axes([0, 0, 1, 1])
     ax.set_facecolor(BG)
@@ -154,25 +139,6 @@ def _save(fig, path: Path) -> None:
 #  1 · TIMELINE
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_timeline(out_path: Path, data: dict) -> None:
-    """
-    Cash-flow timeline. Three-row grid band per project (earliest project on
-    top): payments row / project box row / allocation row.
-
-      • green arrows  — payments.    Base at the project box top edge,
-        pointing UP.  When several payments land on the same project at the
-        same timestep, a single shared arrow is drawn and the VALUES are
-        stacked vertically above it (earliest payment on top), so nothing
-        overlaps regardless of how many payments co-occur.
-      • red arrows    — allocations. Base at the project box bottom edge,
-        pointing DOWN.  Value printed under the arrow.
-      • small circles sit exactly on the project box's bottom edge, one per
-        active timestep, showing the efficiency η for that step.  Circle
-        size is fixed in *physical inches* so the η value always stays
-        inside the circle.
-
-    All headers + the legend live in a single one-column card placed
-    outside the grid, at the top-right of the figure.
-    """
     cfg_id     = data["cfg_id"]
     ep_id      = data["ep_id"]
     method     = data["method"]
@@ -189,13 +155,12 @@ def _build_timeline(out_path: Path, data: dict) -> None:
     ARROW_GREEN = "#1A8C4E"
     ALLOC_RED   = "#C0392B"
 
-    # ── layout constants (data-y units ≈ inches by construction) ───────────
     N_GRID    = n_proj * PROJ_ROWS
     ROW_H     = 0.82
     BOX_VPAD  = 0.16
     ARROW_LEN = 0.46
     LABEL_GAP = 0.10
-    STACK_DY  = 0.23          # vertical spacing between stacked payment values
+    STACK_DY  = 0.23
 
     FS_TIME   = 8.6
     FS_PLABEL = 7.8
@@ -208,14 +173,12 @@ def _build_timeline(out_path: Path, data: dict) -> None:
     def proj_grid_top(rank: int) -> float:
         return (N_GRID - rank * PROJ_ROWS) * ROW_H
 
-    # ── group payments by (project, certification-t) ───────────────────────
     pays_by_proj_t: dict[tuple, list] = defaultdict(list)
     for t_c, pays in cert.items():
         for pi, j, net in pays:
             pays_by_proj_t[(pi, t_c)].append((j, net))
     max_stack = max((len(v) for v in pays_by_proj_t.values()), default=1)
 
-    # ── sidebar layout constants (drives both sizing + drawing) ────────────
     TOP_INSET      = 0.16
     BOTTOM_INSET   = 0.12
     EYEBROW_GAP    = 0.26
@@ -234,7 +197,6 @@ def _build_timeline(out_path: Path, data: dict) -> None:
                  + N_INFO * INFO_GAP + PRE_DIV_GAP + POST_DIV_GAP
                  + LEGHDR_GAP + N_LEGEND * ITEM_GAP + END_GAP + BOTTOM_INSET)
 
-    # ── vertical extent ──────────────────────────────────────────────────
     box_top_rank0 = GRID_TOP - ROW_H - BOX_VPAD
     payment_reach = ARROW_LEN + LABEL_GAP + (max_stack - 1) * STACK_DY + 0.20
     y_need_grid   = box_top_rank0 + payment_reach + 0.14
@@ -244,7 +206,6 @@ def _build_timeline(out_path: Path, data: dict) -> None:
     Y_HI    = TOP_PAD + max(y_need_grid, SIDEBAR_H)
     FH      = max(4.2, Y_HI - Y_LO)
 
-    # ── horizontal extent (grid stretches with horizon) ────────────────────
     GRID_W = float(np.clip(0.80 * horizon + 4.2, 10.5, 18.0))
     X_LO   = -0.9
     X_HI   = horizon + 0.9
@@ -273,18 +234,15 @@ def _build_timeline(out_path: Path, data: dict) -> None:
 
     T = list(range(horizon + 1))
 
-    # ── vertical period guides — light dotted, classy ───────────────────────
     for t in T:
         ax.plot([t, t], [0, GRID_TOP], color=RULE, lw=0.5,
                  ls=(0, (1, 2.4)), zorder=0)
 
-    # ── project-band separators (only at project boundaries) ───────────────
     for b in range(n_proj + 1):
         y = b * PROJ_ROWS * ROW_H
         ax.plot([X_LO + 0.05, X_HI - 0.05], [y, y],
                 color="#B7B2A6", lw=0.9, zorder=1)
 
-    # ── project label strip (left margin) ───────────────────────────────────
     for rank, pi in enumerate(proj_order):
         top_y = proj_grid_top(rank)
         mid_y = top_y - PROJ_ROWS / 2 * ROW_H
@@ -294,14 +252,12 @@ def _build_timeline(out_path: Path, data: dict) -> None:
                 fontfamily=FONT, fontweight="bold", color=PC[pi],
                 zorder=6, linespacing=1.35)
 
-    # ── spine & time labels ──────────────────────────────────────────────
     ax.axhline(0, color="#888", lw=1.1, zorder=2)
     for t in T:
         ax.plot(t, 0, "|", color=TM, ms=5.5, mew=1.0, zorder=3)
         ax.text(t, -0.07, f"t{t}", ha="center", va="top",
                 fontsize=FS_TIME, fontfamily=FONT, color=TM)
 
-    # ── project boxes — narrow / short ──────────────────────────────────
     box_edges: dict[int, tuple[float, float]] = {}
     for rank, pi in enumerate(proj_order):
         pst, pft = proj_info[pi]["start"], proj_info[pi]["finish"]
@@ -318,10 +274,6 @@ def _build_timeline(out_path: Path, data: dict) -> None:
                 ha="center", va="center", fontsize=FS_BOX,
                 fontfamily=FONT, fontweight="bold", color=col, zorder=5)
 
-    # ── payment arrows — green, UP, base on project-box TOP edge ───────────
-    # Multiple payments at the same (project, t): ONE shared arrow, values
-    # stacked vertically above it (earliest payment placed highest) so
-    # nothing overlaps.
     for (pi, t_c), plist in pays_by_proj_t.items():
         box_top, _ = box_edges[pi]
         tip_y = box_top + ARROW_LEN
@@ -329,7 +281,7 @@ def _build_timeline(out_path: Path, data: dict) -> None:
                     arrowprops=dict(arrowstyle="-|>", color=ARROW_GREEN,
                                     lw=1.6, mutation_scale=10,
                                     shrinkA=0, shrinkB=0), zorder=6)
-        ordered = sorted(plist, key=lambda jp: jp[0])     # earlier j first
+        ordered = sorted(plist, key=lambda jp: jp[0])
         n = len(ordered)
         for idx, (j, net) in enumerate(ordered):
             y_lbl = tip_y + LABEL_GAP + (n - 1 - idx) * STACK_DY
@@ -338,7 +290,6 @@ def _build_timeline(out_path: Path, data: dict) -> None:
                     fontweight="bold", fontfamily=FONT,
                     color=ARROW_GREEN, zorder=7)
 
-    # ── allocation arrows — red, DOWN, base on project-box BOTTOM edge ─────
     for pi in proj_order:
         _, box_bot = box_edges[pi]
         for t in T:
@@ -355,7 +306,6 @@ def _build_timeline(out_path: Path, data: dict) -> None:
                     fontweight="bold", fontfamily=FONT,
                     color=ALLOC_RED, zorder=7)
 
-    # ── efficiency circles — fixed physical size, on box bottom edge ──────
     CIRC_DIAM_IN = 0.30
     circ_w = CIRC_DIAM_IN * din_x
     circ_h = CIRC_DIAM_IN * din_y
@@ -374,7 +324,6 @@ def _build_timeline(out_path: Path, data: dict) -> None:
                     fontsize=FS_EFF, fontfamily=FONT, color=ALLOC_RED,
                     fontweight="bold", zorder=9)
 
-    # ── sidebar card: headers + legend, one column, top-right ──────────────
     brd, side_bg = SA["tl"]
     pad_frac  = 0.085
     content_w = (X_SIDE_R - X_SIDE_L) * (1 - 2 * pad_frac)
@@ -473,14 +422,9 @@ def _build_timeline(out_path: Path, data: dict) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  1b · NET CASH-FLOW CHART  (separate focused plot)
+#  1b · NET CASH-FLOW CHART
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_ncf_chart(out_path: Path, data: dict) -> None:
-    """
-    Standalone net-cashflow + budget chart.  Legends are placed OUTSIDE the
-    axes on the right (so they never overlap bars / value labels); the
-    saved figure auto-expands to include them (bbox_inches='tight').
-    """
     cfg_id  = data["cfg_id"]
     ep_id   = data["ep_id"]
     horizon = data["horizon"]
@@ -494,7 +438,7 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
             if not pf_s[pf_s["t_episode"] == t].empty else 0.0
             for t in T]
 
-    FW = 8.6     # a touch wider to host the outside legend comfortably
+    FW = 8.6
     FH = max(4.2, min(6.0, 3.0 + horizon * 0.12))
 
     fig, (ax_ncf, ax_bud) = plt.subplots(
@@ -513,7 +457,6 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
         ax.xaxis.grid(True, color=RULE, lw=0.35, zorder=0)
         ax.set_axisbelow(True)
 
-    # ── NCF bars ──────────────────────────────────────────────────────────────
     COL_POS = "#2060C0"
     COL_NEG = "#B03030"
     ax_ncf.axhline(0, color="#888", lw=0.8, zorder=2)
@@ -550,7 +493,6 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
                   facecolor=BG, edgecolor=RULE, framealpha=0.95,
                   handlelength=1.3, labelspacing=0.8)
 
-    # ── Budget curve ──────────────────────────────────────────────────────────
     bmin = min(buds); bmax = max(buds)
     margin = max((bmax - bmin) * 0.18, 1)
     ax_bud.set_ylim(bmin - margin, bmax + margin)
@@ -578,12 +520,10 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
                   facecolor=BG, edgecolor=RULE, framealpha=0.95,
                   handlelength=1.6)
 
-    fig.subplots_adjust(right=0.82)   # reserve room for outside legends
-
+    fig.subplots_adjust(right=0.82)
     fig.text(0.41, 0.01,
              f"{cfg_id}  ·  episode {ep_id}  ·  T={horizon}",
              ha="center", fontsize=7.0, fontfamily=FONT, color=TM)
-
     fig.patch.set_facecolor(BG)
     _save(fig, out_path)
 
@@ -593,28 +533,35 @@ def _build_ncf_chart(out_path: Path, data: dict) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_cost_baseline(out_path: Path, data: dict) -> None:
     """
-    Cost-baseline chart: one plotting row PER PROJECT, stacked vertically
-    (more projects → more rows), x-axis = the project's OWN timestep τ
-    (project-relative time since `planned_start`), NOT the episode timestep.
+    Cost-baseline chart: one plotting row PER PROJECT, stacked vertically.
+    x-axis = project's own timestep τ (t_project column).
 
-    Per-project panel:
-      • BCWS — Budgeted Cost of Work Scheduled (planned value baseline).
-        Linear ramp 0 → BAC across the planned duration, flat at BAC after
-        planned finish (no per-milestone planned-weight column is assumed
-        to exist; let me know the real column if there is one).
-      • BCWP — Budgeted Cost of Work Performed (earned value).
-        cumsum(allocation_action × efficiency), clipped to BAC.
-      • ACWP — Actual Cost of Work Performed (actual cost incurred).
-        cumsum(allocation_action).
-      • Cumulative net payment received — bar chart, running total of
-        milestones_status.net_payment, placed at τ = certified_t − planned_start.
-      • Milestone (planned) payment schedule — dashed step curve, stepping
-        up by each milestone's planned net_payment at its planned timestep
-        (auto-detected column; evenly spaced across the duration as a
-        fallback if no planned-timestep column exists on milestones_profile).
+    Per-project panel — all series taken directly from the source data:
 
-    All three continuous curves are drawn smooth (shape-preserving PCHIP
-    interpolation when SciPy is available; otherwise a plain polyline).
+      BCWS  — progress_plan_t × BAC  (from projects_status, active rows)
+               x = t_project,  y = progress_plan_t * bac
+               Drawn as smooth curve (PCHIP when scipy available).
+
+      BCWP  — progress_actual × BAC  (from projects_status, active rows)
+               x = t_project,  y = progress_actual * bac
+               Drawn as smooth curve.
+
+      ACWP  — cumulative sum of allocation_action  (from projects_status, active rows)
+               x = t_project,  y = cumsum(allocation_action) in τ order
+               Drawn as smooth curve.
+
+      Cumulative net payment received  (from milestones_status)
+               x = certified_t − planned_start  (convert episode→project τ)
+               y = running cumulative sum of net_payment at each τ
+               Drawn as a bar chart (step-held bars spanning tau_full).
+
+      Milestone planned payment schedule  (from milestones_profile)
+               x = timestep_threshold, interpreted as project τ:
+                   j == 0  →  timestep_threshold − planned_start  (advance is in episode time)
+                   j > 0   →  timestep_threshold as-is            (already project-relative)
+               y = cumulative sum of net_payment at each planned τ
+               Drawn as a dashed step curve.
+
     One shared legend lives outside the axes, on the right.
     """
     proj_info  = data["proj_info"]
@@ -623,17 +570,17 @@ def _build_cost_baseline(out_path: Path, data: dict) -> None:
     ps_raw     = data["ps_raw"]
     mp_raw     = data["mp_raw"]
     ms_raw     = data["ms_raw"]
-    obs        = data["obs"]
     cfg_id     = data["cfg_id"]
     ep_id      = data["ep_id"]
 
-    COL_BCWS = "#6A5ACD"
-    COL_BCWP = "#2E7D52"
-    COL_ACWP = "#C0392B"
-    COL_PAY  = "#2060C0"
-    COL_MS   = "#944820"
+    COL_BCWS = "#6A5ACD"   # slate-blue
+    COL_BCWP = "#2E7D52"   # green
+    COL_ACWP = "#C0392B"   # red
+    COL_PAY  = "#2060C0"   # blue  — cumulative actual payment bars
+    COL_MS   = "#944820"   # amber — planned milestone step curve
 
     def smooth(x, y):
+        """Shape-preserving PCHIP smooth curve; falls back to polyline."""
         x = np.asarray(x, dtype=float)
         y = np.asarray(y, dtype=float)
         if _SCIPY_OK and len(x) >= 3 and len(np.unique(x)) >= 3:
@@ -670,62 +617,54 @@ def _build_cost_baseline(out_path: Path, data: dict) -> None:
         ax.tick_params(colors=TM, labelsize=7.2)
         ax.set_axisbelow(True)
 
-        # ── per-project status rows, re-indexed onto τ = t_project ─────────
-        # Only use active rows so pending/completed carry-over rows don't
-        # inflate ACWP (a project can have status rows for every episode step).
-        sub = ps_raw[(ps_raw["i"] == pi) & (ps_raw["status"] == "active")].copy()
-        if "t_project" not in sub.columns:
-            o = obs.loc[obs["i"] == pi, ["t_episode", "t_project"]].drop_duplicates()
-            sub = sub.merge(o, on="t_episode", how="left")
-        sub = sub.dropna(subset=["t_project"])
-        sub["tau"] = sub["t_project"].astype(int)
-        sub["work_done"] = sub["allocation_action"] * sub["efficiency"]
-        # Aggregate by project timestep (handles multiple rows at same tau)
-        sub = (sub.groupby("tau", as_index=False)
-                   .agg(allocation_action=("allocation_action", "sum"),
-                        work_done=("work_done", "sum"))
-                   .sort_values("tau"))
+        # ── BCWS / BCWP / ACWP  from projects_status ──────────────────────────
+        # Sort all rows for this project by episode order, then deduplicate on
+        # t_project keeping the FIRST occurrence.  This gives exactly one row
+        # per project-τ (0 … duration), picks up the final τ from the first
+        # "completed" row, and preserves the correct allocation_action for the
+        # cumulative ACWP sum (pending/completed rows carry zero allocation).
+        sub = (ps_raw[ps_raw["i"] == pi]
+               .sort_values("t_episode")
+               .drop_duplicates(subset="t_project", keep="first")
+               .sort_values("t_project")
+               .reset_index(drop=True))
 
-        tau   = sub["tau"].to_numpy()
-        alloc = sub["allocation_action"].to_numpy()
-        work  = sub["work_done"].to_numpy()
+        if len(sub):
+            tau_pts  = sub["t_project"].to_numpy(dtype=float)
+            bcws_pts = sub["progress_plan_t"].to_numpy(dtype=float) * bac
+            bcwp_pts = sub["progress_actual"].to_numpy(dtype=float) * bac
+            acwp_pts = sub["allocation_action"].cumsum().to_numpy(dtype=float)
 
-        obs_max  = int(tau.max()) if len(tau) else 0
-        tau_full = np.arange(0, max(duration, obs_max) + 1)
+            xs, ys = smooth(tau_pts, bcws_pts)
+            ax.plot(xs, ys, color=COL_BCWS, lw=1.7, zorder=4,
+                    label="BCWS — planned value" if rank == 0 else None)
 
-        if len(tau):
-            acwp_cum  = np.cumsum(alloc)
-            bcwp_cum  = np.clip(np.cumsum(work), 0, bac)
-            acwp_full = np.interp(tau_full, tau, acwp_cum,
-                                   left=0.0, right=acwp_cum[-1])
-            bcwp_full = np.interp(tau_full, tau, bcwp_cum,
-                                   left=0.0, right=bcwp_cum[-1])
+            xs, ys = smooth(tau_pts, bcwp_pts)
+            ax.plot(xs, ys, color=COL_BCWP, lw=1.7, zorder=5,
+                    label="BCWP — earned value" if rank == 0 else None)
+
+            xs, ys = smooth(tau_pts, acwp_pts)
+            ax.plot(xs, ys, color=COL_ACWP, lw=1.7, zorder=5,
+                    label="ACWP — actual cost" if rank == 0 else None)
+
+            tau_max = int(tau_pts.max())
         else:
-            acwp_full = np.zeros_like(tau_full, dtype=float)
-            bcwp_full = np.zeros_like(tau_full, dtype=float)
+            tau_max = duration
 
-        bcws_full = np.clip(bac * tau_full / duration, 0, bac)
+        # ── Cumulative net payment received — bar chart ────────────────────────
+        # Source: milestones_status
+        # x-axis position: certified_t − planned_start  (episode → project τ)
+        # y: running cumulative net_payment up to each τ
+        msub = (ms_raw[ms_raw["i"] == pi]
+                .copy()
+                .assign(tau=lambda df: df["certified_t"] - pst)
+                .sort_values("tau"))
 
-        xs, ys = smooth(tau_full, bcws_full)
-        ax.plot(xs, ys, color=COL_BCWS, lw=1.7, zorder=4,
-                label="BCWS — planned value" if rank == 0 else None)
-        xs, ys = smooth(tau_full, bcwp_full)
-        ax.plot(xs, ys, color=COL_BCWP, lw=1.7, zorder=5,
-                label="BCWP — earned value" if rank == 0 else None)
-        xs, ys = smooth(tau_full, acwp_full)
-        ax.plot(xs, ys, color=COL_ACWP, lw=1.7, zorder=5,
-                label="ACWP — actual cost" if rank == 0 else None)
-
-        # ── cumulative net payment received — bar chart ─────────────────
-        # certified_t is in episode time; convert to project-relative τ.
-        msub = ms_raw[ms_raw["i"] == pi].copy()
-        msub["tau"] = msub["certified_t"] - pst
-        msub = msub.sort_values("tau")
-        pay_tau = msub["tau"].to_numpy()
-        pay_val = msub["net_payment"].to_numpy()
-
-        if len(pay_tau):
-            pay_cum = np.cumsum(pay_val)
+        # Build bar heights across the full τ range
+        tau_full = np.arange(0, max(duration, tau_max) + 1)
+        if len(msub):
+            pay_tau = msub["tau"].to_numpy(dtype=float)
+            pay_cum = msub["net_payment"].cumsum().to_numpy(dtype=float)
             bar_y = np.array([
                 pay_cum[pay_tau <= t][-1] if np.any(pay_tau <= t) else 0.0
                 for t in tau_full
@@ -733,48 +672,58 @@ def _build_cost_baseline(out_path: Path, data: dict) -> None:
         else:
             bar_y = np.zeros_like(tau_full, dtype=float)
 
-        ax.bar(tau_full, bar_y, width=0.5, color=COL_PAY + "35", ec=COL_PAY,
+        ax.bar(tau_full, bar_y, width=0.55, color=COL_PAY + "35", ec=COL_PAY,
                lw=0.7, zorder=2,
                label="Cumulative net payment received" if rank == 0 else None)
 
-        # ── milestone planned-payment schedule — step curve ────────────────
-        # milestones_profile.timestep_threshold stores:
-        #   j == 0  → episode timestep of the advance (= planned_start)
-        #   j > 0   → project-relative timestep (already τ)
-        # Convert all to project-relative τ before plotting.
-        mpsub = mp_raw[mp_raw["i"] == pi].copy().sort_values("j")
-        n_ms  = len(mpsub)
-        if n_ms:
-            def _plan_tau(row):
+        # ── Milestone planned payment schedule — dashed step curve ─────────────
+        # Source: milestones_profile
+        # x-axis position (project-relative τ):
+        #   j == 0  →  timestep_threshold − planned_start  (stored in episode time)
+        #   j > 0   →  timestep_threshold as-is            (already project-relative)
+        # y: cumulative net_payment at each planned τ
+        mpsub = (mp_raw[mp_raw["i"] == pi]
+                 .copy()
+                 .sort_values("j"))
+
+        if len(mpsub):
+            def _ms_tau(row):
                 ts = float(row["timestep_threshold"])
                 return ts - pst if int(row["j"]) == 0 else ts
 
-            plan_tau = mpsub.apply(_plan_tau, axis=1).to_numpy()
-            plan_val = mpsub["net_payment"].to_numpy()
+            plan_tau = mpsub.apply(_ms_tau, axis=1).to_numpy(dtype=float)
+            plan_val = mpsub["net_payment"].to_numpy(dtype=float)
+
+            # Sort by τ and build cumulative step series
             order    = np.argsort(plan_tau)
-            plan_tau = np.clip(plan_tau[order], 0, None)
+            plan_tau = plan_tau[order]
             plan_cum = np.cumsum(plan_val[order])
 
-            # Build a step series starting at 0
+            # Prepend (0, 0) so the step starts at the origin
             x_ms = np.concatenate(([0.0], plan_tau))
             y_ms = np.concatenate(([0.0], plan_cum))
+
             ax.step(x_ms, y_ms, where="post", color=COL_MS, lw=1.5,
                     ls=(0, (4, 2)), zorder=3,
                     label="Milestone plan — price schedule" if rank == 0 else None)
+            # Extend flat tail to the right edge of the panel
             if x_ms[-1] < tau_full[-1]:
                 ax.hlines(y_ms[-1], x_ms[-1], tau_full[-1],
                           color=COL_MS, lw=1.5, ls=(0, (4, 2)), zorder=3)
 
+        # ── Axes formatting ───────────────────────────────────────────────────
         ax.xaxis.grid(True, color=RULE, lw=0.35, zorder=0)
         ax.set_xlim(tau_full[0] - 0.4, tau_full[-1] + 0.4)
-        ticks = tau_full if len(tau_full) <= 14 else tau_full[::max(1, len(tau_full) // 14)]
+        ticks = (tau_full if len(tau_full) <= 14
+                 else tau_full[::max(1, len(tau_full) // 14)])
         ax.set_xticks(ticks)
-        ax.set_xticklabels([f"τ{t}" for t in ticks], fontsize=6.8)
+        ax.set_xticklabels([f"τ{int(t)}" for t in ticks], fontsize=6.8)
         ax.set_ylabel("Cost / Payment", fontsize=7.3, fontfamily=FONT, color=TM)
-        ax.set_title(f"P{pi}  —  BAC {bac:,.0f}   ·   price {price:,.0f}   "
-                     f"·   duration {duration}",
-                     loc="left", fontsize=8.3, fontweight="bold",
-                     fontfamily=FONT, color=col, pad=5)
+        ax.set_title(
+            f"P{pi}  —  BAC {bac:,.0f}   ·   price {price:,.0f}   "
+            f"·   duration {duration}",
+            loc="left", fontsize=8.3, fontweight="bold",
+            fontfamily=FONT, color=col, pad=5)
 
         if rank == 0:
             legend_handles, legend_labels = ax.get_legend_handles_labels()
@@ -782,9 +731,10 @@ def _build_cost_baseline(out_path: Path, data: dict) -> None:
     axes[-1].set_xlabel("Project timestep  τ", fontsize=7.6,
                         fontfamily=FONT, color=TM)
 
-    fig.suptitle(f"PROJECT COST BASELINE   ·   {cfg_id}   ·   episode {ep_id}",
-                 fontsize=9.6, fontweight="bold", fontfamily=FONT, color=TH,
-                 x=0.02, ha="left", y=0.995)
+    fig.suptitle(
+        f"PROJECT COST BASELINE   ·   {cfg_id}   ·   episode {ep_id}",
+        fontsize=9.6, fontweight="bold", fontfamily=FONT, color=TH,
+        x=0.02, ha="left", y=0.995)
 
     if legend_handles:
         fig.legend(legend_handles, legend_labels,
@@ -842,7 +792,6 @@ def _build_portfolio_table(out_path: Path, data: dict) -> None:
     rows_ps.append(["∑", "", "", ""] + [""] * n_proj
                    + [f"ΣR = {running:+.3f}", ""])
 
-    # ── exact-fit layout (inches) — no residual blank space ───────────────
     FW     = 8.27
     MARGIN = 0.10
     HDR_H  = 0.28
@@ -866,7 +815,7 @@ def _build_portfolio_table(out_path: Path, data: dict) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  3 · OBSERVATION TABLE  (table + right-hand one-column legend)
+#  3 · OBSERVATION TABLE
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_observation_table(out_path: Path, data: dict) -> None:
     horizon    = data["horizon"]
@@ -940,7 +889,6 @@ def _build_observation_table(out_path: Path, data: dict) -> None:
                 vals.append(f"{v:.1f}")
         rows_ob.append([pi_lbl] + vals)
 
-    # ── layout: table (left) + one-column symbol legend (right) ──────────────
     TABLE_W = 0.72
     GAP     = 0.02
     LEG_X0  = TABLE_W + GAP
@@ -978,7 +926,6 @@ def _build_observation_table(out_path: Path, data: dict) -> None:
     _table(ax, rows_ob, ob_cw, RH, "obs", fs=6.8, align=ob_al,
            y0=y_after_hdr, pad=0.012, x0=0.0, width=TABLE_W)
 
-    # ── right-hand symbol legend card (sized to its own content) ──────────
     brd, hbg = SA["obs"]
     leg_top = y0
     leg_h   = legend_content_h
@@ -1007,9 +954,8 @@ def _build_observation_table(out_path: Path, data: dict) -> None:
 #  ORCHESTRATOR
 # ─────────────────────────────────────────────────────────────────────────────
 def build(data_dir: Path, out_root: Path) -> None:
-    """Load data, create infograph/ folder, write all output images."""
+    """Load data, create 3xdashboard/ folder, write all output images."""
 
-    # ── load ──────────────────────────────────────────────────────────────────
     pp  = pd.read_csv(data_dir / "projects_profile.csv")
     mp  = pd.read_csv(data_dir / "milestones_profile.csv")
     ms  = pd.read_csv(data_dir / "milestones_status.csv")
@@ -1017,7 +963,6 @@ def build(data_dir: Path, out_root: Path) -> None:
     pf  = pd.read_csv(data_dir / "portfolios.csv")
     obs = pd.read_csv(data_dir / "projects_observation.csv")
 
-    # ── shared derived data ───────────────────────────────────────────────────
     cfg_id  = pp["config_id"].iloc[0]
     ep_id   = pp["episode_id"].iloc[0]
     method  = ms["method"].iloc[0]
@@ -1064,11 +1009,9 @@ def build(data_dir: Path, out_root: Path) -> None:
 
     proj_order = sorted(range(n_proj), key=lambda i: proj_info[i]["start"])
 
-    # ── create output folder ───────────────────────────────────────────────────
-    out_dir = out_root / "infograph"
+    out_dir = out_root / "3xdashboard"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── shared data bundle ─────────────────────────────────────────────────────
     data = dict(
         cfg_id=cfg_id, ep_id=ep_id, method=method,
         n_proj=n_proj, horizon=horizon, gamma=gamma, bud0=bud0,
@@ -1079,7 +1022,6 @@ def build(data_dir: Path, out_root: Path) -> None:
         ps_raw=ps, mp_raw=mp, ms_raw=ms,
     )
 
-    # ── emit each output ───────────────────────────────────────────────────────
     _build_timeline(         out_dir / "01_timeline.png",          data)
     _build_ncf_chart(        out_dir / "01b_ncf_chart.png",        data)
     _build_cost_baseline(    out_dir / "01c_cost_baseline.png",    data)
@@ -1092,11 +1034,11 @@ def build(data_dir: Path, out_root: Path) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 def main() -> None:
     p = argparse.ArgumentParser(
-        description="Generate infograph/ folder for one episode.")
+        description="Generate 3xdashboard/ folder for one episode.")
     p.add_argument("--data", default=None,
                    help="Path to the data directory (CSV files).")
     p.add_argument("--out", default=None,
-                   help="Parent directory for the infograph/ folder.")
+                   help="Parent directory for the 3xdashboard/ folder.")
     args = p.parse_args()
 
     here     = Path(__file__).resolve().parent
@@ -1105,7 +1047,7 @@ def main() -> None:
     out_root = Path(args.out) if args.out else data_dir.parent.parent
 
     print(f"data : {data_dir}")
-    print(f"out  : {out_root / 'infograph'}/")
+    print(f"out  : {out_root / '3xdashboard'}/")
     build(data_dir, out_root)
     print("Done.")
 
