@@ -42,7 +42,7 @@ _SRC_DIR  = os.path.dirname(_THIS_DIR)                   # src/
 _ENV_DIR  = os.path.join(_SRC_DIR, "env")
 _DB_DIR   = os.path.join(_SRC_DIR, "db")
 _CFGS_DIR = os.path.join(_DB_DIR,  "configs")
-_RUNS_DIR = os.path.join(_THIS_DIR, "runs")
+_RUNS_DIR = os.path.join(_DB_DIR, "runs_record")
 
 for _d in (_SRC_DIR, _ENV_DIR, _DB_DIR, _CFGS_DIR):
     if _d not in sys.path:
@@ -224,7 +224,7 @@ def main() -> None:
     if conn is not None and not args.no_export and db_path is not None:
         conn.close()
         h.play_export(db_path, fmt=args.fmt,
-                      out_dir=args.out or os.path.join(run_dir, "exports"),
+                      out_dir=args.out or os.path.join(_DB_DIR, "runs_record"),
                       tables_subset=args.tables)
     else:
         if conn is not None:
