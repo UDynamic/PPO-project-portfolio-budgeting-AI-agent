@@ -345,7 +345,7 @@ def _build_axes(df: pd.DataFrame, t: dict,
     ax.set_xticks(x_pos)
     ax.set_xticklabels(configs, fontsize=9, rotation=15, ha="right",
                        color=t["tick_col"])
-    ax.set_xlabel("Config", fontsize=10, color=t["label_col"])
+    ax.set_xlabel("")
     ax.set_ylabel("Cumulative Reward  (episode NPV)", fontsize=10,
                   color=t["label_col"])
     ax.tick_params(labelsize=8)
@@ -455,7 +455,7 @@ def plot_table(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
     ax.set_xticks(x_pos)
     ax.set_xticklabels(configs, fontsize=9, rotation=15, ha="right",
                        color=t["tick_col"])
-    ax.set_xlabel("Config", fontsize=10, color=t["label_col"])
+    ax.set_xlabel("")
     ax.set_ylabel("Cumulative Reward  (episode NPV)", fontsize=10,
                   color=t["label_col"])
     ax.tick_params(labelsize=8)
