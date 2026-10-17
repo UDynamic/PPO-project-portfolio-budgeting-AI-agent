@@ -392,16 +392,42 @@ def plot_annotated(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
 # ── variant 2: table — no inline labels, clean data table below ───────────────
 
 def plot_table(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
-    t   = _resolve_theme(theme_key)
+    t = _resolve_theme(theme_key)
     present = set(df["config"].unique())
     configs = [c for c in _CONFIG_ORDER if c in present] + \
               sorted(c for c in present if c not in _CONFIG_ORDER)
     solvers = sorted(df["solver"].unique())
 
-    # Extra vertical space for the table
-    fig, ax = plt.subplots(figsize=(max(8, len(configs) * 2.2),
-                                    5 + len(solvers) * 0.38 + 0.6))
+    # ── figure layout via GridSpec ────────────────────────────────────────────
+    # Row heights: plot panel (fixed 5 in) + explicit gap + table panel.
+    # The gap row is empty whitespace — keeps x-axis labels and table header
+    # from colliding regardless of font size or tick rotation.
+    ROW_H     = 0.32          # inches per data row in the table
+    HDR_H     = 0.38          # inches for the table header row
+    GAP_H     = 0.70          # inches of breathing room between plot and table
+    PLOT_H    = 5.0
+    TABLE_H   = HDR_H + len(solvers) * ROW_H
+    FIG_H     = PLOT_H + GAP_H + TABLE_H
+
+    from matplotlib.gridspec import GridSpec
+
+    fig = plt.figure(figsize=(max(8, len(configs) * 2.2), FIG_H))
     fig.patch.set_facecolor(t["bg"])
+
+    gs = GridSpec(
+        3, 1, figure=fig,
+        height_ratios=[PLOT_H, GAP_H, TABLE_H],
+        hspace=0,           # we control spacing via height_ratios, not hspace
+    )
+    ax     = fig.add_subplot(gs[0])   # plot
+    ax_gap = fig.add_subplot(gs[1])   # invisible spacer
+    ax_tbl = fig.add_subplot(gs[2])   # table host
+
+    # hide the gap and table axes frames entirely
+    for a in (ax_gap, ax_tbl):
+        a.set_visible(False)
+
+    # ── plot panel ────────────────────────────────────────────────────────────
     ax.set_facecolor(t["bg"])
     ax.grid(True, linestyle=":", color=t["grid_col"], alpha=0.8, zorder=0)
     for side in ("top", "right"):
@@ -411,10 +437,8 @@ def plot_table(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
         ax.spines[side].set_linewidth(0.8)
     ax.tick_params(colors=t["tick_col"], labelsize=8)
 
-    x_pos = np.arange(len(configs))
-    table_data   = []
-    table_cols   = configs
-    row_colours  = []
+    x_pos      = np.arange(len(configs))
+    table_data = []
 
     for s_idx, solver in enumerate(solvers):
         colour = t["solver_colours"][s_idx % len(t["solver_colours"])]
@@ -425,9 +449,7 @@ def plot_table(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
                   for c in configs]
         ax.plot(x_pos, y, color=colour, marker=marker, markersize=7,
                 linewidth=1.8, linestyle=ls, label=solver, zorder=3)
-        row = [f"{v:.2f}" if not np.isnan(v) else "—" for v in y]
-        table_data.append(row)
-        row_colours.append([colour] * len(configs))
+        table_data.append([f"{v:.2f}" if not np.isnan(v) else "—" for v in y])
 
     ax.axhline(0, color=t["zero_col"], linewidth=0.8, linestyle="--", zorder=1)
     ax.set_xticks(x_pos)
@@ -443,56 +465,52 @@ def plot_table(df: pd.DataFrame, out: Path, theme_key: str = "") -> None:
     leg.get_title().set_color(t["legend_tc"])
     for txt in leg.get_texts():
         txt.set_color(t["label_col"])
-
     _set_title(ax, f"Solver Comparison — Cumulative Reward per Config{t['theme_label']}",
                "table", t)
 
-    # ── data table ────────────────────────────────────────────────────────────
-    # Cell text colours: solver colour for values, neutral for empty
-    cell_text   = table_data
-    row_labels  = solvers
+    # ── data table in its own axes ────────────────────────────────────────────
+    bg_hex = t["bg"]
+    cell_colours = [
+        [bg_hex if ri % 2 == 0 else t["grid_col"] + "44"] * len(configs)
+        for ri in range(len(solvers))
+    ]
 
-    # Background: alternate light / slightly tinted per row
-    bg_hex  = t["bg"]
-    alt_hex = t.get("grid_col", "#e8e8e8") + "44"   # semi-transparent tint
+    # make ax_tbl visible just long enough to host the table, then rehide frame
+    ax_tbl.set_visible(True)
+    ax_tbl.set_facecolor(bg_hex)
+    for spine in ax_tbl.spines.values():
+        spine.set_visible(False)
+    ax_tbl.set_xticks([])
+    ax_tbl.set_yticks([])
 
-    cell_colours = []
-    for ri in range(len(solvers)):
-        face = bg_hex if ri % 2 == 0 else alt_hex
-        cell_colours.append([face] * len(configs))
-
-    tbl = ax.table(
-        cellText   = cell_text,
-        rowLabels  = row_labels,
-        colLabels  = [c.replace("TC-", "") for c in configs],   # shorten headers
-        cellLoc    = "center",
-        loc        = "bottom",
-        bbox       = [0, -(0.12 + len(solvers) * 0.072), 1,
-                      0.10 + len(solvers) * 0.072],
+    tbl = ax_tbl.table(
+        cellText  = table_data,
+        rowLabels = solvers,
+        colLabels = [c.replace("TC-", "") for c in configs],
+        cellLoc   = "center",
+        loc       = "center",
+        bbox      = [0, 0, 1, 1],        # fill the entire ax_tbl panel
     )
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(7.5)
 
-    # Style individual cells
     for (row, col), cell in tbl.get_celld().items():
         cell.set_edgecolor(t["spine_col"] + "55")
         cell.set_linewidth(0.4)
-        if row == 0:                          # header row
+        if row == 0:                      # header
             cell.set_facecolor(t["grid_col"])
             cell.set_text_props(color=t["title_col"], fontweight="bold",
                                 fontsize=7.5)
-        elif col == -1:                       # row-label column
-            solver_colour = t["solver_colours"][(row - 1) % len(t["solver_colours"])]
-            cell.set_facecolor(t["bg"])
-            cell.set_text_props(color=solver_colour, fontweight="bold",
-                                fontsize=7.5)
+        elif col == -1:                   # row label
+            sc = t["solver_colours"][(row - 1) % len(t["solver_colours"])]
+            cell.set_facecolor(bg_hex)
+            cell.set_text_props(color=sc, fontweight="bold", fontsize=7.5)
         else:
             cell.set_facecolor(cell_colours[row - 1][col])
-            solver_colour = t["solver_colours"][(row - 1) % len(t["solver_colours"])]
-            cell.set_text_props(color=solver_colour, fontsize=7.5)
+            sc = t["solver_colours"][(row - 1) % len(t["solver_colours"])]
+            cell.set_text_props(color=sc, fontsize=7.5)
 
-    fig.subplots_adjust(bottom=0.08 + len(solvers) * 0.072)
-    _save(fig, out, t["bg"])
+    _save(fig, out, bg_hex)
 
 
 # ── variant 3: clean — overlap-resolved labels ────────────────────────────────
