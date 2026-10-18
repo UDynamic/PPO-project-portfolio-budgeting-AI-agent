@@ -306,7 +306,7 @@ def main() -> None:
     if conn is not None and not args.no_export and db_path is not None:
         conn.close()
         h.play_export(db_path, fmt=args.fmt,
-                      out_dir=args.out or _RUNS_DIR,
+                      out_dir=args.out or run_dir,
                       tables_subset=args.tables)
     else:
         if conn is not None:

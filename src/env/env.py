@@ -151,7 +151,7 @@ class PortfolioBudgetingEnv(gym.Env):
             except Exception:
                 pass
 
-        self._cum_reward = self._pending_advance_inflow   # advance already in budget
+        self._cum_reward = 0.0   # advance is in budget baseline, not in reward signal
 
         h.reset_history(self.episode_id, len(self.projects))
         return self._build_obs(), self._build_info()

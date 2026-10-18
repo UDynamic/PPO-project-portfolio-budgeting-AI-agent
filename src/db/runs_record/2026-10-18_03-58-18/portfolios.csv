@@ -1,0 +1,4 @@
+episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
+TC-10SF-R__manual__,TC-10SF-R,0,manual,300.0,0.0,0.0,0
+TC-10SF-R__manual__,TC-10SF-R,1,manual,300.0,0.0,0.0,0
+TC-10SF-R__manual__,TC-10SF-R,2,manual,300.0,0.0,0.0,1
