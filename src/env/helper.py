@@ -435,42 +435,87 @@ def render(t: int, budget: float, horizon: int, initial_budget: float,
            projects: list[dict], proj_state: list[dict],
            milestones: list[list[dict]], milestone_state: list[list[dict]],
            episode_id: str = "", net_cashflow: float = 0.0,
-           cum_reward: float = 0.0, allocations=None, **_) -> None:
+           cum_reward: float = 0.0, step_reward: float = 0.0,
+           allocations=None, **_) -> None:
 
-    print()
+    # ── clear terminal in-place ───────────────────────────────────────────────
+    print("\033[2J\033[H", end="", flush=True)
+
     print(_sep())
-    print(_row(f"PERIOD {t} / {horizon}", "", "net_cashflow", _fmt(net_cashflow)))
-    print(_row("reward", f"{cum_reward:+.4f}", "budget_available", _fmt(budget)))
+    print(_row(f"t = {t} / {horizon}", "",
+               "net_cashflow",    _fmt(net_cashflow)))
+    print(_row(f"step_reward",    f"{step_reward:+.4f}",
+               "cum_reward",      f"{cum_reward:+.4f}"))
+    print(_row("budget",          _fmt(budget),
+               "initial_budget",  _fmt(initial_budget)))
     print(_sep())
+
+    ib      = initial_budget if initial_budget > 0 else 1.0
+    npv_vals = [ps.get("target_npv", 0.0) for ps in proj_state]
+    npv_den  = max(abs(v) for v in npv_vals) or 1.0
 
     for idx, (proj, ps, ms_list, ms_sl) in enumerate(
             zip(projects, proj_state, milestones, milestone_state)):
+
+        status  = ps.get("status", "pending")
         tol     = ps.get("tolerance_remain", proj["termination_tolerance"])
         tol_max = proj["termination_tolerance"]
         alloc_amount = (allocations[idx] if allocations is not None
                         else ps.get("allocation_action"))
-        print(f"  [{_tag(ps.get('status','pending'))}]  Project {proj['i']}")
-        print(_row("BAC",    _fmt(proj["bac"]),   "Price",             _fmt(proj["price"])))
+
+        print(f"  [{_tag(status)}]  Project {proj['i']}  "
+              f"(planned {proj['planned_start']}→{proj['planned_finish']})")
+        print(_row("BAC",    _fmt(proj["bac"]),
+                   "price",  _fmt(proj["price"])))
         print(_row("t_proj", str(ps.get("t_project", 0)),
-                   "tolerance_remain", f"{tol}/{tol_max}"))
-        print(_row("inflow", _fmt(ps.get("inflow", 0.0)),
+                   "tolerance", f"{tol}/{tol_max}"))
+        print(_row("inflow", _fmt(ps.get("inflow",  0.0)),
                    "outflow", _fmt(ps.get("outflow", 0.0))))
+        print(_row("progress_actual", _fmt(ps.get("progress_actual", 0.0), 4),
+                   "progress_plan_t", _fmt(ps.get("progress_plan_t",  0.0), 4)))
+        print(_row("spi",  _fmt(ps.get("spi",  1.0), 4),
+                   "cpi",  _fmt(ps.get("cpi",  1.0), 4)))
+
         if alloc_amount is not None:
             print(_row("→ allocated", _fmt(alloc_amount), "", ""))
+
+        # ── obs vector (what the agent/policy actually sees) ──────────────────
         print(_sep("─"))
-        print(_row("catchup_t",      _fmt(ps.get("catchup_alloc_t",      0.0)),
-                   "catchup_next_t", _fmt(ps.get("catchup_alloc_next_t", 0.0))))
-        print(_row("reach_plan_t",      _fmt(ps.get("reach_plan_t",      0.0)),
-                   "reach_plan_next_t", _fmt(ps.get("reach_plan_next_t", 0.0))))
+        print("  OBS VECTOR")
+        tol_norm  = ps.get("tolerance_remain", 0.0)
+        cat       = ps.get("catchup_alloc_t",      0.0) / ib
+        cant      = ps.get("catchup_alloc_next_t", 0.0) / ib
+        tpg       = ps.get("target_progress_gap",  0.0)
+        ttg       = ps.get("target_timestep_gap",  0)   / horizon if horizon else 0.0
+        tra       = ps.get("target_required_alloc",0.0) / ib
+        tnpv_norm = ps.get("target_npv",           0.0) / npv_den
+
+        print(_row("tolerance_remain",       _fmt(tol_norm, 4),
+                   "catchup_alloc_t/ib",     _fmt(cat, 4)))
+        print(_row("catchup_alloc_next/ib",  _fmt(cant, 4),
+                   "target_progress_gap",    _fmt(tpg, 4)))
+        print(_row("target_timestep_gap/H",  _fmt(ttg, 4),
+                   "target_required/ib",     _fmt(tra, 4)))
+        print(_row("target_npv_norm",        _fmt(tnpv_norm, 4), "", ""))
+
+        # ── milestone target ──────────────────────────────────────────────────
         print(_sep("─"))
         j = ps.get("target_milestone_j")
-        print(_row("target",         f"j={j}" if j is not None else "none",
-                   "net_payment",    _fmt(ps.get("target_net_payment",    0.0))))
-        print(_row("progress_gap",   _fmt(ps.get("target_progress_gap",   0.0), 4),
-                   "timestep_gap",   str(ps.get("target_timestep_gap",   0))))
-        print(_row("required_alloc", _fmt(ps.get("target_required_alloc", 0.0)),
-                   "target_npv",     _fmt(ps.get("target_npv",            0.0), 4)))
+        print(_row("target_milestone",  f"j={j}" if j is not None else "none",
+                   "net_payment",       _fmt(ps.get("target_net_payment",    0.0))))
+        print(_row("catchup_t",         _fmt(ps.get("catchup_alloc_t",       0.0)),
+                   "catchup_next_t",    _fmt(ps.get("catchup_alloc_next_t",  0.0))))
+        print(_row("reach_plan_t",      _fmt(ps.get("reach_plan_t",          0.0)),
+                   "reach_plan_next_t", _fmt(ps.get("reach_plan_next_t",     0.0))))
+        print(_row("target_npv",        _fmt(ps.get("target_npv",            0.0), 4),
+                   "required_alloc",    _fmt(ps.get("target_required_alloc", 0.0))))
         print(_sep())
+    
+    # ── portfolio obs ─────────────────────────────────────────────────────────
+    print("  PORTFOLIO OBS")
+    print(_row("ncf / ib",     _fmt(net_cashflow / ib, 4),
+               "budget / ib",  _fmt(budget / ib, 4)))
+    print(_sep())
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

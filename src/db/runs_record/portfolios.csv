@@ -1,0 +1,11 @@
+episode_id,config_id,t_episode,method,budget_available,net_cashflow,reward,done
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,0,manual,1824.0,0.0,0.0,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,1,manual,1824.0,0.0,0.0,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,2,manual,1800.0,-24.0,-21.66,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,3,manual,1800.0,0.0,0.0,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,4,manual,1800.0,0.0,0.0,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,5,manual,1800.0,0.0,0.0,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,6,manual,1848.0,0.0,0.0,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,7,manual,1920.0,0.0,0.0,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,8,manual,1872.0,-48.0,-31.84418070187499,0
+TC-3XMAIF-R__manual__,TC-3XMAIF-R,9,manual,1800.0,-72.0,-45.37795750017185,1
