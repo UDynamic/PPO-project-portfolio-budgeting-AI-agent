@@ -596,7 +596,10 @@ class PortfolioBudgetingEnv(gym.Env):
             np.clip(self._last_net_cashflow / ib, -2.0, 2.0),
             np.clip(self.budget             / ib,  0.0, 2.0),
         ])
-        return np.array(obs, dtype=np.float32)
+        return np.array(obs, dtype=np.float32).clip(
+            self.observation_space.low,
+            self.observation_space.high,
+        )
 
     # ── info builder ──────────────────────────────────────────────────────────
 

@@ -43,10 +43,19 @@ three-tier project management hierarchy \citep{PMI2017}. Portfolio selection
 consistent with the two-stage governance model of \citet{Turner2014}.
 At the governance layer, the portfolio manager does not control project
 execution directly but allocates budget to each project and observes
-earned value outcomes. Termination is not a deliberate agent action but an
-endogenous environment mechanic triggered when a project's forecast
-performance trajectory breaches two conditions simultaneously for a
-project-specific number of consecutive periods.
+earned value outcomes. Termination is not a deliberate agent action but 
+an endogenous environment mechanic. It is triggered by one of two independent 
+conditions. The first is a hard deadline: if the current episode timestep reaches 
+planned finish + finish delay cap, the project is terminated immediately regardless 
+of progress or tolerance. The second is sustained underperformance: if a project’s 
+actual progress falls behind its planned progress by more than progress delay cap, 
+a tolerance counter decrements by one each period the breach persists and resets to 
+its initial value whenever the breach clears; termination fires when the counter reaches zero. 
+
+Project termination differs from episode termination — a project terminates individually 
+and triggers a settlement cash flow, while the episode ends only when every project has 
+either completed or been terminated, or when the global horizon is reached, or when the 
+portfolio budget is exhausted with no pending inflows.
 
 \begin{figure}[htbp]
     \centering
