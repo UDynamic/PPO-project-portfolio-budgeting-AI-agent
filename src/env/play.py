@@ -9,10 +9,9 @@
 # ─────────────────────
 # env.reset()  → obs, info
 #   info["episode_header"]   – dict: episode_id, n_projects, horizon, budget, run_dir
-#   info["render_state"]     – pre-action state at t=0
+#   info["render_state"]     – state at t=0 (shown before first prompt)
 #
 # env.step(action) → obs, reward, terminated, truncated, info
-#   info["render_post"]      – post-action state for the just-completed period T
 #   info["render_pre"]       – pre-action state for the next period T+1 (absent when done)
 #   info["recorded_reward"]  – per-step reward for period T
 #   info["cum_reward"]       – running cumulative reward
@@ -21,10 +20,9 @@
 #
 # Display contract
 # ────────────────
-# Each screen shows exactly ONE timestep.
-# After step:  show render_post  (what just happened — reward, post-alloc obs)
-# Before next prompt: show render_pre (what the agent sees before acting)
-# These are two separate screens; the user presses Enter to advance between them.
+# Each screen shows the pre-action state for the current timestep.
+# The user acts, env.step() runs, then the screen refreshes with the
+# next period's pre-action state. No post-action screen is shown.
 #
 # Usage
 # -----
@@ -91,17 +89,14 @@ def _obs_row(ll, lv, rl="", rv="") -> str:
 def render_obs(t: int, horizon: int,
                projects: list[dict], proj_state: list[dict],
                step_reward: float, cum_reward: float,
-               label: str = "",
                **_) -> None:
     """Clear screen and print one compact obs block per project."""
     print("\033[2J\033[H", end="", flush=True)
 
     # ── timestep header ───────────────────────────────────────────────────────
-    tag = f"  [{label}]" if label else ""
     print(f"  t = {t} / {horizon}"
           f"    step_reward = {step_reward:+.4f}"
-          f"    cum_reward = {cum_reward:+.4f}"
-          + (f"    {label}" if label else ""))
+          f"    cum_reward = {cum_reward:+.4f}")
     print()
 
     # ── one block per project (dynamic) ───────────────────────────────────────
@@ -243,8 +238,7 @@ def main() -> None:
     #   1. render pre-action obs  (what the agent sees before acting)
     #   2. prompt for action      (or auto-step if no active projects)
     #   3. env.step()
-    #   4. render post-action obs (result: reward, updated obs)
-    #   5. user presses Enter to continue to next timestep
+    #   4. loop: next pre-action state is in info["render_pre"]
     # ─────────────────────────────────────────────────────────────────────────
     import numpy as np
     terminated = truncated = False
@@ -258,8 +252,8 @@ def main() -> None:
         render_obs(
             t=pre_rs["t"], horizon=pre_rs["horizon"],
             projects=pre_rs["projects"], proj_state=pre_rs["proj_state"],
-            step_reward=0.0, cum_reward=pre_rs.get("cum_reward", 0.0),
-            label="PRE",
+            step_reward=pre_rs.get("net_cashflow", 0.0),
+            cum_reward=pre_rs.get("cum_reward", 0.0),
         )
 
         # ── 2+3. prompt (or auto) + step ──────────────────────────────────────
@@ -274,21 +268,10 @@ def main() -> None:
 
         obs, reward, terminated, truncated, info = env.step(action)
 
-        # ── 4. render post-action state ───────────────────────────────────────
-        post_rs = info["render_post"]
-        render_obs(
-            t=post_rs["t"], horizon=post_rs["horizon"],
-            projects=post_rs["projects"], proj_state=post_rs["proj_state"],
-            step_reward=info["recorded_reward"],
-            cum_reward=info["cum_reward"],
-            label="POST",
-        )
-
         if terminated or truncated:
             break
 
-        # ── 5. wait for Enter, then advance to next pre-action state ──────────
-        input("  Press Enter for next period...")
+        # ── 4. advance to next pre-action state ───────────────────────────────
         pre_rs = info["render_pre"]
 
     # ── summary ───────────────────────────────────────────────────────────────
