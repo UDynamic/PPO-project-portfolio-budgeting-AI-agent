@@ -58,110 +58,118 @@ either completed or been terminated, or when the global horizon is reached, or w
 portfolio budget is exhausted with no pending inflows.
 
 \begin{figure}[htbp]
-    \centering
-    \resizebox{\textwidth}{!}{%
-    \begin{tikzpicture}[
-      every node/.style = {font=\normalsize},
-      box/.style = {
-        rectangle, rounded corners=6pt,
-        draw, thick,
-        minimum width=3.4cm, minimum height=1.2cm,
-        align=center
-      },
-      agent/.style  = {box, draw=violet!70!black, fill=violet!10},
-      contr/.style  = {box, draw=orange!70!red,   fill=orange!8},
-      client/.style = {box, draw=teal!70!black,   fill=teal!8},
-      state/.style  = {
-        rectangle, rounded corners=6pt,
-        draw=gray!60, thick, fill=gray!6,
-        minimum width=17cm, minimum height=1.3cm,
-        align=center
-      },
-      act/.style  = {-{Latex[length=6pt]}, thick, violet!70!black},
-      rew/.style  = {-{Latex[length=6pt]}, thick, blue!60!black, dashed},
-      obs/.style  = {-{Latex[length=6pt]}, thick, gray!50!black},
-      prog/.style = {-{Latex[length=6pt]}, thick, orange!70!red},
-      int/.style  = {-{Latex[length=6pt]}, thick, teal!60!black, dashed},
-      lbl/.style  = {font=\normalsize},
-    ]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    every node/.style = {font=\normalsize},
+    box/.style = {
+      rectangle, rounded corners=6pt,
+      draw, thick,
+      minimum width=3.4cm, minimum height=1.2cm,
+      align=center
+    },
+    agent/.style  = {box, draw=violet!70!black, fill=violet!10},
+    contr/.style  = {box, draw=orange!70!red,   fill=orange!8},
+    client/.style = {box, draw=teal!70!black,   fill=teal!8},
+    state/.style  = {
+      rectangle, rounded corners=6pt,
+      draw=gray!60, thick, fill=gray!6,
+      minimum width=17cm, minimum height=1.3cm,
+      align=center
+    },
+    act/.style  = {-{Latex[length=6pt]}, thick, violet!70!black},
+    rew/.style  = {-{Latex[length=6pt]}, thick, blue!60!black, dashed},
+    obs/.style  = {-{Latex[length=6pt]}, thick, gray!50!black},
+    prog/.style = {-{Latex[length=6pt]}, thick, orange!70!red},
+    int/.style  = {-{Latex[length=6pt]}, thick, teal!60!black, dashed},
+    lbl/.style  = {font=\normalsize},
+  ]
 
-      \node[agent] (pm) {%
-        \textbf{Portfolio Manager}\\[2pt]
-        policy $\pi(S_t)\!\to\!\mathbf{x}_t$};
+    \node[agent] (pm) {%
+      \textbf{Portfolio Manager}\\[2pt]
+      policy $\pi(S_t)\!\to\!\mathbf{x}_t$};
 
-      \node[client, right=10cm of pm] (client) {%
-        \textbf{Client}\\[2pt]
-        milestone approval};
+    \node[client, right=10cm of pm] (client) {%
+      \textbf{Client}\\[2pt]
+      milestone approval};
 
-      \node[contr, left=3cm of client] (contractor) {%
-        \textbf{Contractor}\\[2pt]
-        project execution};
+    \node[contr, left=3cm of client] (contractor) {%
+      \textbf{Contractor}\\[2pt]
+      project execution};
 
-      \node[
-        rectangle, rounded corners=20pt,
-        draw=orange!50!black, thick, fill=orange!4,
-        inner xsep=20pt, inner ysep=18pt,
-        fit=(contractor)(client),
-        label={[font=\footnotesize\itshape, text=orange!60!black]
-               above:Environment \textit{(contract)}},
-      ] (env) {};
+    \node[
+      rectangle, rounded corners=20pt,
+      draw=orange!50!black, thick, fill=orange!4,
+      inner xsep=20pt, inner ysep=18pt,
+      fit=(contractor)(client),
+      label={[font=\footnotesize\itshape, text=orange!60!black]
+             above:Environment \textit{(contract)}},
+    ] (env) {};
 
-      \node[client, right=10cm of pm] (client) {%
-        \textbf{Client}\\[2pt]
-        milestone approval};
+    \node[client, right=10cm of pm] (client) {%
+      \textbf{Client}\\[2pt]
+      milestone approval};
 
-      \node[contr, left=3cm of client] (contractor) {%
-        \textbf{Contractor}\\[2pt]
-        project execution};
+    \node[contr, left=3cm of client] (contractor) {%
+      \textbf{Contractor}\\[2pt]
+      project execution};
 
-      \node[state,
-            below=3.5cm of $(pm.south)!0.55!(contractor.south)$] (state)
-            {\textbf{Observable State} $S_t$:\quad
-            $\bigl\{P_{i,t}^{\mathrm{actual}},\;
-            \mathrm{CPI}_{i,t},\;\mathrm{SPI}_{i,t},\;
-            \mathrm{TCPI}_{i,t},\;
-            \mathrm{EAC}_{i,t},\;
-            \Delta f_{i,t},\;
-            \mathrm{status}_{i,t},\;\tau_{i,t}^{\mathrm{rem}}\bigr\}_{i},\;B_t$};
+    \node[state,
+          below=3.5cm of $(pm.south)!0.55!(contractor.south)$] (state)
+          {\textbf{Observable State} $S_t$:\quad
+          $\bigl\{\tau_{i,t}^{\mathrm{rem}},\;
+          \mathrm{ca}_{i,t}/B_0,\;
+          \mathrm{ca}_{i,t+1}/B_0,\;
+          \Delta p_{i,t}^{\mathrm{gap}},\;
+          \Delta t_{i,t}^{\mathrm{gap}}/H,\;
+          \mathrm{ar}_{i,t}/B_0,\;
+          \widetilde{\mathrm{NPV}}_{i,t}\bigr\}_{i},\;
+          \mathrm{ncf}_t/B_0,\;B_t/B_0$};
 
-      \draw[act]
-        (pm.east) -- (contractor.west)
-        node[midway, above, lbl, violet!80!black] {allocation $\mathbf{x}_t$};
+    \draw[act]
+      (pm.east) -- (contractor.west)
+      node[midway, above, lbl, violet!80!black] {allocation $\mathbf{x}_t$};
 
-      \draw[prog]
-        (contractor.east) -- (client.west)
-        node[midway, above, lbl, orange!80!red] {progress $\Delta P_{i,t}$};
+    \draw[prog]
+      (contractor.east) -- (client.west)
+      node[midway, above, lbl, orange!80!red] {progress $\Delta P_{i,t}$};
 
-      \draw[rew]
-        (client.north)
-          -- ++(0, 1.4)
-          -| (pm.north)
-        node[pos=0.28, above, lbl, blue!60!black]
-          {payments:\;
-           $R_{i,j}^{\mathrm{net}},\;R_i^{\mathrm{ret}},\;R_i^{\mathrm{term}}$
-           \quad(reward $r_t$)};
+    \draw[rew]
+      (client.north)
+        -- ++(0, 1.4)
+        -| (pm.north)
+      node[pos=0.28, above, lbl, blue!60!black]
+        {$r_t = \gamma^t(\mathrm{inflow}_t - \mathrm{outflow}_t)$\quad
+         inflow: milestone payments $+$ settlement\quad
+         outflow: allocations $+$ interest};
 
-      \draw[prog]
-      (contractor.south)
-          -- (state.north -| contractor)
-          node[midway,right,lbl]{$\Delta P_{i,t}=\eta_{i,t}x_{i,t}/\mathrm{BAC}_i$};
+    \draw[prog]
+    (contractor.south)
+        -- (state.north -| contractor)
+        node[midway,right,lbl]{$\Delta P_{i,t}=\eta_{i,t}x_{i,t}/\mathrm{BAC}_i$};
 
-      \draw[int]
-        (client.east)
-        -- ++(1.2, 0)
-        |- (state.east)
-        node[pos=0.25, left, lbl, teal!60!black] {milestone revenue};
+    \draw[int]
+      (client.east)
+      -- ++(1.2, 0)
+      |- (state.east)
+      node[pos=0.25, left, lbl, teal!60!black] {milestone revenue};
 
-      \draw[obs]
-        (state.west)
-          -- ++(-1.2, 0)
-          |- (pm.west)
-        node[pos=0.25, right, lbl, gray!60!black] {observe $S_t$};
+    \draw[obs]
+      (state.west)
+        -- ++(-1.2, 0)
+        |- (pm.west)
+      node[pos=0.25, right, lbl, gray!60!black] {observe $S_t$};
 
-    \end{tikzpicture}%
-    }
-    \caption{Portfolio governance as a reinforcement learning feedback loop.}
-    \label{fig:feedback_loop}
+  \end{tikzpicture}%
+  }
+  \caption{Portfolio governance as a reinforcement learning feedback loop.
+           $B_0$: initial budget; $H$: horizon; $\tau^{\mathrm{rem}}$: tolerance
+           remaining; ca: catchup allocation; $\Delta p^{\mathrm{gap}}$:
+           progress gap to next milestone; $\Delta t^{\mathrm{gap}}$: timestep
+           gap to milestone deadline; ar: required allocation to reach milestone;
+           $\widetilde{\mathrm{NPV}}$: normalised discounted milestone value;
+           ncf: net cashflow.}
+  \label{fig:feedback_loop}
 \end{figure}
 
 % ------------------------------------------------------------

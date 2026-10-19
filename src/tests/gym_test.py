@@ -592,232 +592,411 @@ def generate_certificate(results: list[tuple[str, bool, str]],
                          config_id: str,
                          out_path: str) -> None:
     """
-    Render a Gymnasium compatibility certificate as a PNG figure.
-    Groups results by section, shows pass/fail per check, and prints
-    an overall verdict badge at the bottom.
+    Render a Gymnasium compatibility certificate as a portrait A4 PNG.
+
+    Layout: 6-column table — two side-by-side check panels.
+    Each panel: §  |  Check Name  |  Result
+    Checks fill the left panel first, then the right panel, halving row count.
+    Section header rows span the full table width.
+    Designed for clean printing on white A4 paper.
     """
     try:
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        import matplotlib.patches as mpatches
-        from matplotlib.patches import FancyBboxPatch
+        from matplotlib.patches import FancyBboxPatch, Rectangle
+        from collections import OrderedDict
     except ImportError:
         print("  [!] matplotlib not available — skipping certificate generation.")
         return
 
-    # ── colours ───────────────────────────────────────────────────────────────
-    C_BG       = "#0f1117"
-    C_PANEL    = "#1a1d27"
-    C_BORDER   = "#2e3250"
-    C_PASS     = "#3ddc84"
-    C_FAIL     = "#ff5c5c"
-    C_SKIP     = "#f0a500"
-    C_HEAD     = "#e8eaf6"
-    C_SUB      = "#9e9eb8"
-    C_ACCENT   = "#5c6bc0"
-    C_BADGE_OK = "#1b5e20"
-    C_BADGE_FL = "#7f0000"
+    # ── palette (print-friendly, light background) ────────────────────────────
+    C_PAGE        = "#FFFFFF"   # page / outer background
+    C_HEADER_BG   = "#1A237E"   # deep indigo — title banner + col headers
+    C_HEADER_FG   = "#FFFFFF"
+    C_SEC_BG      = "#E8EAF6"   # lavender tint — section header rows
+    C_SEC_FG      = "#1A237E"
+    C_ROW_ODD     = "#FFFFFF"   # alternating row fill
+    C_ROW_EVEN    = "#F5F5F5"
+    C_GRID        = "#C5CAE9"   # column dividers & outer border
+    C_PASS_BG     = "#E8F5E9"   # soft green cell background
+    C_PASS_FG     = "#2E7D32"
+    C_FAIL_BG     = "#FFEBEE"   # soft red cell background
+    C_FAIL_FG     = "#C62828"
+    C_BODY_FG     = "#212121"
+    C_MUTED       = "#757575"
+    C_ACCENT      = "#3949AB"   # indigo accent (logos, rule lines)
+    C_BADGE_PASS  = "#2E7D32"
+    C_BADGE_FAIL  = "#C62828"
+    C_BADGE_FG    = "#FFFFFF"
+    C_GYM_STRIPE  = "#3949AB"   # thin gymnasium-brand stripe
 
     SECTION_LABELS = {
-        "1": "Import & Instantiation",
-        "2": "Space Declarations",
-        "3": "reset() Contract",
-        "4": "step() Contract",
-        "5": "Determinism",
-        "6": "Random Policy Rollout",
-        "7": "Zero-Action Rollout",
-        "8": "Greedy Rollout",
-        "9": "Multi-Episode Stability",
-        "10": "gymnasium check_env",
+        "1":  "Import & Instantiation",
+        "2":  "Space Declarations",
+        "3":  "reset() Contract",
+        "4":  "step() Contract",
+        "5":  "Determinism",
+        "6":  "Random Policy Rollout",
+        "7":  "Zero-Action Rollout",
+        "8":  "Greedy Rollout",
+        "9":  "Multi-Episode Stability",
+        "10": "gymnasium.utils.env_checker",
     }
 
-    # Group by section prefix (first token before first space)
-    from collections import OrderedDict
-    sections: dict[str, list[tuple[str, bool]]] = OrderedDict()
-    for name, ok, _ in results:
-        # Section key: first word (e.g. "step()" → use section number from _results order)
-        # We rely on the fact that checks are appended in section order; group by label.
-        key = name
-        sections.setdefault("all", []).append((name, ok))
-
-    # Re-group by section number using insertion order of section() calls.
-    # We reconstruct sections from result names by detecting which section
-    # each check was registered under — use a simple ordered approach.
-    sec_map: dict[str, list[tuple[str, bool]]] = OrderedDict()
-    current_sec = "?"
-    # Map check names back to section titles using known prefixes
-    _sec_membership: dict[str, str] = {}
-    _import_names  = {"PortfolioBudgetingEnv importable",
-                      "Env instantiation (fallback config)",
-                      "has observation_space","has action_space",
-                      "has reset","has step","has close","has render"}
-    _space_names   = {"observation_space dtype is float32",
-                      "action_space dtype is float32",
-                      "action_space low  == 0","action_space high == 1",
-                      "obs shape matches observation_space",
-                      "obs within observation_space bounds",
-                      "action_space shape == (n_projects,)"}
-    _reset_names   = {"reset returns tuple of length 2","obs is ndarray",
-                      "info is dict","info has t_episode","info has budget",
-                      "info has horizon","info has n_active",
-                      "info has episode_header","info has render_state",
-                      "t_episode == 0 after reset","budget > 0 after reset",
-                      "second reset works","obs shape stable across resets"}
-    _step_names    = {"step returns 5-tuple","obs2 is ndarray","reward is float",
-                      "terminated is bool","truncated is bool","info2 is dict",
-                      "obs2 shape matches space","obs2 within space",
-                      "info2 has cum_reward","info2 has render_post"}
-    _det_names     = {"same seed → identical first obs",
-                      "different seeds → different obs (probabilistic)"}
-    _r_names       = {"rollout completes without exception",
-                      "episode ends (terminated or truncated)",
-                      "all obs shapes identical","last obs within space"}
-    _z_names       = {"zero-action rollout completes"}
-    _g_names       = {"greedy rollout completes"}
-    _m_names       = {"no exceptions across episodes",
-                      "obs shape consistent across episodes"}
-    _c_names       = {"check_env passed"}
+    # ── section membership map ────────────────────────────────────────────────
+    _import_names = {"PortfolioBudgetingEnv importable",
+                     "Env instantiation (fallback config)",
+                     "has observation_space", "has action_space",
+                     "has reset", "has step", "has close", "has render"}
+    _space_names  = {"observation_space dtype is float32",
+                     "action_space dtype is float32",
+                     "action_space low  == 0", "action_space high == 1",
+                     "obs shape matches observation_space",
+                     "obs within observation_space bounds",
+                     "action_space shape == (n_projects,)"}
+    _reset_names  = {"reset returns tuple of length 2", "obs is ndarray",
+                     "info is dict", "info has t_episode", "info has budget",
+                     "info has horizon", "info has n_active",
+                     "info has episode_header", "info has render_state",
+                     "t_episode == 0 after reset", "budget > 0 after reset",
+                     "second reset works", "obs shape stable across resets"}
+    _step_names   = {"step returns 5-tuple", "obs2 is ndarray", "reward is float",
+                     "terminated is bool", "truncated is bool", "info2 is dict",
+                     "obs2 shape matches space", "obs2 within space",
+                     "info2 has cum_reward", "info2 has render_post"}
+    _det_names    = {"same seed → identical first obs",
+                     "different seeds → different obs (probabilistic)"}
+    _r_names      = {"rollout completes without exception",
+                     "episode ends (terminated or truncated)",
+                     "all obs shapes identical", "last obs within space"}
+    _z_names      = {"zero-action rollout completes"}
+    _g_names      = {"greedy rollout completes"}
+    _m_names      = {"no exceptions across episodes",
+                     "obs shape consistent across episodes"}
+    _c_names      = {"check_env passed"}
 
     def _sec_of(name: str) -> str:
-        if name in _import_names:  return "1"
-        if name in _space_names:   return "2"
-        if name in _reset_names:   return "3"
-        if name in _step_names:    return "4"
-        if name in _det_names:     return "5"
-        if name in _r_names:       return "6"
-        if name in _z_names or "zero" in name.lower(): return "7"
+        if name in _import_names: return "1"
+        if name in _space_names:  return "2"
+        if name in _reset_names:  return "3"
+        if name in _step_names:   return "4"
+        if name in _det_names:    return "5"
+        if name in _r_names:      return "6"
+        if name in _z_names or "zero"   in name.lower(): return "7"
         if name in _g_names or "greedy" in name.lower(): return "8"
         if name in _m_names or "episode" in name.lower(): return "9"
-        if name in _c_names:       return "10"
+        if name in _c_names:      return "10"
         return "?"
 
+    sec_map: dict[str, list[tuple[str, bool]]] = OrderedDict()
     for name, ok, _ in results:
-        s = _sec_of(name)
-        sec_map.setdefault(s, []).append((name, ok))
+        sec_map.setdefault(_sec_of(name), []).append((name, ok))
 
-    # ── layout ────────────────────────────────────────────────────────────────
-    n_sections   = len(sec_map)
-    row_height   = 0.28        # inches per check row
-    sec_padding  = 0.55        # inches per section header
-    total_checks = len(results)
-    fig_h = 2.8 + n_sections * sec_padding + total_checks * row_height + 1.4
-    fig_w = 9.0
+    # ── flatten into table rows ───────────────────────────────────────────────
+    # Each logical row is either a section-header or a check entry.
+    # We build a flat list first, then split it into LEFT and RIGHT panels so
+    # checks sit side-by-side (6 visible columns = 3 per panel).
+    # Section headers always span the full width (they are not split).
+    #
+    # Flat item types:
+    #   {"kind": "sec",   "key": str, "label": str, "pass": int, "total": int}
+    #   {"kind": "check", "sec": str, "name": str,  "ok": bool}
 
-    fig = plt.figure(figsize=(fig_w, fig_h), facecolor=C_BG)
-    ax  = fig.add_axes([0, 0, 1, 1])
-    ax.set_xlim(0, fig_w)
-    ax.set_ylim(0, fig_h)
-    ax.axis("off")
-    ax.set_facecolor(C_BG)
-
-    # ── outer border ──────────────────────────────────────────────────────────
-    border = FancyBboxPatch((0.18, 0.18), fig_w - 0.36, fig_h - 0.36,
-                             boxstyle="round,pad=0.05",
-                             linewidth=2, edgecolor=C_ACCENT,
-                             facecolor=C_PANEL)
-    ax.add_patch(border)
-
-    y = fig_h - 0.55
-
-    # ── title block ───────────────────────────────────────────────────────────
-    ax.text(fig_w / 2, y, "Gymnasium Compatibility Certificate",
-            ha="center", va="top", fontsize=17, fontweight="bold",
-            color=C_HEAD, fontfamily="monospace")
-    y -= 0.42
-    ax.text(fig_w / 2, y, "PortfolioBudgetingEnv",
-            ha="center", va="top", fontsize=13, color=C_ACCENT,
-            fontfamily="monospace")
-    y -= 0.35
-    ax.text(fig_w / 2, y, f"Config: {config_id}",
-            ha="center", va="top", fontsize=9.5, color=C_SUB,
-            fontfamily="monospace")
-    y -= 0.25
-    ts = datetime.datetime.now().strftime("%Y-%m-%d  %H:%M:%S")
-    ax.text(fig_w / 2, y, f"Generated: {ts}",
-            ha="center", va="top", fontsize=8.5, color=C_SUB,
-            fontfamily="monospace")
-    y -= 0.30
-
-    # separator
-    ax.plot([0.4, fig_w - 0.4], [y, y], color=C_BORDER, lw=1.2)
-    y -= 0.28
-
-    # ── section rows ──────────────────────────────────────────────────────────
-    X_NUM   = 0.55
-    X_ICON  = 1.10
-    X_NAME  = 1.45
-    X_RIGHT = fig_w - 0.55
-
+    flat: list[dict] = []
     for sec_key in sorted(sec_map.keys(), key=lambda k: int(k) if k.isdigit() else 99):
         checks   = sec_map[sec_key]
         sec_pass = sum(1 for _, ok in checks if ok)
-        sec_tot  = len(checks)
-        sec_ok   = sec_pass == sec_tot
-        label    = SECTION_LABELS.get(sec_key, f"Section {sec_key}")
-        ratio    = f"{sec_pass}/{sec_tot}"
-        s_color  = C_PASS if sec_ok else C_FAIL
-
-        # Section header
-        ax.text(X_NUM, y, f"§{sec_key}", ha="left", va="top",
-                fontsize=9, color=C_ACCENT, fontfamily="monospace",
-                fontweight="bold")
-        ax.text(X_NAME, y, label, ha="left", va="top",
-                fontsize=10, color=C_HEAD, fontfamily="monospace",
-                fontweight="bold")
-        ax.text(X_RIGHT, y, ratio, ha="right", va="top",
-                fontsize=9, color=s_color, fontfamily="monospace",
-                fontweight="bold")
-        y -= 0.30
-
-        # Individual checks
+        flat.append({"kind": "sec", "key": sec_key,
+                     "label": SECTION_LABELS.get(sec_key, f"Section {sec_key}"),
+                     "pass": sec_pass, "total": len(checks)})
         for name, ok in checks:
-            icon  = "✓" if ok else "✗"
-            color = C_PASS if ok else C_FAIL
-            # truncate long names
-            disp = name if len(name) <= 52 else name[:49] + "…"
-            ax.text(X_ICON, y, icon, ha="left", va="top",
-                    fontsize=8.5, color=color, fontfamily="monospace")
-            ax.text(X_NAME, y, disp, ha="left", va="top",
-                    fontsize=8, color=C_SUB, fontfamily="monospace")
-            y -= row_height
+            flat.append({"kind": "check", "sec": sec_key, "name": name, "ok": ok})
 
-        y -= 0.10   # gap after section
+    # ── geometry ─────────────────────────────────────────────────────────────
+    # Portrait A4, generous margins.
+    A4_W, A4_H = 8.27, 11.69
+    MARGIN      = 0.50
+    GUTTER      = 0.18          # gap between left and right panel
+    TABLE_W     = A4_W - 2 * MARGIN
+    PANEL_W     = (TABLE_W - GUTTER) / 2
 
-    # separator
-    ax.plot([0.4, fig_w - 0.4], [y, y], color=C_BORDER, lw=1.2)
-    y -= 0.32
+    # Per-panel column fractions: [§-num | check-name | result-pill]
+    CF          = [0.11, 0.68, 0.21]
+    CW          = [f * PANEL_W for f in CF]   # col widths within one panel
 
-    # ── overall badge ─────────────────────────────────────────────────────────
+    ROW_H       = 0.200   # data row height (inches)
+    SEC_H       = 0.240   # section header row height
+    COL_HDR_H   = 0.285   # column-header band height
+    PAD         = 0.07    # inner cell horizontal padding
+
+    # Build the actual row sequence for the left panel:
+    # section headers expand to full width and consume one row each.
+    # check rows pair up left/right.
+    # We interleave: for each section header → one full-width row;
+    # then its checks go into pairs.
+    # Collect (left_item, right_item | None) pairs for check rows,
+    # and section-header rows separately.
+
+    display_rows: list[dict] = []   # each entry: "sec" or "pair"
+    i = 0
+    while i < len(flat):
+        item = flat[i]
+        if item["kind"] == "sec":
+            display_rows.append({"kind": "sec", "item": item})
+            i += 1
+        else:
+            left  = item
+            right = flat[i + 1] if (i + 1 < len(flat) and flat[i + 1]["kind"] == "check") else None
+            display_rows.append({"kind": "pair", "left": left, "right": right})
+            i += 2 if right else 1
+
+    # Compute figure height from row count
+    n_sec_rows   = sum(1 for r in display_rows if r["kind"] == "sec")
+    n_pair_rows  = sum(1 for r in display_rows if r["kind"] == "pair")
+    content_h    = n_sec_rows * SEC_H + n_pair_rows * ROW_H + COL_HDR_H
+    TITLE_H      = 1.65
+    FOOTER_H     = 1.10
+    fig_h        = TITLE_H + content_h + FOOTER_H + 2 * MARGIN
+
+    fig = plt.figure(figsize=(A4_W, fig_h), facecolor=C_PAGE)
+    ax  = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, A4_W)
+    ax.set_ylim(0, fig_h)
+    ax.axis("off")
+    ax.set_facecolor(C_PAGE)
+
+    # ── helpers ───────────────────────────────────────────────────────────────
+    def rect(x, y, w, h, fc, ec=None, lw=0.5, zorder=1):
+        ax.add_patch(Rectangle((x, y - h), w, h,
+                               facecolor=fc,
+                               edgecolor=ec or fc,
+                               linewidth=lw, zorder=zorder))
+
+    def hline(x0, x1, y, lw=0.4, color=C_GRID, z=3):
+        ax.plot([x0, x1], [y, y], color=color, lw=lw, zorder=z)
+
+    def vline(x, y0, y1, lw=0.4, color=C_GRID, z=3):
+        ax.plot([x, x], [y0, y1], color=color, lw=lw, zorder=z)
+
+    def pill(cx, cy, label, fc, tc, row_h):
+        pw, ph = 0.50, row_h * 0.60
+        p = FancyBboxPatch((cx - pw / 2, cy - ph / 2), pw, ph,
+                           boxstyle="round,pad=0.02",
+                           facecolor=fc, edgecolor=tc,
+                           linewidth=0.6, zorder=4)
+        ax.add_patch(p)
+        ax.text(cx, cy, label,
+                ha="center", va="center",
+                fontsize=6, fontweight="bold",
+                color=tc, fontfamily="monospace", zorder=5)
+
+    # Panel left-edge x positions
+    PX = [MARGIN, MARGIN + PANEL_W + GUTTER]   # left panel x, right panel x
+
+    # Column x positions within each panel (absolute)
+    def col_x(panel: int, col: int) -> float:
+        return PX[panel] + sum(CW[:col])
+
+    def col_cx(panel: int, col: int) -> float:
+        return col_x(panel, col) + CW[col] / 2
+
+    # ── brand stripe (top) ────────────────────────────────────────────────────
+    STRIPE_H = 0.050
+    rect(0, fig_h, A4_W, STRIPE_H, C_GYM_STRIPE)
+
+    # ── title banner ──────────────────────────────────────────────────────────
+    BANNER_H = 0.90
+    banner_y = fig_h - STRIPE_H
+    rect(0, banner_y, A4_W, BANNER_H, C_HEADER_BG)
+
+    ax.text(MARGIN, banner_y - 0.13,
+            "GYMNASIUM", ha="left", va="top",
+            fontsize=7, color="#7986CB",
+            fontfamily="monospace", fontweight="bold", fontstyle="italic")
+
+    ax.text(A4_W / 2, banner_y - 0.16,
+            "Compatibility Certificate",
+            ha="center", va="top", fontsize=17,
+            fontweight="bold", color=C_HEADER_FG)
+
+    ax.text(A4_W / 2, banner_y - 0.46,
+            "PortfolioBudgetingEnv",
+            ha="center", va="top", fontsize=10.5, color="#9FA8DA")
+
+    # rule with comfortable gap above meta line
+    rule_y = banner_y - 0.70
+    ax.plot([MARGIN, A4_W - MARGIN], [rule_y, rule_y],
+            color="#3F51B5", lw=0.7)
+
+    ts = datetime.datetime.now().strftime("%Y-%m-%d  %H:%M")
+    ax.text(A4_W / 2, rule_y - 0.07,
+            f"Config: {config_id}    ·    Generated: {ts}",
+            ha="center", va="top", fontsize=7,
+            color="#7986CB", fontfamily="monospace")
+
+    # ── table top / bottom boundaries ────────────────────────────────────────
+    table_top    = banner_y - BANNER_H
+    table_bottom = table_top - COL_HDR_H - content_h
+
+    # Outer border for each panel
+    for px in PX:
+        ax.add_patch(FancyBboxPatch(
+            (px, table_bottom), PANEL_W, table_top - table_bottom,
+            boxstyle="square,pad=0",
+            linewidth=1.0, edgecolor=C_GRID, facecolor="none", zorder=6))
+
+    # ── column header band ────────────────────────────────────────────────────
+    cy = table_top
+    for px in PX:
+        rect(px, cy, PANEL_W, COL_HDR_H, C_HEADER_BG)
+
+    col_hdr_labels  = ["§", "Check", "Result"]
+    col_hdr_aligns  = ["center", "left", "center"]
+    for panel in range(2):
+        for c, (lbl, aln) in enumerate(zip(col_hdr_labels, col_hdr_aligns)):
+            if aln == "center":
+                ax.text(col_cx(panel, c), cy - COL_HDR_H / 2, lbl,
+                        ha="center", va="center", fontsize=7.5,
+                        fontweight="bold", color=C_HEADER_FG,
+                        fontfamily="monospace")
+            else:
+                ax.text(col_x(panel, c) + PAD, cy - COL_HDR_H / 2, lbl,
+                        ha="left", va="center", fontsize=7.5,
+                        fontweight="bold", color=C_HEADER_FG,
+                        fontfamily="monospace")
+
+    cy -= COL_HDR_H
+
+    # ── draw rows ─────────────────────────────────────────────────────────────
     passed_total = sum(1 for _, ok, _ in results if ok)
     failed_total = len(results) - passed_total
-    all_pass     = failed_total == 0
+    pair_idx     = 0
 
-    badge_label  = "ALL CHECKS PASSED" if all_pass else f"{failed_total} CHECK(S) FAILED"
-    badge_color  = C_BADGE_OK if all_pass else C_BADGE_FL
-    badge_tc     = C_PASS     if all_pass else C_FAIL
-    badge_w, badge_h = 3.6, 0.50
-    badge_x = (fig_w - badge_w) / 2
-    badge_y = y - badge_h
+    def draw_check_cell(panel: int, cy: float, item: dict, row_h: float,
+                        bg: str) -> None:
+        """Draw a single check cell (3 columns) inside the given panel."""
+        px = PX[panel]
+        rect(px, cy, PANEL_W, row_h, bg, ec=C_GRID, lw=0.3)
 
-    badge_rect = FancyBboxPatch((badge_x, badge_y), badge_w, badge_h,
-                                 boxstyle="round,pad=0.06",
-                                 linewidth=2, edgecolor=badge_tc,
-                                 facecolor=badge_color)
-    ax.add_patch(badge_rect)
-    ax.text(fig_w / 2, badge_y + badge_h / 2, badge_label,
-            ha="center", va="center", fontsize=12, fontweight="bold",
-            color=badge_tc, fontfamily="monospace")
+        # § col: section key
+        ax.text(col_cx(panel, 0), cy - row_h / 2,
+                item["sec"],
+                ha="center", va="center",
+                fontsize=6, color=C_MUTED,
+                fontfamily="monospace")
 
-    y = badge_y - 0.28
-    ax.text(fig_w / 2, y,
-            f"{passed_total} passed  ·  {failed_total} failed  ·  {len(results)} total",
-            ha="center", va="top", fontsize=8.5, color=C_SUB,
-            fontfamily="monospace")
+        # Check name col
+        max_ch = 38
+        disp = item["name"] if len(item["name"]) <= max_ch \
+               else item["name"][:max_ch - 1] + "…"
+        ax.text(col_x(panel, 1) + PAD, cy - row_h / 2,
+                disp, ha="left", va="center",
+                fontsize=6.2, color=C_BODY_FG)
+
+        # Result pill
+        ok = item["ok"]
+        pill(col_cx(panel, 2), cy - row_h / 2,
+             "PASS" if ok else "FAIL",
+             C_PASS_BG if ok else C_FAIL_BG,
+             C_PASS_FG if ok else C_FAIL_FG,
+             row_h)
+
+        # inner column dividers
+        vline(col_x(panel, 1), cy - row_h, cy, lw=0.3)
+        vline(col_x(panel, 2), cy - row_h, cy, lw=0.3)
+
+    for row in display_rows:
+
+        if row["kind"] == "sec":
+            item = row["item"]
+            # Full-width section header spanning both panels + gutter
+            full_w = 2 * PANEL_W + GUTTER
+            rect(MARGIN, cy, full_w, SEC_H, C_SEC_BG, ec=C_GRID, lw=0.4)
+            rect(MARGIN, cy, 0.035, SEC_H, C_ACCENT, zorder=3)
+
+            # § number (left)
+            ax.text(MARGIN + 0.06 + PAD, cy - SEC_H / 2,
+                    item["key"],
+                    ha="left", va="center",
+                    fontsize=7.5, fontweight="bold",
+                    color=C_SEC_FG, fontfamily="monospace")
+
+            # section label
+            ax.text(MARGIN + CW[0] + PAD + 0.035, cy - SEC_H / 2,
+                    item["label"],
+                    ha="left", va="center",
+                    fontsize=8, fontweight="bold", color=C_SEC_FG)
+
+            # pass ratio (right)
+            ratio_color = C_PASS_FG if item["pass"] == item["total"] else C_FAIL_FG
+            ax.text(MARGIN + full_w - PAD, cy - SEC_H / 2,
+                    f"{item['pass']} / {item['total']}",
+                    ha="right", va="center",
+                    fontsize=7, fontweight="bold",
+                    color=ratio_color, fontfamily="monospace")
+
+            hline(MARGIN, MARGIN + full_w, cy - SEC_H, lw=0.5)
+            cy -= SEC_H
+
+        else:  # "pair"
+            bg       = C_ROW_ODD if pair_idx % 2 == 0 else C_ROW_EVEN
+            is_last  = (row is display_rows[-1])
+
+            draw_check_cell(0, cy, row["left"],  ROW_H, bg)
+
+            if row["right"] is not None:
+                draw_check_cell(1, cy, row["right"], ROW_H, bg)
+            else:
+                # Empty right cell — fill with background only
+                rect(PX[1], cy, PANEL_W, ROW_H, bg, ec=C_GRID, lw=0.3)
+
+            # Draw the row separator only between rows, never after the last one
+            if not is_last:
+                hline(MARGIN, MARGIN + 2 * PANEL_W + GUTTER, cy - ROW_H, lw=0.3)
+            cy -= ROW_H
+            pair_idx += 1
+
+    # Draw full-height vertical dividers for each panel
+    for panel in range(2):
+        px = PX[panel]
+        vline(col_x(panel, 1), table_bottom, table_top, lw=0.4)
+        vline(col_x(panel, 2), table_bottom, table_top, lw=0.4)
+
+    # ── footer ────────────────────────────────────────────────────────────────
+    all_pass  = failed_total == 0
+    footer_y  = cy - 0.30   # breathing room below the table
+
+    badge_label = "ALL CHECKS PASSED" if all_pass else f"{failed_total}  CHECK(S)  FAILED"
+    badge_fc    = C_BADGE_PASS if all_pass else C_BADGE_FAIL
+    bw, bh      = 2.70, 0.36
+    bx          = A4_W / 2 - bw / 2
+    ax.add_patch(FancyBboxPatch(
+        (bx, footer_y - bh), bw, bh,
+        boxstyle="round,pad=0.05",
+        facecolor=badge_fc, edgecolor=badge_fc,
+        linewidth=0, zorder=2))
+    ax.text(A4_W / 2, footer_y - bh / 2,
+            badge_label, ha="center", va="center",
+            fontsize=8.5, fontweight="bold",
+            color=C_BADGE_FG, fontfamily="monospace", zorder=3)
+
+    ax.text(A4_W / 2, footer_y - bh - 0.22,
+            f"{passed_total} passed  ·  {failed_total} failed  ·  {len(results)} total checks",
+            ha="center", va="top",
+            fontsize=7.5, color=C_MUTED, fontfamily="monospace")
+
+    ax.text(A4_W / 2, footer_y - bh - 0.46,
+            "Verified against the Gymnasium API standard  ·  gymnasium.farama.org",
+            ha="center", va="top",
+            fontsize=7, color=C_MUTED, fontstyle="italic")
+
+    # bottom brand stripe
+    rect(0, STRIPE_H, A4_W, STRIPE_H, C_GYM_STRIPE)
 
     # ── save ──────────────────────────────────────────────────────────────────
     fig.savefig(out_path, dpi=150, bbox_inches="tight",
-                facecolor=C_BG, edgecolor="none")
+                facecolor=C_PAGE, edgecolor="none")
     plt.close(fig)
     print(f"\n  Certificate saved → {out_path}")
 
