@@ -29,7 +29,11 @@ cash-flow optimisation}, \emph{earned value management under uncertainty}, and
 \emph{reinforcement learning for project scheduling and resource allocation}.
 Citation-network traversal --- backward and forward snowballing from
 high-citation anchor papers --- was used to recover seminal works not surfaced
-by keyword search.
+by keyword search. For instance, a high-citation anchor paper on portfolio
+optimisation would expose its own foundational references through backward
+traversal, while forward traversal through its citing works would surface
+more recent developments; both layers would have been invisible to keyword
+search alone.
 
 Records were screened in three sequential stages consistent with the PRISMA~2020
 flow diagram (Appendix~A). \textbf{Stage~1} (identification) assessed machine
@@ -384,69 +388,6 @@ complexity and establishes the performance target for future learned agents.
 \textbf{Step~3} --- validated deployment within incumbent project management
 information systems such as Oracle Primavera~P6 --- remains future work,
 contingent on the trained agents that Step~2 now makes possible.
-
-\begin{figure}[htbp]
-  \centering
-  \begin{tikzpicture}[
-      node distance = 0.35cm,
-      box/.style    = {rectangle, rounded corners=4pt, minimum width=3.6cm,
-                        minimum height=1.05cm, align=center, font=\small},
-      sub/.style    = {rectangle, rounded corners=3pt, minimum width=2.8cm,
-                        minimum height=0.85cm, align=center, font=\footnotesize,
-                        draw=black, fill=white},
-      arr/.style    = {->, thick, black},
-      subarr/.style = {->, black},
-    ]
-  
-    %% ── Step 2 sub-nodes ────────────────────────────────────
-    \node[sub, fill=orange!15, draw=orange!60] (L1)
-      {L1: Deterministic MILP\\{\scriptsize upper bound}};
-  
-    \node[sub, fill=orange!20, draw=orange!70,
-          below=0.45cm of L1] (L2)
-      {L2: Stochastic Program\\{\scriptsize intractability}};
-  
-    \node[sub, fill=blue!20, draw=blue!60,
-          below=0.45cm of L2] (L3)
-      {\textbf{CMDP Environment}\\{\scriptsize \textbf{this work}}};
-  
-    \draw[subarr] (L1.south) -- (L2.north);
-    \draw[subarr] (L2.south) -- (L3.north);
-  
-    %% ── Container drawn around the three sub-nodes ──────────
-    \begin{scope}[on background layer]
-      \node[draw=blue!50!black, fill=blue!7, rounded corners=5pt,
-            inner sep=10pt,
-            fit=(L1)(L2)(L3),
-            label={[font=\small\bfseries, text=blue!50!black]
-                    above:Step 2 \quad Tractable Formulation}]
-        (S2frame) {};
-    \end{scope}
-  
-    %% ── True vertical center: midpoint of L1 and L3 ─────────
-    \coordinate (S2mid) at ($(L1.center)!0.5!(L3.center)$);
-  
-    %% ── S1 and S3: same x-distance from frame edges,
-    %%    y-position locked to S2mid ────────────────────────────
-    \node[box, fill=green!12, draw=green!50!black, anchor=center]
-      (S1) at ($(S2frame.west) + (-1.3cm - 0.5*3.6cm, 0)$
-               |- S2mid)
-      {\textbf{Step 1}\\Domain Grounding\\{\footnotesize\textit{established}}};
-  
-    \node[box, fill=gray!10, draw=gray!50, anchor=center]
-      (S3) at ($(S2frame.east) + (1.3cm + 0.5*3.6cm, 0)$
-               |- S2mid)
-      {\textbf{Step 3}\\PMIS Deployment\\{\footnotesize\textit{future work}}};
-  
-    %% ── Main arrows at true mid-height ──────────────────────
-    \draw[arr] (S1.east)               -- (S2frame.west |- S2mid);
-    \draw[arr] (S2frame.east |- S2mid) -- (S3.west);
-  
-  \end{tikzpicture}
-  \caption{Solution maturity progression toward deployable portfolio-level budget
-    allocation.}
-  \label{fig:maturity}
-  \end{figure}
 
 The present work addresses all three gaps and completes Step~2 of this
 progression through the relaxation hierarchy described above and developed
