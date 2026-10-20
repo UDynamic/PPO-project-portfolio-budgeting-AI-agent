@@ -756,7 +756,7 @@ def generate_certificate(results: list[tuple[str, bool, str]],
     n_pair_rows  = sum(1 for r in display_rows if r["kind"] == "pair")
     content_h    = n_sec_rows * SEC_H + n_pair_rows * ROW_H + COL_HDR_H
     TITLE_H      = 1.65
-    FOOTER_H     = 1.10
+    FOOTER_H     = 1.35
     fig_h        = TITLE_H + content_h + FOOTER_H + 2 * MARGIN
 
     fig = plt.figure(figsize=(A4_W, fig_h), facecolor=C_PAGE)
@@ -965,7 +965,7 @@ def generate_certificate(results: list[tuple[str, bool, str]],
 
     # ── footer ────────────────────────────────────────────────────────────────
     all_pass  = failed_total == 0
-    footer_y  = cy - 0.30   # breathing room below the table
+    footer_y  = cy - 0.55   # breathing room below the table
 
     badge_label = "ALL CHECKS PASSED" if all_pass else f"{failed_total}  CHECK(S)  FAILED"
     badge_fc    = C_BADGE_PASS if all_pass else C_BADGE_FAIL
