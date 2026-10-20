@@ -57,7 +57,7 @@ and triggers a settlement cash flow, while the episode ends only when every proj
 either completed or been terminated, or when the global horizon is reached, or when the 
 portfolio budget is exhausted with no pending inflows.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \resizebox{\textwidth}{!}{%
   \begin{tikzpicture}[
@@ -211,30 +211,58 @@ incentive embedded in the payment mechanics.
 
 \paragraph{Earned value management as a performance signal.}
 The EVM framework \citep{Fleming2010} provides the diagnostic vocabulary
-for monitoring contractor performance. The Cost Performance Index
-$\mathrm{CPI}_{i,t} = \mathrm{BCWP}_{i,t}/\mathrm{ACWP}_{i,t}$ and
-Schedule Performance Index $\mathrm{SPI}_{i,t} =
-\mathrm{BCWP}_{i,t}/\mathrm{BCWS}_{i,t}$ are observable state variables.
-The Estimate at Completion $\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} +
-(\mathrm{BAC}_i - \mathrm{BCWP}_{i,t})/\mathrm{CPI}_{i,t}$ projects total
-cost at the current performance rate and feeds one of the two termination
-conditions.
+for monitoring contractor performance.
+Define the Budgeted Cost of Work Performed as
+$\mathrm{BCWP}_{i,t} = \mathrm{EV}_{i,t} \cdot \mathrm{BAC}_i$,
+where $\mathrm{EV}_{i,t} \in [0,1]$ is the fraction of work completed,
+and the Actual Cost of Work Performed as
+$\mathrm{ACWP}_{i,t} = \sum_{\tau \leq t} x_{i,\tau}$,
+the cumulative monetary outflow to project $i$.
+The Cost Performance Index
+$\mathrm{CPI}_{i,t} = \mathrm{BCWP}_{i,t}/\mathrm{ACWP}_{i,t}$
+measures cost efficiency, while the Schedule Performance Index
+$\mathrm{SPI}_{i,t} = \mathrm{ES}_{i,t}/\tau_i$
+measures schedule efficiency via earned schedule
+$\mathrm{ES}_{i,t}$---the project-time equivalent of the
+work accomplished, obtained by inverting the planned S-curve.
+The Estimate at Completion uses a composite denominator,
+$\mathrm{EAC}_{i,t} = \mathrm{ACWP}_{i,t} +
+(\mathrm{BAC}_i - \mathrm{BCWP}_{i,t})/(\mathrm{CPI}_{i,t}
+\cdot \mathrm{SPI}_{i,t})$,
+projecting total cost under the assumption that both cost and schedule
+inefficiency persist.
+The To-Complete Performance Index
+$\mathrm{TCPI}_{i,t} = (\mathrm{BAC}_i - \mathrm{BCWP}_{i,t}) /
+(\mathrm{BAC}_i - \mathrm{ACWP}_{i,t})$
+measures the cost efficiency required to finish on budget.
+These four indicators are tracked internally and logged to the audit
+record each period, but are not directly exposed in the observation
+vector $o_t$; instead they are intermediates from which the
+catchup-allocation and target-milestone features are derived.
 
 
 \paragraph{Termination.}
-Termination is an endogenous environment mechanic governed by two conditions.
+Termination is an endogenous environment mechanic governed by two independent
+conditions.
 A \emph{progress delay breach} fires when the lag between planned and actual
 progress exceeds the contractual tolerance $\delta^{\max}_i$, i.e.\
-$\delta_{i,t} = PV_i(\tau_i) - EV_{i,t} > \delta^{\max}_i$.
+$\delta_{i,t} = \mathrm{PV}_i(\tau_i) - \mathrm{EV}_{i,t} > \delta^{\max}_i$.
 A \emph{hard deadline breach} fires at episode period $t \geq f_i +
 \Delta^{\max}_i$, where $\Delta^{\max}_i$ is the contractually permitted
-finish overrun.  Each period a progress delay breach is active, a
-project-specific cure-period counter $\theta^{\mathrm{rem}}_{i,t}$ decrements
-by one; it resets to $\theta_i$ when no breach is present.  When the counter
-reaches zero, or the hard deadline fires, the project terminates immediately
-and the settlement $S_i = EV_{i,t} \cdot P_i - \mathrm{CF}^{+}_{i}$ enters
-the portfolio cash balance, which may be positive or negative depending on
-how much has already been paid out.
+finish overrun; this condition triggers immediate termination regardless of
+the cure-period counter.
+Each period a progress delay breach is active, a project-specific
+cure-period counter $\theta^{\mathrm{rem}}_{i,t}$ decrements by one;
+it resets to its initial value $\theta_i$ whenever the breach clears.
+When the counter reaches zero, the project terminates.
+Upon termination by either condition, a settlement cash flow
+$S_i = \mathrm{EV}_{i,t} \cdot P_i - \mathrm{CF}^{+}_{i,t}$
+enters the portfolio cash balance, where
+$\mathrm{CF}^{+}_{i,t}$ denotes the cumulative milestone payments already
+received from the client for project $i$ up to period $t$.
+The settlement is positive when earned value at the contract price exceeds
+payments received, and negative when the portfolio has already collected more
+than the work delivered warrants.
 
 % ------------------------------------------------------------
 \subsection{The Optimality Gap and the Case for Learned Policies}
@@ -269,7 +297,7 @@ widening confirms that the allocation problem becomes genuinely difficult at
 scale and that a well-defined improvement target exists for reinforcement
 learning agents.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{figures/gap_plot.png}
     \caption{Cumulative episode NPV (reward) for three greedy heuristics and
@@ -291,11 +319,20 @@ The contributions of this paper are threefold.
     \item \textbf{Environment.} A configurable, Gymnasium-compatible CMDP
     environment encoding the full FIDIC contract cash-flow cycle: advance
     payment and progressive recovery, progress-weighted milestone payments,
-    retention withholding and release, treasury-draw interest, and a
+    retention withholding and release, treasury-draw interest on negative
+    cash balances that persists until the portfolio returns to surplus, and a
     two-condition termination gate with a project-specific cure-period counter.
+    All environment parameters are specified through a configuration dictionary
+    whose entries are probability distributions, allowing practitioners in any
+    project-based sector---construction, IT, R\&D, or otherwise---to instantiate
+    domain-specific environments by fitting those distributions to historical
+    company data.
+    Gymnasium API compliance is verified via \texttt{tests/gym\_test.py} across
+    51 checks in 10 test sections; the full compatibility certificate is
+    reproduced in Appendix~\ref{app:gym_certificate}.
     The environment ships with a SQLite audit ledger that records every
-    allocation, cash-flow event, and breach flag, making learned policy
-    behaviour fully interpretable.
+    allocation, cash-flow event, and breach flag at each episode step,
+    making learned policy behaviour fully interpretable.
 
     \item \textbf{MDP Formulation.} A formal specification of the
     portfolio budgeting problem as a CMDP: state space, action space, transition
@@ -310,11 +347,14 @@ The contributions of this paper are threefold.
 \end{enumerate}
 
 Section~\ref{sec:literature} reviews the relevant literature across four
-streams: project management foundations, portfolio governance, cash-flow
-modelling, and reinforcement learning for sequential resource allocation.
+streams: project management foundations, portfolio management and selection,
+PPM budgeting and cash-flow modelling, and reinforcement learning for
+sequential resource allocation.
 Section~\ref{sec:problem} develops the MDP formulation formally.
-The baseline benchmark results are presented within Section~\ref{sec:problem}
-alongside the environment description.
+Section~\ref{sec:evaluation} presents the benchmark evaluation: three
+deterministic greedy heuristics and a full-information optimum across four
+portfolio configurations, quantifying the optimality gap that motivates
+learned agents.
 Training RL agents on the environment and evaluating them against a formal
 Linear Programming bound are left as the natural next step, addressed in
 subsequent work.
