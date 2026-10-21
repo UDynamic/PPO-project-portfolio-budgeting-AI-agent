@@ -475,11 +475,14 @@ The feedback loop between a project's stochastic efficiency trajectory and
 its portfolio-level funding entitlement remains unmodelled.
 
 \textbf{Gap~3 --- Absence of endogenous termination mechanics.}\;
-The joint modelling of forecast schedule deviation, EAC-based cost-overrun
-trajectory, a contractual cure period, and termination settlement has not been
-embedded within a portfolio-level sequential decision framework in which budget
-allocation is the sole control variable. Termination, where it appears at all,
-is an exogenous shock rather than an endogenous outcome of funding decisions.
+The joint modelling of a progress-delay breach condition tracked against a
+contractual tolerance, a decrementing cure-period counter governing
+grace-period exhaustion, an independent hard-deadline breach condition that
+triggers immediate termination regardless of the cure-period state, and a
+termination settlement cash flow reconciling earned value against
+cumulative payments received, has not been embedded within a
+portfolio-level sequential decision framework in which budget allocation
+is the sole control variable.
 
 \medskip
 These gaps are not isolated oversights; they reflect an incomplete progression
@@ -520,7 +523,7 @@ contingent on the trained agents that Step~2 now makes possible.
      Portfolio selection};
 
 \node[stepbox, fill=gray!8, right=0.6cm of s1] (s2)
-    {\textbf{Step 2} \(\leftarrow\) \emph{this work}\\[4pt]
+    {\textbf{Step 2} \\[1pt] \emph{(this work)}\\[4pt]
      Problem Formulation\\[6pt]
      \scriptsize CMDP environment\\FIDIC cash-flow\\
      Termination mechanic\\Gymnasium API};

@@ -242,27 +242,29 @@ catchup-allocation and target-milestone features are derived.
 
 
 \paragraph{Termination.}
-Termination is an endogenous environment mechanic governed by two independent
-conditions.
-A \emph{progress delay breach} fires when the lag between planned and actual
-progress exceeds the contractual tolerance $\delta^{\max}_i$, i.e.\
-$\delta_{i,t} = \mathrm{PV}_i(\tau_i) - \mathrm{EV}_{i,t} > \delta^{\max}_i$.
-A \emph{hard deadline breach} fires at episode period $t \geq f_i +
-\Delta^{\max}_i$, where $\Delta^{\max}_i$ is the contractually permitted
-finish overrun; this condition triggers immediate termination regardless of
-the cure-period counter.
-Each period a progress delay breach is active, a project-specific
-cure-period counter $\theta^{\mathrm{rem}}_{i,t}$ decrements by one;
-it resets to its initial value $\theta_i$ whenever the breach clears.
-When the counter reaches zero, the project terminates.
-Upon termination by either condition, a settlement cash flow
-$S_i = \mathrm{EV}_{i,t} \cdot P_i - \mathrm{CF}^{+}_{i,t}$
-enters the portfolio cash balance, where
-$\mathrm{CF}^{+}_{i,t}$ denotes the cumulative milestone payments already
-received from the client for project $i$ up to period $t$.
-The settlement is positive when earned value at the contract price exceeds
-payments received, and negative when the portfolio has already collected more
-than the work delivered warrants.
+A further distinguishing feature of the proposed environment is that
+project termination is treated as an \emph{endogenous} consequence of the
+manager's own funding decisions, rather than an exogenous shock imposed on
+the simulation. In practice, a contractor can lose a project in two
+qualitatively different ways: gradually, as sustained underfunding allows
+schedule slippage to persist past a contractually tolerated threshold and
+through a grace period intended to allow recovery; or abruptly, once the
+project's finish date overruns its contractually permitted limit regardless
+of how close it is to catching up. Capturing only one of these failure
+modes --- as prior single-project formulations typically do --- understates
+the manager's true risk exposure: a project can be lost even while actively
+improving, simply by running out of contractual time, just as it can
+survive a severe but short-lived delay provided it recovers before its
+grace period is exhausted. Termination also carries direct financial
+consequences that must be settled against the portfolio's cash position,
+since work already paid for and work already completed rarely coincide
+exactly at the moment a contract is terminated. By embedding both breach
+conditions, their associated grace mechanism, and the resulting settlement
+cash flow directly into the transition dynamics, the environment forces a
+learned or heuristic policy to treat the threat of termination not as an
+external constraint to be checked post hoc, but as a consequence of its own
+allocation choices --- precisely the incentive structure a real portfolio
+manager faces.
 
 % ------------------------------------------------------------
 \subsection{The Optimality Gap and the Case for Learned Policies}
