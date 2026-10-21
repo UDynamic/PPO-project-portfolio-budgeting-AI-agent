@@ -105,6 +105,36 @@
 \definecolor{rowodd}{HTML}{F8FAFC}     % alternating odd-row tint
 
 % ============================================================
+%  FLOW-DIAGRAM THEME (violet / orange / teal / blue / gray / red)
+% ============================================================
+
+% Named tints -- edit once here to re-tune the whole theme
+\colorlet{flowViolet}{violet!70!black}
+\colorlet{flowVioletBg}{violet!10}
+\colorlet{flowOrange}{orange!70!red}
+\colorlet{flowOrangeBg}{orange!8}
+\colorlet{flowTeal}{teal!70!black}
+\colorlet{flowTealBg}{teal!8}
+\colorlet{flowBlue}{blue!60!black}
+\colorlet{flowBlueBg}{blue!8}
+\colorlet{flowGray}{gray!60}
+\colorlet{flowGrayBg}{gray!6}
+\colorlet{flowRed}{red!55!black}
+\colorlet{flowRedBg}{red!6}
+
+% Color-only styles: combine with any shape style (rectangle, diamond, ...)
+\tikzset{
+  flowColorA/.style      = {draw=flowViolet, fill=flowVioletBg},
+  flowColorB/.style      = {draw=flowOrange, fill=flowOrangeBg},
+  flowColorC/.style       = {draw=flowTeal,  fill=flowTealBg},
+  flowColorD/.style       = {draw=flowBlue,  fill=flowBlueBg},
+  flowColorGray/.style    = {draw=flowGray,  fill=flowGrayBg},
+  flowColorReject/.style  = {draw=flowRed,   fill=flowRedBg},
+  arrowMain/.style        = {-{Latex[length=6pt]}, thick, black!70},
+  arrowReject/.style      = {-{Latex[length=6pt]}, thick, flowRed, dashed},
+}
+
+% ============================================================
 %  TIKZ STYLES
 % ============================================================
 
