@@ -161,14 +161,32 @@
 \newcommand{\argmin}{\operatorname{argmin}}
 
 % ============================================================
-%  CODE BLOCKS
+%  INLINE CODE & PATH STYLE
+% ============================================================
+\usepackage{tcolorbox}          % already safe to add; no conflict
+\tcbuselibrary{skins}
+
+% Light-gray highlight for inline code/paths: \code{...}
+\definecolor{inlineBg}{HTML}{F0F0F0}
+\newcommand{\code}[1]{%
+  \tcbox[on line,
+    colback=inlineBg, colframe=inlineBg,
+    boxrule=0pt, arc=2pt,
+    top=1pt, bottom=1pt, left=3pt, right=3pt,
+    fontupper=\ttfamily\color{black}]{#1}}
+
+% ============================================================
+%  CODE BLOCKS  (replaces the old \lstset)
 % ============================================================
 \lstset{
-    basicstyle=\ttfamily\small,
-    backgroundcolor=\color{gray!10},
+    basicstyle=\ttfamily\small\color{black},
+    backgroundcolor=\color{inlineBg},
     frame=single,
     framerule=0pt,
-    breaklines=true
+    rulecolor=\color{inlineBg},
+    breaklines=true,
+    keepspaces=true,
+    showstringspaces=false,
 }
 
 % ============================================================

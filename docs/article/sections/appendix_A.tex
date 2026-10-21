@@ -2,123 +2,123 @@
 %  APPENDIX A — PRISMA 2020 Flow Diagram
 % ================================================================
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \begin{tikzpicture}
   
   % ────────────────────────────────────────────────────────────
-  %  Row y-positions
+  %  Row y-positions  (increased vertical spacing)
   %   id1  :  y =   0
-  %   id2  :  y =  -2.5
-  %   sc1  :  y =  -5.0
-  %   sc2  :  y =  -7.5
-  %   sc3  :  y =  -9.5
-  %   sc4  :  y = -11.5
-  %   inc1 :  y = -14.0
+  %   id2  :  y =  -3.2
+  %   sc1  :  y =  -6.4
+  %   sc2  :  y =  -9.6
+  %   sc3  :  y = -12.8
+  %   sc4  :  y = -16.0
+  %   inc1 :  y = -19.5
   %
   %  Columns
   %   phase labels : x = -4.5
   %   main flow    : x =  1
   %   excl boxes   : x =  9.0
   % ────────────────────────────────────────────────────────────
-  
+
   % ═══════════════════════════════════════════════════════════
   %  IDENTIFICATION
   % ═══════════════════════════════════════════════════════════
-  \node[phase, minimum height=4.0cm] (ph-id) at (-4.5, -1.25)
+  \node[phase, minimum height=5.0cm] (ph-id) at (-4.5, -1.6)
     {\rotatebox{90}{Identification}};
-  
+
   \node[box] (id1) at (1, 0)
     {Records identified from:\\
      \textbf{Databases} (\textit{n}\,=\,172)\\[1pt]
      \footnotesize Google Scholar, Semantic Scholar, Scopus};
-  
-  \node[box] (id2) at (1, -2.5)
+
+  \node[box] (id2) at (1, -3.2)
     {Additional records via citation-network traversal:\\
      \textbf{Backward \& forward snowballing} (\textit{n}\,=\,21)\\[1pt]
      \footnotesize Seminal works not surfaced by keyword search};
-  
+
   \draw[arr] (id1.south) -- (id2.north);
-  
+
   % ═══════════════════════════════════════════════════════════
   %  SCREENING
   % ═══════════════════════════════════════════════════════════
-  \node[phase, minimum height=8.0cm] (ph-sc) at (-4.5, -8.25)
+  \node[phase, minimum height=12.0cm] (ph-sc) at (-4.5, -11.2)
     {\rotatebox{90}{Screening}};
-  
-  \node[box] (sc1) at (1, -5.0)
+
+  \node[box] (sc1) at (1, -6.4)
     {Records after duplicate removal\\
      (\textit{n}\,=\,154)\\[1pt]
      \footnotesize SHA-256 content-hash deduplication
-     (\texttt{1\_readability\_test.py})};
-  
-  \node[excl] (exc1) at (9.0, -4.5)
+     (\colorbox{inlineBg}{\texttt{\color{black}1\_readability\_test.py}})};
+
+  \node[excl] (exc1) at (9.0, -5.8)
     {Records removed before screening:\\
      Duplicate files (\textit{n}\,=\,5)\\
      Full-text not accessible (\textit{n}\,=\,22)};
-  
+
   \draw[arr]  (id2.south) -- (sc1.north);
   \draw[arr2] (sc1.east)  -- (exc1.west);
-  
-  \node[box] (sc2) at (1, -7.5)
+
+  \node[box] (sc2) at (1, -9.6)
     {\textbf{Stage 1} --- Readability triage\\
      (\textit{n}\,=\,154) records assessed\\[1pt]
      \footnotesize Extraction yield $\cdot$ lexical quality $\cdot$ embeddability};
-  
-  \node[excl] (exc2) at (9.0, -7.5)
+
+  \node[excl] (exc2) at (9.0, -9.6)
     {Records excluded --- Stage 1 (\textit{n}\,=\,3):\\
      Low text-extraction yield\\
      Failed lexical quality check\\
      Embedding error};
-  
+
   \draw[arr]  (sc1.south) -- (sc2.north);
   \draw[arr2] (sc2.east)  -- (exc2.west);
-  
-  \node[box] (sc3) at (1, -9.5)
+
+  \node[box] (sc3) at (1, -12.8)
     {\textbf{Stage 2} --- Relevance filtering\\
      (\textit{n}\,=\,151) records scored\\[1pt]
      \footnotesize Semantic similarity $+$ keyword score $\rightarrow r \in [0,1]$};
-  
-  \node[excl] (exc3) at (9.0, -9.5)
-    {Records excluded --- Stage 2 (\textit{n}\,=\,77):\\
+
+  \node[excl] (exc3) at (9.0, -12.8)
+    {Records excluded --- Stage 2 (\textit{n}\,=\,79):\\
      Combined relevance score $r < 0.30$\\
-     Routed to \texttt{irrelevant/}};
-  
+     Routed to \colorbox{inlineBg}{\texttt{\color{black}irrelevant/}}};
+
   \draw[arr]  (sc2.south) -- (sc3.north);
   \draw[arr2] (sc3.east)  -- (exc3.west);
-  
-  \node[box] (sc4) at (1, -11.5)
+
+  \node[box] (sc4) at (1, -16.0)
     {\textbf{Stage 3} --- Structured extraction\\
-     (\textit{n}\,=\,74) full texts assessed\\[1pt]
+     (\textit{n}\,=\,76) full texts assessed\\[1pt]
      \footnotesize JSON schema: metadata $\cdot$ calibration $\cdot$ thesis-relevance flags};
-  
-  \node[excl] (exc4) at (9.0, -12.5)
-    {Records excluded --- Stage 3 (\textit{n}\,=\,2):\\
-     Domain irrelevant after full-text review\\
-     Calibration parameters unextractable\\
-     Total excluded (\textit{n}\,=\,2)};
-  
+
+  \node[excl] (exc4) at (9.0, -17.2)
+    {Records excluded --- Stage 3 (\textit{n}\,=\,0):\\
+     All full texts passed domain review\\
+     and structured extraction\\
+     (incl.\ 2025--2026 additions)};
+
   \draw[arr]  (sc3.south) -- (sc4.north);
   \draw[arr2] (sc4.east)  -- (exc4.west);
-  
+
   % ═══════════════════════════════════════════════════════════
   %  INCLUDED
   % ═══════════════════════════════════════════════════════════
-  \node[phase, minimum height=2.5cm] (ph-inc) at (-4.5, -14.0)
+  \node[phase, minimum height=3.0cm] (ph-inc) at (-4.5, -19.5)
     {\rotatebox{90}{Included}};
-  
-  \node[incl] (inc1) at (1, -14.0)
+
+  \node[incl] (inc1) at (1, -19.5)
     {Studies included in review
-     (\textit{n}\,=\,72)\\[2pt]
+     (\textit{n}\,=\,76)\\[2pt]
      \footnotesize \textit{Highly relevant}: (\textit{n}\,=\,4)
-     \quad \textit{Valuable}: (\textit{n}\,=\,68)};
-  
+     \quad \textit{Valuable}: (\textit{n}\,=\,72)};
+
   \draw[arr] (sc4.south) -- (inc1.north);
-  
+
   \end{tikzpicture}
-  
+
   \caption{PRISMA 2020 flow diagram of the automated literature search and
            screening process. Stage labels correspond to scripts in
-           \texttt{docs/lit\_archive/}.}
+           \code{docs/lit\_archive/}.}
   \label{fig:prisma}
-  \end{figure}
+\end{figure}

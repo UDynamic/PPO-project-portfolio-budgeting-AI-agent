@@ -2,10 +2,6 @@
 %  SECTION 2 — LITERATURE REVIEW
 % ============================================================
 
-% ============================================================
-%  SECTION 2 — LITERATURE REVIEW
-% ============================================================
-
 \subsection{Overview and Review Strategy}
 \label{subsec:lr_overview}
 % ------------------------------------------------------------
@@ -45,21 +41,21 @@ PRISMA~2020 flow diagram (Appendix~\ref{app:prisma}).
 \medskip
 \textbf{Stage~1 --- Identification and Machine Readability.}\;
 Candidate PDFs were subjected to automated bibliographic and readability
-triage implemented in \texttt{docs/lit\_archive/1\_readability\_test.py}.
+triage implemented in \code{docs/lit\_archive/1\_readability\_test.py}.
 Each document was assessed for text-extraction yield (minimum readable
 character density across pages), lexical quality (alphabetic-token ratio
 and mean word length), and sentence-transformer embeddability. Documents
 failing any criterion were quarantined in
-\texttt{lit\_archive\_failed/} with a SHA-256 content hash logged to
-\texttt{processed\_hashes.txt}; duplicate submissions were detected by
+\code{lit\_archive\_failed/} with a SHA-256 content hash logged to
+\code{processed\_hashes.txt}; duplicate submissions were detected by
 hash comparison and discarded automatically.
 
 \medskip
 \textbf{Stage~2 --- Relevance Filtering.}\;
 Records passing Stage~1 were ranked by a composite relevance score
-computed in \texttt{2\_relevance\_filter.py}. A semantic similarity
+computed in \code{2\_relevance\_filter.py}. A semantic similarity
 component embedded each paper's abstract, introduction, and conclusion
-using a \texttt{sentence-transformers} model and computed the maximum
+using a \code{sentence-transformers} model and computed the maximum
 cosine similarity against twelve thesis-derived query vectors spanning
 the target knowledge domains. A keyword-scoring component assigned
 weighted counts of domain-specific high-value and medium-value terms,
@@ -68,13 +64,13 @@ combined with equal weight ($0.5$ each) to yield a combined relevance
 score $r \in [0,1]$. Papers were then triaged into three cohorts:
 \emph{highly relevant} ($r \geq 0.45$), \emph{valuable} ($r \geq 0.30$),
 and \emph{irrelevant} ($r < 0.30$), and relocated to the corresponding
-subdirectory within \texttt{lit\_archive\_passed/}.
+subdirectory within \code{lit\_archive\_passed/}.
 
 \medskip
 \textbf{Stage~3 --- Structured Extraction.}\;
 Each retained paper in the \emph{highly relevant} and \emph{valuable}
 cohorts was subjected to structured knowledge extraction via
-\texttt{3\_paper\_structurer.py}. The abstract, introduction, and
+\code{3\_paper\_structurer.py}. The abstract, introduction, and
 conclusion of each PDF were parsed and submitted to a large language
 model with a fixed schema prompt, producing a per-paper JSON record
 covering: problem framing, portfolio level, decision type, stochastic
@@ -82,11 +78,11 @@ cash-flow treatment, contract mechanics, termination-settlement
 provisions, modelling paradigm, calibration parameters (CPI/SPI
 statistics, cost-overrun distributions, S-curve shape parameters),
 and thesis-relevance flags. Output records were persisted to
-\texttt{structured/} alongside each source PDF and backed up to
-\texttt{structured/cited\_backup/} upon citation. The resulting JSON
+\code{structured/} alongside each source PDF and backed up to
+\code{structured/cited\_backup/} upon citation. The resulting JSON
 corpus subsequently drove the automated synthesis dashboard
-(\texttt{4\_dashboard.py}) and the \LaTeX{} synthesis table generator
-(\texttt{5\_lit\_synthesis.py}), producing the gap-analysis matrix,
+(\code{4\_dashboard.py}) and the \LaTeX{} synthesis table generator
+(\code{5\_lit\_synthesis.py}), producing the gap-analysis matrix,
 domain-distribution charts, and the literature map reproduced in
 Table~\ref{tab:litmap}.
 
@@ -94,7 +90,7 @@ Table~\ref{tab:litmap}.
 
 The complete pipeline --- scripts, structured JSON records, dashboard
 outputs, and synthesis tables --- is archived under
-\texttt{docs/lit\_archive/} in the project repository and constitutes
+\code{docs/lit\_archive/} in the project repository and constitutes
 a reproducible, machine-auditable literature review corpus. The PRISMA
 flow diagram quantifying records at each stage is provided in
 Appendix~\ref{app:prisma}.
@@ -115,32 +111,32 @@ Appendix~\ref{app:prisma}.
 
 %% --- Nodes ---
 \node[box, fill=gray!12] (s1)
-    {\textbf{Stage 1} \quad \texttt{1\_readability\_test.py}\\
+    {\textbf{Stage 1} \quad \colorbox{inlineBg}{\texttt{\color{black}1\_readability\_test.py}}\\
      Extraction yield \(\cdot\) Lexical quality \(\cdot\) Embeddability};
 
 \node[decision, below=0.9cm of s1] (d1)
     {All three tests pass?};
 
 \node[box, fill=gray!12, below=0.9cm of d1] (s2)
-    {\textbf{Stage 2} \quad \texttt{2\_relevance\_filter.py}\\
+    {\textbf{Stage 2} \quad \colorbox{inlineBg}{\texttt{\color{black}2\_relevance\_filter.py}}\\
      Semantic similarity \(+\) Keyword score \(\rightarrow r \in [0,1]\)};
 
 \node[decision, below=0.9cm of s2] (d2)
     {\(r \geq 0.30\)?};
 
 \node[box, fill=gray!12, below=0.9cm of d2] (s3)
-    {\textbf{Stage 3} \quad \texttt{3\_paper\_structurer.py}\\
+    {\textbf{Stage 3} \quad \colorbox{inlineBg}{\texttt{\color{black}3\_paper\_structurer.py}}\\
      JSON extraction: metadata \(\cdot\) calibration \(\cdot\) thesis flags};
 
 \node[box, fill=gray!20, below=0.9cm of s3] (out)
-    {\texttt{4\_dashboard.py} \(\;\cdot\;\) \texttt{5\_lit\_synthesis.py}\\
+    {\colorbox{inlineBg}{\texttt{\color{black}4\_dashboard.py}} \(\;\cdot\;\) \colorbox{inlineBg}{\texttt{\color{black}5\_lit\_synthesis.py}}\\
      Gap matrix \(\cdot\) Domain charts \(\cdot\) \LaTeX{} synthesis table};
 
 %% --- Rejection nodes ---
 \node[box, draw=none, right=2.4cm of d1, font=\scriptsize, text=gray] (r1)
-    {\texttt{lit\_archive\_failed/}};
+    {\colorbox{inlineBg}{\texttt{\color{black}lit\_archive\_failed/}}};
 \node[box, draw=none, right=2.4cm of d2, font=\scriptsize, text=gray] (r2)
-    {\texttt{irrelevant/}};
+    {\colorbox{inlineBg}{\texttt{\color{black}irrelevant/}}};
 
 %% --- Arrows ---
 \draw[arrow] (s1)  -- (d1);
