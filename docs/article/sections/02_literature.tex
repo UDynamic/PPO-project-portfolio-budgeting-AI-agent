@@ -95,7 +95,7 @@ a reproducible, machine-auditable literature review corpus. The PRISMA
 flow diagram quantifying records at each stage is provided in
 Appendix~\ref{app:prisma}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     node distance   = 1.6cm,
@@ -529,12 +529,6 @@ contingent on the trained agents that Step~2 now makes possible.
 
 \draw[arrow] (s1) -- (s2);
 \draw[arrow, dashed, color=gray] (s2) -- (s3);
-
-%% Gap annotation below each arrow
-\node[label, below=0.5cm of s1, xshift=2.1cm, text=gray]
-    {\scriptsize Gap 1--3 identified\\ by literature map};
-\node[label, below=0.5cm of s2, xshift=2.1cm, text=gray]
-    {\scriptsize Training corpus\\ now available};
 
 \end{tikzpicture}
 \caption{Maturity progression toward a deployable portfolio-level
