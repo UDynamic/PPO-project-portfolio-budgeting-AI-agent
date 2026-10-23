@@ -24,7 +24,7 @@ mathematical contract.
 \label{subsec:problem_statement}
 % ------------------------------------------------------------
 
-A portfolio of $n$contracted projects is fixed: commitments are signed, start dates are
+A portfolio of $n$ contracted projects is legally fixed. commitments are signed, start dates are
 scheduled, and contracts are parameterised consistently with FIDIC Red,
 Yellow, and Silver Book forms \citep{FIDIC2017}. The decision-maker ---
 a portfolio manager, board, or programme director --- exercises a single
@@ -47,21 +47,26 @@ Four structural assumptions underlie the formulation.
     sharing occurs, consistent with standard EPC contracting practice.
 
   \item \emph{Budget as the sole control.} The contractor's internal
-    resource decisions are absorbed into a stochastic efficiency
-    parameter $\eta_{i,t}$; the portfolio manager observes how much
-    physical progress a budget allocation yields, not how it is
-    achieved. $\eta_{i,t}$ is the sole stochastic primitive: it is
-    unobservable at the time allocation $x_{i,t}$ is committed, and
-    its realisation determines whether and when each milestone
-    threshold is crossed.
+  resource decisions are absorbed into a stochastic efficiency
+  parameter $\eta_{i,t}$ , it determines the ratio of the budget to 
+  be verified as progress; the portfolio manager observes how much
+  physical progress a budget allocation yields and then allocates budget to each project. 
+  $\eta_{i,t}$ is the sole stochastic primitive of the
+  model. it is unobservable at the time allocation $x_{i,t}$ is
+  committed, and its realisation determines whether and when each
+  milestone threshold is crossed. All other parameters are either
+  known at episode initialisation or deterministically derived from
+  prior realisations.
 
-  \item \emph{Discrete monthly periods.} $\mathcal{T} =
-    \{0,\ldots,H-1\}$ reflects the standard monthly governance cycle
-    of portfolio management. A configurable budget tightness ratio
-    $\kappa = B_0 / \sum_i \mathrm{BAC}_i$ parameterises the liquidity
-    regime across configurations.
+  \item \emph{Discrete monthly periods.} $\mathcal{T} = \{0,\ldots,H-1\}$
+  reflects the standard monthly governance cycle of portfolio management.
+  The scalar $\kappa = B_0 / \sum_i \mathrm{BAC}_i$ parameterises the
+  liquidity regime across configurations: values below 1 force the agent
+  to compete over a scarce pool, while values above 1 provide budget
+  headroom beyond aggregate project demand. In this work $\kappa$ is set
+  to a relaxed value.
 
-  \item \emph{FIDIC contract mechanics.} Milestone payments, advance
+  \item \emph{FIDIC project contract management.} Milestone payments, advance
     payment and recovery, retention, and termination settlement are
     all configurable parameters, accommodating the full range of
     particular conditions encountered in practice.
@@ -72,100 +77,119 @@ Four structural assumptions underlie the formulation.
 \label{subsec:environment}
 % ------------------------------------------------------------
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \resizebox{\textwidth}{!}{%
   \begin{tikzpicture}[
       every node/.style={font=\small},
-      inflow/.style={->, thick, green!50!black},
-      outflow/.style={->, thick, orange!70!black},
+      inflow/.style={->, thick, flowTeal},
+      outflow/.style={->, thick, flowOrange},
       legend/.style={font=\footnotesize, align=left}
       ]
 
       \draw[->, thick] (0,0) -- (13.0,0) node[right] {$t$};
 
-      \foreach \x/\lbl in {1/$s_i$, 4/$\theta_{i,1}$, 7/$\theta_{i,2}$,
-                          10/$\theta_{i,3}$, 10.8/$f_i$}{
-      \draw (\x,0.08) -- (\x,-0.08)
-          node[below, font=\footnotesize] {\lbl};
+      \foreach \x/\lbl in {1/1, 4/4, 7/7, 10/10, 10.8/11}{
+        \draw (\x,0.08) -- (\x,-0.08)
+            node[below, font=\footnotesize] {\lbl};
       }
 
-      % Contract payments
+      % Contract payments (inflows)
       \draw[inflow] (1,0) -- (1,2.4)
-      node[above, align=center, font=\footnotesize]
-          {Advance payment};
+        node[above, align=center, font=\footnotesize]
+            {Advance payment};
 
       \draw[inflow] (4,0) -- (4,1.4)
-      node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
+        node[above, font=\footnotesize] {$R_{i,1}^{\mathrm{net}}$};
 
       \draw[inflow] (7,0) -- (7,1.4)
-      node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
+        node[above, font=\footnotesize] {$R_{i,2}^{\mathrm{net}}$};
 
       \draw[inflow] (10,0) -- (10,1.4)
-      node[above, align=center, font=\footnotesize]
-          {$R_{i,3}^{\mathrm{net}}$};
+        node[above, align=center, font=\footnotesize]
+            {$R_{i,3}^{\mathrm{net}}$};
 
       \draw[inflow] (10.8,0) -- (10.8,2.4)
-      node[right, align=center, font=\footnotesize]
-          {final payment $+\,R_i^{\mathrm{ret}}$};
+        node[right, align=center, font=\footnotesize]
+            {final payment $+\,R_i^{\mathrm{ret}}$};
 
       % Budget allocations (outflows)
       \foreach \x in {1.5,2.2,2.9,3.6,4.3,5.0,5.7,6.4,
                       7.1,7.8,8.5,9.2,9.9}{
-      \draw[outflow] (\x,0) -- (\x,-0.75);
+        \draw[outflow] (\x,0) -- (\x,-0.75);
       }
-
-      % Early termination
-      \draw[dashed, thick, red] (6.0,2.4) -- (6.0,-1.4)
-      node[below, align=center, font=\footnotesize, red]
-          {Early termination {\scriptsize if $\tau_{i,t}^{\mathrm{rem}}=0$}};
 
       \begin{scope}[shift={(11.4,-0.5)}]
         \draw[inflow] (0,0) -- (0.7,0)
-        node[right, legend] {Inflow (Received payments)};
+          node[right, legend] {Inflow (received payments)};
         \draw[outflow] (0,-0.45) -- (0.7,-0.45)
-        node[right, legend] {Outflow (Budget allocations $x_{i,t}$)};
-        \draw[dashed, thick, red] (0,-0.9) -- (0.7,-0.9)
-        node[right, legend] {Contract termination};
+          node[right, legend] {Outflow (budget allocations $x_{i,t}$)};
       \end{scope}
 
   \end{tikzpicture}
   }
-  \caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics.}
+  \caption{Cash-flow timeline for project $i$ under FIDIC contract mechanics
+    with uniform allocation. The ratio of budget allocated to physical
+    progress achieved is subject to stochastic efficiency $\eta_{i,t}$,
+    the sole source of uncertainty in the model.}
   \label{fig:cashflow_timeline}
 \end{figure}
 
 
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{Sets, Indices, and the Decision Variable}
 \label{subsubsec:sets}
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-\begin{description}[leftmargin=2.6cm, labelwidth=2.4cm]
-  \item[$\mathcal{P}$]
-    Projects $\{0,\ldots,n-1\}$, indexed by $i$; all committed at
-    horizon start.
-  \item[$\mathcal{T}$]
-    Planning periods $\{0,\ldots,H-1\}$, indexed by $t$ (calendar
-    months), where $H = \max_{i \in \mathcal{P}}(f_i +
-    \Delta^{\max}_i)$ is derived endogenously from the committed
-    portfolio; period $t=0$ aligns with the earliest project start.
-  \item[$\mathcal{M}_i$]
-    Ordered milestones $\{1,\ldots,M_i\}$ for project $i$, indexed
-    by $j$, with progress thresholds
-    $\theta_{i,1} < \cdots < \theta_{i,M_i} = 1$.
-    A synthetic milestone $j=0$ records the advance payment at
-    project start $s_i$ with progress threshold zero.
-  \item[$\mathcal{P}_t^{\mathrm{active}}$]
-    Projects with \texttt{active} status at period $t$; endogenous to
-    the efficiency trajectory and termination events.
-  \item[$x_{i,t} \geq 0$]
-    \textbf{Decision variable}: budget allocated to project $i$ at
-    period $t$. The period-$t$ action vector is
-    $\mathbf{x}_t = (x_{i,t})_{i \in \mathcal{P}_t^{\mathrm{active}}}$.
-  \item[$B_t \geq 0$]
-    Portfolio cash balance at the start of period $t$; $B_0$ is given.
-\end{description}
+\begin{table}[H]
+  \centering
+  \small
+  \renewcommand{\arraystretch}{1.55}
+  \begin{tabularx}{\linewidth}{@{} l X @{}}
+    \toprule
+    \textbf{Symbol} & \textbf{Definition} \\
+    \midrule
+
+    \multicolumn{2}{@{}l}{\textit{Sets and indices}} \\[2pt]
+
+    $\mathcal{P}$
+      & Projects $\{0,\ldots,n-1\}$, indexed by $i$; all committed at
+        horizon start. \\
+
+    $\mathcal{T}$
+      & Planning periods $\{0,\ldots,H-1\}$, indexed by $t$ (calendar
+        months), where $H = \max_{i \in \mathcal{P}}(f_i +
+        \Delta^{\max}_i)$ is derived endogenously from the committed
+        portfolio; $t=0$ aligns with the earliest project start. \\
+
+    $\mathcal{M}_i$
+      & Ordered milestones $\{1,\ldots,M_i\}$ for project $i$, indexed
+        by $j$, with progress thresholds
+        $\theta_{i,1} < \cdots < \theta_{i,M_i} = 1$.
+        The advance payment is recorded as milestone $M_0$ at project
+        start $s_i$ with threshold zero. \\
+
+    $\mathcal{P}_t^{\mathrm{active}}$
+      & Projects with \texttt{active} status at period $t$; endogenous
+        to the efficiency trajectory. A project is activated at its
+        start $s_i$ and remains active while financially healthy; only
+        active projects accept budget allocations and trigger milestone
+        payments. \\[6pt]
+
+    \multicolumn{2}{@{}l}{\textit{State and decision variables}} \\[2pt]
+
+    $x_{i,t} \geq 0$
+      & \textbf{Decision variable}: budget allocated to project $i$ at
+        period $t$. The period-$t$ action vector is
+        $\mathbf{x}_t = (x_{i,t})_{i \in \mathcal{P}_t^{\mathrm{active}}}$. \\
+
+    $B_t \geq 0$
+      & Portfolio cash balance at the start of period $t$; $B_0$ is
+        given. \\
+
+    \bottomrule
+  \end{tabularx}
+  \caption{Sets, indices, and decision variables.}
+  \label{tab:sets}
+\end{table}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{Progress and Expenditure Dynamics}
