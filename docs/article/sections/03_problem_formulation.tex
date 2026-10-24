@@ -848,7 +848,7 @@ to zero. The portfolio scalars $\widetilde{\Delta B}_t$ and
 $\tilde{B}_t$ are the last-period net cash flow and the current
 available budget, both normalised by $B_0$.
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \input{tables/obs_vector.tex}
   \caption{Observation vector $o_t$ \eqref{eq:obs_vector}: components,
@@ -862,30 +862,58 @@ available budget, both normalised by $B_0$.
 \label{subsubsec:impl}
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-The MDP $\mathcal{M}$ is implemented as \texttt{PortfolioBudgetingEnv},
-a configurable Gymnasium-compatible environment \citep{Towers2024}.
-The environment exposes the standard \texttt{reset()} / \texttt{step()}
-interface:
+The MDP is implemented as \code{PortfolioBudgetingEnv},
+a configurable Gymnasium-compatible environment \citep{Towers2024},
+exposing the standard \code{reset()} / \code{step()} interface with:
 \begin{itemize}[nosep]
-  \item \texttt{observation\_space}: $\mathrm{Box}(7N+2)$ with
+  \item \code{observation\_space}: $\mathrm{Box}(7N+2)$ with
     per-component bounds as in Table~\ref{tab:obs_vector};
-  \item \texttt{action\_space}: $\mathrm{Box}([0,1]^N)$, raw
+  \item \code{action\_space}: $\mathrm{Box}([0,1]^N)$, raw
     allocation fractions of $B_t$.
 \end{itemize}
-All parameters (Table~\ref{tab:params}) are passed as a configuration
-dictionary at initialisation; every entry is a probability
-distribution specified by a family name and up to four parameters
-(fixed, uniform, Beta, triangular, lognormal, truncated normal, or
-per-project custom ordinal sequence). This design allows any
-parameter to be held constant for controlled experiments or drawn
-fresh each episode for domain randomisation \citep{Tobin2017}.
-The horizon $T$ is derived automatically from \eqref{eq:horizon};
-$N$ is sampled at each \texttt{reset()} if the portfolio size is
-configured as a distribution. Episodes terminate when all projects
-reach \texttt{completed} or \texttt{terminated} status, or when
-$t \geq T$. A SQLite audit ledger records every allocation,
-cash-flow event, and breach flag at each step, enabling full
-interpretability of any policy's behaviour.
+
+\paragraph{Configuration dictionary.}
+All environment behaviour is governed by a single configuration
+dictionary passed at initialisation. The dictionary contains two
+classes of entries that together fully specify an experiment.
+
+The first class covers the \emph{mathematical parameters} of the
+formulation, consolidated in Table~\ref{tab:params}: contract
+parameters ($\mathrm{BAC}_i$, $\pi_i$, $\phi_i$,
+$\psi^{\mathrm{rec}}_i$, $\delta^{\mathrm{rec}}_i$, $\nu_i$,
+$w_{i,j}$), schedule parameters ($s_i$, $D_i$, $a_i$, $b_i$,
+$\psi_{i,j}$, $\tau^{\mathrm{ms}}_{i,j}$, $\delta^{\max}_i$,
+$\Delta^{\max}_i$, $\theta_i$), and portfolio-level scalars
+($\kappa$, $\gamma$, $r$).
+
+The second class covers \emph{structural parameters} not listed in
+Table~\ref{tab:params} because they are implementation quantities
+rather than mathematical primitives: the portfolio size $N$
+(\code{n\_projects}), the per-project milestone count $M_i$
+(\code{n\_milestones}), and the stochastic efficiency sequence
+$\{\eta_{i,t}\}$ (\code{efficiency}). Every entry in both classes
+is specified as a distribution family together with up to four
+parameters, supporting \code{fixed}, \code{uniform}, \code{beta},
+\code{triangular}, \code{lognormal}, \code{truncated\_normal}, and
+\code{custom\_ordinal} families. The \code{custom\_ordinal} family
+accepts a deterministic sequence --- a flat list for single-project
+configurations or a per-project list of lists for portfolio
+configurations --- and cycles through it in order each episode,
+enabling exact reproducibility of efficiency draws for controlled
+benchmarking. This design allows any parameter to be held constant
+for controlled experiments or drawn fresh each episode for domain
+randomisation \citep{Tobin2017}.
+
+\paragraph{Episode lifecycle.}
+At each \code{reset()}, $N$ is sampled from its configured
+distribution and all per-project parameters are drawn independently;
+the horizon $T$ is then derived automatically from \eqref{eq:horizon}.
+Episodes terminate when all projects reach \code{completed} or
+\code{terminated} status, when $t \geq T$, or when $B_t \leq 0$
+with no advance payments pending. A SQLite audit ledger records every
+allocation, cash-flow event, EVM index, and breach flag at each step,
+making the behaviour of any policy fully interpretable and
+reproducible.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{Deterministic Benchmark Policies}
