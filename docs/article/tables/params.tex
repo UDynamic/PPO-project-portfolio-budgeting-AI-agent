@@ -1,5 +1,6 @@
 % tables/params.tex
 % tabular only — no table environment, no caption, no label.
+% longtable handles its own float, caption, and page breaking.
 \footnotesize
 \renewcommand{\arraystretch}{1.1}
 \begin{longtable}{p{2.8cm} p{1.8cm} p{1.1cm} p{7.3cm}}
@@ -97,7 +98,7 @@ Budget at completion
   & Total planned contractor cost (\code{bac}). \\
 Profit margin
   & $\pi_i$ & $\mathbb{R}_{\geq 0}$
-  & Mark-up rate; $P_i = \mathrm{BAC}_i(1+\pi_i)$
+  & $P_i = \mathrm{BAC}_i(1+\pi_i)$
     (\code{profit\_percent}). \\
 \rowcolor{RowAlt}
 Advance payment rate
@@ -145,7 +146,7 @@ Discount factor
 Annual interest rate
   & $r$ & $[0,1]$
   & Monthly treasury-draw cost $= r/12$ per
-    \eqref{eq:interest}; specified as a plain scalar
+    \eqref{eq:interest}; plain scalar, not a distribution entry
     (\code{annual\_interest\_rate}). \\
 Episode horizon
   & $T$ & $\mathbb{Z}_{>0}$
@@ -160,7 +161,7 @@ Work efficiency
   & $\eta_{i,t}$ & ${\geq}0.01$
   & Sole stochastic primitive; drawn per period per project
     from a configurable distribution; \code{custom\_ordinal}
-    accepts a per-project sequence for reproducible benchmarking;
+    cycles deterministically for reproducible benchmarking;
     realised after $x_{i,t}$ is committed
     (\code{efficiency}). \\
 
