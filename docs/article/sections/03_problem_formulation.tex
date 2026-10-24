@@ -305,97 +305,13 @@ in Figure~\ref{fig:state_machine}.
 
 \begin{figure}[htbp]
   \centering
-  \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}[
-      every node/.style={font=\small},
-      state/.style={circle, draw=black!60, fill=white,
-                    minimum size=2.8cm, align=center, thick},
-      grace/.style={circle, draw=orange!80!black, fill=orange!7,
-                    minimum size=2.8cm, align=center, thick},
-      term/.style={circle, draw=red!70!black, fill=red!7,
-                    minimum size=2.8cm, align=center, thick},
-      posnode/.style={rectangle, rounded corners=6pt,
-                  draw=green!60!black, fill=green!6,
-                  minimum width=3.2cm, minimum height=1.2cm,
-                  align=center, thick},
-      negnode/.style={rectangle, rounded corners=6pt,
-                  draw=blue!60!black, fill=blue!6,
-                  minimum width=3.2cm, minimum height=1.2cm,
-                  align=center, thick},
-    ]
-
-    \node[state] (normal) at (0,0)
-      {\textbf{Normal}\\[3pt]
-        $\theta^{\mathrm{rem}}_{i,t} = \theta_i$};
-
-    \node[grace] (grace) at (6.5,0)
-      {\textbf{Grace Period}\\[3pt]
-        $\theta^{\mathrm{rem}}_{i,t} \mathrel{-}= 1$};
-
-    \node[term] (term) at (13,0)
-      {\textbf{Terminated}};
-
-    \node[posnode] (posout) at (18,1.6)
-      {$S_i > 0$\\balancing receipt};
-
-    \node[negnode] (negout) at (18,-1.6)
-      {$S_i < 0$\\portfolio obligation};
-
-    \draw[->, thick] (-2.2,0) -- (normal.west)
-      node[midway, above, font=\normalsize] {$t = s_i$};
-
-    \draw[->, thick, orange!80!black]
-      (normal.north) to[out=30, in=150]
-      node[above, font=\normalsize]
-        {$\mathbb{1}^{\delta}_{i,t} = 1$}
-      (grace.north);
-
-    \draw[->, thick, green!50!black]
-      (grace.south) to[out=210, in=330]
-      node[below, font=\normalsize]
-        {breach clears}
-      (normal.south);
-
-    \draw[->, thick, orange!70!black]
-      (grace) to[out=20, in=60, looseness=5]
-      node[above, font=\normalsize, sloped]
-        {breach persists}
-      (grace);
-
-    \draw[->, thick, red!70!black] (grace.east) -- (term.west)
-      node[midway, below, font=\normalsize]
-        {$\theta^{\mathrm{rem}}_{i,t} = 0$};
-
-    \draw[->, thick, black]
-      (normal) to[out=110, in=150, looseness=5]
-      node[above, font=\normalsize, sloped] {no breach}
-      (normal);
-
-    \draw[->, thick, red!70!black]
-      (normal.south) to[out=-50, in=-130]
-      node[below, font=\normalsize]
-        {$\mathbb{1}^{T}_{i,t} = 1$}
-      (term.south);
-
-    \draw[->, thick, green!60!black]
-      (term.east) to[out=30, in=180]
-      node[midway, above, font=\normalsize, sloped]
-        {$S_i > 0$}
-      (posout.west);
-
-    \draw[->, thick, blue!60!black]
-      (term.east) to[out=-30, in=180]
-      node[midway, below, font=\normalsize, sloped]
-        {$S_i < 0$}
-      (negout.west);
-
-  \end{tikzpicture}%
-  }
-  \caption{Project lifecycle state machine. Condition~1 (progress delay
-    breach, $\mathbb{1}^{\delta}_{i,t}=1$) increments the grace-period
-    counter; hard deadline (Condition~2, $\mathbb{1}^{T}_{i,t}=1$)
-    terminates immediately. Settlement $S_i$ \eqref{eq:settlement}
-    enters portfolio inflows at the termination period.}
+  \resizebox{\textwidth}{!}{\input{figures/state_machine.tex}}
+  \caption{Project lifecycle state machine. Condition~1 (progress
+    delay breach, $\mathbb{1}^{\delta}_{i,t}=1$) decrements the
+    grace-period counter; Condition~2 (hard deadline,
+    $\mathbb{1}^{T}_{i,t}=1$) terminates immediately regardless of
+    counter state. Settlement $S_i$ \eqref{eq:settlement} enters
+    portfolio inflows at the termination period.}
   \label{fig:state_machine}
 \end{figure}
 
@@ -436,115 +352,8 @@ truncates immediately.
 Table~\ref{tab:params} consolidates all parameters fixed at commitment.
 
 \begin{table}[htbp]
-  \centering\small
-  \renewcommand{\arraystretch}{1.3}
-  \setlength{\tabcolsep}{5pt}
-  \begin{tabular}{p{3.4cm} p{2.0cm} p{1.2cm} p{6.8cm}}
-    \toprule
-    \textbf{Parameter} & \textbf{Symbol} &
-    \textbf{Domain} & \textbf{Definition} \\
-    \midrule
-    \multicolumn{4}{l}{\textit{Schedule}} \\
-    \midrule
-    Planned start / finish
-      & $s_i,\; f_i$ & $\mathbb{Z}_{\geq 0}$
-      & $f_i = s_i + D_i$; anchor of S-curve and activity window. \\
-    \rowcolor{RowAlt}
-    Planned duration
-      & $D_i$ & $\mathbb{Z}_{>0}$
-      & $D_i = f_i - s_i$; normalises project-time for S-curve. \\
-    S-curve shape
-      & $a_i,\; b_i$ & $\mathbb{R}^+$
-      & Beta CDF parameters governing $PV_i(\tau)$
-        \eqref{eq:scurve}. \\
-    \rowcolor{RowAlt}
-    Milestone progress threshold
-      & $\psi_{i,j}$ & $(0,1]$
-      & Minimum $EV_{i,t}$ to certify milestone $j$;
-        $\psi_{i,M_i}=1$. \\
-    Milestone timestep threshold
-      & $\tau^{\mathrm{ms}}_{i,j}$ & $\mathbb{Z}_{\geq 0}$
-      & Earliest project-time for certification;
-        episode threshold $= s_i + \tau^{\mathrm{ms}}_{i,j}$
-        \citep{FIDIC2017}. \\
-    \rowcolor{RowAlt}
-    Progress delay cap
-      & $\delta^{\max}_i$ & $[0,1]$
-      & Maximum lag $\delta_{i,t}$ before
-        $\mathbb{1}^{\delta}_{i,t}$ activates. \\
-    Finish delay cap
-      & $\Delta^{\max}_i$ & $\mathbb{Z}_{>0}$
-      & Extra periods after $f_i$ before hard deadline fires. \\
-    \rowcolor{RowAlt}
-    Termination tolerance
-      & $\theta_i$ & $\mathbb{Z}_{>0}$
-      & Grace-period length; models FIDIC Sub-Clause~15.1
-        \citep{FIDIC2017, Ndekugri2008}. \\
-    \midrule
-    \multicolumn{4}{l}{\textit{Contract}} \\
-    \midrule
-    Budget at completion
-      & $\mathrm{BAC}_i$ & $\mathbb{R}_{>0}$
-      & Total planned contractor cost; EVM normalisation basis. \\
-    \rowcolor{RowAlt}
-    Profit margin
-      & $\pi_i$ & $\mathbb{R}_{\geq 0}$
-      & Mark-up rate; $P_i = \mathrm{BAC}_i(1+\pi_i)$. \\
-    Advance payment rate
-      & $\phi_i$ & $[0,0.3]$
-      & $\mathrm{Adv}_i = \phi_i P_i$ received at $t=s_i$. \\
-    \rowcolor{RowAlt}
-    Advance recovery rate
-      & $\rho_i$ & $[0,1]$
-      & Fraction of each milestone gross payment withheld for
-        advance recovery:
-        $A^{\mathrm{rec}}_{i,j} = \min(\rho_i G_{i,j},
-        \text{advance remaining})$. \\
-    Retention rate
-      & $\nu_i$ & $[0,0.1]$
-      & Fraction of each gross payment withheld;
-        $R^{\mathrm{held}}_{i,j} = \nu_i G_{i,j}$;
-        released in full at $j = M_i$. \\
-    \rowcolor{RowAlt}
-    Milestone weight
-      & $w_{i,j}$ & $[0,1]$
-      & Fraction of $P_i$ allocated to milestone $j$;
-        $\sum_j w_{i,j}=1$. \\
-    \midrule
-    \multicolumn{4}{l}{\textit{Portfolio}} \\
-    \midrule
-    Initial budget
-      & $B_0$ & $\mathbb{R}_{>0}$
-      & $B_0 = \kappa \sum_i \mathrm{BAC}_i$. \\
-    \rowcolor{RowAlt}
-    Budget tightness
-      & $\kappa$ & $\mathbb{R}_{>0}$
-      & Liquidity regime; $\kappa \gg 1$: relaxed;
-        $\kappa \approx 1$: tight; $\kappa \ll 1$: scarce. \\
-    Discount factor
-      & $\gamma$ & $(0,1]$
-      & Per-period discount; shared across all projects
-        \citep{Damodaran2012}. \\
-    \rowcolor{RowAlt}
-    Annual interest rate
-      & $r$ & $[0,1]$
-      & Monthly treasury-draw interest $= r/12$
-        per \eqref{eq:interest}. \\
-    Episode horizon
-      & $T$ & $\mathbb{Z}_{>0}$
-      & Derived from \eqref{eq:horizon}; not a fixed input. \\
-    \midrule
-    \multicolumn{4}{l}{\textit{Stochastic Primitive}} \\
-    \midrule
-    \rowcolor{RowAlt}
-    Work efficiency
-      & $\eta_{i,t}$ & $\geq 0.01$
-      & Sole stochastic primitive; drawn per period per project
-        from a configurable distribution (fixed, uniform, Beta,
-        triangular, lognormal, or custom ordinal sequence);
-        realised after $x_{i,t}$ is committed. \\
-  \bottomrule
-  \end{tabular}
+  \centering
+  \input{tables/params.tex}
   \caption{Parameters fixed at commitment, grouped by function.}
   \label{tab:params}
 \end{table}
@@ -942,49 +751,8 @@ $\tilde{B}_t$ are the last-period net cash flow and the current
 available budget, both normalised by $B_0$.
 
 \begin{table}[htbp]
-  \centering\small
-  \renewcommand{\arraystretch}{1.3}
-  \setlength{\tabcolsep}{5pt}
-  \begin{tabular}{clcl}
-    \toprule
-    \textbf{Index} & \textbf{Symbol} & \textbf{Clip} &
-    \textbf{Description} \\
-    \midrule
-    $7i$   & $\theta^{\mathrm{rem}}_{i,t}$
-           & $[0,\theta_i]$
-           & Cure-period tolerance remaining \eqref{eq:counter} \\
-    $7i+1$ & $\tilde{x}^{\mathrm{cu}}_{i,t}$
-           & $[0,1]$
-           & Current-period catchup allocation $x^{\mathrm{cu}}_{i,t}$
-             / $B_0$ \eqref{eq:catchup} \\
-    $7i+2$ & $\tilde{x}^{\mathrm{cu}+1}_{i,t}$
-           & $[0,1]$
-           & Next-period catchup allocation $x^{\mathrm{cu}+1}_{i,t}$
-             / $B_0$ \eqref{eq:catchup_next} \\
-    $7i+3$ & $\Delta\psi^*_{i,t}$
-           & $[0,1]$
-           & Target milestone progress gap \eqref{eq:target_pg} \\
-    $7i+4$ & $\widetilde{\Delta\tau}^*_{i,t}$
-           & $[-1,1]$
-           & Target milestone timestep gap $\Delta\tau^*_{i,t}$ / $T$
-             \eqref{eq:target_tg} \\
-    $7i+5$ & $\tilde{x}^*_{i,t}$
-           & $[0,1]$
-           & Target required allocation $x^*_{i,t}$ / $B_0$
-             \eqref{eq:target_alloc} \\
-    $7i+6$ & $\widetilde{\mathrm{NPV}}^*_{i,t}$
-           & $[-1,1]$
-           & Target milestone NPV, normalised by
-             $\max_i|\mathrm{NPV}^*_{i,t}|$ \eqref{eq:target_npv} \\
-    \midrule
-    $7N$   & $\widetilde{\Delta B}_{t}$
-           & $[-2,2]$
-           & Last-period net cash flow $\Delta B_{t-1}$ / $B_0$ \\
-    $7N+1$ & $\tilde{B}_t$
-           & $[0,2]$
-           & Available budget $B_t$ / $B_0$ \\
-    \bottomrule
-  \end{tabular}
+  \centering
+  \input{tables/obs_vector.tex}
   \caption{Observation vector $o_t$ \eqref{eq:obs_vector}: components,
     normalisation, and clipping bounds. Per-project block $i$ occupies
     indices $7i$ through $7i+6$.}

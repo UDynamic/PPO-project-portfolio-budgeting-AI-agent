@@ -63,122 +63,16 @@ episode ends only when every project has either completed or been
 terminated, when the global horizon is reached, or when the portfolio
 budget is exhausted with no pending inflows.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
-  \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}[
-    every node/.style = {font=\normalsize},
-    box/.style = {
-      rectangle, rounded corners=6pt,
-      draw, thick,
-      minimum width=3.4cm, minimum height=1.2cm,
-      align=center
-    },
-    agent/.style  = {box, draw=violet!70!black, fill=violet!10},
-    contr/.style  = {box, draw=orange!70!red,   fill=orange!8},
-    client/.style = {box, draw=teal!70!black,   fill=teal!8},
-    state/.style  = {
-      rectangle, rounded corners=6pt,
-      draw=gray!60, thick, fill=gray!6,
-      minimum width=17cm, minimum height=1.3cm,
-      align=center
-    },
-    act/.style  = {-{Latex[length=6pt]}, thick, violet!70!black},
-    rew/.style  = {-{Latex[length=6pt]}, thick, blue!60!black, dashed},
-    obs/.style  = {-{Latex[length=6pt]}, thick, gray!50!black},
-    prog/.style = {-{Latex[length=6pt]}, thick, orange!70!red},
-    int/.style  = {-{Latex[length=6pt]}, thick, teal!60!black, dashed},
-    lbl/.style  = {font=\normalsize},
-  ]
-
-    \node[agent] (pm) {%
-      \textbf{Portfolio Manager}\\[2pt]
-      policy $\pi(o_t)\!\to\!\boldsymbol{\alpha}_t$};
-
-    \node[client, right=10cm of pm] (client) {%
-      \textbf{Client}\\[2pt]
-      milestone approval};
-
-    \node[contr, left=3cm of client] (contractor) {%
-      \textbf{Contractor}\\[2pt]
-      project execution};
-
-    \node[
-      rectangle, rounded corners=20pt,
-      draw=orange!50!black, thick, fill=orange!4,
-      inner xsep=20pt, inner ysep=18pt,
-      fit=(contractor)(client),
-      label={[font=\footnotesize\itshape, text=orange!60!black]
-             above:Environment \textit{(contract)}},
-    ] (env) {};
-
-    \node[client, right=10cm of pm] (client) {%
-      \textbf{Client}\\[2pt]
-      milestone approval};
-
-    \node[contr, left=3cm of client] (contractor) {%
-      \textbf{Contractor}\\[2pt]
-      project execution};
-
-    \node[state,
-          below=3.5cm of $(pm.south)!0.55!(contractor.south)$] (state)
-          {\textbf{Observation} $o_t$:\quad
-          $\bigl\{\theta^{\mathrm{rem}}_{i,t},\;
-          \tilde{x}^{\mathrm{cu}}_{i,t},\;
-          \tilde{x}^{\mathrm{cu}+1}_{i,t},\;
-          \Delta\psi^*_{i,t},\;
-          \widetilde{\Delta\tau}^*_{i,t},\;
-          \tilde{x}^*_{i,t},\;
-          \widetilde{\mathrm{NPV}}^*_{i,t}\bigr\}_{i},\;
-          \widetilde{\Delta B}_t,\;
-          \tilde{B}_t$};
-
-    \draw[act]
-      (pm.east) -- (contractor.west)
-      node[midway, above, lbl, violet!80!black]
-        {allocation $\boldsymbol{\alpha}_t$};
-
-    \draw[prog]
-      (contractor.east) -- (client.west)
-      node[midway, above, lbl, orange!80!red]
-        {progress $\Delta EV_{i,t}$};
-
-    \draw[rew]
-      (client.north)
-        -- ++(0, 1.4)
-        -| (pm.north)
-      node[pos=0.28, above, lbl, blue!60!black]
-        {$r_t = \gamma^t \Delta B_t$\quad
-         inflow: milestone payments $+$ settlement\quad
-         outflow: allocations $+$ interest};
-
-    \draw[prog]
-    (contractor.south)
-        -- (state.north -| contractor)
-        node[midway,right,lbl]
-          {$\Delta EV_{i,t} = \eta_{i,t} x_{i,t} / \mathrm{BAC}_i$};
-
-    \draw[int]
-      (client.east)
-      -- ++(1.2, 0)
-      |- (state.east)
-      node[pos=0.25, left, lbl, teal!60!black] {milestone revenue};
-
-    \draw[obs]
-      (state.west)
-        -- ++(-1.2, 0)
-        |- (pm.west)
-      node[pos=0.25, right, lbl, gray!60!black] {observe $o_t$};
-
-  \end{tikzpicture}%
-  }
+  \resizebox{\textwidth}{!}{\input{figures/feedback_loop.tex}}
   \caption{Portfolio governance as a reinforcement learning feedback
     loop. The portfolio manager commits allocation fractions
-    $\boldsymbol{\alpha}_t$; the contractor converts budget to
-    progress via stochastic efficiency $\eta_{i,t}$; the client
-    certifies milestones and releases payments; the environment
-    returns observation $o_t \in \mathbb{R}^{7N+2}$ and reward
-    $r_t$. Observation components are defined in full in
+    $\boldsymbol{\alpha}_t$; the contractor converts budget to progress
+    via stochastic efficiency $\eta_{i,t}$; the client certifies
+    milestones and releases net payments $\hat{P}_{i,j}$; the
+    environment returns observation $o_t \in \mathbb{R}^{7N+2}$ and
+    reward $r_t$. Observation components are defined in full in
     Table~\ref{tab:obs_vector}.}
   \label{fig:feedback_loop}
 \end{figure}

@@ -1,0 +1,47 @@
+% tables/obs_vector.tex
+% tabular only — no table environment, no caption, no label.
+% Include in section file as:
+%   \input{tables/obs_vector.tex}
+\small
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{clcl}
+  \toprule
+  \textbf{Index} & \textbf{Symbol} & \textbf{Clip} &
+  \textbf{Description} \\
+  \midrule
+  $7i$   & $\theta^{\mathrm{rem}}_{i,t}$
+         & $[0,\theta_i]$
+         & Cure-period tolerance remaining \eqref{eq:counter} \\
+  $7i+1$ & $\tilde{x}^{\mathrm{cu}}_{i,t}$
+         & $[0,1]$
+         & Current-period catchup allocation $x^{\mathrm{cu}}_{i,t}$
+           / $B_0$ \eqref{eq:catchup} \\
+  $7i+2$ & $\tilde{x}^{\mathrm{cu}+1}_{i,t}$
+         & $[0,1]$
+         & Next-period catchup allocation $x^{\mathrm{cu}+1}_{i,t}$
+           / $B_0$ \eqref{eq:catchup_next} \\
+  $7i+3$ & $\Delta\psi^*_{i,t}$
+         & $[0,1]$
+         & Target milestone progress gap \eqref{eq:target_pg} \\
+  $7i+4$ & $\widetilde{\Delta\tau}^*_{i,t}$
+         & $[-1,1]$
+         & Target milestone timestep gap $\Delta\tau^*_{i,t}$ / $T$
+           \eqref{eq:target_tg} \\
+  $7i+5$ & $\tilde{x}^*_{i,t}$
+         & $[0,1]$
+         & Target required allocation $x^*_{i,t}$ / $B_0$
+           \eqref{eq:target_alloc} \\
+  $7i+6$ & $\widetilde{\mathrm{NPV}}^*_{i,t}$
+         & $[-1,1]$
+         & Target milestone NPV, normalised by
+           $\max_i|\mathrm{NPV}^*_{i,t}|$ \eqref{eq:target_npv} \\
+  \midrule
+  $7N$   & $\widetilde{\Delta B}_{t}$
+         & $[-2,2]$
+         & Last-period net cash flow $\Delta B_{t-1}$ / $B_0$ \\
+  $7N+1$ & $\tilde{B}_t$
+         & $[0,2]$
+         & Available budget $B_t$ / $B_0$ \\
+  \bottomrule
+\end{tabular}

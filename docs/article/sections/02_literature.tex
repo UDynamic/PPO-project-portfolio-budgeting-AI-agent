@@ -85,72 +85,16 @@ organisation is detailed in Appendix~\ref{app:repo_map}. The PRISMA
 flow diagram quantifying records at each stage is provided in
 Appendix~\ref{app:prisma}.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}[
-        box/.style      = {rectangle, rounded corners=6pt, thick,
-                           text width=7.0cm, align=center,
-                           minimum height=0.85cm, inner sep=7pt,
-                           font=\small},
-        decision/.style = {diamond, thick, aspect=2.5,
-                           minimum width=4.5cm, minimum height=0.7cm,
-                           align=center, font=\scriptsize, inner sep=2pt},
-        rej/.style      = {rectangle, rounded corners=6pt, thick,
-                           text width=3.2cm, align=center,
-                           minimum height=0.75cm, inner sep=5pt,
-                           font=\scriptsize},
-    ]
-    
-    %% --- Row 1 : left -> right ---
-    \node[box, flowColorA] (s1)
-        {\textbf{Stage 1 --- Identification \& Readability}\\
-         Extraction yield \(\cdot\) Lexical quality \(\cdot\) Embeddability};
-    
-    \node[decision, flowColorGray, right=1.2cm of s1] (d1)
-        {All three tests pass?};
-    
-    %% --- Row 2 : right -> left ---
-    \node[box, flowColorB, below=2.4cm of d1] (s2)
-        {\textbf{Stage 2 --- Relevance Filtering}\\
-         Semantic similarity \(+\) Keyword score \(\rightarrow r \in [0,1]\)};
-    
-    \node[decision, flowColorGray, left=1.2cm of s2] (d2)
-        {\(r \geq 0.30\)?};
-    
-    %% --- Row 3 : left -> right ---
-    \node[box, flowColorC, below=1.7cm of d2] (s3)
-        {\textbf{Stage 3 --- Structured Extraction}\\
-         JSON extraction: metadata \(\cdot\) calibration \(\cdot\) thesis flags};
-    
-    \node[box, flowColorD, right=1.2cm of s3] (out)
-        {\textbf{Synthesis}\\
-         Gap matrix \(\cdot\) Domain charts \(\cdot\) Literature map};
-    
-    %% --- Rejection nodes ---
-    \node[rej, flowColorReject, above=0.55cm of d1] (r1)
-        {Rejected\\(failed readability)};
-    \node[rej, flowColorReject, above=0.55cm of d2] (r2)
-        {Rejected\\(irrelevant)};
-    
-    %% --- Main snake flow ---
-    \draw[arrowMain] (s1) -- (d1);
-    \draw[arrowMain] (d1) -- node[right, font=\scriptsize]{Yes} (s2);
-    \draw[arrowMain] (s2) -- (d2);
-    \draw[arrowMain] (d2) -- node[left, font=\scriptsize]{Yes} (s3);
-    \draw[arrowMain] (s3) -- (out);
-    
-    %% --- Rejection branches ---
-    \draw[arrowReject] (d1) -- node[right, font=\scriptsize]{No} (r1);
-    \draw[arrowReject] (d2) -- node[left, font=\scriptsize]{No} (r2);
-    
-    \end{tikzpicture}
-    \caption{Three-stage PRISMA-aligned screening pipeline, arranged
-    as a serpentine flow. Boxes denote automated processing stages;
-    diamonds denote pass/fail gates; dashed arrows indicate rejection
-    routing. Implementation details and repository locations are
-    provided in Appendix~\ref{app:repo_map}.}
+    \input{figures/screening_pipeline.tex}
+    \caption{Three-stage PRISMA-aligned screening pipeline, arranged as
+      a serpentine flow. Boxes denote automated processing stages;
+      diamonds denote pass/fail gates; dashed arrows indicate rejection
+      routing. Implementation details and repository locations are
+      provided in Appendix~\ref{app:repo_map}.}
     \label{fig:screening_pipeline}
-\end{figure}
+  \end{figure}
 
 
 % ------------------------------------------------------------
@@ -497,41 +441,13 @@ such as Oracle Primavera~P6 --- remains future work, contingent on
 the environment that Step~2 now delivers.
 
 \begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    node distance  = 0cm,
-    stepbox/.style = {rectangle, draw, rounded corners=3pt,
-                      minimum width=3.6cm, minimum height=2.8cm,
-                      align=center, font=\small, text width=3.2cm},
-    arrow/.style   = {->, >=stealth, thick},
-    label/.style   = {font=\scriptsize, align=center, text width=3.2cm}
-]
-
-\node[stepbox, fill=gray!15] (s1) at (0,0)
-    {\textbf{Step 1}\\[4pt] Domain Grounding\\[6pt]
-     \scriptsize Contract mechanics\\EVM signals\\S-curve profiles\\
-     Portfolio selection};
-
-\node[stepbox, fill=gray!8, right=0.6cm of s1] (s2)
-    {\textbf{Step 2} \\[1pt] \emph{(this work)}\\[4pt]
-     Problem Formulation\\[6pt]
-     \scriptsize MDP environment\\FIDIC cash-flow\\
-     Termination mechanic\\Gymnasium API};
-
-\node[stepbox, draw=gray, dashed, right=0.6cm of s2] (s3)
-    {\textbf{Step 3}\\[4pt] Validated Deployment\\[6pt]
-     \scriptsize RL agent training\\OR benchmark\\
-     Primavera~P6 integration\\[4pt]\emph{(future work)}};
-
-\draw[arrow] (s1) -- (s2);
-\draw[arrow, dashed, color=gray] (s2) -- (s3);
-
-\end{tikzpicture}
-\caption{Maturity progression toward a deployable portfolio-level
-decision-support system. Step~2, completed by the present work,
-enables Step~3. Dashed border and arrow denote future work.}
-\label{fig:maturity}
-\end{figure}
+    \centering
+    \input{figures/maturity.tex}
+    \caption{Maturity progression toward a deployable portfolio-level
+      decision-support system. Step~2, completed by the present work,
+      enables Step~3. Dashed border and arrow denote future work.}
+    \label{fig:maturity}
+  \end{figure}
 
 \medskip
 The present work addresses all three gaps and completes Step~2 of
@@ -548,48 +464,10 @@ improvement target for future RL agents.
 \begin{table}[htbp]
     \centering
     \caption{Representative literature mapped against modelling
-    dimensions of the present framework. \textit{Decision type}:
-    S\,=\,selection, Sc\,=\,scheduling, B\,=\,budgeting.
-    \checkmark~=~fully addressed;\; $\circ$~=~partially addressed;\;
-    {--}~=~not addressed.}
+      dimensions of the present framework. \textit{Decision type}:
+      S\,=\,selection, Sc\,=\,scheduling, B\,=\,budgeting.
+      \checkmark~=~fully addressed;\; $\circ$~=~partially
+      addressed;\; {--}~=~not addressed.}
     \label{tab:litmap}
-    \setlength{\tabcolsep}{6pt}
-    \renewcommand{\arraystretch}{1.35}
-    \rowcolors{3}{rowodd}{white}
-    \resizebox{\textwidth}{!}{%
-    \begin{tabular}{>{\raggedright\arraybackslash}p{3.8cm}cc>{\columncolor{rarebg}}cc>{\columncolor{rarebg}}c>{\columncolor{rarebg}}c}
-    \toprule
-    \rowcolor{headbg}\color{headfg}\textbf{Work} & \color{headfg}\textbf{Portfolio} & \color{headfg}\textbf{Decision} & \cellcolor{headbg}\color{headfg}\textbf{Sequential} & \color{headfg}\textbf{Stochastic} & \cellcolor{headbg}\color{headfg}\textbf{Contract} & \cellcolor{headbg}\color{headfg}\textbf{Termination} \\
-    \rowcolor{headbg}\color{headfg}\textbf{} & \color{headfg}\textbf{level} & \color{headfg}\textbf{type} & \cellcolor{headbg}\color{headfg}\textbf{decisions} & \color{headfg}\textbf{cash flows} & \cellcolor{headbg}\color{headfg}\textbf{mechanics} & \cellcolor{headbg}\color{headfg}\textbf{settlement} \\
-    \midrule
-    \citet{Yamakawa2019} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{KOSZTYAN2022} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{touran2006mathematical} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc/B} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{touran2010probabilistic} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc/B} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{GHAPANCHI2012791} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{pourahmadi2015scenario} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{elsabek2018coordination} & \textcolor{symgrey}{--} & \textsc{\small B} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} \\
-    \citet{beseiso2021} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{karimi2021scenario} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{bahroun2023artificial} & \textcolor{symgrey}{--} & \textsc{\small Sc} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{RANJBAR2022116134} & \textcolor{symgreen}{\checkmark} & \textsc{\small S/Sc} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} \\
-    \citet{szwarcfiter2023balancing} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{asghari2023} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{mazhari2024} & \textcolor{symgreen}{\checkmark} & \textsc{\small S/B} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{JIANG2024101016} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{Nabot2025} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symgreen}{\checkmark} \\
-    \citet{Darvish2025} & \textcolor{symgreen}{\checkmark} & \textsc{\small B} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symamber}{$\circ$} & \textcolor{symgreen}{\checkmark} \\
-    \citet{Gholami2025} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} \\
-    \citet{Kehinde2025} & \textcolor{symgreen}{\checkmark} & \textsc{\small B} & \textcolor{symgreen}{\checkmark} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{Ajibade2025} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{Huddar2025} & \textcolor{symgreen}{\checkmark} & \textsc{\small B} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{Akbari2026} & \textcolor{symgreen}{\checkmark} & \textsc{\small B} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgreen}{\checkmark} & \textcolor{symgreen}{\checkmark} \\
-    \citet{ebnerasoul2023} & \textcolor{symgreen}{\checkmark} & \textsc{\small S} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{noroozi2016probabilistic} & \textcolor{symgreen}{\checkmark} & \textsc{\small B} & \textcolor{symgrey}{--} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \citet{JIANG2023104817} & \textcolor{symgrey}{--} & \textsc{\small B} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} & \textcolor{symgrey}{--} \\
-    \cmidrule{1-7}
-    \rowcolor{pwbg}\color{headfg}\textbf{Present work} & \cellcolor{pwbg}\color{headfg}\checkmark & \color{headfg}\textbf{B} & \cellcolor{pwbg}\color{headfg}\checkmark & \color{headfg}\checkmark & \cellcolor{pwbg}\color{headfg}\checkmark & \cellcolor{pwbg}\color{headfg}\checkmark \\
-    \bottomrule
-    \end{tabular}%
-    }
-\end{table}
+    \input{tables/litmap.tex}
+  \end{table}
