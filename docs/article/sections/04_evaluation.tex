@@ -1,28 +1,30 @@
 % ============================================================
-\section{Benchmark Evaluation and Optimality Gap}
-\label{sec:experiments}
+\section{Computational Experiments and Environment Validation}
+\label{sec:evaluation}
 % ============================================================
 
-This section reports the baseline benchmark study conducted to establish
-a performance floor, motivate the need for learned allocation policies,
-and quantify the improvement target available to a future reinforcement
-learning agent. Three deterministic greedy heuristics and a manually
-computed full-information optimum are evaluated across four benchmark
-portfolio configurations of increasing structural complexity. All
-episodes are executed through the Gymnasium-compatible environment
-described in Section~\ref{sec:problem}, with the SQLite audit ledger
-providing a complete per-period record of allocations, cash-flow events,
-and breach flags for every episode.
+This section validates the environment mechanics and quantifies the
+optimality gap available to future learned policies. Three
+deterministic greedy heuristics and a manually computed
+full-information optimum are evaluated across four benchmark portfolio
+configurations of increasing structural complexity. The configurations
+are designed so that each one isolates a specific mechanic of the
+environment --- progress dynamics, advance payment timing, termination
+risk, multi-project coordination --- enabling precise attribution of
+each heuristic's failure mode. All episodes are executed through the
+Gymnasium environment described in Section~\ref{sec:problem}, with
+the SQLite audit ledger providing a complete per-period record of
+allocations, cash-flow events, and breach flags.
 
 % ------------------------------------------------------------
-\subsection{Shared Parameters and Duration Convention}
+\subsection{Shared Parameters}
 \label{subsec:shared_params}
 % ------------------------------------------------------------
 
 All four configurations share the contract and environment parameters
-listed in Table~\ref{tab:shared_params}. These are fixed across every
-episode and every solver to ensure that observed performance differences
-are attributable solely to configuration structure and solver policy.
+in Table~\ref{tab:shared_params}, fixed across every episode and
+every solver so that observed performance differences are attributable
+solely to configuration structure and solver policy.
 
 \begin{table}[htbp]
   \centering\small
@@ -41,43 +43,39 @@ are attributable solely to configuration structure and solver policy.
     Budget tightness          & $\kappa$             & 3.0 \\
     Profit margin             & $\pi_i$              & 0.20 \\
     Discount factor           & $\gamma$             & 0.95 \\
-    S-curve shape             & $(a_i, b_i)$         & $(1.5,\ 3.0)$ \\
+    S-curve shape             & $(a_i,\, b_i)$       & $(1.5,\ 3.0)$ \\
     \bottomrule
   \end{tabular}
   \caption{Parameters shared across all benchmark configurations.
-    Retention is deducted from each milestone gross payment after
-    advance recovery has been applied; the accumulated retention is
-    released in full at the final milestone.}
+    Within each milestone payment, advance recovery is applied first
+    to the gross payment; retention is deducted from the same gross
+    payment independently. Accumulated retention is released in full
+    at the final milestone.}
   \label{tab:shared_params}
 \end{table}
 
 \paragraph{Duration convention.}
-A project with \texttt{planned\_duration} $= D$ executes over
-project-timesteps $\tau_i \in \{0, 1, \ldots, D\}$, giving $D+1$
-active periods. The final planned timestep is $\tau_i = D$, at which
-the last planned milestone is due. With finish delay cap
-$\Delta^{\max}_i = 2$, the hard deadline falls at episode period
-$f_i + 2$, and the total efficiency sequence supplied to the
-environment has length $D + 1 + 2 = D + 3$ entries covering all
-possible active periods.
+A project with planned duration $D_i$ executes over project-timesteps
+$\tau_i \in \{0, 1, \ldots, D_i\}$, giving $D_i + 1$ active periods.
+With finish delay cap $\Delta^{\max}_i = 2$, the hard deadline falls
+at episode period $f_i + 2$, and each efficiency sequence has length
+$D_i + 3$ entries covering all possible active periods.
 
 \paragraph{Deduction order.}
-Within each milestone payment, advance recovery is applied first to
-the gross payment; the retention deduction is then applied to the same
-gross payment independently. At the final milestone, any advance not
-yet recovered is deducted in full, and all accumulated retention is
-released. This ordering --- advance recovery before retention, both
-applied to gross --- is validated consistently across all configurations.
+Advance recovery is applied first to the gross milestone payment;
+retention is deducted from the same gross payment independently and
+in parallel. At the final milestone, any advance not yet recovered is
+cleared in full and all accumulated retention is released.
 
 % ------------------------------------------------------------
 \subsection{Benchmark Configurations}
 \label{subsec:configs}
 % ------------------------------------------------------------
 
-Table~\ref{tab:configs} summarises the four benchmark configurations.
-Each is designed to isolate a specific structural mechanic of the
-environment, so that the failure mode of each greedy heuristic can
-be attributed to a concrete feature of the problem.
+Table~\ref{tab:configs} summarises the four configurations. Each uses
+a fixed custom-ordinal efficiency sequence ($\eta_{i,t}$ set to a
+deterministic per-project list) under seed $= 0$, ensuring exact
+reproducibility.
 
 \begin{table}[htbp]
   \centering\small
@@ -88,116 +86,108 @@ be attributed to a concrete feature of the problem.
     \textbf{Config} & $N$ & $\mathrm{BAC}_i$ & $D_i$ & $s_i$ &
     $M_i$ & $\phi_i$ & $\psi^{\mathrm{trig}}_i$ & \textbf{Primary mechanic} \\
     \midrule
-    TC-10SF-R   & 1 & 100       & 0 & 0       & 1 & 0.00 & ---  &
+    TC-10SF-R   & 1 & 100           & 0 & 0       & 1 & 0.00 & ---  &
       Isolated atom: single action, single milestone \\
-    TC-1LMAIF-R & 1 & 100       & 3 & 2       & 3 & 0.20 & 0.80 &
+    TC-1LMAIF-R & 1 & 100           & 3 & 2       & 3 & 0.20 & 0.80 &
       Delayed start, progress-triggered advance, high recovery \\
-    TC-10MAIF-R & 1 & 100       & 3 & 0       & 3 & 0.20 & 0.00 &
+    TC-10MAIF-R & 1 & 100           & 3 & 0       & 3 & 0.20 & 0.00 &
       Diminishing efficiency, termination risk \\
-    TC-3XMAIF-R & 3 & 100/200/300 & 3 & 0/6/7 & 3 & 0.20 & 0.00 &
+    TC-3XMAIF-R & 3 & 100/200/300   & 3 & 0/6/7  & 3 & 0.20 & 0.00 &
       Multi-project, gap then overlap, interacting cash flows \\
     \bottomrule
   \end{tabular}
   \caption{Benchmark configuration summary. $N$: number of projects;
-    $D_i$: planned duration (so contractual active periods $= D_i+1$);
-    $s_i$: planned start (episode period); $M_i$: number of non-advance
-    milestones; $\phi_i$: advance rate; $\psi^{\mathrm{trig}}_i$:
-    progress threshold at which the advance is disbursed.}
+    $D_i$: planned duration; $s_i$: planned start (episode period);
+    $M_i$: non-advance milestones; $\phi_i$: advance rate;
+    $\psi^{\mathrm{trig}}_i$: progress level at which the advance is
+    disbursed (0.00 means at project start).}
   \label{tab:configs}
 \end{table}
 
 \paragraph{TC-10SF-R --- Isolated atom.}
-One project, one non-advance milestone, no advance payment.
-With $D_i = 0$, the project has a single planned action at $\tau_i = 0$,
-and the hard deadline is at episode period 2.  The efficiency
-sequence is $[0.91,\, 1.17,\, 0.83]$.  Contract price
-$P = 100 \times 1.20 = 120$.  The single milestone carries weight
-$w = 1.0$, so gross payment $= 120$.  Retention of $0.05 \times 120 = 6$
-is withheld and immediately released at the same (final) milestone,
-giving net payment $= 120$.  There is no advance payment or recovery.
-This configuration provides the cleanest possible baseline: it tests
-the fundamental progress-to-cash-flow loop with no confounding payment
-mechanics.
+One project, one non-advance milestone, no advance payment, planned
+duration $D_i = 0$. The project has a single planned action at
+$\tau_i = 0$ and the hard deadline falls at episode period 2.
+Efficiency sequence: $[0.91,\, 1.17,\, 0.83]$. Contract price
+$P_i = 120$; the single milestone carries weight $w = 1.0$, gross
+payment $= 120$; retention of $\nu_i \times 120 = 6$ is withheld and
+immediately released at the same (final) milestone, giving net payment
+$= 120$ with no advance deductions. This configuration provides the
+cleanest possible baseline, testing the fundamental progress-to-cash-flow
+loop with no confounding payment mechanics.
 
 \paragraph{TC-1LMAIF-R --- Delayed start and progress-triggered advance.}
 One project, planned start $s_i = 2$, planned duration $D_i = 3$
 (four active periods: $\tau_i \in \{0,1,2,3\}$), three non-advance
-milestones, and an advance rate $\phi_i = 0.20$ with advance trigger
-$\psi^{\mathrm{trig}}_i = 0.80$.  The trigger means the advance
-payment of $0.20 \times 120 = 24$ is disbursed only once cumulative
-progress $EV_{i,t} \geq 0.80$ is reached --- \emph{not} at project
-start.  Consequently the advance is absent from the first interim
-milestone and the associated deductions begin only after the trigger
-fires.
+milestones, advance rate $\phi_i = 0.20$ with trigger at
+$\psi^{\mathrm{trig}}_i = 0.80$. The trigger means the advance of
+$\phi_i \times P_i = 24$ is disbursed only once cumulative progress
+$EV_{i,t} \geq 0.80$ is reached --- not at project start. Advance
+recovery rate $\rho_i = 0.50$ is the highest in the benchmark suite.
 
-Advance recovery rate is $\rho_i = 0.50$, the highest of all
-configurations.  With milestone gross payments of $18$, $42$, and $60$
-(weights $0.15$, $0.35$, $0.50$), the recovery trace is:
+With milestone gross payments of $18$, $42$, and $60$ (weights
+$0.15$, $0.35$, $0.50$), the recovery trace is:
 $j=1$: $\min(0.50 \times 18,\, 24) = 9.0$ recovered, advance
 remaining $= 15.0$;
-$j=2$: $\min(0.50 \times 42,\, 15) = 15.0$ recovered, advance
+$j=2$: $\min(0.50 \times 42,\, 15.0) = 15.0$ recovered, advance
 fully cleared;
 $j=3$: no further recovery.
-Retention deductions ($0.9$, $2.1$, $3.0$) accumulate across the three
-milestones and are released in full ($6.0$) at $j=3$.
-Net payments after deductions are $8.1$, $24.9$, and $63.0$.
-The efficiency sequence alternates: $[0.91,\, 1.17,\, 0.83,\, 0.91,\, 1.17,\, 0.83]$.
+Retention deductions ($0.9$, $2.1$, $3.0$) accumulate across the
+three milestones and are released in full ($6.0$) at $j=3$.
+Net payments after all deductions: $8.1$, $24.9$, and $63.0$.
+Efficiency sequence: $[0.91,\, 1.17,\, 0.83,\, 0.91,\, 1.17,\, 0.83]$.
 This configuration validates: (i) delayed project start and its
 interaction with the episode clock; (ii) progress-triggered advance
-disbursement; (iii) high advance recovery rate and the liquidity trough
-it creates after the advance is received; and (iv) the ordering
-invariant that advance recovery is deducted before retention on every
-gross payment.
+disbursement; (iii) the liquidity trough created by high recovery
+deductions after the advance fires; and (iv) the deduction ordering
+invariant that advance recovery precedes retention on every gross
+payment.
 
 \paragraph{TC-10MAIF-R --- Diminishing efficiency and termination risk.}
 One project, planned start $s_i = 0$, planned duration $D_i = 3$,
-three milestones, advance rate $\phi_i = 0.20$ (trigger at progress
-$= 0$, i.e.\ disbursed at project start), advance recovery rate
-$\rho_i = 0.20$.  The efficiency sequence is monotonically
-\emph{decreasing}: $[0.95,\, 0.91,\, 0.55,\, 0.40,\, 0.30,\, 0.20]$.
-Early periods are productive; late periods are near-inoperable.
+three milestones, advance rate $\phi_i = 0.20$ disbursed at project
+start, advance recovery rate $\rho_i = 0.20$. The efficiency
+sequence is monotonically decreasing: $[0.95,\, 0.91,\, 0.55,\,
+0.40,\, 0.30,\, 0.20]$. Early periods are productive; late periods
+are near-inoperable. The advance of $24$ is disbursed at $t = 0$.
 
-The advance of 24 is disbursed at $t=0$.  Milestone payment trace
-(advance recovery before retention):
-$j=1$: $\min(0.20 \times 18,\, 24) = 3.6$ recovered, advance
-remaining $= 20.4$, retention $= 0.9$, net $= 13.5$;
-$j=2$: $\min(0.20 \times 42,\, 20.4) = 8.4$ recovered, advance
-remaining $= 12.0$, retention $= 2.1$, net $= 31.5$;
-$j=3$: $\min(0.20 \times 60,\, 12.0) = 12.0$ recovered (advance fully
-cleared at the final milestone via the standard rate), retention $= 3.0$,
+Milestone payment trace (gross payments $18$, $42$, $60$):
+$j=1$: advance recovered $= \min(0.20 \times 18,\, 24) = 3.6$,
+advance remaining $= 20.4$, retention $= 0.9$, net $= 13.5$;
+$j=2$: recovered $= \min(0.20 \times 42,\, 20.4) = 8.4$,
+advance remaining $= 12.0$, retention $= 2.1$, net $= 31.5$;
+$j=3$: recovered $= 12.0$ (advance fully cleared), retention $= 3.0$,
 released $= 6.0$, net $= 51.0$.
-This configuration provides a balanced three-milestone structure while
-stress-testing the termination mechanic: the sharp efficiency drop
-beyond $\tau_i = 1$ makes it progressively more expensive to maintain
-progress above $\delta^{\max}_i = 0.15$, and any policy that does not
-front-load work risks triggering the cure-period counter in the later
-periods.
+This configuration stress-tests the termination mechanic: the sharp
+efficiency drop beyond $\tau_i = 1$ makes it progressively more
+expensive to keep $\delta_{i,t} \leq \delta^{\max}_i = 0.15$, and
+any policy that does not front-load work risks activating the
+cure-period counter in later periods.
 
 \paragraph{TC-3XMAIF-R --- Multi-project with gap and overlap.}
-Three simultaneous projects with heterogeneous scale
-($\mathrm{BAC} = [100,\, 200,\, 300]$, prices $[120,\, 240,\, 360]$)
-and staggered starts ($s_i = [0,\, 6,\, 7]$).  Each project has
-planned duration $D_i = 3$ (four active periods), three milestones, and
-advance rate $\phi_i = 0.20$ triggered at project start.
-Advances at episode periods 0, 6, and 7 are $24$, $48$, and $72$
-respectively, creating three distinct outflow spikes that the policy
-must navigate against a shared budget.
+Three projects with heterogeneous scale
+($\mathrm{BAC}_i = [100,\, 200,\, 300]$, prices $[120,\, 240,\, 360]$)
+and staggered starts ($s_i = [0,\, 6,\, 7]$). Each project has
+planned duration $D_i = 3$, three milestones, and advance rate
+$\phi_i = 0.20$ disbursed at project start. Advances at episode
+periods $0$, $6$, and $7$ are $24$, $48$, and $72$ respectively,
+creating three distinct outflow spikes the policy must navigate
+against a shared budget.
 
-The episode timeline has two structurally distinct phases.
-\emph{Gap phase} ($t = 4, 5$): Project 0 completes at $t = 3$; Projects
-1 and 2 have not yet started.  No allocations are required and the
-budget accumulates interest on any surplus.
-\emph{Overlap phase} ($t = 7, 8, 9$): both Projects 1 and 2 are
-simultaneously active, creating competing allocation demands against the
-shared reserve $B_t$.  The concurrent advance outflows at $t = 6$
-($-48$) and $t = 7$ ($-72$) produce the largest single-period
+The episode has two structurally distinct phases. \emph{Gap phase}
+($t = 4,\, 5$): Project 0 completes at $t = 3$; Projects 1 and 2
+have not yet started. No allocations are required and the budget
+accumulates. \emph{Overlap phase} ($t = 7,\, 8,\, 9$): Projects 1
+and 2 are simultaneously active, creating competing allocation demands
+against the shared reserve $B_t$. The concurrent advance outflows at
+$t = 6$ ($-48$) and $t = 7$ ($-72$) produce the largest single-period
 deficit in the benchmark suite.
 
-Per-project efficiency sequences are:
+Per-project efficiency sequences:
 Project 0: $[0.91,\, 1.17,\, 0.83,\, 0.91,\, 1.17,\, 0.83]$;
 Project 1: $[1.09,\, 0.84,\, 1.18,\, 1.09,\, 0.84,\, 1.18]$;
 Project 2: $[0.97,\, 1.13,\, 0.86,\, 0.97,\, 1.13,\, 0.86]$.
-None is monotonically degrading; the challenge here is purely one of
+None is monotonically degrading; the challenge here is purely
 coordination and cash-flow timing, not individual project difficulty.
 
 % ------------------------------------------------------------
@@ -205,57 +195,55 @@ coordination and cash-flow timing, not individual project difficulty.
 \label{subsec:solvers}
 % ------------------------------------------------------------
 
-Four methods are evaluated, as specified in
-Section~\ref{subsubsec:l3_baselines}.
+Four methods are evaluated, defined formally in
+Section~\ref{subsubsec:baselines}.
 
-\textbf{Reach-Plan} ($\pi^{\mathrm{rp}}$) allocates
-$x^{\mathrm{rp}}_{i,t}$ to bring every active project exactly to its
-S-curve planned progress each period, regardless of budget scarcity or
-milestone proximity.
+\textbf{Reach-Plan} ($\pi^{\mathrm{rp}}$) allocates $x^{\mathrm{rp}}_{i,t}$
+to bring every active project exactly to its S-curve planned progress
+each period, regardless of budget scarcity or milestone proximity.
 
 \textbf{Catchup-T} ($\pi^{\mathrm{cu}}$) allocates the minimum spend
 $x^{\mathrm{cu}}_{i,t}$ required to keep the progress delay within
-$\delta^{\max}_i = 0.15$ this period, preserving budget for later
-periods and other projects.
+$\delta^{\max}_i$ this period, preserving budget for later periods
+and other projects.
 
-\textbf{Catchup-Next-T} ($\pi^{\mathrm{cu}+1}$) pre-emptively allocates
-$x^{\mathrm{cu}+1}_{i,t}$ so that the projected delay next period also
-remains within $\delta^{\max}_i$, at the cost of higher early
-expenditure.
+\textbf{Catchup-Next-T} ($\pi^{\mathrm{cu}+1}$) pre-emptively
+allocates $x^{\mathrm{cu}+1}_{i,t}$ so that the projected delay next
+period also remains within $\delta^{\max}_i$, at the cost of higher
+early expenditure.
 
-\textbf{Full-information optimum} ($\pi^{*}$) is computed manually with
-complete prior knowledge of all efficiency realisations $(\eta_{i,t})$.
-It serves as an upper-bound reference for each configuration.
-Implementing a tractable algorithmic solver --- whether Linear Program
-or Dynamic Program --- is left as future work; the manual computation
-suffices to establish the performance ceiling across the four
-configurations studied here.
+\textbf{Full-information optimum} ($\pi^*$) is computed manually with
+complete prior knowledge of all efficiency realisations $(\eta_{i,t})$,
+via the interactive \texttt{play.py} interface with the efficiency
+sequences fixed in advance. It serves as the upper-bound reference
+$Z^*$ from Proposition~\ref{prop:upper_bound}. Implementing a
+tractable algorithmic solver (LP or DP) is left as future work; the
+manual computation suffices to establish the performance ceiling across
+the four configurations studied here.
 
-All methods are evaluated under seed $= 0$, with the fixed custom
-ordinal efficiency sequences described above, ensuring exact
-reproducibility.
+All four methods are evaluated under seed $= 0$ with the fixed
+custom-ordinal efficiency sequences specified above, ensuring exact
+reproducibility across runs and solvers.
 
 % ------------------------------------------------------------
 \subsection{Results}
 \label{subsec:results}
 % ------------------------------------------------------------
 
-Figure~\ref{fig:gap_plot} reports cumulative episode NPV for each
-method across the four configurations, ordered left to right by
-increasing portfolio complexity. Table~\ref{tab:gap_results} presents
-the numerical values and the best-heuristic gap
-$G(\pi^{*}) - \max_\pi G(\pi)$ for each configuration.
+Figure~\ref{fig:gap_plot} reports cumulative episode NPV $G =
+\sum_{t=0}^{T} \gamma^t \Delta B_t$ for each method across the four
+configurations, ordered by increasing structural complexity.
+Table~\ref{tab:gap_results} presents the numerical values and the
+best-heuristic gap $Z^* - \max_\pi G(\pi)$.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/gap_plot.png}
-  \caption{Cumulative episode NPV
-    ($G = \sum_{t=0}^{T} \gamma^t \Delta B_t$)
-    for three deterministic greedy heuristics and the full-information
-    optimum across four benchmark configurations ordered by increasing
-    portfolio complexity. The widening gap confirms that rule-based
-    allocation deteriorates systematically as structural complexity
-    grows.}
+  \caption{Cumulative episode NPV $G$ for three deterministic greedy
+    heuristics and the full-information optimum across four benchmark
+    configurations ordered by increasing portfolio complexity. The
+    widening gap confirms that rule-based allocation deteriorates
+    systematically as structural complexity grows.}
   \label{fig:gap_plot}
 \end{figure}
 
@@ -272,82 +260,81 @@ $G(\pi^{*}) - \max_\pi G(\pi)$ for each configuration.
     $G(\pi^{\mathrm{cu}+1})$ &
     \textbf{Best-heuristic gap} \\
     \midrule
-    TC-10SF-R   & $9.00$   & $5.60$    & $3.40$    & $-6.07$   & $3.40$  \\
-    TC-1LMAIF-R & $1.49$   & $-13.21$  & $-13.21$  & $-27.17$  & $14.70$ \\
-    TC-10MAIF-R & $-21.66$ & $-35.06$  & $-47.77$  & $-27.22$  & $5.56$  \\
-    TC-3XMAIF-R & $12.40$  & $-59.75$  & $-62.38$  & $-107.96$ & $72.15$ \\
+    TC-10SF-R   & $9.00$    & $5.60$    & $3.40$    & $-6.07$    & $3.40$  \\
+    TC-1LMAIF-R & $1.49$    & $-13.21$  & $-13.21$  & $-27.17$   & $14.70$ \\
+    TC-10MAIF-R & $-21.66$  & $-35.06$  & $-47.77$  & $-27.22$   & $5.56$  \\
+    TC-3XMAIF-R & $12.40$   & $-59.75$  & $-62.38$  & $-107.96$  & $72.15$ \\
     \bottomrule
   \end{tabular}
   \caption{Episode NPV $G$ for all methods across four configurations.
-    Best-heuristic gap $= G(\pi^{*}) - \max_{\pi \in \{\pi^{\mathrm{rp}},
-    \pi^{\mathrm{cu}}, \pi^{\mathrm{cu}+1}\}} G(\pi)$.}
+    Best-heuristic gap $= G(\pi^*) - \max\{G(\pi^{\mathrm{rp}}),
+    G(\pi^{\mathrm{cu}}), G(\pi^{\mathrm{cu}+1})\}$.}
   \label{tab:gap_results}
 \end{table}
 
 \paragraph{TC-10SF-R.}
 On the isolated single-period configuration all three heuristics
-produce positive NPV and the gap is modest.  Reach-Plan achieves
-$5.60$ against the optimal $9.00$ (gap $3.40$); Catchup-T follows at
-$3.40$.  Catchup-Next-T finishes at $-6.07$: with only one active
-period and one milestone, its one-period lookahead over-spends relative
-to what the single milestone requires, incurring interest costs without
-a compensating return.  The result confirms that the environment
-correctly prices conservative over-allocation as a loss.
+produce positive NPV and the gap is modest. Reach-Plan achieves
+$5.60$ against the optimum $9.00$ (gap $3.40$); Catchup-T follows
+at $3.40$. Catchup-Next-T finishes at $-6.07$: with only one active
+period and one milestone, its one-period lookahead over-spends
+relative to what the milestone requires, incurring interest costs
+without a compensating return. The result confirms that the
+environment correctly prices conservative over-allocation as a net
+loss.
 
 \paragraph{TC-1LMAIF-R.}
-The progress-triggered advance and high recovery rate ($\rho_i = 0.50$)
-create a liquidity trough immediately after the advance is disbursed.
+The progress-triggered advance and high recovery rate ($\rho_i =
+0.50$) create a liquidity trough immediately after the advance fires.
 All three heuristics produce negative NPV while the optimum remains
 marginally positive at $1.49$; the best-heuristic gap is $14.70$.
-The optimal allocation exploits the known efficiency sequence to
-time the milestone certifications so that the advance trigger fires
+The full-information optimum exploits the known efficiency sequence
+to time milestone certifications so that the advance trigger fires
 at the most advantageous moment and the large recovery deductions at
-$j=1$ ($-9.0$) and $j=2$ ($-15.0$) are offset by subsequent cash
-inflows.  The greedy policies, which allocate based on current-period
+$j = 1$ ($-9.0$) and $j = 2$ ($-15.0$) are offset by subsequent
+cash inflows. The greedy policies, allocating from current-period
 signals only, cannot anticipate the trigger timing and over-allocate
-during the low-return period before the advance fires.  The fact that
-both $\pi^{\mathrm{rp}}$ and $\pi^{\mathrm{cu}}$ achieve identical
-NPV ($-13.21$) indicates that the binding constraint here is not the
-delay cap but the payment timing: both rules happen to satisfy the
-tolerance in the same periods, but neither correctly sequences
-allocation to capture the advance inflow early.
+during the low-return period before the advance fires. Both
+$\pi^{\mathrm{rp}}$ and $\pi^{\mathrm{cu}}$ achieve identical NPV
+($-13.21$), indicating that the binding constraint is not the delay
+cap but payment timing: both rules satisfy the tolerance in the same
+periods, but neither correctly sequences allocation to capture the
+advance inflow early.
 
 \paragraph{TC-10MAIF-R.}
 The monotonically diminishing efficiency sequence makes the
-allocation timing problem acute.  Even the full-information optimum
+allocation timing problem acute. Even the full-information optimum
 achieves only $-21.66$: the late-stage efficiency collapse
-($\eta = 0.30,\, 0.20$ in the delay window) makes full project
-recovery uneconomical.  All heuristics perform materially worse.
-Catchup-Next-T ($-27.22$) outperforms both Reach-Plan ($-35.06$)
-and Catchup-T ($-47.77$): its risk-averse lookahead front-loads work
-into the high-efficiency early periods, reducing expenditure in the
-near-inoperable late periods where each unit of allocation buys
-very little progress.  Catchup-T performs worst because its
-minimum-spend rule continues allocating into low-efficiency periods
-to maintain the tolerance floor, accumulating cost without meaningful
-progress gain.  The best-heuristic gap of $5.56$ is the smallest in
-the benchmark suite --- but even here the optimum is materially better
-and the gap arises from information the greedy rules cannot access.
+($\eta_{i,t} = 0.30,\, 0.20$) makes full project recovery
+uneconomical. Catchup-Next-T ($-27.22$) outperforms both Reach-Plan
+($-35.06$) and Catchup-T ($-47.77$): its risk-averse lookahead
+front-loads work into the high-efficiency early periods, reducing
+expenditure in the near-inoperable late periods where each unit of
+allocation yields little progress. Catchup-T performs worst because
+its minimum-spend rule continues allocating into low-efficiency
+periods to maintain the tolerance floor, accumulating cost without
+meaningful progress. The best-heuristic gap of $5.56$ is the
+smallest in the suite, because the challenge here is project-level
+efficiency timing rather than multi-project coordination.
 
 \paragraph{TC-3XMAIF-R.}
-The multi-project configuration produces the starkest result.  The
-full-information optimum achieves $+12.40$: coordinating across three
-projects with known efficiency sequences, the oracle times advance
-disbursements, milestone certifications, and the gap-phase budget
-accumulation to convert the complex portfolio into a profitable
-episode.  Every greedy heuristic produces a loss: Reach-Plan at
-$-59.75$, Catchup-T at $-62.38$, and Catchup-Next-T at $-107.96$.
-The best-heuristic gap is $72.15$, a $21\times$ increase over
-TC-10SF-R.  The sign reversal --- profitable optimum, loss-making
-heuristics --- is the critical observation.  The concurrent advance
-outflows at $t = 6$ and $t = 7$ ($-48$ and $-72$) create a large
-shared deficit that each single-project greedy rule handles
-independently, without accounting for how its own allocation depletes
-the reserve available to the concurrent project.  Catchup-Next-T
-collapses to $-107.96$ because its aggressive pre-emptive spend across
-all three simultaneously-active projects exhausts the budget during the
-overlap phase, leaving insufficient reserve to certify the high-value
-late milestones of Projects 1 and 2.
+The multi-project configuration produces the starkest result. The
+full-information optimum achieves $+12.40$: with known efficiency
+sequences, the oracle times advance disbursements, milestone
+certifications, and the gap-phase budget accumulation to convert
+the complex portfolio into a profitable episode. Every greedy
+heuristic produces a loss --- Reach-Plan at $-59.75$, Catchup-T at
+$-62.38$, Catchup-Next-T at $-107.96$ --- and the best-heuristic
+gap reaches $72.15$, a $21\times$ increase over TC-10SF-R. The sign
+reversal (profitable optimum, loss-making heuristics) is the central
+observation. The concurrent advance outflows at $t = 6$ ($-48$) and
+$t = 7$ ($-72$) create a large shared deficit that each single-project
+greedy rule handles independently, without accounting for how its own
+allocation depletes the reserve available to the concurrent project.
+Catchup-Next-T collapses to $-107.96$ because its aggressive
+pre-emptive spend across all three simultaneously-active projects
+exhausts the budget during the overlap phase, leaving insufficient
+reserve to certify the high-value late milestones of Projects 1 and 2.
 
 % ------------------------------------------------------------
 \subsection{Discussion}
@@ -356,34 +343,43 @@ late milestones of Projects 1 and 2.
 
 Three findings emerge from the benchmark study.
 
-\textbf{The gap is monotonically increasing with structural complexity.}
+\paragraph{The gap is monotonically increasing with structural
+complexity.}
 The best-heuristic gap grows from $3.40$ (TC-10SF-R) to $14.70$
 (TC-1LMAIF-R) to $72.15$ (TC-3XMAIF-R), a $21\times$ increase from
-simplest to most complex.  TC-10MAIF-R is the only exception to the
-monotone trend: its gap of $5.56$ is smaller than TC-1LMAIF-R's
-$14.70$ because the challenge there is project-level efficiency timing,
-not multi-project coordination.  The gap in TC-3XMAIF-R is not
-marginal degradation; it reflects a structural failure of greedy
-allocation under shared-budget coordination requirements that no
-single-project rule can resolve.
+simplest to most complex. TC-10MAIF-R ($5.56$) is the only departure
+from strict monotonicity: its challenge is project-level efficiency
+timing, not multi-project coordination, so the gap is smaller than
+TC-1LMAIF-R's despite higher individual-project difficulty. The gap in
+TC-3XMAIF-R is not marginal degradation; it reflects a structural
+failure of greedy allocation under shared-budget coordination
+requirements that no single-project rule can resolve.
 
-\textbf{No single heuristic dominates.}
-Each heuristic is best on at least one configuration.
-Reach-Plan is best on TC-10SF-R; Catchup-Next-T is best on
-TC-10MAIF-R; Catchup-T is best on TC-3XMAIF-R.  This confirms that
-the optimal policy is adaptive: the correct allocation depends jointly
-on the efficiency trajectory, the milestone payment structure, the
-advance trigger timing, and the number and phasing of concurrent
-projects --- a combination no fixed rule can capture.
+\paragraph{No single heuristic dominates.}
+Each heuristic is best on at least one configuration: Reach-Plan
+on TC-10SF-R, Catchup-Next-T on TC-10MAIF-R, Catchup-T on
+TC-3XMAIF-R. This confirms that the optimal policy is adaptive: the
+correct allocation depends jointly on the efficiency trajectory, the
+milestone payment structure, the advance trigger timing, and the
+phasing of concurrent projects --- a combination no fixed rule can
+capture. The failure mode of each heuristic is traceable to a specific
+structural feature: Reach-Plan over-spends in aggregate; Catchup-T
+under-anticipates the lookahead; Catchup-Next-T over-commits in the
+multi-project overlap phase.
 
-\textbf{A well-defined improvement target exists for learned agents.}
-The full-information optimum $G(\pi^{*})$ provides a concrete upper
-bound.  On TC-3XMAIF-R the swing between the best achievable ($12.40$)
-and the best greedy ($-59.75$) is $72.15$ NPV units, corresponding to
-the difference between a profitable and a deeply loss-making portfolio
-outcome.  This gap is the value of intelligent sequential allocation ---
-and it is precisely the target that a policy trained on the CMDP
-environment of Section~\ref{sec:problem} is positioned to close.
-Training such a policy and evaluating it against a formal Linear
-Programming bound constitute the natural next step, addressed in
-subsequent work.
+\paragraph{A well-defined improvement target exists for learned
+agents.}
+The full-information optimum $G(\pi^*)$ provides a concrete upper
+bound (Proposition~\ref{prop:upper_bound}) for each configuration.
+On TC-3XMAIF-R the swing between the best achievable ($+12.40$) and
+the best greedy ($-59.75$) is $72.15$ NPV units --- the difference
+between a profitable and a deeply loss-making portfolio outcome. The
+environment mechanics are thereby empirically validated: each
+configuration produces the expected pattern of cash-flow events
+(advance disbursements, milestone certifications, recovery deductions,
+retention release, interest accrual) correctly sequenced and
+financially consistent, and the full-information optimum exploits
+structural features that greedy rules are architecturally unable to
+access. This gap is the value of intelligent sequential allocation
+and constitutes the performance target for future RL agents trained
+on the environment of Section~\ref{sec:problem}.
