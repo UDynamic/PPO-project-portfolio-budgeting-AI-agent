@@ -23,20 +23,9 @@ interface to any policy.
 \label{subsec:problem_statement}
 % ------------------------------------------------------------
 
-% cashflow diagram
-\begin{figure}[htbp]
-  \centering
-  \resizebox{\textwidth}{!}{\input{figures/cashflow_timeline.tex}}
-  \caption{Cash-flow timeline for project $i$ under FIDIC contract
-    mechanics. The budget-to-progress conversion is subject to
-    stochastic efficiency $\eta_{i,t}$, the sole source of uncertainty
-    in the model. Net milestone payments $\hat{P}_{i,j}$
-    \eqref{eq:net_payment} are received at certification;
-    the final payment includes the full retention release.}
-  \label{fig:cashflow_timeline}
-\end{figure}
 
-The problem is operational, not strategic. A portfolio of $N$ contracted
+
+The problem is at strategic governance level. A portfolio of $N$ contracted
 projects is fixed: commitments are signed, start dates are scheduled,
 and contracts are parameterised consistently with FIDIC Red, Yellow,
 and Silver Book forms \citep{FIDIC2017}. A portfolio manager exercises
@@ -44,7 +33,7 @@ a single recurring decision at each discrete planning period
 $t \in \{0, 1, \ldots, T\}$: the monetary budget $x_{i,t} \geq 0$
 directed to each active project $i$. The episode horizon is
 \begin{equation}
-  T = \max_{i} \bigl(f_i + \Delta^{\max}_i\bigr),
+  T = \max_{i} \bigl(f_i + \Delta^{\max}_i\bigr) - 1,
   \label{eq:horizon}
 \end{equation}
 where $f_i = s_i + D_i$ is the planned finish and $\Delta^{\max}_i$
@@ -79,6 +68,19 @@ The formulation rests on four structural assumptions.
     and termination settlement are all configurable, accommodating the
     full range of particular conditions encountered in practice.
 \end{enumerate}
+
+% cashflow diagram
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{\input{figures/cashflow_timeline.tex}}
+  \caption{Cash-flow timeline for project $i$ under FIDIC contract
+    mechanics. The budget-to-progress conversion is subject to
+    stochastic efficiency $\eta_{i,t}$, the sole source of uncertainty
+    in the model. Net milestone payments $\hat{P}_{i,j}$
+    \eqref{eq:net_payment} are received at certification;
+    the final payment includes the full retention release.}
+  \label{fig:cashflow_timeline}
+\end{figure}
 
 % ------------------------------------------------------------
 \subsection{Environment Primitives}
@@ -132,15 +134,45 @@ the observation vector and the baseline policies.
 
 \paragraph{Contract price and advance payment.}
 The contract price is $P_i = \mathrm{BAC}_i (1 + \pi_i)$, where $\pi_i$
-is the profit margin. At project start ($t = s_i$) the portfolio
-receives an advance payment:
+is the profit margin. If the contract includes an advance payment
+($\phi_i > 0$), the portfolio receives at project start ($t = s_i$):
 \begin{equation}
   \mathrm{Adv}_i = \phi_i \cdot P_i,
   \label{eq:advance}
 \end{equation}
-where $\phi_i \in [0, 0.3]$ is the advance payment rate.
-The advance is recorded as a synthetic milestone $j = 0$ with progress
-threshold zero, certified automatically at $t = s_i$.
+where $\phi_i \in [0, 0.3]$ is the advance payment rate. When
+$\phi_i = 0$ no advance is disbursed, the recovery mechanism is
+inactive, and $A^{\mathrm{rec}}_{i,j} = 0$ for all milestones.
+The advance is modelled as a synthetic milestone $j = 0$ with progress
+threshold zero, certified automatically at $t = s_i$, so that
+$\hat{P}_{i,0} = \mathrm{Adv}_i$ enters $V_{s_i}$ through
+\eqref{eq:Vt} without special-casing.
+
+Recovery of the advance from subsequent milestone payments follows the
+FIDIC Sub-Clause~14.2 mechanism \citep{FIDIC2017}, governed by two
+project-specific parameters: a commencement threshold
+$\psi^{\mathrm{rec}}_i \in [0,1]$ and a per-payment deduction rate
+$\delta^{\mathrm{rec}}_i \in [0,1]$. Let
+$G^{\mathrm{cum}}_{i,j} = \sum_{k=1}^{j} G_{i,k}$ denote the
+cumulative gross certified payment through milestone $j$. The advance
+recovery deduction at milestone $j$ is:
+\begin{equation}
+  A^{\mathrm{rec}}_{i,j}
+    = \begin{cases}
+        \min\!\bigl(\delta^{\mathrm{rec}}_i \cdot G_{i,j},\;
+          \mathrm{Adv}^{\mathrm{rem}}_{i,j}\bigr)
+          & \text{if } G^{\mathrm{cum}}_{i,j-1} \geq
+            \psi^{\mathrm{rec}}_i \cdot P_i
+            \text{ and } \phi_i > 0, \\
+        0 & \text{otherwise,}
+      \end{cases}
+  \label{eq:advance_rec}
+\end{equation}
+where $\mathrm{Adv}^{\mathrm{rem}}_{i,j}$ is the advance balance
+outstanding before milestone $j$ is certified, ensuring the total
+recovered never exceeds $\mathrm{Adv}_i$. When
+$\psi^{\mathrm{rec}}_i = 0$ (as in both benchmark configurations),
+recovery deductions commence from the very first milestone payment.
 
 \paragraph{Milestone certification and net payments.}
 Milestones $j = 1, \ldots, M_i$ are ordered by progress threshold
@@ -161,13 +193,16 @@ upon certifying milestone $j$ is:
 \end{equation}
 where $G_{i,j} = w_{i,j} P_i$ is the gross payment ($w_{i,j}$ is the
 milestone weight, $\sum_{j=1}^{M_i} w_{i,j} = 1$);
-$A^{\mathrm{rec}}_{i,j} = \min(\rho_i G_{i,j},\;
-\text{advance remaining})$ is the advance recovery deduction;
+$A^{\mathrm{rec}}_{i,j}$ is the advance recovery deduction
+\eqref{eq:advance_rec};
 $R^{\mathrm{held}}_{i,j} = \nu_i G_{i,j}$ is the retention withheld;
 and $R^{\mathrm{rel}}_{i,j}$ equals the total accumulated retention
-only at the final milestone, zero otherwise. The payment identity
+only at the final milestone, zero otherwise. When $\phi_i > 0$, the
+full payment identity
 $\mathrm{Adv}_i + \sum_{j=1}^{M_i} \hat{P}_{i,j} = P_i$ holds
-exactly. Payments are received in the period of certification.
+exactly; when $\phi_i = 0$ it reduces to
+$\sum_{j=1}^{M_i} \hat{P}_{i,j} = P_i$.
+Payments are received in the period of certification.
 
 \paragraph{Period aggregate inflow.}
 The total portfolio inflow at period $t$ is:
@@ -255,7 +290,7 @@ materially behind programme \citep{FIDIC2017}.
 A hard deadline fires unconditionally at:
 \begin{equation}
   \mathbb{1}^{T}_{i,t}
-    = \mathbf{1}\!\bigl[t \geq f_i + \Delta^{\max}_i\bigr],
+  = \mathbf{1}\!\bigl[t = f_i + \Delta^{\max}_i - 1\bigr],
   \label{eq:term_cond2}
 \end{equation}
 triggering immediate termination regardless of the breach counter
