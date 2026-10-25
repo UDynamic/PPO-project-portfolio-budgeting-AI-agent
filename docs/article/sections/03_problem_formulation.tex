@@ -117,24 +117,22 @@ The \emph{planned} cumulative progress follows a normalised S-curve
 parameterised by Beta shape parameters $(a_i, b_i)$
 \citep{Kenley2009}:
 \begin{equation}
-  PV_i(\tau) =
-    \begin{cases}
-      I_{\tau / D_i}(a_i,\, b_i) & \text{if } D_i > 0, \\
-      1                           & \text{if } D_i = 0,
-    \end{cases}
-  \quad \tau \in [0, D_i],
+  PV_i(\tau) = I_{\tau / D_i}(a_i,\, b_i),
+  \quad \tau \in [0, D_i],\quad D_i \geq 1,
   \label{eq:scurve}
 \end{equation}
 where $I_u(\cdot,\cdot)$ is the regularised incomplete Beta function
-and $D_i$ is the planned duration. The degenerate case $D_i = 0$
-arises when a project's entire planned scope is scheduled within a
-single period: planned progress is 1 at $\tau = 0$, so the S-curve
-collapses to a step function and the manager has exactly one period in
-which to commit the full allocation before the hard deadline fires.
+and $D_i \in \mathbb{Z}_{\geq 1}$ is the planned duration in periods.
+The minimum admissible duration is one period ($D_i = 1$), which
+models a project whose entire planned scope must be delivered within a
+single allocation at $t = s_i$: the Beta CDF maps $\tau = 0
+\mapsto 0$ and $\tau = 1 \mapsto 1$, so the manager has exactly one
+period to commit the full allocation before the hard deadline fires at
+$t = s_i + 1$.
 $PV_i(\tau_i)$ is the planned progress at the current project-time;
 $PV_i(\tau_i + 1)$ and $PV_i(\tau_i + 2)$ serve as one- and
 two-period lookaheads used in the observation vector and the baseline
-policies; for $D_i = 0$ both lookaheads return 1.
+policies.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsubsection{FIDIC Cash-Flow Mechanics}
@@ -881,12 +879,12 @@ $\psi_{i,j}$, $\tau^{\mathrm{ms}}_{i,j}$, $\delta^{\max}_i$,
 $\Delta^{\max}_i$, $\theta_i$), and portfolio-level scalars
 ($\kappa$, $\gamma$, $r$).
 
-The second class covers \emph{structural parameters} not listed in
-Table~\ref{tab:params} because they are implementation quantities
-rather than mathematical primitives: the portfolio size $N$
+The second class covers \emph{structural parameters} consolidated in
+the lower two groups of Table~\ref{tab:params}: the portfolio size $N$
 (\code{n\_projects}), the per-project milestone count $M_i$
 (\code{n\_milestones}), and the stochastic efficiency sequence
-$\{\eta_{i,t}\}$ (\code{efficiency}). Every entry in both classes
+$\{\eta_{i,t}\}$ (\code{efficiency}), the sole stochastic primitive.
+Every entry in both classes
 is specified as a distribution family together with up to four
 parameters, supporting \code{fixed}, \code{uniform}, \code{beta},
 \code{triangular}, \code{lognormal}, \code{truncated\_normal}, and

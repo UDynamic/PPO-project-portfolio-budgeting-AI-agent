@@ -111,7 +111,7 @@ episode:
   - code: discount
     symbol: "\\gamma"
     name: discount factor
-    domain: "\\gamma \\in [0,1]"
+    domain: "\\gamma \\in (0,1]"
     description: Per-period discount factor applied to net cash-flow rewards.
     source: config
 
@@ -137,7 +137,7 @@ episode:
   - code: initial_budget
     symbol: "B_0"
     name: initial budget
-    domain: "B_0 \\in \\mathbb{R}_{\\geq 0}"
+    domain: "B_0 \\in \\mathbb{R}_{>0}"
     description: >
       Portfolio cash reserve at episode start, before any advance payments.
       B_0 = kappa * sum_i BAC_i.  Derived at reset().
@@ -220,7 +220,7 @@ project_profile:
   - code: profit_percent
     symbol: "\\pi_i"
     name: profit percentage
-    domain: "\\pi_i \\in [0,1]"
+    domain: "\\pi_i \\in {\\geq 0}"
     description: Mark-up rate; contract price = BAC_i * (1 + pi_i).
     source: project_profile
 

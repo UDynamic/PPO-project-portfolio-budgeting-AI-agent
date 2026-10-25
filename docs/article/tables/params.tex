@@ -5,12 +5,12 @@
 \renewcommand{\arraystretch}{1.1}
 \begin{longtable}{p{2.8cm} p{1.8cm} p{1.1cm} p{7.3cm}}
 
-\caption{Parameters fixed at commitment, grouped by function.
-  Mathematical parameters (Schedule, Contract, Portfolio, Stochastic
-  Primitive) correspond to the formulation in
-  Section~\ref{subsec:environment}. Structural parameters govern
-  portfolio and milestone dimensionality and are resolved at each
-  \code{reset()} call.}
+  \caption{Parameters fixed at commitment, grouped by function.
+  Mathematical parameters (Schedule, Contract, Portfolio) correspond
+  to the formulation in Section~\ref{subsec:environment}.
+  The Stochastic Primitive group contains the sole source of
+  uncertainty. The Structural group governs portfolio and milestone
+  dimensionality; all three are resolved at each \code{reset()} call.}
 \label{tab:params} \\
 
 \toprule
@@ -49,10 +49,11 @@ Planned start
     (\code{planned\_start}). \\
 \rowcolor{RowAlt}
 Planned duration
-  & $D_i$ & $\mathbb{Z}_{\geq 0}$
+  & $D_i$ & $\mathbb{Z}_{\geq 1}$
   & Number of active periods planned for project $i$
-    (\code{planned\_duration}); $D_i=0$ collapses the S-curve
-    to a step function \eqref{eq:scurve}. \\
+    (\code{planned\_duration}); the minimum value $D_i=1$
+    models a single-period project whose full allocation
+    must be committed at $t=s_i$ \eqref{eq:scurve}. \\
 Planned finish
   & $f_i$ & $\mathbb{Z}_{\geq 0}$
   & $f_i = s_i + D_i$; derived at reset; defines the hard
@@ -62,16 +63,6 @@ S-curve shape
   & $a_i,\; b_i$ & $\mathbb{R}^+$
   & Beta CDF shape parameters governing $PV_i(\tau)$
     \eqref{eq:scurve} (\code{scurve\_a}, \code{scurve\_b}). \\
-Milestone progress threshold
-  & $\psi_{i,j}$ & $(0,1]$
-  & Minimum $EV_{i,t}$ required to certify milestone $j$
-    (\code{progress\_threshold}). \\
-\rowcolor{RowAlt}
-Milestone timestep threshold
-  & $\tau^{\mathrm{ms}}_{i,j}$ & $\mathbb{Z}_{\geq 0}$
-  & Earliest project-time for milestone $j$ certification;
-    episode threshold $= s_i + \tau^{\mathrm{ms}}_{i,j}$
-    \citep{FIDIC2017} (\code{timestep\_threshold}). \\
 Progress delay cap
   & $\delta^{\max}_i$ & $[0,1]$
   & Maximum admissible lag before breach flag
@@ -117,17 +108,31 @@ Advance recovery rate
   & Per-milestone deduction rate applied to recover
     $\mathrm{Adv}_i$ \eqref{eq:advance_rec}
     (\code{advance\_recovery}). \\
-Retention rate
-  & $\nu_i$ & $[0,0.1]$
-  & $R^{\mathrm{held}}_{i,j} = \nu_i G_{i,j}$; released in
-    full at $j = M_i$ (\code{retention\_rate}). \\
-\rowcolor{RowAlt}
-Milestone weight
-  & $w_{i,j}$ & $[0,1]$
-  & Fraction of $P_i$ paid at milestone $j$;
-    $\sum_j w_{i,j} = 1$ (\code{payment\_weight}). \\
-
-% ── Portfolio ─────────────────────────────────────────────────────────────────
+    Retention rate
+    & $\nu_i$ & $[0,0.1]$
+    & $R^{\mathrm{held}}_{i,j} = \nu_i G_{i,j}$; released in
+      full at $j = M_i$ (\code{retention\_rate}). \\
+  
+  % ── Milestone ─────────────────────────────────────────────────────────────────
+  \rowcolor{headbg}
+  \multicolumn{4}{l}{\textcolor{headfg}{\textit{Milestone}}} \\
+  
+  Milestone weight
+    & $w_{i,j}$ & $[0,1]$
+    & Fraction of $P_i$ paid at milestone $j$;
+      $\sum_j w_{i,j} = 1$ (\code{payment\_weight}). \\
+  \rowcolor{RowAlt}
+  Milestone progress threshold
+    & $\psi_{i,j}$ & $(0,1]$
+    & Minimum $EV_{i,t}$ required to certify milestone $j$;
+      $\psi_{i,M_i} = 1$ (\code{progress\_threshold}). \\
+  Milestone timestep threshold
+    & $\tau^{\mathrm{ms}}_{i,j}$ & $\mathbb{Z}_{\geq 0}$
+    & Earliest project-time for milestone $j$ certification;
+      episode threshold $= s_i + \tau^{\mathrm{ms}}_{i,j}$
+      \citep{FIDIC2017} (\code{timestep\_threshold}). \\
+  
+  % ── Portfolio ─────────────────────────────────────────────────────────────────
 \rowcolor{headbg}
 \multicolumn{4}{l}{\textcolor{headfg}{\textit{Portfolio}}} \\
 
@@ -165,9 +170,22 @@ Work efficiency
     realised after $x_{i,t}$ is committed
     (\code{efficiency}). \\
 
+% ── Stochastic Primitive ──────────────────────────────────────────────────────
+\rowcolor{headbg}
+\multicolumn{4}{l}{\textcolor{headfg}{\textit{Stochastic Primitive}}} \\
+
+\rowcolor{RowAlt}
+Work efficiency
+  & $\eta_{i,t}$ & ${\geq}0.01$
+  & Sole stochastic primitive; drawn per period per active project
+    from a configurable distribution; \code{custom\_ordinal}
+    cycles deterministically for reproducible benchmarking;
+    realised after $x_{i,t}$ is committed
+    (\code{efficiency}). \\
+
 % ── Structural ────────────────────────────────────────────────────────────────
 \rowcolor{headbg}
-\multicolumn{4}{l}{\textcolor{headfg}{\textit{Structural (implementation)}}} \\
+\multicolumn{4}{l}{\textcolor{headfg}{\textit{Structural}}} \\
 
 Portfolio size
   & $N$ & $\mathbb{Z}_{>0}$
