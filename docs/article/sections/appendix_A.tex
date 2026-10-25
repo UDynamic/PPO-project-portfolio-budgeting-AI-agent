@@ -5,35 +5,19 @@
 \begin{figure}[H]
   \centering
   \begin{tikzpicture}
-  
-  % ────────────────────────────────────────────────────────────
-  %  Row y-positions  (increased vertical spacing)
-  %   id1  :  y =   0
-  %   id2  :  y =  -3.2
-  %   sc1  :  y =  -6.4
-  %   sc2  :  y =  -9.6
-  %   sc3  :  y = -12.8
-  %   sc4  :  y = -16.0
-  %   inc1 :  y = -19.5
-  %
-  %  Columns
-  %   phase labels : x = -4.5
-  %   main flow    : x =  1
-  %   excl boxes   : x =  9.0
-  % ────────────────────────────────────────────────────────────
 
   % ═══════════════════════════════════════════════════════════
   %  IDENTIFICATION
   % ═══════════════════════════════════════════════════════════
-  \node[phase, minimum height=5.0cm] (ph-id) at (-4.5, -1.6)
+  \node[phase, minimum height=5.0cm] (ph-id) at (-3.8, -1.6)
     {\rotatebox{90}{Identification}};
 
-  \node[box] (id1) at (1, 0)
+  \node[box, text width=5.8cm] (id1) at (0.5, 0)
     {Records identified from:\\
      \textbf{Databases} (\textit{n}\,=\,172)\\[1pt]
      \footnotesize Google Scholar, Semantic Scholar, Scopus};
 
-  \node[box] (id2) at (1, -3.2)
+  \node[box, text width=5.8cm] (id2) at (0.5, -3.2)
     {Additional records via citation-network traversal:\\
      \textbf{Backward \& forward snowballing} (\textit{n}\,=\,21)\\[1pt]
      \footnotesize Seminal works not surfaced by keyword search};
@@ -43,16 +27,16 @@
   % ═══════════════════════════════════════════════════════════
   %  SCREENING
   % ═══════════════════════════════════════════════════════════
-  \node[phase, minimum height=12.0cm] (ph-sc) at (-4.5, -11.2)
+  \node[phase, minimum height=12.0cm] (ph-sc) at (-3.8, -11.2)
     {\rotatebox{90}{Screening}};
 
-  \node[box] (sc1) at (1, -6.4)
+  \node[box, text width=5.8cm] (sc1) at (0.5, -6.4)
     {Records after duplicate removal\\
      (\textit{n}\,=\,154)\\[1pt]
      \footnotesize SHA-256 content-hash deduplication
      (\colorbox{inlineBg}{\texttt{\color{black}1\_readability\_test.py}})};
 
-  \node[excl] (exc1) at (9.0, -5.8)
+  \node[excl, text width=4.8cm] (exc1) at (7.5, -5.8)
     {Records removed before screening:\\
      Duplicate files (\textit{n}\,=\,5)\\
      Full-text not accessible (\textit{n}\,=\,22)};
@@ -60,12 +44,12 @@
   \draw[arr]  (id2.south) -- (sc1.north);
   \draw[arr2] (sc1.east)  -- (exc1.west);
 
-  \node[box] (sc2) at (1, -9.6)
+  \node[box, text width=5.8cm] (sc2) at (0.5, -9.6)
     {\textbf{Stage 1} --- Readability triage\\
      (\textit{n}\,=\,154) records assessed\\[1pt]
      \footnotesize Extraction yield $\cdot$ lexical quality $\cdot$ embeddability};
 
-  \node[excl] (exc2) at (9.0, -9.6)
+  \node[excl, text width=4.8cm] (exc2) at (7.5, -9.6)
     {Records excluded --- Stage 1 (\textit{n}\,=\,3):\\
      Low text-extraction yield\\
      Failed lexical quality check\\
@@ -74,12 +58,12 @@
   \draw[arr]  (sc1.south) -- (sc2.north);
   \draw[arr2] (sc2.east)  -- (exc2.west);
 
-  \node[box] (sc3) at (1, -12.8)
+  \node[box, text width=5.8cm] (sc3) at (0.5, -12.8)
     {\textbf{Stage 2} --- Relevance filtering\\
      (\textit{n}\,=\,151) records scored\\[1pt]
      \footnotesize Semantic similarity $+$ keyword score $\rightarrow r \in [0,1]$};
 
-  \node[excl] (exc3) at (9.0, -12.8)
+  \node[excl, text width=4.8cm] (exc3) at (7.5, -12.8)
     {Records excluded --- Stage 2 (\textit{n}\,=\,79):\\
      Combined relevance score $r < 0.30$\\
      Routed to \colorbox{inlineBg}{\texttt{\color{black}irrelevant/}}};
@@ -87,12 +71,12 @@
   \draw[arr]  (sc2.south) -- (sc3.north);
   \draw[arr2] (sc3.east)  -- (exc3.west);
 
-  \node[box] (sc4) at (1, -16.0)
+  \node[box, text width=5.8cm] (sc4) at (0.5, -16.0)
     {\textbf{Stage 3} --- Structured extraction\\
      (\textit{n}\,=\,76) full texts assessed\\[1pt]
      \footnotesize JSON schema: metadata $\cdot$ calibration $\cdot$ thesis-relevance flags};
 
-  \node[excl] (exc4) at (9.0, -17.2)
+  \node[excl, text width=4.8cm] (exc4) at (7.5, -17.2)
     {Records excluded --- Stage 3 (\textit{n}\,=\,0):\\
      All full texts passed domain review\\
      and structured extraction\\
@@ -104,10 +88,10 @@
   % ═══════════════════════════════════════════════════════════
   %  INCLUDED
   % ═══════════════════════════════════════════════════════════
-  \node[phase, minimum height=3.0cm] (ph-inc) at (-4.5, -19.5)
+  \node[phase, minimum height=3.0cm] (ph-inc) at (-3.8, -19.5)
     {\rotatebox{90}{Included}};
 
-  \node[incl] (inc1) at (1, -19.5)
+  \node[incl, text width=5.8cm] (inc1) at (0.5, -19.5)
     {Studies included in review
      (\textit{n}\,=\,76)\\[2pt]
      \footnotesize \textit{Highly relevant}: (\textit{n}\,=\,4)
