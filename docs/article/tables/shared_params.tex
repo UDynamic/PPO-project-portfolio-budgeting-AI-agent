@@ -1,27 +1,25 @@
-% tables/shared_params.tex
+% tables/global_params.tex
 % tabular only — no table environment, no caption, no label.
 % Include in section file as:
-%   \input{tables/shared_params.tex}
-\small
-\renewcommand{\arraystretch}{1.3}
-\setlength{\tabcolsep}{6pt}
+%   \input{tables/global_params.tex}
+\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{3pt}
 \rowcolors{2}{RowAlt}{white}
-\begin{tabular}{llr}
+\begin{tabularx}{\textwidth}{llX@{\hspace{6pt}}llX}
   \toprule
   \rowcolor{headbg}
-  \color{headfg}\textbf{Parameter} &
-  \color{headfg}\textbf{Symbol} &
-  \color{headfg}\textbf{Value} \\
+  \multicolumn{1}{c}{\color{headfg}\textbf{Parameter}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Symbol}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Value}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Parameter}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Symbol}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Value}} \\
   \midrule
-  Retention rate          & $\nu_i$           & 0.05 \\
-  Progress delay cap      & $\delta^{\max}_i$ & 0.15 \\
-  Finish delay cap        & $\Delta^{\max}_i$ & 2 periods \\
-  Termination tolerance   & $\theta_i$        & 2 breach-periods \\
-  Annual interest rate    & $r$               & 0.12 \\
-  Per-period deficit rate & $r/12$            & 0.01 \\
-  Budget tightness        & $\kappa$          & 3.0 \\
-  Profit margin           & $\pi_i$           & 0.20 \\
-  Discount factor         & $\gamma$          & 0.95 \\
-  S-curve shape           & $(a_i,\, b_i)$   & $(1.5,\ 3.0)$ \\
+  Retention rate          & $\nu_i$           & 0.05         & Budget tightness        & $\kappa$          & 3.0 \\
+  Progress delay cap      & $\delta^{\max}_i$ & 0.15         & Profit margin           & $\pi_i$           & 0.20 \\
+  Finish delay cap        & $\Delta^{\max}_i$ & 2 periods    & Discount factor         & $\gamma$          & 0.95 \\
+  Termination tolerance   & $\theta_i$        & 2 breach-per.& S-curve shape           & $(a_i,\, b_i)$   & $(1.5,\ 3.0)$ \\
+  Annual interest rate    & $r$               & 0.12         & Per-period deficit rate & $r/12$            & 0.01\\
   \bottomrule
-\end{tabular}
+\end{tabularx}

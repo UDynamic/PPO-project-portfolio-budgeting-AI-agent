@@ -14,25 +14,30 @@ Table~\ref{tab:gym_checks} summarises the ten sections; all 51 checks pass.
              \code{PortfolioBudgetingEnv}, config \code{TC-3XMAIF-R},
              generated 2026-10-20.}
     \label{tab:gym_checks}
-    \small
-    \begin{tabular}{clr}
+    \scriptsize
+    \renewcommand{\arraystretch}{1.0}
+    \setlength{\tabcolsep}{3pt}
+    \rowcolors{2}{RowAlt}{white}
+    \begin{tabularx}{\textwidth}{clX@{\hspace{6pt}}clX}
         \toprule
-        \textbf{\S} & \textbf{Section} & \textbf{Passed} \\
+        \rowcolor{headbg}
+        \multicolumn{1}{c}{\color{headfg}\textbf{\S}} &
+        \multicolumn{1}{c}{\color{headfg}\textbf{Section}} &
+        \multicolumn{1}{c}{\color{headfg}\textbf{Passed}} &
+        \multicolumn{1}{c}{\color{headfg}\textbf{\S}} &
+        \multicolumn{1}{c}{\color{headfg}\textbf{Section}} &
+        \multicolumn{1}{c}{\color{headfg}\textbf{Passed}} \\
         \midrule
-        1 & Import \& Instantiation      & 8 / 8  \\
-        2 & Space Declarations           & 7 / 7  \\
-        3 & \code{reset()} Contract    & 13 / 13 \\
-        4 & \code{step()} Contract     & 10 / 10 \\
-        5 & Determinism                  & 2 / 2  \\
-        6 & Random Policy Rollout        & 6 / 6  \\
-        7 & Zero-Action Rollout          & 1 / 1  \\
-        8 & Greedy Rollout               & 1 / 1  \\
-        9 & Multi-Episode Stability      & 2 / 2  \\
-        10 & \code{gymnasium.utils.env\_checker} & 1 / 1 \\
+        1  & Import \& Instantiation             & 8 / 8   & 6  & Random Policy Rollout               & 6 / 6   \\
+        2  & Space Declarations                  & 7 / 7   & 7  & Zero-Action Rollout                 & 1 / 1   \\
+        3  & \code{reset()} Contract             & 13 / 13 & 8  & Greedy Rollout                      & 1 / 1   \\
+        4  & \code{step()} Contract              & 10 / 10 & 9  & Multi-Episode Stability             & 2 / 2   \\
+        5  & Determinism                         & 2 / 2   & 10 & \code{gymnasium.utils.env\_checker} & 1 / 1   \\
         \midrule
-        \multicolumn{2}{l}{\textbf{Total}} & \textbf{51 / 51} \\
+        \rowcolor{white}
+        \multicolumn{4}{l}{\textbf{Total}} & \multicolumn{2}{r}{\textbf{51 / 51}} \\
         \bottomrule
-    \end{tabular}
+    \end{tabularx}
 \end{table}
 
 \begin{figure}[H]

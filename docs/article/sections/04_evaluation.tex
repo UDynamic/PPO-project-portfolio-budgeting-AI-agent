@@ -22,7 +22,7 @@ in Table~\ref{tab:shared_params}, fixed across every episode and
 every solver so that observed performance differences are attributable
 solely to configuration structure and solver policy.
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \input{tables/shared_params.tex}
   \caption{Parameters shared across all benchmark configurations.
@@ -56,7 +56,7 @@ a fixed custom-ordinal efficiency sequence ($\eta_{i,t}$ set to a
 deterministic per-project list) under seed $= 0$, ensuring exact
 reproducibility.
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \input{tables/configs.tex}
   \caption{Benchmark configuration summary. $N$: number of projects;
@@ -199,7 +199,7 @@ configurations, ordered by increasing structural complexity.
 Table~\ref{tab:gap_results} presents the numerical values and the
 best-heuristic gap $Z^* - \max_\pi G(\pi)$.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/gap_plot.png}
   \caption{Cumulative episode NPV $G$ for three deterministic greedy
@@ -210,7 +210,7 @@ best-heuristic gap $Z^* - \max_\pi G(\pi)$.
   \label{fig:gap_plot}
 \end{figure}
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \input{tables/gap_results.tex}
   \caption{Episode NPV $G$ for all methods across four configurations.
