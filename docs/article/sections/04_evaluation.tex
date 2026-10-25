@@ -71,87 +71,91 @@ reproducibility.
 One project, one non-advance milestone, no advance payment, planned
 duration $D_i = 0$. The project has a single planned action at
 $\tau_i = 0$ and the hard deadline falls at episode period 2.
-Efficiency sequence: $[0.91,\, 1.17,\, 0.83]$. Contract price
-$P_i = 120$; the single milestone carries weight $w = 1.0$, gross
-payment $= 120$; retention of $\nu_i \times 120 = 6$ is withheld and
-immediately released at the same (final) milestone, giving net payment
-$= 120$ with no advance deductions. This configuration provides the
-cleanest possible baseline, testing the fundamental progress-to-cash-flow
-loop with no confounding payment mechanics.
+Contract price $P_i = 120$; the single milestone carries weight
+$w = 1.0$. Table~\ref{tab:tc10sf} details the milestone payment
+trace for this configuration.
+
+\begin{table}[H]
+  \centering
+  \input{tables/tc_10sf_r.tex}
+  \caption{TC-10SF-R: milestone payment trace. Retention is withheld
+    and immediately released at the final milestone, giving net
+    payment $= 120$ with no advance deductions.}
+  \label{tab:tc10sf}
+\end{table}
 
 \paragraph{TC-1LMAIF-R --- Delayed start and progress-triggered advance.}
 One project, planned start $s_i = 2$, planned duration $D_i = 3$
 (four active periods: $\tau_i \in \{0,1,2,3\}$), three non-advance
 milestones, advance rate $\phi_i = 0.20$ with trigger at
-$\psi^{\mathrm{trig}}_i = 0.80$. The trigger means the advance of
+$\psi^{\mathrm{trig}}_i = 0.80$. The advance of
 $\phi_i \times P_i = 24$ is disbursed only once cumulative progress
-$EV_{i,t} \geq 0.80$ is reached --- not at project start. Advance
-recovery rate $\rho_i = 0.50$ is the highest in the benchmark suite.
-
-With milestone gross payments of $18$, $42$, and $60$ (weights
-$0.15$, $0.35$, $0.50$), the recovery trace is:
-$j=1$: $\min(0.50 \times 18,\, 24) = 9.0$ recovered, advance
-remaining $= 15.0$;
-$j=2$: $\min(0.50 \times 42,\, 15.0) = 15.0$ recovered, advance
-fully cleared;
-$j=3$: no further recovery.
-Retention deductions ($0.9$, $2.1$, $3.0$) accumulate across the
-three milestones and are released in full ($6.0$) at $j=3$.
-Net payments after all deductions: $8.1$, $24.9$, and $63.0$.
+$EV_{i,t} \geq 0.80$ is reached. Advance recovery rate
+$\rho_i = 0.50$ is the highest in the benchmark suite.
 Efficiency sequence: $[0.91,\, 1.17,\, 0.83,\, 0.91,\, 1.17,\, 0.83]$.
-This configuration validates: (i) delayed project start and its
-interaction with the episode clock; (ii) progress-triggered advance
-disbursement; (iii) the liquidity trough created by high recovery
-deductions after the advance fires; and (iv) the deduction ordering
-invariant that advance recovery precedes retention on every gross
-payment.
+Table~\ref{tab:tc1lmaif} shows the full payment trace.
+
+\begin{table}[H]
+  \centering
+  \input{tables/tc_1lmaif_r.tex}
+  \caption{TC-1LMAIF-R: milestone payment trace including advance
+    recovery and retention deductions. Retention is released in full
+    ($6.0$) at milestone $j=3$.}
+  \label{tab:tc1lmaif}
+\end{table}
 
 \paragraph{TC-10MAIF-R --- Diminishing efficiency and termination risk.}
 One project, planned start $s_i = 0$, planned duration $D_i = 3$,
 three milestones, advance rate $\phi_i = 0.20$ disbursed at project
-start, advance recovery rate $\rho_i = 0.20$. The efficiency
-sequence is monotonically decreasing: $[0.95,\, 0.91,\, 0.55,\,
-0.40,\, 0.30,\, 0.20]$. Early periods are productive; late periods
-are near-inoperable. The advance of $24$ is disbursed at $t = 0$.
+start ($\psi^{\mathrm{trig}}_i = 0.00$), advance recovery rate
+$\rho_i = 0.20$. The efficiency sequence is monotonically decreasing:
+$[0.95,\, 0.91,\, 0.55,\, 0.40,\, 0.30,\, 0.20]$. The advance of
+$24$ is disbursed at $t = 0$. Table~\ref{tab:tc10maif} details the
+milestone payment trace; this configuration stress-tests the
+termination mechanic as the sharp efficiency drop makes it
+progressively more expensive to keep
+$\delta_{i,t} \leq \delta^{\max}_i = 0.15$.
 
-Milestone payment trace (gross payments $18$, $42$, $60$):
-$j=1$: advance recovered $= \min(0.20 \times 18,\, 24) = 3.6$,
-advance remaining $= 20.4$, retention $= 0.9$, net $= 13.5$;
-$j=2$: recovered $= \min(0.20 \times 42,\, 20.4) = 8.4$,
-advance remaining $= 12.0$, retention $= 2.1$, net $= 31.5$;
-$j=3$: recovered $= 12.0$ (advance fully cleared), retention $= 3.0$,
-released $= 6.0$, net $= 51.0$.
-This configuration stress-tests the termination mechanic: the sharp
-efficiency drop beyond $\tau_i = 1$ makes it progressively more
-expensive to keep $\delta_{i,t} \leq \delta^{\max}_i = 0.15$, and
-any policy that does not front-load work risks activating the
-cure-period counter in later periods.
+\begin{table}[H]
+  \centering
+  \input{tables/tc_10maif_r.tex}
+  \caption{TC-10MAIF-R: milestone payment trace. Advance of $24$
+    disbursed at $t=0$; recovery rate $\rho_i = 0.20$.}
+  \label{tab:tc10maif}
+\end{table}
 
 \paragraph{TC-3XMAIF-R --- Multi-project with gap and overlap.}
 Three projects with heterogeneous scale
 ($\mathrm{BAC}_i = [100,\, 200,\, 300]$, prices $[120,\, 240,\, 360]$)
 and staggered starts ($s_i = [0,\, 6,\, 7]$). Each project has
 planned duration $D_i = 3$, three milestones, and advance rate
-$\phi_i = 0.20$ disbursed at project start. Advances at episode
-periods $0$, $6$, and $7$ are $24$, $48$, and $72$ respectively,
-creating three distinct outflow spikes the policy must navigate
-against a shared budget.
+$\phi_i = 0.20$ disbursed at project start. The episode has two
+structurally distinct phases: a \emph{gap phase} ($t = 4,\,5$) where
+no allocations are required and the budget accumulates, and an
+\emph{overlap phase} ($t = 7,\,8,\,9$) where Projects 1 and 2
+compete simultaneously for the shared reserve $B_t$.
+Table~\ref{tab:tc3xmaif_projects} summarises the per-project
+parameters and efficiency sequences, and
+Table~\ref{tab:tc3xmaif_advances} details the advance outflow
+schedule.
 
-The episode has two structurally distinct phases. \emph{Gap phase}
-($t = 4,\, 5$): Project 0 completes at $t = 3$; Projects 1 and 2
-have not yet started. No allocations are required and the budget
-accumulates. \emph{Overlap phase} ($t = 7,\, 8,\, 9$): Projects 1
-and 2 are simultaneously active, creating competing allocation demands
-against the shared reserve $B_t$. The concurrent advance outflows at
-$t = 6$ ($-48$) and $t = 7$ ($-72$) produce the largest single-period
-deficit in the benchmark suite.
+\begin{table}[H]
+  \centering
+  \input{tables/tc_3xmaif_r_projects.tex}
+  \caption{TC-3XMAIF-R: per-project parameters and efficiency
+    sequences. None of the sequences is monotonically degrading;
+    the challenge is purely coordination and cash-flow timing.}
+  \label{tab:tc3xmaif_projects}
+\end{table}
 
-Per-project efficiency sequences:
-Project 0: $[0.91,\, 1.17,\, 0.83,\, 0.91,\, 1.17,\, 0.83]$;
-Project 1: $[1.09,\, 0.84,\, 1.18,\, 1.09,\, 0.84,\, 1.18]$;
-Project 2: $[0.97,\, 1.13,\, 0.86,\, 0.97,\, 1.13,\, 0.86]$.
-None is monotonically degrading; the challenge here is purely
-coordination and cash-flow timing, not individual project difficulty.
+\begin{table}[H]
+  \centering
+  \input{tables/tc_3xmaif_r_advances.tex}
+  \caption{TC-3XMAIF-R: advance outflow schedule. The concurrent
+    outflows at $t=6$ and $t=7$ produce the largest single-period
+    deficit in the benchmark suite.}
+  \label{tab:tc3xmaif_advances}
+\end{table}
 
 % ------------------------------------------------------------
 \subsection{Solvers}
@@ -188,6 +192,13 @@ All four methods are evaluated under seed $= 0$ with the fixed
 custom-ordinal efficiency sequences specified above, ensuring exact
 reproducibility across runs and solvers.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/01c_cost_baseline_E.png}
+  \caption{Cost baseline for the three-project configuration.}
+  \label{fig:cost_baseline_three}
+\end{figure}
+
 % ------------------------------------------------------------
 \subsection{Results}
 \label{subsec:results}
@@ -196,8 +207,6 @@ reproducibility across runs and solvers.
 Figure~\ref{fig:gap_plot} reports cumulative episode NPV $G =
 \sum_{t=0}^{T} \gamma^t \Delta B_t$ for each method across the four
 configurations, ordered by increasing structural complexity.
-Table~\ref{tab:gap_results} presents the numerical values and the
-best-heuristic gap $Z^* - \max_\pi G(\pi)$.
 
 \begin{figure}[H]
   \centering
@@ -209,15 +218,6 @@ best-heuristic gap $Z^* - \max_\pi G(\pi)$.
     systematically as structural complexity grows.}
   \label{fig:gap_plot}
 \end{figure}
-
-\begin{table}[H]
-  \centering
-  \input{tables/gap_results.tex}
-  \caption{Episode NPV $G$ for all methods across four configurations.
-    Best-heuristic gap $= G(\pi^*) - \max\{G(\pi^{\mathrm{rp}}),
-    G(\pi^{\mathrm{cu}}), G(\pi^{\mathrm{cu}+1})\}$.}
-  \label{tab:gap_results}
-\end{table}
 
 \paragraph{TC-10SF-R.}
 On the isolated single-period configuration all three heuristics

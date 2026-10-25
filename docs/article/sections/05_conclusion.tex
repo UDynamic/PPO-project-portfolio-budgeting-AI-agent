@@ -1,8 +1,3 @@
-% ============================================================
-\section{Conclusion}
-\label{sec:conclusion}
-% ============================================================
-
 % ------------------------------------------------------------
 \subsection{Summary of Contributions}
 \label{subsec:summary}
@@ -16,7 +11,7 @@ uncertainty.
 
 Three contributions are delivered.
 
-\textbf{C1 — Gymnasium-compatible MDP environment.}
+\textbf{C1 --- Gymnasium-compatible MDP environment.}
 \texttt{PortfolioBudgetingEnv} is a fully parameterisable, open-source
 Gymnasium environment encoding the complete FIDIC cash-flow cycle:
 advance payment and progressive recovery, progress-weighted milestone
@@ -34,7 +29,7 @@ checks in 10 test sections. A SQLite audit ledger records every
 allocation, cash-flow event, breach flag, and EVM index at each step,
 making policy behaviour fully interpretable.
 
-\textbf{C2 — Formal MDP specification.}
+\textbf{C2 --- Formal MDP specification.}
 The portfolio budget allocation problem is formalised as a
 finite-horizon MDP $\mathcal{M} = (\mathcal{S}, \mathcal{A},
 \mathcal{P}, R, \gamma, T)$ with state dimension $9N + 1$, a
@@ -48,7 +43,7 @@ without auxiliary penalty terms. The Markov property holds exactly:
 the full portfolio state $S_t$ is a sufficient statistic for the
 observable history.
 
-\textbf{C3 — Benchmark evaluation and quantified optimality gap.}
+\textbf{C3 --- Benchmark evaluation and quantified optimality gap.}
 Three deterministic greedy heuristics (Reach-Plan, Catchup-T,
 Catchup-Next-T) are evaluated against a manually computed
 full-information optimum across four benchmark configurations of
@@ -147,7 +142,7 @@ is a natural starting point given its stability in continuous action
 spaces --- on a domain-randomised distribution of configurations and
 evaluate it against the benchmark configurations of
 Section~\ref{sec:evaluation}. The full-information gap of
-Table~\ref{tab:gap_results} provides the evaluation target; a trained
+Figure~\ref{fig:gap_plot} provides the evaluation target; a trained
 policy that closes a substantial fraction of the TC-3XMAIF-R gap
 ($72.15$ units) would constitute a meaningful improvement over all
 greedy baselines.

@@ -277,7 +277,7 @@ Denominators that are effectively zero default to one.
 Termination is an endogenous environment mechanic, not an agent
 action. Two conditions are evaluated independently each period.
 
-\paragraph{Condition 1 — Progress delay breach.}
+\paragraph{Condition 1 --- Progress delay breach.}
 The signed progress lag at period $t$ is:
 \begin{equation}
   \delta_{i,t} = PV_i(\tau_i) - EV_{i,t}.
@@ -293,7 +293,7 @@ where $\delta^{\max}_i \in [0,1]$ is fixed at commitment, grounded in
 the FIDIC engineer's authority to issue a notice when progress falls
 materially behind programme \citep{FIDIC2017}.
 
-\paragraph{Condition 2 — Hard deadline.}
+\paragraph{Condition 2 --- Hard deadline.}
 A hard deadline fires unconditionally at:
 \begin{equation}
   \mathbb{1}^{T}_{i,t}
@@ -597,7 +597,7 @@ Algorithm~\ref{alg:kernel}.
 \begin{algorithmic}[1]
 
 \Statex \textcolor{headfg}{\colorbox{headbg}{\textbf{\small
-  Phase 1 — Early (pre-allocation)}}}
+  Phase 1 --- Early (pre-allocation)}}}
 
 \For{each project $i \in \{0,\ldots,N-1\}$}
   \If{$\sigma_{i,t} = \texttt{active}$ \textbf{and}
@@ -624,7 +624,7 @@ Algorithm~\ref{alg:kernel}.
 
 \Statex
 \Statex \textcolor{headfg}{\colorbox{headbg}{\textbf{\small
-  Phase 2 — Action application}}}
+  Phase 2 --- Action application}}}
 
 \State Apply projection \eqref{eq:projection} to
        $\tilde{\boldsymbol{\alpha}}_t$ $\;\Rightarrow\;$
@@ -642,7 +642,7 @@ Algorithm~\ref{alg:kernel}.
 
 \Statex
 \Statex \textcolor{headfg}{\colorbox{headbg}{\textbf{\small
-  Phase 3 — Late (post-allocation)}}}
+  Phase 3 --- Late (post-allocation)}}}
 
 \For{each project $i$ with $\sigma_{i,t} = \texttt{active}$}
   \tagschedule
@@ -669,7 +669,7 @@ Algorithm~\ref{alg:kernel}.
 
 \Statex
 \Statex \textcolor{headfg}{\colorbox{headbg}{\textbf{\small
-  Phase 4 — Balance and counter update}}}
+  Phase 4 --- Balance and counter update}}}
 
 \tagcost
 \State $B_{t+1} \leftarrow B_t + V_t
