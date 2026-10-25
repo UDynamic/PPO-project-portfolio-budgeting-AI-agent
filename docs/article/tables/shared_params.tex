@@ -1,0 +1,23 @@
+% tables/shared_params.tex
+% tabular only — no table environment, no caption, no label.
+% Include in section file as:
+%   \input{tables/shared_params.tex}
+\small
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{llr}
+  \toprule
+  \textbf{Parameter} & \textbf{Symbol} & \textbf{Value} \\
+  \midrule
+  Retention rate          & $\nu_i$           & 0.05 \\
+  Progress delay cap      & $\delta^{\max}_i$ & 0.15 \\
+  Finish delay cap        & $\Delta^{\max}_i$ & 2 periods \\
+  Termination tolerance   & $\theta_i$        & 2 breach-periods \\
+  Annual interest rate    & $r$               & 0.12 \\
+  Per-period deficit rate & $r/12$            & 0.01 \\
+  Budget tightness        & $\kappa$          & 3.0 \\
+  Profit margin           & $\pi_i$           & 0.20 \\
+  Discount factor         & $\gamma$          & 0.95 \\
+  S-curve shape           & $(a_i,\, b_i)$   & $(1.5,\ 3.0)$ \\
+  \bottomrule
+\end{tabular}

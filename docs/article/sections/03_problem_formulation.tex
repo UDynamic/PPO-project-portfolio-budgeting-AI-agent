@@ -263,8 +263,8 @@ distinguishing a project one period late from one several periods late
 incorporates both cost and schedule inefficiency into the
 cost-at-completion forecast \citep{christensen1993est}; $\mathrm{TCPI}
 > 1.10$ is widely considered an unrecoverable cost overrun trajectory
-\citep{Fleming2010}. All four indices are logged to the audit ledger;
-they serve as intermediates from which the catchup-allocation and
+\citep{Fleming2010}. $\mathrm{SPI}_{i,t}$, $\mathrm{CPI}_{i,t}$, 
+and $\mathrm{EAC}_{i,t}$ are logged to the audit ledger; they serve as intermediates from which the catchup-allocation and
 target-milestone observation features are derived, but are not
 themselves included in the observation vector $o_t$.
 Denominators that are effectively zero default to one.
@@ -698,6 +698,14 @@ The per-period reward is the discounted net portfolio cash flow:
         \right).
   \label{eq:reward}
 \end{equation}
+Advance payments received at $t = s_i$ for projects with $s_i = 0$
+are absorbed into the initial budget endowment $B_0$ at reset and are
+excluded from $\Delta B_t$. Because advances are granted unconditionally
+at contract commencement regardless of any allocation decision, including
+them in $r_0$ would inflate every episode's return by a fixed constant
+that carries no information about policy quality --- a form of reward
+bias that obscures the true performance signal without affecting the
+optimal policy ranking. 
 
 The policy optimisation objective is:
 \begin{equation}
@@ -886,14 +894,20 @@ the lower two groups of Table~\ref{tab:params}: the portfolio size $N$
 $\{\eta_{i,t}\}$ (\code{efficiency}), the sole stochastic primitive.
 Every entry in both classes
 is specified as a distribution family together with up to four
-parameters, supporting \code{fixed}, \code{uniform}, \code{beta},
-\code{triangular}, \code{lognormal}, \code{truncated\_normal}, and
+parameters, supporting \code{fixed},
+\code{uniform}, \code{normal}, \code{beta},
+\code{triangular}, \code{lognormal},
+\code{truncated\_normal}, \code{categorical}, and
 \code{custom\_ordinal} families. The \code{custom\_ordinal} family
 accepts a deterministic sequence --- a flat list for single-project
 configurations or a per-project list of lists for portfolio
 configurations --- and cycles through it in order each episode,
 enabling exact reproducibility of efficiency draws for controlled
-benchmarking. This design allows any parameter to be held constant
+benchmarking. For per-project scalar parameters the flat list is
+indexed by project index $i$, assigning each project a fixed value
+from the sequence; for the efficiency primitive $\eta_{i,t}$ the
+index is instead the project-time $\tau_i$, cycling through the
+sequence across periods. This design allows any parameter to be held constant
 for controlled experiments or drawn fresh each episode for domain
 randomisation \citep{Tobin2017}.
 

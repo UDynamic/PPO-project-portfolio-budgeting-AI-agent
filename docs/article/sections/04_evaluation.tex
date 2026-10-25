@@ -23,25 +23,8 @@ every solver so that observed performance differences are attributable
 solely to configuration structure and solver policy.
 
 \begin{table}[htbp]
-  \centering\small
-  \renewcommand{\arraystretch}{1.3}
-  \setlength{\tabcolsep}{6pt}
-  \begin{tabular}{llr}
-    \toprule
-    \textbf{Parameter} & \textbf{Symbol} & \textbf{Value} \\
-    \midrule
-    Retention rate            & $\nu_i$              & 0.05 \\
-    Progress delay cap        & $\delta^{\max}_i$    & 0.15 \\
-    Finish delay cap          & $\Delta^{\max}_i$    & 2 periods \\
-    Termination tolerance     & $\theta_i$           & 2 breach-periods \\
-    Annual interest rate      & $r$                  & 0.12 \\
-    Per-period deficit rate   & $r/12$               & 0.01 \\
-    Budget tightness          & $\kappa$             & 3.0 \\
-    Profit margin             & $\pi_i$              & 0.20 \\
-    Discount factor           & $\gamma$             & 0.95 \\
-    S-curve shape             & $(a_i,\, b_i)$       & $(1.5,\ 3.0)$ \\
-    \bottomrule
-  \end{tabular}
+  \centering
+  \input{tables/shared_params.tex}
   \caption{Parameters shared across all benchmark configurations.
     Within each milestone payment, advance recovery is applied first
     to the gross payment; retention is deducted from the same gross
@@ -74,24 +57,8 @@ deterministic per-project list) under seed $= 0$, ensuring exact
 reproducibility.
 
 \begin{table}[htbp]
-  \centering\small
-  \renewcommand{\arraystretch}{1.3}
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lcccccccl}
-    \toprule
-    \textbf{Config} & $N$ & $\mathrm{BAC}_i$ & $D_i$ & $s_i$ &
-    $M_i$ & $\phi_i$ & $\psi^{\mathrm{trig}}_i$ & \textbf{Primary mechanic} \\
-    \midrule
-    TC-10SF-R   & 1 & 100           & 0 & 0       & 1 & 0.00 & ---  &
-      Isolated atom: single action, single milestone \\
-    TC-1LMAIF-R & 1 & 100           & 3 & 2       & 3 & 0.20 & 0.80 &
-      Delayed start, progress-triggered advance, high recovery \\
-    TC-10MAIF-R & 1 & 100           & 3 & 0       & 3 & 0.20 & 0.00 &
-      Diminishing efficiency, termination risk \\
-    TC-3XMAIF-R & 3 & 100/200/300   & 3 & 0/6/7  & 3 & 0.20 & 0.00 &
-      Multi-project, gap then overlap, interacting cash flows \\
-    \bottomrule
-  \end{tabular}
+  \centering
+  \input{tables/configs.tex}
   \caption{Benchmark configuration summary. $N$: number of projects;
     $D_i$: planned duration; $s_i$: planned start (episode period);
     $M_i$: non-advance milestones; $\phi_i$: advance rate;
@@ -244,24 +211,8 @@ best-heuristic gap $Z^* - \max_\pi G(\pi)$.
 \end{figure}
 
 \begin{table}[htbp]
-  \centering\small
-  \renewcommand{\arraystretch}{1.3}
-  \setlength{\tabcolsep}{7pt}
-  \begin{tabular}{lrrrrc}
-    \toprule
-    \textbf{Config} &
-    $G(\pi^{*})$ &
-    $G(\pi^{\mathrm{rp}})$ &
-    $G(\pi^{\mathrm{cu}})$ &
-    $G(\pi^{\mathrm{cu}+1})$ &
-    \textbf{Best-heuristic gap} \\
-    \midrule
-    TC-10SF-R   & $9.00$    & $5.60$    & $3.40$    & $-6.07$    & $3.40$  \\
-    TC-1LMAIF-R & $1.49$    & $-13.21$  & $-13.21$  & $-27.17$   & $14.70$ \\
-    TC-10MAIF-R & $-21.66$  & $-35.06$  & $-47.77$  & $-27.22$   & $5.56$  \\
-    TC-3XMAIF-R & $12.40$   & $-59.75$  & $-62.38$  & $-107.96$  & $72.15$ \\
-    \bottomrule
-  \end{tabular}
+  \centering
+  \input{tables/gap_results.tex}
   \caption{Episode NPV $G$ for all methods across four configurations.
     Best-heuristic gap $= G(\pi^*) - \max\{G(\pi^{\mathrm{rp}}),
     G(\pi^{\mathrm{cu}}), G(\pi^{\mathrm{cu}+1})\}$.}
