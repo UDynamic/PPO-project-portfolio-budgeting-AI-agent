@@ -1,0 +1,25 @@
+% tables/tc_10maif_r.tex
+% tabular only — no table environment, no caption, no label.
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{7pt}
+\rowcolors{2}{RowAlt}{white}
+\begin{tabularx}{\textwidth}{cXrrrrr}
+  \toprule
+  \rowcolor{headbg}
+  \multicolumn{1}{c}{\color{headfg}\textbf{Milestone}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Gross}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Adv.\ Recov.}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Adv.\ Remaining}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Retention}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Ret.\ Release}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Net}} \\
+  \midrule
+  $j=1$ & $18.0$ & $3.6$  & $20.4$ & $-0.9$ & $0.0$  & $13.5$ \\
+  $j=2$ & $42.0$ & $8.4$  & $12.0$ & $-2.1$ & $0.0$  & $31.5$ \\
+  $j=3$ & $60.0$ & $12.0$ & $0.0$  & $-3.0$ & $+6.0$ & $51.0$ \\
+  \midrule
+  \rowcolor{white}
+  \multicolumn{1}{l}{\textbf{Total}} & $\mathbf{120}$ & $\mathbf{24.0}$ & --- & $\mathbf{-6.0}$ & $\mathbf{+6.0}$ & $\mathbf{96.0}$ \\
+  \bottomrule
+\end{tabularx}

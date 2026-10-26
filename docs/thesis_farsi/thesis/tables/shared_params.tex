@@ -1,0 +1,25 @@
+% tables/global_params.tex
+% tabular only — no table environment, no caption, no label.
+% Include in section file as:
+%   \input{tables/global_params.tex}
+\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\setlength{\tabcolsep}{3pt}
+\rowcolors{2}{RowAlt}{white}
+\begin{tabularx}{\textwidth}{llX@{\hspace{6pt}}llX}
+  \toprule
+  \rowcolor{headbg}
+  \multicolumn{1}{c}{\color{headfg}\textbf{Parameter}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Symbol}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Value}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Parameter}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Symbol}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Value}} \\
+  \midrule
+  Retention rate          & $\nu_i$           & 0.05         & Budget tightness        & $\kappa$          & 3.0 \\
+  Progress delay cap      & $\delta^{\max}_i$ & 0.15         & Profit margin           & $\pi_i$           & 0.20 \\
+  Finish delay cap        & $\Delta^{\max}_i$ & 2 periods    & Discount factor         & $\gamma$          & 0.95 \\
+  Termination tolerance   & $\theta_i$        & 2 breach-per.& S-curve shape           & $(a_i,\, b_i)$   & $(1.5,\ 3.0)$ \\
+  Annual interest rate    & $r$               & 0.12         & Per-period deficit rate & $r/12$            & 0.01\\
+  \bottomrule
+\end{tabularx}

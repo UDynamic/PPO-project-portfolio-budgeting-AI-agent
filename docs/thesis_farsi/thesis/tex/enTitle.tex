@@ -2,21 +2,62 @@
 % در این فایل، عنوان پایان‌نامه، مشخصات خود و چکیده پایان‌نامه را به انگلیسی، وارد کنید.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\latinuniversity{University of Tehran}
-\latincollege{College of Engineering}
-\latinfaculty{Faculty of Engineering Science}
-\latindepartment{Algorithms and Computation}
-\latinsubject{Computer Engineering}
-\latinfield{Algorithms and Computation}
-\latintitle{Writing projects, theses and dissertations using tehran-thesis class}
-\firstlatinsupervisor{First Supervisor}
-\secondlatinsupervisor{Second Supervisor}
-\firstlatinadvisor{First Advisor}
+\latinuniversity{Iran University of Science and Technology}
+\latincollege{}
+\latinfaculty{Industrial Engineering Department}
+\latindepartment{Industrial Engineering}
+\latinsubject{}
+\latinfield{Engineering Management}
+\latintitle{Development of a Deep Reinforcement Learning Agent for Optimized Project Portfolio Budgeting under Cash-Flow Uncertainty}
+\firstlatinsupervisor{Dr. Seyed Farid Ghannadpour}
+\secondlatinsupervisor{}
+\firstlatinadvisor{}
 %\secondlatinadvisor{Second Advisor}
-\latinname{Sina}
-\latinsurname{Momken}
-\latinthesisdate{May 2017}
-\latinkeywords{Writing Thesis, Template, \LaTeX, \XePersian}
+\latinname{Mahriar}
+\latinsurname{Gharaghani}
+\latinthesisdate{Sep 2026}
+\latinkeywords{Project Portfolio Management, Budget Allocation, Markov Decision Process, Reinforcement Learning, FIDIC Contracts, Earned Value Management, Gymnasium Environment}
 \en-abstract{
-This thesis studies on writing projects, theses and dissertations using tehran-thesis class. It ...
+    Allocating a shared capital reserve across a portfolio of simultaneously
+    executing contracted projects is a high-frequency, high-stakes decision for
+    engineering contractors. Classical approaches either assume full foresight or
+    collapse the portfolio to a single project, leaving practitioners with no
+    principled tool for the sequential, multi-project setting under real-world
+    uncertainty. This paper closes that gap by delivering a complete, verified
+    simulation environment that makes the problem tractable for data-driven methods.
+  
+    We formalise the problem as a Markov Decision Process in which a
+    portfolio manager allocates budget fractions across $N$ concurrent projects at
+    each discrete period. The state encodes Earned Value Management indicators,
+    S-curve planned progress, milestone payment lookaheads, and a per-project
+    breach-tolerance counter. The transition dynamics reproduce the full FIDIC
+    contract cash-flow cycle: advance payment and recovery, progress-weighted
+    milestone gross payments, retention withholding and release, interest charges
+    on treasury draws, and a two-condition termination gate. The reward signal is
+    the $\gamma$-discounted portfolio net cash flow, accumulating to an episode NPV
+    that serves as the primary performance criterion. A full-foresight oracle
+    bound is derived analytically, and the exact stochastic optimisation problem
+    is shown to be intractable at portfolio scale via scenario-tree enumeration,
+    formally motivating the MDP/RL formulation over classical stochastic
+    programming.
+  
+    The environment is released as a configurable, Gymnasium-compatible package
+    ---verified across 51 checks in 10 test sections--- with a SQLite audit ledger
+    that records every allocation, cash-flow event, and breach flag, eliminating
+    the black-box problem inherent to learned policies. To establish a performance
+    baseline and motivate the need for learned agents, we run three deterministic
+    greedy heuristics (Reach-Plan, Catchup-T, and Catchup-Next-T) and a manually
+    computed full-information optimum across four benchmark configurations of
+    increasing portfolio complexity. The best-heuristic optimality gap widens
+    systematically with complexity, from 3.40 NPV units on an isolated
+    single-project instance to 72.15 units on a three-project portfolio with
+    overlapping cash flows --- a 21-fold increase --- and on the most complex
+    configuration every greedy heuristic yields a loss while the full-information
+    optimum remains profitable. These results confirm that standard rule-based
+    allocation is structurally insufficient under shared-budget coordination and
+    establish a quantified, well-defined improvement target for reinforcement
+    learning agents. Training such agents (e.g. via PPO), evaluating them against
+    a formal Linear Programming or Dynamic Programming bound, and exploring
+    LLM-augmented allocation policies are identified as the natural next steps,
+    addressed in subsequent work.
 }
