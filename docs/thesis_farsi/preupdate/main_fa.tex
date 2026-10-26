@@ -1,0 +1,498 @@
+% ============================================================
+%  main_fa.tex — نسخه‌ی فارسی پایان‌نامه
+%  قالب: دانشکده مهندسی صنایع، دانشگاه علم و صنعت ایران
+%  مستخرج از final-rev07.docx
+% ============================================================
+
+\documentclass[12pt,a4paper]{article}
+
+% ============================================================
+%  ریاضیات
+% ============================================================
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+
+% ============================================================
+%  رنگ‌ها و جداول
+% ============================================================
+
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{longtable}
+
+% ============================================================
+%  تصویر و گرافیک
+% ============================================================
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{rotating}
+
+% ============================================================
+%  TikZ / PGF
+% ============================================================
+
+\usepackage{tikz}
+\usetikzlibrary{positioning, decorations.pathreplacing, shapes, arrows,
+                backgrounds, fit, patterns, shapes.geometric, arrows.meta, calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% ============================================================
+%  الگوریتم‌ها
+% ============================================================
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% ============================================================
+%  چیدمان صفحه  (منطبق با قالب IUST)
+%  راست = لبه صحافی (۴ سانت) / چپ = حاشیه بیرونی (۳ سانت)
+% ============================================================
+
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  top    = 3cm,
+  bottom = 3cm,
+  right  = 4cm,   % لبه صحافی — RTL
+  left   = 3cm,
+  headheight = 14pt,
+  headsep    = 0.5cm,
+  footskip   = 0.8cm,
+}
+
+% ============================================================
+%  سرصفحه و پاصفحه
+% ============================================================
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{{\fontsize{13pt}{16pt}\selectfont\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ============================================================
+%  فاصله‌گذاری خطوط (منطبق با استایل 'a' در قالب: ۱٫۲ برابر)
+% ============================================================
+
+\usepackage{setspace}
+\setstretch{1.2}
+
+% ============================================================
+%  فاصله‌ی پاراگراف
+% ============================================================
+
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{1em}
+
+% ============================================================
+%  فهرست‌بندی
+% ============================================================
+
+\usepackage{enumitem}
+
+% ============================================================
+%  سایر بسته‌ها
+% ============================================================
+
+\usepackage{mdframed}
+\usepackage{listings}
+\usepackage{placeins}
+\usepackage{appendix}
+\usepackage{tabularx}
+\usepackage{microtype}
+
+% ============================================================
+%  رنگ‌های تگ دسته‌بندی
+% ============================================================
+
+\definecolor{TagScheduleBg}{HTML}{EAF3DE}
+\definecolor{TagScheduleFg}{HTML}{3B6D11}
+\definecolor{TagContractBg}{HTML}{E6F1FB}
+\definecolor{TagContractFg}{HTML}{0C447C}
+\definecolor{TagCostBg}{HTML}{FAEEDA}
+\definecolor{TagCostFg}{HTML}{633806}
+\definecolor{TagPenaltyBg}{HTML}{FCEBEB}
+\definecolor{TagPenaltyFg}{HTML}{791F1F}
+\definecolor{TagTermBg}{HTML}{F0EBFA}
+\definecolor{TagTermFg}{HTML}{4B1F8C}
+\definecolor{RowAlt}{HTML}{F8F7F4}
+
+% رنگ‌های نمودار PRISMA
+\definecolor{prismaBlue}{RGB}{31,119,180}
+\definecolor{prismaLightBlue}{RGB}{174,214,241}
+\definecolor{prismaGreen}{RGB}{44,160,44}
+\definecolor{prismaLightGreen}{RGB}{198,239,206}
+\definecolor{prismaGray}{RGB}{127,127,127}
+\definecolor{prismaOrange}{RGB}{214,39,40}
+\definecolor{prismaLightOrange}{RGB}{255,205,210}
+
+% رنگ‌های جدول مرور ادبیات
+\definecolor{symgreen}{HTML}{1A7A4A}
+\definecolor{symamber}{HTML}{B45309}
+\definecolor{symgrey}{HTML}{9CA3AF}
+\definecolor{rarebg}{HTML}{EFF6FF}
+\definecolor{headbg}{HTML}{1E3A5F}
+\definecolor{headfg}{HTML}{FFFFFF}
+\definecolor{pwbg}{HTML}{14532D}
+\definecolor{rowodd}{HTML}{F8FAFC}
+
+% ============================================================
+%  تِم نمودار جریان
+% ============================================================
+
+\colorlet{flowViolet}{violet!70!black}
+\colorlet{flowVioletBg}{violet!10}
+\colorlet{flowOrange}{orange!70!red}
+\colorlet{flowOrangeBg}{orange!8}
+\colorlet{flowTeal}{teal!70!black}
+\colorlet{flowTealBg}{teal!8}
+\colorlet{flowBlue}{blue!60!black}
+\colorlet{flowBlueBg}{blue!8}
+\colorlet{flowGray}{gray!60}
+\colorlet{flowGrayBg}{gray!6}
+\colorlet{flowRed}{red!55!black}
+\colorlet{flowRedBg}{red!6}
+
+\tikzset{
+  flowColorA/.style      = {draw=flowViolet, fill=flowVioletBg},
+  flowColorB/.style      = {draw=flowOrange, fill=flowOrangeBg},
+  flowColorC/.style      = {draw=flowTeal,   fill=flowTealBg},
+  flowColorD/.style      = {draw=flowBlue,   fill=flowBlueBg},
+  flowColorGray/.style   = {draw=flowGray,   fill=flowGrayBg},
+  flowColorReject/.style = {draw=flowRed,    fill=flowRedBg},
+  arrowMain/.style       = {-{Latex[length=6pt]}, thick, black!70},
+  arrowReject/.style     = {-{Latex[length=6pt]}, thick, flowRed, dashed},
+}
+
+% ============================================================
+%  استایل‌های TikZ
+% ============================================================
+
+\tikzset{
+  box/.style  = {draw, rectangle, rounded corners=4pt,
+                 text width=7.0cm, align=center,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=white, draw=black!70},
+  excl/.style = {draw, rectangle, rounded corners=4pt,
+                 text width=5.5cm, align=left,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=pink!25, draw=red!50!black},
+  incl/.style = {draw, rectangle, rounded corners=4pt,
+                 text width=7.0cm, align=center,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=green!15, draw=green!60!black},
+  phase/.style= {draw, rectangle, rounded corners=4pt,
+                 text width=1.5cm, align=center,
+                 minimum height=1.2cm, inner sep=5pt,
+                 fill=blue!10, draw=blue!50!black,
+                 font=\bfseries\small},
+  arr/.style  = {->, >=stealth, thick},
+  arr2/.style = {->, >=stealth, dashed, thick},
+}
+
+% ============================================================
+%  ماکروهای تگ دسته‌بندی
+% ============================================================
+
+\newcommand{\tagschedule}{%
+  \,\colorbox{TagScheduleBg}{\textcolor{TagScheduleFg}{\scriptsize\textsf{زمان‌بندی}}}}
+\newcommand{\tagcontract}{%
+  \,\colorbox{TagContractBg}{\textcolor{TagContractFg}{\scriptsize\textsf{قرارداد}}}}
+\newcommand{\tagcost}{%
+  \,\colorbox{TagCostBg}{\textcolor{TagCostFg}{\scriptsize\textsf{هزینه}}}}
+\newcommand{\tagpenalty}{%
+  \,\colorbox{TagPenaltyBg}{\textcolor{TagPenaltyFg}{\scriptsize\textsf{جریمه}}}}
+\newcommand{\tagterm}{%
+  \,\colorbox{TagTermBg}{\textcolor{TagTermFg}{\scriptsize\textsf{فسخ}}}}
+
+% ============================================================
+%  محیط‌های قضیه
+% ============================================================
+
+\newtheorem{theorem}{قضیه}
+\newtheorem{lemma}[theorem]{لم}
+\newtheorem{proposition}[theorem]{گزاره}
+\newtheorem{corollary}[theorem]{نتیجه}
+\theoremstyle{definition}
+\newtheorem{definition}{تعریف}
+\newtheorem{assumption}{فرض}
+\theoremstyle{remark}
+\newtheorem{remark}{ملاحظه}
+
+% ============================================================
+%  دستورات ریاضی سفارشی
+% ============================================================
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\text{Var}}
+\newcommand{\Cov}{\text{Cov}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\argmax}{\operatorname{argmax}}
+\newcommand{\argmin}{\operatorname{argmin}}
+
+% ============================================================
+%  کد درون‌خطی و بلوک‌های کد
+% ============================================================
+
+\usepackage{tcolorbox}
+\tcbuselibrary{skins}
+
+\definecolor{inlineBg}{HTML}{F0F0F0}
+\newcommand{\code}[1]{%
+  \tcbox[on line,
+    colback=inlineBg, colframe=inlineBg,
+    boxrule=0pt, arc=2pt,
+    top=0.5pt, bottom=0.5pt, left=2pt, right=2pt,
+    fontupper=\ttfamily\footnotesize\color{black}]{#1}}
+
+\lstset{
+    basicstyle=\ttfamily\small\color{black},
+    backgroundcolor=\color{inlineBg},
+    frame=single,
+    framerule=0pt,
+    rulecolor=\color{inlineBg},
+    breaklines=true,
+    keepspaces=true,
+    showstringspaces=false,
+}
+
+% ============================================================
+%  پیوندها و منابع
+%  — natbib باید پیش از xepersian بارگذاری شود
+% ============================================================
+
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+% ============================================================
+%  فونت‌ها و زبان
+%  — xepersian حتماً باید آخرین بسته باشد
+%  B Zar  → fc-list: "B Zar"  style=Regular
+%  ZarBold → fc-list: "Zar"   style=Bold
+% ============================================================
+
+\usepackage{fontspec}
+\usepackage{xepersian}
+
+\settextfont[
+  Scale    = 1.0,
+  BoldFont = Zar,
+]{B Zar}
+
+% FIX 1: \setlatintypeface was removed in xepersian v22+.
+%         Use \setlatinfont instead.
+\setlatinfont[Scale=1.0]{Times New Roman}
+
+% FIX 2: \ZWNJ is only defined after \begin{document} by xepersian.
+%         Deferring via \AtBeginDocument ensures \ZWNJ is already available
+%         when \zwnj is first used, preventing "Undefined control sequence" errors.
+\AtBeginDocument{\providecommand{\zwnj}{\ZWNJ}}
+
+% فونت عنوان‌های بخش
+\newfontfamily\headingfont[BoldFont=Zar]{B Zar}
+
+% فونت صفحه عنوان
+\newfontfamily\titlefont[BoldFont=Zar]{B Zar}
+
+% ============================================================
+%  TikZ را به حالت چپ‌به‌راست (LTR) تنظیم می‌کنیم
+%  تا متن انگلیسی داخل نمودارها درست نمایش داده شود
+% ============================================================
+
+\AtBeginEnvironment{tikzpicture}{\latintext}
+\AtBeginEnvironment{pgfpicture}{\latintext}
+
+% ============================================================
+%  عنوان مقاله
+% ============================================================
+
+\title{%
+  {\titlefont\bfseries\large
+   بودجه\zwnj{}بندی سبد پروژه به\zwnj{}عنوان یک فرایند تصمیم\zwnj{}گیری مارکوف:\\[4pt]
+   طراحی محیط، ارزیابی خط پایه و تحلیل شکاف بهینگی%
+  }
+}
+
+\author{%
+  \begin{tabular}{c}
+    {\headingfont\bfseries مهریار قرقانی}%
+      \thanks{نویسنده‌ی مسئول:
+        \lr{\href{mailto:mahriargharaghani@gmail.com}{mahriargharaghani@gmail.com}}} \\[2pt]
+    {\headingfont\bfseries سید فرید قنادپور} \\[6pt]
+    {\itshape\small
+      گروه مهندسی صنایع، دانشگاه علم و صنعت ایران} \\
+    {\itshape\small تهران، ایران}
+  \end{tabular}
+}
+
+\date{}
+
+% ============================================================
+%  سند
+% ============================================================
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+%  چکیده
+% ============================================================
+
+\begin{abstract}
+
+تخصیص یک ذخیره‌ی سرمایه‌ی مشترک در میان سبدی از پروژه‌های قراردادی در حال اجرا،
+یک تصمیم\zwnj{}گیری پرتکرار و حساس برای پیمانکاران مهندسی است.
+رویکردهای کلاسیک یا آینده‌ی کامل را مفروض می\zwnj{}گیرند یا سبد را به یک پروژه‌ی واحد
+تقلیل می\zwnj{}دهند و در نتیجه هیچ ابزار اصولی‌ای برای مسئله‌ی ترتیبی و چندپروژه‌ای
+در شرایط عدم\zwnj{}قطعیت دنیای واقعی در اختیار پیشه\zwnj{}ورزان نمی\zwnj{}گذارند.
+این مقاله آن شکاف را با ارائه‌ی یک محیط شبیه\zwnj{}سازی کامل و تأییدشده
+پر می\zwnj{}کند که این مسئله را برای روش\zwnj{}های داده\zwnj{}محور قابل حل می\zwnj{}سازد.
+
+مسئله را به\zwnj{}صورت یک فرایند تصمیم\zwnj{}گیری مارکوف مقیدشده (\lr{CMDP}) صورت\zwnj{}بندی
+می\zwnj{}کنیم که در آن مدیر سبد در هر دوره‌ی گسسته کسرهای بودجه را میان
+$N$ پروژه‌ی موازی تخصیص می\zwnj{}دهد.
+حالت، شاخص\zwnj{}های مدیریت ارزش کسب\zwnj{}شده (\lr{EVM})،
+پیشرفت برنامه\zwnj{}ریزی\zwnj{}شده‌ی منحنی\lr{-S}،
+پیش\zwnj{}نگاه پرداخت\zwnj{}های نقطه‌ی عطف، و یک شمارنده‌ی تحمل نقض
+را برای هر پروژه رمزگذاری می\zwnj{}کند.
+دینامیک گذار چرخه‌ی کامل جریان نقدی قرارداد
+\lr{FIDIC} را بازتولید می\zwnj{}کند:
+پرداخت پیش\zwnj{}پرداخت و بازیابی آن، پرداخت\zwnj{}های ناخالص نقطه‌ی عطف
+متناسب با پیشرفت، کسر و آزادسازی حسن انجام کار،
+هزینه‌ی بهره بر برداشت از خزانه، و دروازه‌ی دوشرطی فسخ قرارداد.
+سیگنال پاداش، جریان نقدی خالص سبد با تنزیل $\gamma$ است که
+به \lr{NPV} یک اپیزود انباشته می\zwnj{}شود و معیار اصلی عملکرد را تشکیل می\zwnj{}دهد.
+
+محیط به\zwnj{}صورت یک بسته‌ی پیکربندی\zwnj{}پذیر سازگار با \lr{Gymnasium}
+منتشر می\zwnj{}شود که دارای یک دفتر کل \lr{SQLite} است
+و هر تخصیص، رویداد جریان نقدی و پرچم نقض را ثبت می\zwnj{}کند---
+این ویژگی مشکل جعبه\zwnj{}سیاه ذاتی سیاست\zwnj{}های یادگیری\zwnj{}شده را حذف می\zwnj{}کند.
+برای ایجاد یک خط پایه‌ی عملکرد و انگیزه\zwnj{}بخشی به
+استفاده از عامل\zwnj{}های یادگیری\zwnj{}شده،
+سه اکتشافی قطعی حریصانه (\lr{Reach-Plan}، \lr{Catchup-T} و \lr{Catchup-Next-T})
+و یک بهینه‌ی اطلاعات\zwnj{}کامل محاسبه\zwnj{}شده‌ی دستی را
+روی چهار پیکربندی معیار با پیچیدگی سبد فزاینده اجرا می\zwnj{}کنیم.
+نتایج یک شکاف سیستماتیک و روبه\zwnj{}افزایش میان خطوط پایه‌ی حریصانه
+و راه\zwnj{}حل بهینه با افزایش پیچیدگی سبد را نشان می\zwnj{}دهند
+و تأیید می\zwnj{}کنند که تخصیص مبتنی بر قوانین استاندارد ناکافی است
+و یک هدف بهبود مشخص برای عامل\zwnj{}های یادگیری تقویتی وجود دارد.
+آموزش چنین عامل\zwnj{}هایی و ارزیابی آن\zwnj{}ها در برابر یک کران
+برنامه‌ریزی خطی رسمی به\zwnj{}عنوان گام\zwnj{}های طبیعی بعدی
+شناسایی می\zwnj{}شوند و در کارهای بعدی به آن\zwnj{}ها پرداخته خواهد شد.
+
+\medskip
+\noindent\textbf{کلیدواژه\zwnj{}ها:}
+مدیریت سبد پروژه؛
+تخصیص بودجه تحت عدم\zwnj{}قطعیت عملکرد؛
+فرایند تصمیم\zwnj{}گیری مارکوف مقیدشده؛
+یادگیری تقویتی؛
+قراردادهای \lr{FIDIC}؛
+مدیریت ارزش کسب\zwnj{}شده؛
+محیط \lr{Gymnasium}؛
+خط پایه‌ی حریصانه؛
+شکاف بهینگی.
+
+\end{abstract}
+
+\FloatBarrier
+
+% ============================================================
+%  مقدمه
+% ============================================================
+
+\section{مقدمه}
+\label{sec:introduction}
+\input{sections/01_introduction_fa.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  مرور ادبیات
+% ============================================================
+
+\section{مرور ادبیات}
+\label{sec:literature}
+\input{sections/02_literature_fa.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  صورت‌بندی مسئله
+% ============================================================
+
+% \section{صورت‌بندی مسئله}
+% \label{sec:problem}
+% \input{sections/03_problem_formulation_fa.tex}
+
+% \FloatBarrier
+
+% % ============================================================
+% %  ارزیابی
+% % ============================================================
+
+% \section{ارزیابی}
+% \label{sec:evaluation}
+% \input{sections/04_evaluation_fa.tex}
+
+% \FloatBarrier
+
+% % ============================================================
+% %  نتیجه‌گیری
+% % ============================================================
+
+% \section{نتیجه‌گیری}
+% \label{sec:conclusion}
+% \input{sections/05_conclusion_fa.tex}
+
+% \FloatBarrier
+
+% ============================================================
+%  منابع
+%  — مسیر کامل references.bib که کنار main_fa.tex است
+% ============================================================
+
+\bibliographystyle{apalike}
+\bibliography{references}
+\clearpage
+
+% ============================================================
+%  پیوست الف — نمودار جریان PRISMA 2020
+% ============================================================
+
+% \appendix
+% \section{پیوست الف: نمودار جریان \lr{PRISMA 2020}}
+% \label{app:prisma}
+% \input{sections/appendix_A_fa.tex}
+% \FloatBarrier
+
+% % ============================================================
+% %  پیوست ب — گواهی سازگاری Gymnasium
+% % ============================================================
+
+% \section{پیوست ب: گواهی سازگاری \lr{Gymnasium}}
+% \label{app:gym_certificate}
+% \input{sections/appendix_B_fa.tex}
+% \FloatBarrier
+
+% % ============================================================
+% %  پیوست ج — معماری مخزن و نقشه‌ی مفهومی
+% % ============================================================
+
+% \section{پیوست ج: معماری مخزن و نقشه‌ی مفهومی}
+% \label{app:repo_map}
+% \input{sections/appendix_C_fa.tex}
+
+\end{document}
