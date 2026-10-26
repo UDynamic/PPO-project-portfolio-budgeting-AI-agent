@@ -1,0 +1,23 @@
+% tables/tc_3xmaif_r_advances.tex
+% tabular only — no table environment, no caption, no label.
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{7pt}
+\rowcolors{2}{RowAlt}{white}
+\begin{tabularx}{\textwidth}{cXrrr}
+  \toprule
+  \rowcolor{headbg}
+  \multicolumn{1}{c}{\color{headfg}\textbf{Episode period $t$}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Event}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Project}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Advance outflow}} &
+  \multicolumn{1}{c}{\color{headfg}\textbf{Cumulative outflow}} \\
+  \midrule
+  $t = 0$ & Project 0 start  & 0 & $-24$ & $-24$  \\
+  $t = 3$ & Project 0 finish & 0 & ---   & $-24$  \\
+  $t = 4$ & Gap phase begins & --- & ---  & $-24$  \\
+  $t = 5$ & Gap phase ends   & --- & ---  & $-24$  \\
+  $t = 6$ & Project 1 start  & 1 & $-48$ & $-72$  \\
+  $t = 7$ & Project 2 start  & 2 & $-72$ & $-144$ \\
+  \bottomrule
+\end{tabularx}

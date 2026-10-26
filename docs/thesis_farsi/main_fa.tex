@@ -7,44 +7,6 @@
 \documentclass[12pt,a4paper]{article}
 
 % ============================================================
-%  موتور و زبان  (XeLaTeX الزامی است)
-% ============================================================
-
-\usepackage{polyglossia}
-\setmainlanguage[numerals=western]{persian}
-\setotherlanguage{english}
-
-% ============================================================
-%  فونت‌ها  (منطبق با قالب دانشگاه)
-%  فونت‌های Zar، B Nazanin و Nazanin باید روی سیستم نصب باشند
-% ============================================================
-
-\usepackage{fontspec}
-
-% فونت اصلی متن فارسی
-\setmainfont{Zar}[
-  Script     = Arabic,
-  Contextuals = Alternate,
-  BoldFont   = Zar Bold,
-]
-
-% فونت عنوان‌های فصل و بخش
-\newfontfamily\headingfont{B Nazanin}[
-  Script   = Arabic,
-  BoldFont = B Nazanin Bold,
-]
-
-% فونت صفحه عنوان
-\newfontfamily\titlefont{Nazanin}[
-  Script   = Arabic,
-  BoldFont = Nazanin Bold,
-]
-
-% فونت اعداد و متن لاتین درون متن فارسی
-\newfontfamily\englishfont{Times New Roman}
-\setlatinfont{Times New Roman}
-
-% ============================================================
 %  ریاضیات
 % ============================================================
 
@@ -112,8 +74,8 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-% شماره صفحه در وسط پاصفحه — فونت Zar
-\fancyfoot[C]{{\fontspec{Zar}\fontsize{13pt}{16pt}\selectfont\thepage}}
+% شماره صفحه در وسط پاصفحه — فونت B Zar
+\fancyfoot[C]{{\fontsize{13pt}{16pt}\selectfont\thepage}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0pt}
 
@@ -305,7 +267,7 @@
 }
 
 % ============================================================
-%  پیوندها
+%  پیوندها و منابع
 % ============================================================
 
 \usepackage{hyperref}
@@ -315,13 +277,33 @@
 \hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
 
 % ============================================================
-%  نیم‌فاصله — دستور \zwnj برای ترکیب‌های مرکب فارسی
-%  مثال: می\zwnj{}شود  کتاب\zwnj{}ها  بودجه\zwnj{}بندی
+%  فونت‌ها و زبان — xepersian باید آخرین بسته باشد
+%  B Zar  → fc-list name: "B Zar"  style=Regular
+%  ZarBold → fc-list name: "Zar"   style=Bold
 % ============================================================
 
-% \zwnj از polyglossia به‌صورت خودکار تعریف می‌شود.
-% برای راحتی، نام کوتاه تعریف می‌کنیم:
-\newcommand{\nj}{\textlatin{\texttt{\char"200C}}}  % نیم‌فاصله آشکار در صورت نیاز
+\usepackage{fontspec}
+\usepackage{xepersian}
+
+\settextfont[
+  Scale   = 1.0,
+  BoldFont = Zar,
+  BoldFeatures = {FakeBold=0},
+]{B Zar}
+
+\setlatinfont[Scale=1.0]{Times New Roman}
+
+% فونت عنوان‌های بخش — از B Zar Bold استفاده می‌کنیم
+\newfontfamily\headingfont[
+  Script  = Arabic,
+  BoldFont = Zar,
+]{B Zar}
+
+% فونت صفحه عنوان
+\newfontfamily\titlefont[
+  Script  = Arabic,
+  BoldFont = Zar,
+]{B Zar}
 
 % ============================================================
 %  عنوان مقاله
@@ -336,7 +318,7 @@
 
 \author{%
   \begin{tabular}{c}
-    {\headingfont\bfseries مهریار قراقانی}%
+    {\headingfont\bfseries مهریار قرقانی}%
       \thanks{نویسنده‌ی مسئول:
         \href{mailto:mahriargharaghani@gmail.com}{mahriargharaghani@gmail.com}} \\[2pt]
     {\headingfont\bfseries سید فرید قنادپور} \\[6pt]
@@ -442,31 +424,31 @@ $N$ پروژه‌ی موازی تخصیص می\zwnj{}دهد.
 %  صورت‌بندی مسئله
 % ============================================================
 
-\section{صورت‌بندی مسئله}
-\label{sec:problem}
-\input{sections/03_problem_formulation_fa.tex}
+% \section{صورت‌بندی مسئله}
+% \label{sec:problem}
+% \input{sections/03_problem_formulation_fa.tex}
 
-\FloatBarrier
+% \FloatBarrier
 
-% ============================================================
-%  ارزیابی
-% ============================================================
+% % ============================================================
+% %  ارزیابی
+% % ============================================================
 
-\section{ارزیابی}
-\label{sec:evaluation}
-\input{sections/04_evaluation_fa.tex}
+% \section{ارزیابی}
+% \label{sec:evaluation}
+% \input{sections/04_evaluation_fa.tex}
 
-\FloatBarrier
+% \FloatBarrier
 
-% ============================================================
-%  نتیجه‌گیری
-% ============================================================
+% % ============================================================
+% %  نتیجه‌گیری
+% % ============================================================
 
-\section{نتیجه‌گیری}
-\label{sec:conclusion}
-\input{sections/05_conclusion_fa.tex}
+% \section{نتیجه‌گیری}
+% \label{sec:conclusion}
+% \input{sections/05_conclusion_fa.tex}
 
-\FloatBarrier
+% \FloatBarrier
 
 % ============================================================
 %  منابع
@@ -480,27 +462,27 @@ $N$ پروژه‌ی موازی تخصیص می\zwnj{}دهد.
 %  پیوست الف — نمودار جریان PRISMA 2020
 % ============================================================
 
-\appendix
-\section{پیوست الف: نمودار جریان \lr{PRISMA 2020}}
-\label{app:prisma}
-\input{sections/appendix_A_fa.tex}
-\FloatBarrier
+% \appendix
+% \section{پیوست الف: نمودار جریان \lr{PRISMA 2020}}
+% \label{app:prisma}
+% \input{sections/appendix_A_fa.tex}
+% \FloatBarrier
 
-% ============================================================
-%  پیوست ب — گواهی سازگاری Gymnasium
-% ============================================================
+% % ============================================================
+% %  پیوست ب — گواهی سازگاری Gymnasium
+% % ============================================================
 
-\section{پیوست ب: گواهی سازگاری \lr{Gymnasium}}
-\label{app:gym_certificate}
-\input{sections/appendix_B_fa.tex}
-\FloatBarrier
+% \section{پیوست ب: گواهی سازگاری \lr{Gymnasium}}
+% \label{app:gym_certificate}
+% \input{sections/appendix_B_fa.tex}
+% \FloatBarrier
 
-% ============================================================
-%  پیوست ج — معماری مخزن و نقشه‌ی مفهومی
-% ============================================================
+% % ============================================================
+% %  پیوست ج — معماری مخزن و نقشه‌ی مفهومی
+% % ============================================================
 
-\section{پیوست ج: معماری مخزن و نقشه‌ی مفهومی}
-\label{app:repo_map}
-\input{sections/appendix_C_fa.tex}
+% \section{پیوست ج: معماری مخزن و نقشه‌ی مفهومی}
+% \label{app:repo_map}
+% \input{sections/appendix_C_fa.tex}
 
 \end{document}
