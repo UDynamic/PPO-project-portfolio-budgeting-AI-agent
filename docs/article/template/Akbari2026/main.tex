@@ -1,0 +1,1340 @@
+% ============================================================
+%  TAYLOR & FRANCIS — Applied Operations and Analytics
+%  Full journal template — single self-contained main.tex
+%  Replicates: typography, column layout, header/footer,
+%  coloured section headings, table style, figure style,
+%  algorithm box, pairwise-matrix table, AHP weight table,
+%  boxplot figure stub, citation & reference style (APA-like),
+%  abstract box, keywords, article-history block.
+% ============================================================
+
+% ── Engine ──────────────────────────────────────────────────
+\documentclass[10pt,twocolumn]{article}
+
+% ── Core packages ───────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% ── Fonts ────────────────────────────────────────────────────
+% Body: Times New Roman equivalent
+\usepackage{mathptmx}          % serif body + math = Times
+\usepackage[scaled=0.92]{helvet} % sans-serif (section labels) = Helvetica/Arial
+\usepackage{courier}           % monospace
+% Title-block sans (mimics the bold sans used in the journal header)
+\renewcommand{\sfdefault}{phv}
+
+% ── Page geometry ────────────────────────────────────────────
+% Measured from the PDF: ~170 mm text width, 242 mm text height,
+% two 82 mm columns with 6 mm gutter
+\usepackage[
+  paperwidth  = 210mm,
+  paperheight = 297mm,
+  top         = 22mm,
+  bottom      = 28mm,
+  left        = 20mm,
+  right       = 20mm,
+  columnsep   = 6mm,
+  headsep     = 8pt,
+  footskip    = 16pt
+]{geometry}
+
+% ── Colours ─────────────────────────────────────────────────
+\usepackage[dvipsnames,table]{xcolor}
+% Journal blue used in section headings, article title, table rules
+\definecolor{tfjournalblue}{RGB}{0,80,158}
+% Light header-rule grey
+\definecolor{tfgrey}{RGB}{80,80,80}
+% Table shading (alternating rows — not used here but defined)
+\definecolor{tfshade}{RGB}{230,237,245}
+
+% ── Header & footer ─────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+% ── Mimics the journal running head exactly ─────────────────
+\fancyhead[L]{\footnotesize\sffamily\color{tfgrey}APPLIED OPERATIONS AND ANALYTICS}
+\fancyhead[R]{\footnotesize\sffamily\color{tfgrey}\thepage}
+\fancyfoot[C]{}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\headrule}{\color{tfgrey}\hrule width\headwidth height\headrulewidth}
+% First page uses a different style (title page style)
+\fancypagestyle{firstpage}{
+  \fancyhf{}
+  \fancyhead[L]{\footnotesize\sffamily\color{tfgrey}RESEARCH ARTICLE}
+  \fancyhead[R]{%
+    \footnotesize\sffamily\color{tfjournalblue}
+    \textbf{a} OPEN ACCESS \quad \textcolor{tfgrey}{$\checkmark$}%
+  }
+  \fancyfoot[C]{}
+  \renewcommand{\headrulewidth}{0.6pt}
+  \renewcommand{\headrule}{\color{tfgrey}\hrule width\headwidth height\headrulewidth}
+}
+
+% ── Spacing ──────────────────────────────────────────────────
+\usepackage{setspace}
+\setstretch{1.05}               % body leading — slightly loose like the journal
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt plus 1pt}
+
+% ── Section heading style ────────────────────────────────────
+\usepackage{titlesec}
+% Level-1: bold italic, blue, 10.5 pt, flush left, ruled above
+\titleformat{\section}
+  {\normalfont\fontsize{10.5}{13}\bfseries\itshape\color{tfjournalblue}}
+  {\thesection.}
+  {0.5em}
+  {}
+  [\vspace{-2pt}\color{tfjournalblue}\rule{\columnwidth}{0.4pt}]
+\titlespacing{\section}{0pt}{10pt plus 2pt}{4pt}
+
+% Level-2: bold italic, blue, 10 pt
+\titleformat{\subsection}
+  {\normalfont\fontsize{10}{12}\bfseries\itshape\color{tfjournalblue}}
+  {\thesubsection.}
+  {0.5em}
+  {}
+\titlespacing{\subsection}{0pt}{8pt plus 2pt}{3pt}
+
+% Level-3: italic only, black, run-in
+\titleformat{\subsubsection}[runin]
+  {\normalfont\fontsize{10}{12}\itshape}
+  {\thesubsubsection.}
+  {0.5em}
+  {}
+  [.\quad]
+\titlespacing{\subsubsection}{0pt}{6pt}{0pt}
+
+% ── Math & algorithms ────────────────────────────────────────
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+% ── Figures ──────────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,patterns,calc}
+
+% ── Tables ───────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+% Custom table font size (journal uses ~8.5–9 pt in tables)
+\newcommand{\tabfont}{\fontsize{8.5}{10.5}\selectfont}
+
+% ── Caption style ────────────────────────────────────────────
+\usepackage[
+  format       = plain,
+  labelfont    = {bf, small},
+  textfont     = {it, small},
+  labelsep     = period,
+  justification= raggedright,
+  singlelinecheck = false
+]{caption}
+
+% ── Lists ────────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=*,topsep=3pt,itemsep=1pt,parsep=0pt}
+\setlist[enumerate]{leftmargin=*,topsep=3pt,itemsep=1pt,parsep=0pt}
+
+% ── Hyperlinks & references ──────────────────────────────────
+\usepackage[
+  colorlinks = true,
+  linkcolor  = tfjournalblue,
+  citecolor  = tfjournalblue,
+  urlcolor   = tfjournalblue
+]{hyperref}
+\usepackage{url}
+% APA-style author-year citations via natbib
+\usepackage[round,authoryear,sort&compress]{natbib}
+\setlength{\bibsep}{3pt plus 1pt}
+
+% ── Miscellaneous ────────────────────────────────────────────
+\usepackage{microtype}   % kerning & protrusion
+\usepackage{balance}     % balance last page columns
+\usepackage{orcidlink}   % \orcidlink{0000-…}
+
+% ── Utility: thin rule for abstract box ─────────────────────
+\newcommand{\thinrule}{\vspace{2pt}\noindent\color{black}\rule{\columnwidth}{0.4pt}\vspace{2pt}}
+
+% ============================================================
+%  DOCUMENT
+% ============================================================
+\begin{document}
+
+% ── Journal-header bar (one-column span across top) ─────────
+\twocolumn[{%
+%
+% -------- top journal strip --------------------------------
+\noindent
+\begin{minipage}[t]{0.18\textwidth}
+  \includegraphics[width=\linewidth]{example-image}% replace with journal cover thumbnail
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.55\textwidth}
+  \vspace{4pt}
+  {\fontsize{14}{17}\selectfont\sffamily\bfseries\color{tfjournalblue}
+   Applied Operations and Analytics}\\[3pt]
+  {\footnotesize\sffamily\color{tfgrey}
+   ISSN: 2996-6892 (Online)\quad
+   Journal homepage: \url{www.tandfonline.com/journals/taoa20}}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.15\textwidth}
+  \raggedleft
+  \includegraphics[width=\linewidth]{example-image}% T&F logo
+\end{minipage}
+
+\vspace{10pt}
+\noindent\color{tfgrey}\rule{\textwidth}{0.6pt}
+\vspace{10pt}
+
+% -------- article title ------------------------------------
+{\fontsize{16}{20}\selectfont\sffamily\bfseries\color{tfjournalblue}
+A [Self-Adjusting / Adaptive] Decision Support System for \\
+Strategic [Domain] Optimization Using Integrated [Method A] \\
+and [Method B]\par}
+
+\vspace{8pt}
+
+% -------- authors ------------------------------------------
+{\fontsize{11}{14}\selectfont\sffamily\bfseries
+First Author\textsuperscript{a}
+\orcidlink{0000-0000-0000-0001}
+\quad and \quad
+Second Author\textsuperscript{a}
+\orcidlink{0000-0000-0000-0002}\par}
+
+\vspace{4pt}
+
+{\footnotesize\itshape
+\textsuperscript{a}Department of Industrial Engineering and Management Systems,
+University Name, City, Country\par}
+
+\vspace{10pt}
+
+% -------- cite / link block --------------------------------
+{\footnotesize\sffamily
+\textbf{To cite this article:} First Author \& Second Author (202X)
+A [Self-Adjusting] Decision Support System for [topic],
+\textit{Applied Operations and Analytics}, X:X, 1--19,
+DOI: 10.1080/XXXXXXXX.202X.XXXXXXX
+
+\vspace{3pt}
+\textbf{To link to this article:} \url{https://doi.org/10.1080/XXXXXXXX.202X.XXXXXXX}
+\par}
+
+\vspace{6pt}
+\noindent\color{tfgrey}\rule{\textwidth}{0.4pt}
+\vspace{10pt}
+
+% -------- two-column abstract block -------------------------
+\begin{minipage}[t]{0.55\textwidth}
+  \setlength{\fboxsep}{6pt}%
+  \setlength{\fboxrule}{0.5pt}%
+  \noindent\framebox[\linewidth][l]{%
+    \begin{minipage}{\dimexpr\linewidth-2\fboxsep-2\fboxrule}%
+    \footnotesize
+    \textbf{ABSTRACT}\\[4pt]
+    This study proposes a novel [Framework Name] that integrates
+    [Method A] and [Method B]. The system is designed to optimize
+    [problem domain] under dynamic and uncertain conditions. The
+    framework addresses a critical challenge in strategic
+    decision-making by combining [static component] with a
+    [dynamic component] that adaptively adjusts its actions in
+    response to real-time environmental feedback. [Method A]-derived
+    weights for Key Performance Indicators (KPIs) are incorporated
+    into a strategically designed reward function that guides the
+    [agent/algorithm], operating under an $\varepsilon$-greedy
+    policy, to learn an optimal long-term [allocation/selection]
+    strategy. This ensures that adaptive decisions remain aligned
+    with organizational priorities while responding flexibly to
+    operational changes. The framework was validated via [simulation
+    platform], demonstrating a [X]\% improvement in cumulative
+    [metric] compared to conventional non-adaptive approaches.
+    Results indicate that the [system] consistently generates
+    high-quality, data-driven decisions, enhancing [KPI 1], [KPI 2],
+    and long-term [outcome]. This framework provides actionable
+    insights for managers and decision-makers seeking to integrate
+    strategic goal-setting with adaptive operational decision-making
+    in complex and uncertain environments.
+    \end{minipage}%
+  }%
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.40\textwidth}
+  \footnotesize
+  \textbf{ARTICLE HISTORY}\\
+  Received DD Month YYYY\\
+  Accepted DD Month YYYY\\[6pt]
+  \textbf{KEYWORDS}\\
+  [Keyword 1];
+  [Keyword 2];
+  [Keyword 3];
+  [Keyword 4];
+  [Keyword 5];
+  [Keyword 6];
+  [Keyword 7]
+\end{minipage}
+
+\vspace{14pt}
+}]% end \twocolumn[...]
+
+\thispagestyle{firstpage}
+
+% ============================================================
+\section{Introduction}
+% ============================================================
+
+[Topic area] is a core organizational capability, essential for
+aligning investments with long-term strategic goals and achieving
+organizational excellence \citep{Author2021, Author2016}. In
+today's dynamic and uncertain business environment, organizational
+success increasingly depends on effective and timely strategic
+decision-making, often supported by robust Decision Support Systems
+(DSS) \citep{Author2024, Author2021b}. This requires continuous
+development of DSS and [domain] functionalities to maintain
+organizational agility and respond effectively to environmental
+changes \citep{Author2023, Author2023b, Author2020}.
+
+While structured [domain] methodologies play a vital role in
+establishing evaluation criteria and processes \citep{Author2020b,
+Author2017}, their effectiveness is fundamentally challenged by
+environmental volatility \citep{Author2016b, Author2012}. Relying
+on static multi-criteria decision-making (MCDM) models (e.g.,
+simple [Method A] or [Variant]) leads to strategic rigidity in
+resource allocation, as the strategic weights of criteria fail to
+update quickly enough with shifting operational conditions and
+emerging risks \citep{Author2017b}. This situation necessitates a
+critical evaluation of decision support architectures within
+[context] firms. Consequently, a key management challenge arises:
+How can an automated and rational Adaptive Decision Support System
+(ADSS) be designed to dynamically adjust [domain] criteria in
+real-time, ensuring continuous alignment with evolving
+environmental conditions and strategic priorities?
+
+Significant advancements in intelligent methods, particularly
+Reinforcement Learning (RL), offer a powerful new paradigm for
+sequential and dynamic decision problems \citep{Author2021c}. RL
+has demonstrated strong performance and adaptability in optimizing
+dynamic resource allocation in complex systems as well as in
+financial portfolio management \citep{Author2025}, thereby boosting
+organizational resilience. The development of hybrid DSS
+architectures that integrate structured approaches like MCDM with
+optimization techniques is vital for effective project selection in
+complex environments \citep{Author2025b}. Nevertheless, the [domain]
+literature lacks a coherent hybrid ADSS model that successfully
+integrates formal strategic preference setting (i.e., managerial
+KPI weighting) with dynamic operational decision-making via RL.
+
+This research addresses this critical gap by introducing a novel
+[Method B]--[Method A] hybrid framework for Adaptive Decision
+Support Systems (ADSS). The core contribution lies in
+synergistically integrating the [Algorithm] (for dynamic,
+autonomous action selection) with the [Method A]. [Method A]
+serves as a robust tool to calculate validated KPI weights,
+ensuring the RL system's reward function is directly and
+authentically tied to management's strategic priorities
+\citep{Author2011}. This combination not only enhances decision
+quality in the face of uncertainty but also provides a near-optimal
+policy for [domain] management that consistently remains aligned
+with the organization's long-term strategic direction.
+
+Results from a dynamic simulation using [Platform] demonstrate
+that the [Method B]--[Method A] hybrid framework significantly
+enhances strategic alignment and [metric] compared to static
+methods, providing [domain] managers with a self-adjusting DSS for
+effective decision-making in uncertain environments.
+
+% ============================================================
+\section{Literature Review}
+% ============================================================
+
+\subsection{Theoretical Foundations and Requirements for Adaptive
+Decision Support Systems (ADSS)}
+
+In the management literature, [Domain] Management is increasingly
+viewed not merely as a mechanical tool for [selection] but as a
+Governance Structure and a Strategy Enactment mechanism. Effective
+[domain] management enables organizations to achieve Ambidexterity
+by managing the simultaneous pursuit of exploration and
+exploitation \citep{Author2010}. This strategic requirement
+directly translates into the necessity for Adaptive Decision
+Support System (ADSS) architectures that can computationally
+support dynamic strategy.
+
+Portfolio Governance plays a key role in establishing
+transparency, allocating authority, and creating clear processes
+for strategic decision-making \citep{Author1999}. From a systems
+perspective, Dynamic Capabilities Theory provides the necessary
+theoretical justification for strategic flexibility in [domain],
+emphasizing the organization's ability to sense, seize, and
+transform resources to maintain agility \citep{Author2007}. These
+capabilities are vital for organizational excellence and sustained
+survival in fast-paced, competitive environments characterized by
+technological convergence and market uncertainty \citep{Author2016c}.
+The central challenge for DSS design is developing a computational
+framework that can accurately and autonomously operationalize these
+dynamic capabilities.
+
+\subsection{The Limitations of Multi-Criteria Decision-Making
+(MCDM) Models in Dynamic Decision Support}
+
+Traditional decision support for resource allocation in [domain]
+is primarily guided by Multi-Criteria Decision-Making (MCDM)
+models. The Analytic Hierarchy Process ([Method A]), founded by
+\citet{Saaty1990}, is recognized as a powerful tool for converting
+subjective qualitative managerial judgments into quantitative
+relative weights for decision criteria \citep{Author1990}. The key
+value of [Method A] and its family (e.g., ANP) lies in their
+ability to: (1) manage consistency in managerial judgments and (2)
+provide transparency in the prioritization process.
+
+However, the main structural weakness of [Method A] and its
+derivatives is their inherent inability to manage the sequential
+and adaptive nature of [domain] decisions \citep{Author2012b}.
+[Domain] decisions span long time horizons and necessitate frequent
+re-evaluation \citep{Author2007b}. Static MCDM methods offer only
+a ``snapshot'' of strategic preferences at a single point in time,
+failing to internalize the dynamic changes in criteria weights and
+resource constraints throughout the [domain] lifecycle. This
+deficiency leads to a critical breakdown in decision support
+efficacy \citep{Author2023c, Author2021d}.
+
+\subsection{Reinforcement Learning (RL) as a Computational
+Solution for Sequential Decision Systems}
+
+To address the shortcomings of static decision support models, the
+scientific literature has shifted toward algorithmic frameworks
+built upon Markov Decision Processes (MDPs)
+\citep{Author2021e}. Reinforcement Learning (RL), rooted in
+control theory and machine learning, is the most robust and
+suitable algorithmic paradigm for solving sequential decision
+problems in dynamic environments \citep{Sutton1998,Author2007c}.
+
+RL, especially the Q-Learning algorithm developed by
+\citet{Watkins1992}, allows the intelligent agent to learn an
+optimal policy without prior knowledge of the environment model
+(model-free learning) through repeated interaction and receiving a
+Reward signal \citep{Author2017c}. RL applications in related
+management fields are growing rapidly and prove its efficacy in
+adaptive decision-making:
+
+\begin{itemize}
+  \item \textbf{Resource Management:} RL is used for optimizing
+        dynamic resource allocation in complex systems,
+        outperforming conventional methods \citep{Author2024b}.
+  \item \textbf{Operations \& Supply Chain:} In dynamic inventory
+        and supply chain management, RL enables real-time, adaptive
+        control policies \citep{Author2022}.
+  \item \textbf{Financial Portfolio:} RL has demonstrated strong
+        performance in selecting financial portfolios under high
+        market volatility and sequential risk.
+\end{itemize}
+
+Despite these advancements, a central gap persists in [domain]
+research and the design of hybrid DSS architectures: existing RL
+implementations in management simplify the problem by assuming
+pre-defined, typically financial, reward functions
+\citep{Author2022b}. Without a structured mechanism to tie
+high-level strategic preferences ([Method A] output) to the
+dynamic reward signal (RL input), the learning system may drift,
+leading to policies that are operationally efficient but
+strategically misaligned \citep{Author2023d}. This constitutes a
+significant system design challenge for adaptive DSS.
+
+\subsection{Synthesis and Research Contribution}
+
+This research directly addresses this theoretical and practical gap
+by formally integrating the prescriptive power of [Method A]
+(representing static strategic thought) and the adaptive capability
+of RL (representing dynamic operational decision-making)
+\citep{Author2023e}.
+
+The main contribution of this study is the creation of a novel
+[Method B]--[Method A] hybrid Adaptive Decision Support System
+(ADSS) framework where the [Method A] output (strategic criteria
+weights) serves as a Strategic Filter in designing the Q-Learning
+reward function. This dual mechanism provides the first system
+that: (1) possesses the agility required to respond to
+environmental changes (enhancing dynamic capabilities) and (2)
+ensures that all dynamic [domain] actions are consistently aligned
+with the approved strategic vision and goals of senior management
+\citep{Author2021f}.
+
+% ============================================================
+\section{Methodology: [Framework Name] (ADSS) Framework}
+% ============================================================
+
+This section presents the methodological design of the proposed
+[Method B] -- [Method A] Adaptive Decision Support System (ADSS).
+
+\subsection{Overview and Formalization of the Hybrid ADSS
+Architecture}
+
+The proposed model is a [Method B]--[Method A] hybrid Adaptive
+Decision Support System (ADSS) framework designed to optimize
+[domain] selection under uncertainty dynamically. The architecture
+formally integrates the prescriptive power of Multi-Criteria
+Decision-Making (MCDM) with the adaptive capability of
+Reinforcement Learning (RL) to address the limitations of static
+decision-making in turbulent environments. To directly resolve
+this limitation, the proposed [Method B]--[Method A] ADSS
+incorporates a Strategic Filter that evaluates and constrains each
+candidate RL action against the strategic hierarchy defined
+through [Method A]. The sequential decision problem is modeled as
+a Markov Decision Process (MDP), defined by the tuple
+$\langle S, A, T, R \rangle$.
+
+\subsection{Markov Decision Process (MDP) Formulation}
+
+Q-learning was selected as the learning algorithm due to the fully
+discrete and relatively low-dimensional state--action space of the
+[domain] environment, which makes tabular methods both feasible and
+efficient. Unlike DQN-based approaches, which are designed for
+high-dimensional or continuous state spaces requiring function
+approximation, the present setting does not necessitate neural
+network estimation. Q-learning also offers an advantage over SARSA
+in this application because its off-policy nature enables stable
+learning of a target greedy policy while allowing stochastic
+exploratory behavior during training. Furthermore, the tabular
+Q-learning framework provides full transparency and
+interpretability of learned values, which is essential for
+managerial decision-support contexts.
+
+\subsubsection{Q-Learning Algorithm}
+In this study, we employ Reinforcement Learning (RL) to enable
+adaptive decision-making in [domain] management under uncertainty.
+RL is well-suited for dynamic environments, allowing agents to
+learn through trial and error by interacting with the environment
+and adjusting their policy accordingly \citep{Sutton1998}.
+
+Specifically, we utilize the Q-learning algorithm, a model-free
+method where the agent observes the current state (defined by
+performance indicators), selects an action, receives a reward, and
+iteratively updates its Q-values. The Q-Learning algorithm
+determines the optimal state-action mapping through gradual
+learning. Continuous adaptation is achieved via the Q-value update
+rule:
+
+\begin{equation}
+  Q(s_t, a_t) \leftarrow Q(s_t, a_t) +
+  \alpha \bigl[ r_t + \gamma \max_{a'} Q(S_{t+1}, a') - Q(s_t, a_t) \bigr]
+  \label{eq:qupdate}
+\end{equation}
+
+\noindent where:
+\begin{itemize}
+  \item $\alpha$ is the learning rate $(0 < \alpha < 1)$,
+        determining how quickly the algorithm adapts to new data,
+  \item $\gamma$ is the discount factor $(0 < \gamma < 1)$ for
+        future rewards,
+  \item $R_t$ is the reward received at time step $t$,
+  \item $Q(s_t, a_t)$ is the current value of the state-action
+        pair $(s_t, a_t)$, and $\max Q(S_{t+1}, a')$ represents the
+        maximum Q-value over all possible actions $a'$ in the next
+        state $S_{t+1}$.
+\end{itemize}
+
+% ---- Algorithm box ----------------------------------------
+\begin{algorithm}[H]
+\caption{Q-Learning Approach}
+\label{alg:qlearning}
+\begin{algorithmic}[1]
+  \REQUIRE State space $S$, action space $A$, learning rate
+           $\alpha$, discount factor $\gamma$, exploration rate
+           $\varepsilon$
+  \ENSURE  Optimized Q-value function $Q(s,a)$
+  \STATE Initialize Q-values: $Q(s,a)\leftarrow 0$,
+         $\forall\, s\in S,\; a\in A$
+  \REPEAT
+    \STATE Observe current state $s = s_t$
+    \STATE Select action $a_t$ using $\varepsilon$-greedy policy:
+    \STATE \quad With probability $\varepsilon$, choose a random
+           action (exploration)
+    \STATE \quad With probability $1-\varepsilon$, choose
+           $a_t = \arg\max_a Q(s,a)$ (exploitation)
+    \STATE Execute action $a_t$, observe reward $r_t$, and next
+           state $s' = s_{t+1}$
+    \STATE Update Q-value using Equation~\eqref{eq:qupdate}
+    \STATE Set $s \leftarrow s'$
+  \UNTIL{convergence criterion is met
+         (e.g., change in Q-values $<$ threshold)}
+\end{algorithmic}
+\end{algorithm}
+
+The State Space is defined by three discrete and mutually
+exclusive states: $S = \{\text{Normal},\, \text{Crisis},\,
+\text{Sudden Change}\}$. These states collectively capture the
+overall [domain] health and the underlying environmental
+uncertainty context. The Action Space includes $N$ discrete,
+[domain]-level strategic policies representing management's
+responses to environmental states.
+
+\subsection{Hybrid Reward Function Design and Strategic
+Aggregation}
+
+Unlike conventional RL frameworks with predefined reward
+functions, this study introduces a hybrid reward formulation
+directly grounded in managerial strategic weights derived from
+[Method A]. The framework's core contribution is the Hybrid
+Reward Function ($R_{\mathrm{total}}$), which directly aligns the RL
+agent's learning with management's strategic preferences ([Method
+A] weights). Its calculation involves two stages: Immediate KPI
+Reward Estimation and Strategic Aggregation.
+
+\subsubsection{Immediate KPI Reward Estimation}
+The observed reward for a KPI, $r_{n,i}$, is based on its
+percentage deviation from the strategic target. To ensure the
+reward reflects stable strategic changes rather than short-term
+fluctuations, a Smoothed Strategic Performance Score ($R_n$) is
+calculated using a rolling window $k$:
+
+\begin{equation}
+  R_n = \frac{1}{k} \sum_{i=1}^{k} r_{n,i}
+  \label{eq:smoothed}
+\end{equation}
+
+The corresponding reward structure based on action outcome is
+summarized in Table~\ref{tab:rewards}.
+
+\subsubsection{Strategic Aggregation and Temporal Weighting}
+The final reward received by the agent at each time step is the
+Total Portfolio Reward ($R_{\mathrm{total}}$). It is derived from
+the strategically weighted aggregation of the stabilized
+performance scores ($R_n$) using the [Method A]-derived strategic
+weights ($w_n$):
+
+\begin{equation}
+  R_{\mathrm{total}} = \sum_{n=1}^{K} w_n R_n
+  = w_1 R_1 + w_2 R_2 + \cdots + w_K R_K
+  \label{eq:rtotal}
+\end{equation}
+
+\subsection{Implementation Steps of the Hybrid Framework}
+
+The proposed decision-making framework integrates the static,
+prescriptive power of [Method A] with the adaptive capability of
+the Q-Learning algorithm. The implementation is executed in two
+distinct phases:
+
+\textit{Phase 1: Strategic Pre-Processing ([Method A]).}
+(1) Identification and Weighting of KPIs: Define the set of the
+$n$-th Key Performance Indicator ($\text{KPI}_n$) that represents
+the organizational strategic goals. The relative importance
+(strategic weight, $w_n$) is formally computed through [Method A],
+ensuring managerial consensus and consistency. (2) State and
+Action Definition: Analyze [domain] performance thresholds to
+define the environmental states and the corresponding [domain]
+actions available to the agent.
+
+\textit{Phase 2: Iterative Learning (Q-Learning).}
+(1) Initialization: Initialize the Q-Table $Q(s,a)\leftarrow 0$
+and set the learning parameters ($\alpha, \gamma, \varepsilon$).
+(2) Reward Computation: During each iteration, compute the
+estimated expected reward ($R_n$) for each KPI using
+Equation~\eqref{eq:smoothed}. (3) Hybrid Reward Aggregation:
+Aggregate into $R_{\mathrm{total}}$ via Equation~\eqref{eq:rtotal}.
+(4) Optimal Action Selection: Select $a_t$ based on $s_t$ using
+the $\varepsilon$-greedy policy. (5) Q-Value Update: Execute,
+observe $S_{t+1}$, and update using
+Equation~\eqref{eq:qupdate}. (6) Policy Convergence: Repeat until
+convergence.
+
+\subsection{Case Study: Scenario-Based [Domain] Evaluation}
+
+To validate the hybrid model, a scenario-based simulation was
+conducted at a major [type] organization. Three representative
+environmental shock scenarios were simulated. Shock~1 represents a
+[Priority] Shock, modeled by increasing the [KPI] weight by 40\%
+while proportionally reducing other strategic weights. Shock~2
+represents an Operational Crisis Shock, modeled by reducing [KPI
+A] and [KPI B] reward contributions by approximately 30\%.
+Shock~3 represents a [Regulatory/Sustainability] Shock, modeled by
+increasing the corresponding KPI weights by approximately 35\%.
+
+Nine performance indicators (KPIs) were formulated:
+
+\begin{enumerate}
+  \item \textbf{KPI 1:} [Definition]
+  \item \textbf{KPI 2:} [Definition]
+  \item \textbf{KPI 3:} [Definition]
+  \item \textbf{KPI 4:} [Definition]
+  \item \textbf{KPI 5:} [Definition]
+  \item \textbf{KPI 6:} [Definition]
+  \item \textbf{KPI 7:} [Definition]
+  \item \textbf{KPI 8:} [Definition]
+  \item \textbf{KPI 9:} [Definition]
+\end{enumerate}
+
+% ============================================================
+\section{Results and Discussion}
+% ============================================================
+
+\subsection{Analytical Hierarchy Process ([Method A]) for KPI
+Weighting}
+
+To quantify the relative strategic importance of each KPI, a
+structured pairwise comparison method was applied using Saaty's
+9-point scale. The evaluations were obtained from five senior
+[domain] managers and strategy experts. Following standard [Method
+A] computation, the matrix was normalized, and the mean of each
+row was calculated to derive the priority vector representing the
+relative weights of the nine KPIs. The resulting weights
+(Table~\ref{tab:ahpweights}) indicate that [KPI 1] (0.XXXX) and
+[KPI 2] (0.XXXX) dominate the strategic preference structure.
+
+To verify the internal consistency of expert judgments, the
+Consistency Index (CI) was computed:
+
+\begin{equation}
+  CI = \frac{\lambda_{\max} - n}{n - 1}
+  \label{eq:ci}
+\end{equation}
+
+The Consistency Ratio (CR) was then obtained by dividing CI by the
+Random Index (RI). According to Saaty's scale, the RI for $n = 9$
+is 1.45:
+
+\begin{equation}
+  CR = \frac{CI}{RI}
+  \label{eq:cr}
+\end{equation}
+
+A matrix is considered consistent if $CR < 0.1$. In this study,
+the calculated CR satisfied this condition, confirming that the
+expert evaluations were logically consistent.
+
+\subsection{State--Action Pair Matrices for Key Indicators}
+
+The state--action matrices for key performance indicators align
+with the organization's long-term goals. Proposed actions enhance
+resilience to shocks, strengthen [domain] systems, and improve
+service quality, balancing short- and long-term strategy.
+
+\subsection{Q-Learning Algorithm Implementation and Policy
+Convergence}
+
+\subsubsection{Parameter Configuration and Update Rule}
+To ensure convergence stability and emphasize long-term strategic
+outcomes, the learning rate ($\alpha$) was set to 0.1, and the
+discount factor ($\gamma$) was set to 0.9. The $\varepsilon$-greedy
+policy was implemented with an initial value of 1.0, linearly
+decaying to 0.01 over the training episodes to ensure a robust
+balance between exploration and exploitation.
+
+\subsubsection{Policy Convergence and Performance Interpretation}
+Convergence behavior was evaluated through the stabilization of
+Q-values and the diminishing variance of cumulative rewards over
+successive training episodes. The convergence patterns demonstrated
+smooth and monotonic learning trajectories across all KPIs,
+indicating robust policy stabilization and the absence of
+oscillatory behavior. Stabilization of the total reward after
+approximately 400 episodes confirms that the agent successfully
+learned an optimal, steady-state strategic policy.
+
+\subsection{Strategic Reward Aggregation and Final Reward
+Calculation}
+
+To calculate the total weighted reward, we apply
+Equation~\eqref{eq:rtotal}, in which each indicator's average
+reward is multiplied by its corresponding relative weight:
+
+\begin{equation}
+  R_{\mathrm{total}} = (0.3521 \times 1.556) + (0.1951 \times 2.0)
+  + \cdots + (0.0272 \times 1.889) = 1.735
+\end{equation}
+
+\subsection{Ex-Post Analysis of KPI Performance Contribution}
+
+Although the strategic priorities ($W_n$) are fixed and
+exogenously determined by [Method A], it is valuable to conduct an
+ex-post analysis to evaluate the relative contribution of each
+KPI's performance ($R_n$) to the overall reward structure. The
+relative operational contribution ($C_n$) of each indicator is
+calculated as:
+
+\begin{equation}
+  C_n = \frac{R_n}{\sum_{i=1}^{9} R_i}
+  \label{eq:contribution}
+\end{equation}
+
+The analysis shows [KPI X] contributed most to the total average
+reward (Table~\ref{tab:contribution}), followed by [KPI Y],
+indicating that the RL agent effectively managed these areas.
+
+\subsection{Policy Convergence and Sensitivity Analysis}
+
+This section presents simulation results from the proposed
+reinforcement learning model. Figure~\ref{fig:cumreward} illustrates
+the exploitation-only policy ($\varepsilon = 0$) maintaining higher
+cumulative reward values compared to the exploratory policy
+($\varepsilon = 0.3$) throughout the simulation. At the final
+episode (Episode 200), the exploitation strategy reaches a
+cumulative reward of approximately 950, whereas the exploratory
+policy reaches approximately 780. This $\approx$21\% difference
+reflects the expected ``exploration cost.''
+
+Figure~\ref{fig:boxplot} presents the distribution of
+$R_{\mathrm{total}}$ over 50 independent runs. The boxplot confirms
+that the Hybrid [Method B]--[Method A] policy has the highest
+median, the tightest spread, and the fewest extreme deviations,
+supporting its robustness and repeatability.
+
+\subsection{Comparative Performance Analysis}
+
+The proposed hybrid [Method B]--[Method A] policy was benchmarked
+against three non-adaptive control scenarios:
+
+\begin{enumerate}
+  \item \textbf{[Method A]-Only Policy (Control 1):} A static
+        decision-making strategy based solely on [Method A]-derived
+        priorities, without the ability to adapt to changing states.
+  \item \textbf{Random Policy (Control 2):} A non-intelligent
+        baseline where actions are selected randomly in every state.
+  \item \textbf{Simple Weighted-Sum Heuristic (Control 3):} A
+        classical multi-criteria scoring method in which each
+        candidate action is evaluated using a deterministic
+        weighted-sum score.
+\end{enumerate}
+
+The comparative performance metrics are presented in
+Table~\ref{tab:comparison}. The results clearly demonstrate:
+
+\begin{enumerate}
+  \item \textbf{Superior Performance:} The model achieves the
+        highest strategic performance ($R_{\mathrm{total}} = 1.7359$),
+        confirming that the adaptive policy outperforms non-adaptive
+        alternatives.
+  \item \textbf{Gain over Static Policy:} The hybrid model
+        improves the strategic weighted reward compared to the
+        static-only policy (1.5500) by selecting optimal corrective
+        actions during crisis or sudden change states.
+  \item \textbf{Baseline Validation:} The random policy
+        ($R_{\mathrm{total}} = 0.8500$) performs poorly, confirming
+        that the learning mechanism and reward design effectively
+        guide the agent toward high-performance outcomes.
+\end{enumerate}
+
+\subsection{Statistical Validation and Robustness Analysis}
+
+To strengthen the validation, two additional analyses were
+conducted: multi-run stability testing and environmental shock
+robustness testing. The model was executed 50 independent times,
+each for 200 episodes, under the same parameter setting
+($\alpha=0.1$, $\gamma=0.9$). The aggregated statistical results
+across the three policies are presented in
+Table~\ref{tab:multirun}. The Hybrid [Method B]--[Method A] model
+achieves the highest mean reward while also exhibiting the lowest
+variability.
+
+\subsection{Limitations and Computational Considerations}
+
+While the proposed [Method B]--[Method A] framework is
+computationally tractable for the [domain] size and KPI structure
+examined in this study, the methodology may face scalability
+challenges in substantially larger [domain] environments. As the
+number of assets, KPIs, and admissible reallocation options
+expands, the dimensionality of the state--action space grows
+non-linearly. Future work may address these limitations through
+state aggregation, function approximation, or migrating toward deep
+reinforcement learning variants (e.g., DQN) to enhance scalability
+and computational efficiency.
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+This study developed and validated a hybrid decision-making
+framework integrating [Method A] and Q-Learning to optimize
+[domain] management under uncertainty. Its core contribution is the
+Strategic Hybrid Reward Function, which maps [Method A]-based
+strategic priorities onto the agent's learning objectives, ensuring
+adaptive and aligned policies.
+
+Empirical validation demonstrated that the Q-values converged
+steadily and the cumulative weighted rewards stabilized, confirming
+the model's effectiveness in learning optimal policies focused on
+high-priority indicators, particularly [KPI X]. Sensitivity
+analyses on key parameters ($\alpha$, $\gamma$, $\varepsilon$)
+highlighted the importance of careful tuning for stable convergence
+and efficient long-term learning.
+
+Comparative performance analysis showed that the hybrid model
+achieved a higher Total Weighted Reward ($R_{\mathrm{total}}$) than
+static-only policies, demonstrating its ability to learn adaptive,
+superior strategies that yield greater strategic returns in dynamic
+environments.
+
+Future research should focus on:
+\begin{itemize}
+  \item Extending the framework toward deep reinforcement learning
+        approaches capable of handling larger and more complex
+        [domain] environments, including richer and
+        higher-resolution state representations.
+  \item Applying the model to real organizational datasets once
+        such access becomes available, enabling empirical validation
+        under real-world [domain] management conditions.
+  \item Extending the benchmarking analysis by comparing the
+        proposed hybrid [Method B]--[Method A] framework with
+        advanced established [domain] optimization techniques (e.g.,
+        mean--variance optimization, linear or integer programming
+        models).
+\end{itemize}
+
+% ============================================================
+%  TABLES
+% ============================================================
+
+% ---- Table 1: Q-Table sample ---
+\begin{table}[H]
+\caption{Sample Q-Table.}
+\label{tab:qtable}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\columnwidth}{lXXXX}
+\toprule
+\textbf{States} & $A_1$ & $A_2$ & $\cdots$ & $A_m$ \\
+\midrule
+$S_1$ & $Q_{11}$ & $Q_{12}$ & $\cdots$ & $Q_{1m}$ \\
+$S_2$ & $Q_{21}$ & $Q_{22}$ & $\cdots$ & $Q_{2m}$ \\
+$\vdots$ & $\vdots$ & $\vdots$ & $\ddots$ & $\vdots$ \\
+$S_n$ & $Q_{n1}$ & $Q_{n2}$ & $\cdots$ & $Q_{nm}$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ---- Table 2: Reward assignment ---
+\begin{table}[H]
+\caption{Reward assignment based on action outcomes.}
+\label{tab:rewards}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\columnwidth}{rX}
+\toprule
+\textbf{Reward} & \textbf{Action Outcome} \\
+\midrule
+$+6$   & More than 20\% positive deviation from the target \\
+$+5$   & 15\% to 20\% positive deviation \\
+$+4$   & 10\% to 15\% positive deviation \\
+$+3$   & 5\% to 10\% positive deviation \\
+$+2$   & Up to 5\% positive deviation \\
+$+1$   & No deviation from the target \\
+$\phantom{+}0$  & Very slight shortfall (0\% to 1\% negative deviation) \\
+$-1$   & Up to 5\% negative deviation \\
+$-2$   & 5\% to 10\% negative deviation \\
+$-3$   & 10\% to 15\% negative deviation \\
+$-4$   & 15\% to 20\% negative deviation \\
+$-5$   & More than 20\% negative deviation \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ---- Table 3: Pairwise comparison (full 9×9) ---
+% Spans both columns — placed in table* environment
+\begin{table*}[ht]
+\caption{Pairwise comparison matrix.}
+\label{tab:pairwise}
+\tabfont
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+ & \textbf{KPI 1} & \textbf{KPI 2} & \textbf{KPI 3}
+ & \textbf{KPI 4} & \textbf{KPI 5} & \textbf{KPI 6}
+ & \textbf{KPI 7} & \textbf{KPI 8} & \textbf{KPI 9} \\
+\midrule
+KPI 1 & 1       & 3       & 5       & 7       & 9       & 4       & 6       & 5       & 8       \\
+KPI 2 & $1/3$   & 1       & 3       & 5       & 7       & 2       & 4       & 3       & 6       \\
+KPI 3 & $1/5$   & $1/3$   & 1       & 3       & 5       & 1       & 2       & 2       & 4       \\
+KPI 4 & $1/7$   & $1/5$   & $1/3$   & 1       & 3       & $1/2$   & 1       & $1/3$   & 2       \\
+KPI 5 & $1/9$   & $1/7$   & $1/5$   & $1/3$   & 1       & $1/4$   & $1/5$   & $1/6$   & 1       \\
+KPI 6 & $1/4$   & $1/2$   & 1       & 2       & 4       & 1       & 2       & 2       & 3       \\
+KPI 7 & $1/6$   & $1/4$   & $1/2$   & 1       & 5       & $1/2$   & 1       & 2       & 4       \\
+KPI 8 & $1/5$   & $1/3$   & $1/2$   & 3       & 6       & $1/2$   & $1/2$   & 1       & 3       \\
+KPI 9 & $1/8$   & $1/6$   & $1/4$   & $1/2$   & 1       & $1/3$   & $1/4$   & $1/3$   & 1       \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% ---- Table 4: AHP criteria weights ---
+\begin{table}[H]
+\caption{Criteria weights.}
+\label{tab:ahpweights}
+\tabfont
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\columnwidth}{lX}
+\toprule
+\textbf{Weight} & \textbf{Indicator} \\
+\midrule
+0.3521 & KPI 1 ([Name]) \\
+0.1951 & KPI 2 ([Name]) \\
+0.1047 & KPI 3 ([Name]) \\
+0.0989 & KPI 4 ([Name]) \\
+0.0768 & KPI 5 ([Name]) \\
+0.0751 & KPI 6 ([Name]) \\
+0.0475 & KPI 7 ([Name]) \\
+0.0272 & KPI 8 ([Name]) \\
+0.0225 & KPI 9 ([Name]) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ---- Table 5: Operational contribution ---
+\begin{table}[H]
+\caption{Relative operational contribution of indicators.}
+\label{tab:contribution}
+\tabfont
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\columnwidth}{Xrr}
+\toprule
+\textbf{Indicator} & $R_n$ & $C_n$ \\
+\midrule
+KPI 1 & 1.556 & 0.097 \\
+KPI 2 & 2.000 & 0.125 \\
+KPI 3 & 1.667 & 0.104 \\
+KPI 4 & 1.222 & 0.076 \\
+KPI 5 & 2.111 & 0.132 \\
+KPI 6 & 2.333 & 0.146 \\
+KPI 7 & 1.778 & 0.111 \\
+KPI 8 & 1.333 & 0.083 \\
+KPI 9 & 1.889 & 0.118 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ---- Table 6: Comparative performance ---
+\begin{table*}[ht]
+\caption{Comparative performance metrics for [domain] management scenarios.}
+\label{tab:comparison}
+\tabfont
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{p{3.8cm}p{7.8cm}rr}
+\toprule
+\textbf{Model Scenario} & \textbf{Strategy Description}
+  & \textbf{$R_{\mathrm{total}}$}
+  & \textbf{Gain vs.\ [A]-Only} \\
+\midrule
+Hybrid [B]--[A]
+  & Optimal, adaptive policy learned through Q-Learning
+    ($\alpha=0.1$, $\gamma=0.9$)
+  & 1.7359 & $+11.99\%$ \\
+Weighted-Sum Heuristic (Ctrl 3)
+  & Classical scoring-based static optimisation using [A] weights
+  & 1.6120 & $+4.00\%$ \\
+{[A]-Only Policy (Ctrl 1)}
+  & Static, non-adaptive policy (Simulated Result)
+  & 1.5500 & --- \\
+Random Policy (Ctrl 2)
+  & Actions selected randomly in each state (Simulated Baseline)
+  & 0.8500 & --- \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% ---- Table 7: Multi-run validation ---
+\begin{table}[H]
+\caption{Multi-run statistical validation of the three decision policies.}
+\label{tab:multirun}
+\tabfont
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrp{1.8cm}}
+\toprule
+\textbf{Scenario} & \textbf{Mean} & \textbf{SD} & \textbf{Var} & \textbf{CV} & \textbf{95\% CI} \\
+\midrule
+Hybrid [B]--[A]  & 1.732 & 0.041 & 0.00168 & 0.024 & {[1.720, 1.744]} \\
+{[A]-Only}       & 1.548 & 0.079 & 0.00624 & 0.051 & {[1.526, 1.570]} \\
+Random           & 0.861 & 0.133 & 0.01769 & 0.155 & {[0.824, 0.898]} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- Table 8: Robustness under shocks ---
+\begin{table}[H]
+\caption{Robustness results under environmental shocks.}
+\label{tab:shocks}
+\tabfont
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\columnwidth}{Xrrr}
+\toprule
+\textbf{Scenario} & \textbf{Mean $R_{\mathrm{total}}$}
+ & \textbf{Change vs.\ Baseline} & \textbf{SD} \\
+\midrule
+Hybrid [Method B]--[Method A] (no shock) & 1.732 & ---      & 0.041 \\
+Shock 1: [Priority] Shock                & 1.688 & $-2.54\%$ & 0.045 \\
+Shock 2: Operational Crisis Shock        & 1.642 & $-5.20\%$ & 0.049 \\
+Shock 3: [Regulatory] Shock             & 1.703 & $-1.68\%$ & 0.043 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+%  FIGURES
+% ============================================================
+
+% ---- Figure 1: Cumulative reward comparison (line chart) ---
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width          = \columnwidth,
+  height         = 5.0cm,
+  xlabel         = {Tick (month)},
+  ylabel         = {$R_{\mathrm{total}}$ (cumulative)},
+  title          = {\footnotesize$R_{\mathrm{total}}$ vs ticks (cumulative) -- Q},
+  title style    = {font=\footnotesize},
+  xlabel style   = {font=\footnotesize},
+  ylabel style   = {font=\footnotesize},
+  tick label style = {font=\scriptsize},
+  legend style   = {font=\scriptsize, at={(0.97,0.05)},
+                    anchor=south east, draw=none},
+  xmin=0, xmax=200, ymin=0, ymax=1050,
+  xtick          = {0,25,50,75,100,125,150,175,200},
+  grid           = none,
+  axis lines     = left,
+  line width     = 0.8pt,
+]
+% Exploitation policy (ε=0) — steeper slope, reaches ~950
+\addplot[color=tfjournalblue, thick, domain=0:200, samples=50]
+  { 4.75*x };
+\addlegendentry{$Q\;(\varepsilon=0)$}
+% Exploratory policy (ε=0.3) — shallower, reaches ~780
+\addplot[color=orange!80!black, thick, dashed, domain=0:200, samples=50]
+  { 3.9*x };
+\addlegendentry{$Q\;(\varepsilon=0.3)$}
+\end{axis}
+\end{tikzpicture}
+\caption{Comparison of $R_{\mathrm{total}}$ cumulative values for
+$\varepsilon = 0$ (exploitation) vs.\ $\varepsilon = 0.3$
+(exploration) over the simulation horizon.}
+\label{fig:cumreward}
+\end{figure}
+
+% ---- Figure 2: Total reward per episode (convergence) ------
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width          = \columnwidth,
+  height         = 5.0cm,
+  xlabel         = {Episodes},
+  ylabel         = {Total Weighted Reward},
+  title          = {\footnotesize Total Reward vs Episodes -- Q},
+  title style    = {font=\footnotesize},
+  xlabel style   = {font=\footnotesize},
+  ylabel style   = {font=\footnotesize},
+  tick label style = {font=\scriptsize},
+  legend style   = {font=\scriptsize, at={(0.97,0.05)},
+                    anchor=south east, draw=none},
+  xmin=0, xmax=1000, ymin=2.4, ymax=3.5,
+  grid           = none,
+  axis lines     = left,
+  line width     = 0.6pt,
+]
+% Noisy raw reward (simulated as random oscillation around converged mean)
+\addplot[color=tfjournalblue!50, thin, domain=0:1000, samples=200]
+  { 3.2 + 0.25*sin(deg(0.15*x)) * exp(-0.005*x)
+    + 0.08*sin(deg(0.8*x)) };
+\addlegendentry{raw}
+% Moving average (orange) — converges smoothly
+\addplot[color=orange!80!black, thick, domain=0:1000, samples=100]
+  { 2.5 + 0.72*(1 - exp(-0.007*x)) };
+\addlegendentry{moving average}
+\end{axis}
+\end{tikzpicture}
+\caption{Total reward per episode over time.}
+\label{fig:convergence}
+\end{figure}
+
+% ---- Figure 3: Boxplot — distribution of R_total -----------
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+% Manual boxplot using TikZ — three groups
+\def\bw{0.30}   % box half-width
+\def\ww{0.15}   % whisker half-width
+
+% ---- Group 1: Hybrid AHP-RL (median~1.73, IQR~1.72–1.74) --
+\begin{scope}[xshift=1.5cm]
+  % whisker lines
+  \draw[thick] (0,1.68) -- (0,1.72);
+  \draw[thick] (0,1.74) -- (0,1.79);
+  \draw[thick] (-\ww,1.68) -- (\ww,1.68);
+  \draw[thick] (-\ww,1.79) -- (\ww,1.79);
+  % box
+  \fill[fill=tfjournalblue!30] (-\bw,1.72) rectangle (\bw,1.74);
+  \draw[thick]                 (-\bw,1.72) rectangle (\bw,1.74);
+  % median
+  \draw[very thick, orange!80!black] (-\bw,1.73) -- (\bw,1.73);
+\end{scope}
+
+% ---- Group 2: AHP-Only (median~1.55, IQR~1.53–1.57) -------
+\begin{scope}[xshift=3.5cm]
+  \draw[thick] (0,1.48) -- (0,1.53);
+  \draw[thick] (0,1.57) -- (0,1.63);
+  \draw[thick] (-\ww,1.48) -- (\ww,1.48);
+  \draw[thick] (-\ww,1.63) -- (\ww,1.63);
+  \fill[fill=tfjournalblue!30] (-\bw,1.53) rectangle (\bw,1.57);
+  \draw[thick]                 (-\bw,1.53) rectangle (\bw,1.57);
+  \draw[very thick, orange!80!black] (-\bw,1.55) -- (\bw,1.55);
+  % outlier
+  \node[circle,fill,inner sep=1.5pt] at (0,1.42) {};
+\end{scope}
+
+% ---- Group 3: Random (median~0.87, IQR~0.82–0.91) ---------
+\begin{scope}[xshift=5.5cm]
+  \draw[thick] (0,0.65) -- (0,0.82);
+  \draw[thick] (0,0.91) -- (0,1.08);
+  \draw[thick] (-\ww,0.65) -- (\ww,0.65);
+  \draw[thick] (-\ww,1.08) -- (\ww,1.08);
+  \fill[fill=tfjournalblue!30] (-\bw,0.82) rectangle (\bw,0.91);
+  \draw[thick]                 (-\bw,0.82) rectangle (\bw,0.91);
+  \draw[very thick, orange!80!black] (-\bw,0.87) -- (\bw,0.87);
+\end{scope}
+
+% Axes
+\draw[->] (0.8,0.55) -- (0.8,1.92) node[above,font=\scriptsize]
+  {Total Strategic Reward ($R_{\mathrm{total}}$)};
+\draw[->] (0.8,0.55) -- (6.7,0.55);
+% y ticks
+\foreach \y/\label in {0.6/0.6, 0.8/0.8, 1.0/1.0,
+                        1.2/1.2, 1.4/1.4, 1.6/1.6, 1.8/1.8}{
+  \draw (0.75,\y) -- (0.85,\y);
+  \node[left,font=\scriptsize] at (0.75,\y) {\label};
+}
+% x labels
+\node[below,font=\footnotesize] at (1.5,0.55) {Hybrid [Method B]--[Method A]};
+\node[below,font=\footnotesize] at (3.5,0.55) {[Method A]-Only};
+\node[below,font=\footnotesize] at (5.5,0.55) {Random Policy};
+\end{tikzpicture}
+\caption{Boxplot of $R_{\mathrm{total}}$ over 50 runs for the three policies.}
+\label{fig:boxplot}
+\end{figure}
+
+% ============================================================
+%  AUTHOR CONTRIBUTIONS
+% ============================================================
+\vspace{6pt}
+\noindent\textbf{Author contributions}
+
+\noindent CRediT: \textbf{First Author:} Data curation,
+Methodology, Validation, Visualization, Writing -- original draft;
+\textbf{Second Author:} Investigation, Methodology, Project
+administration, Supervision, Validation, Writing -- review \&
+editing.
+
+% ============================================================
+%  DISCLOSURE
+% ============================================================
+\vspace{6pt}
+\noindent\textbf{Disclosure statement}
+
+\noindent No potential conflict of interest was reported by the
+author(s).
+
+% ============================================================
+%  ORCID
+% ============================================================
+\vspace{6pt}
+\noindent\textbf{ORCID}
+
+\noindent First Author \orcidlink{0000-0000-0000-0001}
+\url{http://orcid.org/0000-0000-0000-0001}\\
+Second Author \orcidlink{0000-0000-0000-0002}
+\url{http://orcid.org/0000-0000-0000-0002}
+
+% ============================================================
+%  DATA AVAILABILITY
+% ============================================================
+\vspace{6pt}
+\noindent\textbf{Data availability statement}
+
+\noindent The data supporting the findings of this study were
+generated through simulation experiments. The simulation code and
+related materials are openly available in Zenodo at
+\url{https://doi.org/10.5281/zenodo.XXXXXXX}.
+
+% ============================================================
+%  REFERENCES — APA / Taylor & Francis author-year style
+% ============================================================
+\balance
+\vspace{6pt}
+
+% Inline bibliography (no .bib file needed)
+\begin{thebibliography}{99}
+\setlength{\itemsep}{2pt}
+\setlength{\parskip}{0pt}
+\bibitem[Author(2021)]{Author2021}
+Author, A.\ B. (2021).
+Title of the article: A theoretical review.
+\textit{The International Journal of Business \& Management},
+\textit{9}(1). \url{https://doi.org/10.XXXX/XXXXX}
+
+\bibitem[Author et al.(2016)]{Author2016}
+Author, C.\ D., Grobbelaar, S.\ S., \& Bam, W. (2016).
+Exploring the link between [topic] and company success:
+An empirical framework.
+\textit{South African Journal of Industrial Engineering},
+\textit{27}(3), 238--250.
+\url{https://doi.org/10.7166/27-3-1635}
+
+\bibitem[Author \& Carvalho(2024)]{Author2024}
+Author, M.\ T., \& Carvalho, M.\ M. (2024).
+Toward a multilevel framework of dynamic capabilities through
+the lens of project management.
+\textit{Project Management Journal}, \textit{55}(3), 247--263.
+\url{https://doi.org/10.1177/87569728231207028}
+
+\bibitem[Author et al.(2023)]{Author2023}
+Author, J., Kaufmann, C., \& Kock, A. (2023).
+The interplay between dynamic capabilities' dimensions and
+their relationship to [domain] agility and success.
+\textit{International Journal of Project Management},
+\textit{41}(4), 102469.
+\url{https://doi.org/10.1016/j.ijproman.2023.102469}
+
+\bibitem[Saaty(1990)]{Saaty1990}
+Saaty, T.\ L. (1990).
+\textit{The analytic hierarchy process: Planning, priority
+setting, resource allocation}.
+McGraw-Hill.
+
+\bibitem[Sutton \& Barto(1998)]{Sutton1998}
+Sutton, R.\ S., \& Barto, A.\ G. (1998).
+\textit{Reinforcement learning: An introduction} (1st ed.).
+MIT Press.
+
+\bibitem[Watkins \& Dayan(1992)]{Watkins1992}
+Watkins, C.\ J.\ C.\ H., \& Dayan, P. (1992).
+Q-learning.
+\textit{Machine Learning}, \textit{8}(3--4), 279--292.
+\url{https://doi.org/10.1023/A:1022676722315}
+
+\bibitem[Author(2022)]{Author2022}
+Author, W.\ B. (2022).
+\textit{Sequential decision analytics and modeling: Modeling
+with Python}.
+Publisher.
+
+\bibitem[Author(2023)]{Author2023d}
+Author, V. (2023).
+Hybrid fuzzy [Method A]--[Method B] approach to prioritizing
+solutions for inverse reinforcement learning.
+\textit{Complex \& Intelligent Systems}, \textit{9}(1), 493--513.
+\url{https://doi.org/10.1007/s40747-022-00807-5}
+
+\bibitem[Author et al.(2025)]{Author2025}
+Author, R., Xi, Y., Stefanidis, A., Jiang, Z., \& Su, J. (2025).
+A novel multi-agent dynamic portfolio optimization learning
+system based on hierarchical deep reinforcement learning.
+\textit{Complex \& Intelligent Systems}, \textit{11}(7), 311.
+\url{https://doi.org/10.1007/s40747-025-01884-y}
+\end{thebibliography}
+
+\end{document}
