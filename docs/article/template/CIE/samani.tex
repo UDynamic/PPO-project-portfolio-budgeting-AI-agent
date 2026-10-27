@@ -1,0 +1,1570 @@
+% ============================================================
+%  ELSEVIER — Computers & Industrial Engineering
+%  Full journal template — single self-contained main.tex
+%  Replicates: Elsevier two-column layout, fonts, colours,
+%  header/footer, section style, article-info block, abstract
+%  box with keywords, numbered equations, booktabs tables,
+%  nomenclature table, large wide result tables, TikZ figures
+%  (line chart with error bars, supply-chain schematic),
+%  numbered citation style (Vancouver/Elsevier), references.
+% ============================================================
+
+% ── Engine ──────────────────────────────────────────────────
+\documentclass[10pt,twocolumn]{article}
+
+% ── Core packages ───────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% ── Fonts ────────────────────────────────────────────────────
+% Elsevier body: Times New Roman equivalent
+\usepackage{mathptmx}
+\usepackage[scaled=0.90]{helvet}
+\usepackage{courier}
+\renewcommand{\sfdefault}{phv}
+
+% ── Page geometry ────────────────────────────────────────────
+% CIE: ~170 mm text width, 247 mm text height, two columns
+\usepackage[
+  paperwidth  = 210mm,
+  paperheight = 297mm,
+  top         = 22mm,
+  bottom      = 25mm,
+  left        = 19mm,
+  right       = 19mm,
+  columnsep   = 5.5mm,
+  headsep     = 7pt,
+  footskip    = 14pt
+]{geometry}
+
+% ── Colours ─────────────────────────────────────────────────
+\usepackage[dvipsnames,table]{xcolor}
+% Elsevier blue used in title, section rules, hyperlinks
+\definecolor{elsblue}{RGB}{0,84,166}
+% Header/footer text grey
+\definecolor{elsgrey}{RGB}{90,90,90}
+% Light rule colour
+\definecolor{elsrule}{RGB}{160,160,160}
+% Highlight colour for section heading rule (thin red accent)
+\definecolor{elsred}{RGB}{200,0,0}
+
+% ── Header / footer ─────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\itshape\color{elsgrey}
+  M.R.G.~Samani et al.}
+\fancyhead[R]{\footnotesize\itshape\color{elsgrey}
+  \textit{Computers \& Industrial Engineering}~130~(2019)~450--471}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\headrule}{{\color{elsrule}%
+  \hrule width\headwidth height\headrulewidth}}
+
+\fancypagestyle{firstpage}{
+  \fancyhf{}
+  \fancyhead[L]{%
+    \footnotesize\color{elsgrey}
+    \textit{Computers \& Industrial Engineering}~130~(2019)~450--471}
+  \fancyfoot[C]{\small\thepage}
+  \renewcommand{\headrulewidth}{0.5pt}
+  \renewcommand{\headrule}{{\color{elsrule}%
+    \hrule width\headwidth height\headrulewidth}}
+}
+
+% ── Line spacing & paragraph ─────────────────────────────────
+\usepackage{setspace}
+\setstretch{1.04}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{2pt plus 1pt}
+
+% ── Section heading style ────────────────────────────────────
+\usepackage{titlesec}
+% Level-1: bold, 10.5 pt, left-flush, thin rule below
+\titleformat{\section}
+  {\normalfont\fontsize{10.5}{13}\bfseries}
+  {\thesection.}
+  {0.5em}{}
+  [\vspace{1pt}\color{elsrule}\rule{\columnwidth}{0.4pt}]
+\titlespacing{\section}{0pt}{9pt plus 2pt}{4pt}
+
+% Level-2: bold italic, 10 pt
+\titleformat{\subsection}
+  {\normalfont\fontsize{10}{12}\bfseries\itshape}
+  {\thesubsection.}
+  {0.5em}{}
+\titlespacing{\subsection}{0pt}{7pt plus 2pt}{3pt}
+
+% Level-3: italic run-in
+\titleformat{\subsubsection}[runin]
+  {\normalfont\fontsize{10}{12}\itshape}
+  {\thesubsubsection.}
+  {0.5em}{}[.\quad]
+\titlespacing{\subsubsection}{0pt}{5pt}{0pt}
+
+% ── Math ─────────────────────────────────────────────────────
+\usepackage{amsmath,amssymb,amsthm}
+
+% ── Algorithm ────────────────────────────────────────────────
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% ── Figures ──────────────────────────────────────────────────
+\usepackage{graphicx,float}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,
+                decorations.pathmorphing,patterns,calc,
+                shapes.arrows,fit,backgrounds}
+
+% ── Tables ───────────────────────────────────────────────────
+\usepackage{booktabs,array,tabularx,multirow,longtable,makecell}
+\newcommand{\tabfont}{\fontsize{8}{9.5}\selectfont}
+\newcommand{\headfont}{\fontsize{8.5}{10}\selectfont\bfseries}
+\renewcommand{\arraystretch}{1.1}
+
+% ── Caption style ────────────────────────────────────────────
+\usepackage[
+  format       = plain,
+  labelfont    = {bf, small},
+  textfont     = {small},
+  labelsep     = period,
+  justification= raggedright,
+  singlelinecheck = false
+]{caption}
+
+% ── Lists ────────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=*,topsep=2pt,itemsep=1pt,parsep=0pt,
+                  label=\textbullet}
+\setlist[enumerate]{leftmargin=*,topsep=2pt,itemsep=1pt,parsep=0pt}
+
+% ── Hyperlinks & numbered citations ─────────────────────────
+\usepackage[
+  colorlinks = true,
+  linkcolor  = elsblue,
+  citecolor  = elsblue,
+  urlcolor   = elsblue
+]{hyperref}
+\usepackage{url}
+% Elsevier uses numbered, sorted citations (Vancouver style)
+\usepackage[numbers,sort&compress]{natbib}
+\setlength{\bibsep}{2pt plus 1pt}
+
+% ── Miscellaneous ────────────────────────────────────────────
+\usepackage{microtype}
+\usepackage{balance}
+
+% ── Utility: double-rule for article-info top bar ───────────
+\newcommand{\elstopbar}{%
+  \noindent\color{elsblue}\rule{\linewidth}{1.5pt}\\[-3pt]
+  \color{elsblue}\rule{\linewidth}{0.5pt}\vspace{4pt}}
+\newcommand{\elsbotbar}{%
+  \vspace{3pt}\noindent\color{elsblue}%
+  \rule{\linewidth}{0.5pt}\\[-3pt]
+  \color{elsblue}\rule{\linewidth}{1.5pt}}
+
+% ============================================================
+%  DOCUMENT
+% ============================================================
+\begin{document}
+
+% ── Full-width title block ───────────────────────────────────
+\twocolumn[{%
+
+% -------- journal strip ------------------------------------
+\noindent
+\begin{minipage}[t]{22mm}
+  \includegraphics[height=18mm]{example-image}% Elsevier logo
+\end{minipage}
+\hfill
+\begin{minipage}[t]{102mm}
+  \centering
+  \vspace{2pt}
+  {\footnotesize Contents lists available at
+   \textcolor{elsblue}{ScienceDirect}\par}
+  \vspace{3pt}
+  {\fontsize{16}{20}\selectfont\sffamily
+   \textbf{Computers \& Industrial Engineering}\par}
+  \vspace{2pt}
+  {\footnotesize journal homepage:~%
+   \textcolor{elsblue}{\url{www.elsevier.com/locate/caie}}\par}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{22mm}
+  \includegraphics[height=18mm]{example-image}% CIE cover thumbnail
+\end{minipage}
+
+\vspace{8pt}
+\noindent\color{elsrule}\rule{\linewidth}{0.5pt}
+\vspace{8pt}
+
+% -------- article title ------------------------------------
+{\fontsize{17}{21}\selectfont
+A [multilateral/multi-objective] perspective towards [supply chain
+network design] in an uncertain environment: Methodology and
+implementation\par}
+
+\vspace{6pt}
+
+% -------- authors ------------------------------------------
+{\fontsize{10.5}{13}\selectfont
+First Author\textsuperscript{a},
+Second Author\textsuperscript{a,}\textsuperscript{*},
+Third Author\textsuperscript{a}\par}
+
+\vspace{3pt}
+{\footnotesize\itshape
+\textsuperscript{a}School of Industrial Engineering, University Name,
+University Ave, City, Country\par}
+
+\vspace{6pt}
+
+% -------- article info two-panel block ----------------------
+\noindent
+\begin{minipage}[t]{48mm}
+  \fontsize{8.5}{11}\selectfont
+  \textbf{ARTICLE INFO}\\[4pt]
+  \textit{Keywords:}\\
+  [Keyword 1]\\
+  [Keyword 2]\\
+  [Keyword 3]\\
+  [Keyword 4]
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{114mm}
+  \fontsize{8.5}{11}\selectfont
+  \textbf{ABSTRACT}\\[4pt]
+  Motivated by a real-life case study, this paper proposes a
+  [multilateral perspective / novel framework] for [supply chain
+  network / domain] design as an intricate decision-making problem.
+  The proposed approach utilizes a novel [multi-objective mathematical
+  model] by incorporating both quantitative and qualitative factors to
+  comprehensively model the investigated case study. In the proposed
+  model, the quantitative factors aim to [minimize / maximize]
+  [objective 1] and [objective 2]. Moreover, the number of [facilities],
+  which are capable of [performing function], are [maximized / minimized]
+  through a formulation based upon qualitative criteria. Moreover, to
+  cope with the uncertainty, a robust optimization approach is utilized,
+  and an interactive fuzzy solution approach is applied to solve the
+  proposed multi-objective model. The computational results demonstrate
+  the capability of the proposed model in designing the [network] in
+  practice. Moreover, some sensitivity analyses are conducted to show
+  the findings observed in a real case study. The results show that the
+  decision makers should be aware of [quality-based / cost-based]
+  requirements, because of significant impact on [facility location /
+  resource allocation], besides the [cost / quality]-oriented
+  consideration. Finally, based on the finding, helpful managerial
+  insights are provided for the decision makers in the [domain] network
+  design.
+\end{minipage}
+
+\vspace{6pt}
+\noindent\color{elsrule}\rule{\linewidth}{0.5pt}
+\vspace{6pt}
+
+% -------- received / accepted dates -------------------------
+{\footnotesize
+Received [DD Month YYYY];
+Received in revised form [DD Month YYYY];
+Accepted [DD Month YYYY]\\
+Available online [DD Month YYYY]\\
+[ISSN] / \copyright\ 202X [Publisher]. All rights reserved.\par}
+
+\vspace{10pt}
+}]% end \twocolumn[...]
+
+\thispagestyle{firstpage}
+
+% ============================================================
+\section{Introduction}
+% ============================================================
+
+The world fast-growing population has resulted in an increase in
+[diseases / costs / demand] which redouble the importance of
+[domain] considerations. Among the items used, [product] and its
+sub-products are crucial commodities in any [sector] because they
+cannot be replaced by any alternatives, and each of them has its
+special usage. In addition, [domain]-related cost owns a significant
+part of total [sector] expenditures. By 2040, [relevant projection]
+expenditure is expected to have an approximate growth of [X]\%
+\cite{Author2015}. Therefore, [domain] supply chain (DSC)
+management due to its inherent importance in [sector] has become an
+important decision-making problem and drawn attention from
+researchers.
+
+[Domain] supply chains are complex and difficult to manage owing to
+the fact that both supply and demand are tainted with uncertainty.
+Since [source] is the only source of [product] with almost
+unpredictable behaviors, [product] supply is an unavoidably uncertain
+parameter. According to [Organization], on average, only [X]\% of
+potential [suppliers] supplied [product] in [year] \cite{WHO2016}.
+
+Generally, uncertain environments can be defined in three types
+namely stochastic, fuzzy and robust each of which are dealt with
+their corresponding modeling approaches \cite{Tofighi2016}. It is
+noteworthy that the stochastic programming approach comes to the
+application when the adequate information about distribution
+functions of random data is available. However, the robust approach
+is applicable in the situation of little knowledge about the historical
+data \cite{Torabi2015}. Consequently, it is of particular importance
+to make robust decisions, especially for issues with a long-term
+horizon.
+
+In this relation, this study sets out to give proper responses to the
+following main questions:
+
+\begin{enumerate}
+  \item What is the influential qualitative and quantitative factors
+        that affect the decisions in [domain] network design? Which
+        approach is appropriate to cope with? And how can make a
+        tradeoff these factors to effective and efficient performance
+        for [domain]?
+  \item Which aspects of [domain] are tainted by uncertainty? How to
+        formulate the uncertainty in the proposed model? And what are
+        the impacts of uncertainty on the proposed model?
+  \item How to embed specific characteristics of [product] like a
+        shelf life time, different [policies], and optimal inventory
+        level of [product] in the proposed model?
+\end{enumerate}
+
+In this paper, we utilize effective multi-attribute group
+decision-making (MAGDM) approach to account for a variety of
+qualitative attributes like [attribute 1], [attribute 2], and
+[attribute 3] which are evaluated under the preferences of a group of
+beneficiaries as the decision makers (DMs). A three-phase
+multi-attribute multi-objective robust (3P-MAMOR) approach is also
+devised to cope with the uncertain environment, and then, an
+interactive fuzzy approach is provided to handle the objectives
+multiplicity \cite{Samani2018,Torabi2008}.
+
+The rest of the paper is organized as follows. Section~2 reviews the
+related literature. In Section~3, the solution methodology is
+described, and the problem description and mathematical formulation
+are provided in Section~4. Section~5 describes the case study in more
+details, and Section~6 outlines the computational experiments.
+Finally, Section~7 provides discussions, concluding remarks and future
+research directions.
+
+% ============================================================
+\section{Literature Review}
+% ============================================================
+
+In this section, an extant body of literature is investigated in the
+form of a structured review. According to the review by
+\citet{Belien2012}, the studies were conducted based on the issues
+defined on hierarchical levels. Another survey was provided by
+\citet{Osorio2015} classifying the papers based on the echelons of
+the supply chain. According to Table~\ref{tab:nomenclature}, the
+papers are categorized based on hierarchical level, planning horizon,
+mathematical modelling approach, time periods, solution technique,
+type of [product], objective function multiplicity, performance
+measure, and uncertainty modelling approach.
+
+\subsection{[Stage 1] in [Domain] Supply Chains}
+
+Some papers have considered the issues on [stage 1] level
+\cite{Author2015a,Author2012,Author2009}. Different [policies] were
+evaluated by a simulation model developed by \citet{Author2010}.
+Results indicated that [collecting / producing] as much as possible
+was not necessarily convenient. \citet{Author2017} addressed [domain]
+network design while considering social aspects.
+
+\subsection{[Stage 2] in [Domain] Supply Chains}
+
+A number of works have accounted for [stage 2] planning for [product]
+\cite{Author2010b,Author2007}. A decision support system (DSS) for
+[product] production planning in regional centers was addressed by
+\citet{Author2010b} through an integer non-linear programming model.
+
+\subsection{Uncertainty in [Domain] Supply Chains}
+
+To the best of our knowledge, the majority of the studies which have
+addressed the relevant issues in an uncertain environment and to
+tackle uncertainty, stochastic programming approach is widely applied
+\cite{Author2014,Author2009,Author2017b}. Among them, robust
+optimization approaches and its derivatives have got scant attention
+\cite{Author2014b,Author2017c,Author2017d}. The aforementioned
+literature indicates that the inclusion of both quantitative and
+qualitative attributes while designing a [domain] network robustly
+performing in an uncertain environment is a critical factor which has
+not got apposite attention. To fill this gap, this paper proposes a
+realistic approach to investigate the problem from 3P-MAMOR
+strategic decision-making perspective which is in line with the
+development of previous studies in the literature by addressing the
+following main contributions:
+
+\begin{itemize}
+  \item A novel multi-objective model for the simultaneous
+        consideration of [objective 1] (by investigating quantitative
+        attributes), [objective 2], and most favorable locations for
+        [facilities] (based on qualitative factors evaluated by MAGDM
+        approach);
+  \item A realistic multi-product multi-period [domain] network by
+        considering three key issues (the design and location of
+        facilities, perishability of [products], and uncertainty in
+        critical parameters);
+  \item A three-phase multi-attribute multi-objective robust approach
+        to cope with a group decision-making network design problem
+        in an uncertain environment;
+  \item Using a real case study of [Location] to illustrate the
+        applicability of the proposed model and solution.
+\end{itemize}
+
+% ============================================================
+\section{Methodology}
+% ============================================================
+
+In this section, we suggest a 3P-MAMOR approach to appropriately
+design the [domain] supply chain network. The proposed approach
+accounts for all information about attributes and qualitative factors
+involving in facility location decisions by an effective MAGDM
+technique. It also protects the proposed multi-objective model
+against uncertainties by applying a robust optimization approach and
+devises an interactive fuzzy approach, called TH
+\cite{Samani2018,Torabi2008}, to solve the model.
+
+The schematic of the proposed 3P-MAMOR framework can be
+demonstrated in Fig.~\ref{fig:framework}. In phase~1
+(identification), most appropriate locations for [facilities] among
+the candidate ones are identified. In phase~2 (protection), we
+confront an unavoidable uncertainty of the parameters and protect the
+solutions. In phase~3 (integration), the cost-oriented and
+quality-oriented attitudes are integrated into a single objective
+structure.
+
+\subsection{Phase~1: The Multi-Attribute Group Decision-Making
+Approach}
+
+Decisions on the locations of facilities must be made with respect to
+some critical factors which can be [type] considerations. Indeed, we
+have to deal with MADM environment in which each qualitative
+attribute is evaluated by employing MAGDM perspective based on the
+preferences of a group of DMs, each of which differentiates in giving
+weights to the attributes.
+
+\subsubsection{Method Framework}
+The value of alternative $A_i$ on criterion $C_j$ is shown by the
+interval-valued intuitionistic fuzzy setting (IVIFS) where
+$A_i = \{\langle C_j, [\mu_{A_iL}(C_j), \mu_{A_iU}(C_j)],
+[\vartheta_{A_iL}(C_j), \vartheta_{A_iU}(C_j)]\rangle \mid C_j \in C\}$,
+such that $0 \le \mu_{A_iU}(C_j) + \vartheta_{A_iU}(C_j) \le 1$,
+$\mu_{A_iL}(C_j) \ge 0$, $\vartheta_{A_iL}(C_j) \ge 0$,
+$i = 1,2,\ldots,m$ and $j = 1,2,\ldots,n$. The IVIFS is defined by
+$r_{ij} = \langle [a_{ij}, b_{ij}], [c_{ij}, d_{ij}]\rangle$
+which represents a pair of intervals for each $C_j \in C$. Thus,
+$R^k$ implies on the interval-valued intuitionistic fuzzy decision
+matrix $k$ ($k = 1, 2, \ldots, t$) as follows \cite{Ye2013}:
+
+\begin{equation}
+R^k =
+\begin{pmatrix}
+\langle [a^k_{11}, b^k_{11}], [c^k_{11}, d^k_{11}]\rangle
+  & \cdots
+  & \langle [a^k_{1n}, b^k_{1n}], [c^k_{1n}, d^k_{1n}]\rangle \\
+\vdots & \ddots & \vdots \\
+\langle [a^k_{m1}, b^k_{m1}], [c^k_{m1}, d^k_{m1}]\rangle
+  & \cdots
+  & \langle [a^k_{mn}, b^k_{mn}], [c^k_{mn}, d^k_{mn}]\rangle
+\end{pmatrix}
+\label{eq:ivifs}
+\end{equation}
+
+\subsubsection{The Weights of DMs}
+Based on matrix $R^k$ introduced above, the score matrix as well as
+the average score matrix for each DM can also be calculated
+\cite{Ye2013}; and the collective correlation coefficient can be
+defined as:
+
+\begin{equation}
+E_k = \sum_{i=1}^{m}
+  \frac{\sum_{j=1}^{n} S^k_{ij} S^*_{ij}}
+  {\sqrt{\sum_{j=1}^{n}(S^k_{ij})^2}
+   \sqrt{\sum_{j=1}^{n}(S^*_{ij})^2}}
+\label{eq:ek}
+\end{equation}
+
+where $S^k_{ij}$ and $S^*_{ij}$ represent the score matrix and the
+average score matrix, respectively. Finally, the weight vector
+$\Gamma = (\Gamma_1, \Gamma_2, \ldots, \Gamma_t)$ for DMs is
+constructed by:
+
+\begin{equation}
+\Gamma_k = \frac{E_k}{\sum_{k=1}^{t} E_k}
+\label{eq:gamma}
+\end{equation}
+
+where $0 \le \Gamma_k \le 1$, $\sum_{k=1}^{t} \Gamma_k = 1$.
+
+\subsubsection{Weights of Attributes and Ranking the Alternatives}
+The interval-valued intuitionistic fuzzy decision-making problems can
+be developed by means of integrated programming models \cite{Ye2013}
+as follows:
+
+\begin{equation}
+\begin{aligned}
+  \text{Max}\; Q(\omega) &= \sum_{i=1}^{m} \sum_{j=1}^{n} \omega_j S_{ij}\\
+  \text{s.t.} \quad &\sum_{j=1}^{n} \omega_j = 1,\quad
+                     \omega \in I,\quad \omega_j \ge 0
+\end{aligned}
+\label{eq:maxq}
+\end{equation}
+
+Finally, the alternatives are analyzed using the simple additive
+weighting (SAW) method:
+
+\begin{equation}
+u(A_i) = \sum_{j=1}^{n} \omega_j S_{ij}
+\label{eq:saw}
+\end{equation}
+
+where $S_{ij}$ denotes the collective score matrix and $u(A_i)$
+denotes the utility of $i$th alternative.
+
+\subsection{Phase~2: Robust Optimization Approach}
+
+In this section, a robust optimization approach is described based
+on \citet{Bertsimas2003,Bertsimas2004}. We consider the following
+MIP model assuming $X$ is a convex polyhedron:
+
+\begin{equation}
+\begin{aligned}
+  \text{Min} &\sum_j c_j x_j \\
+  \text{s.t.} &\sum_j \tilde{a}_{ij} x_j \le b_i \quad \forall\, i \\
+              &x \in X
+\end{aligned}
+\label{eq:robust_base}
+\end{equation}
+
+where $c$ represents the $n$-vector of objective coefficients, and
+$b_i$ is the $m$-vector of RHS related to constraint $i$. The
+uncertain coefficient $\tilde{a}_{ij}$ takes values in a symmetric
+and bounded interval represented as $[a_{ij} - \hat{a}_{ij},\;
+a_{ij} + \hat{a}_{ij}]$ in which $\hat{a}_{ij}$ denotes the worst
+case. By defining the protection function $\beta(x, \Gamma_i)$ as
+Eq.~\eqref{eq:beta}, each uncertain constrain $i$ is rewritten as
+Eq.~\eqref{eq:robust_constr}.
+
+\begin{equation}
+\beta(x, \Gamma_i) = \max_{\tilde{a}_{ij} \in J_i}
+  \left\{\sum_j \hat{a}_{ij} x_j\right\}
+  \quad \forall\, i
+\label{eq:beta}
+\end{equation}
+
+\begin{equation}
+\sum_j a_{ij} x_j + \beta(x, \Gamma_i) \le b_i \quad \forall\, i
+\label{eq:robust_constr}
+\end{equation}
+
+Additionally, the robust model can be formulated using LP duality
+as below:
+
+\begin{equation}
+\begin{aligned}
+  \text{Min} &\sum_j c_j x_j \\
+  \text{s.t.} &\sum_j a_{ij} x_j + Z_i \Gamma_i
+               + \sum_j p_{ij} \le b_i \quad \forall\, i \\
+              &Z_i + p_{ij} \ge \hat{a}_{ij} x_j \quad \forall\, i,j \\
+              &p_{ij} \ge 0 \quad \forall\, i,j \\
+              &Z_i \ge 0 \quad \forall\, i \\
+              &x_j \ge 0 \quad \forall\, j
+\end{aligned}
+\label{eq:robust_lp}
+\end{equation}
+
+\subsection{Phase~3: The Fuzzy Programming Solution Approach}
+
+This paper utilizes an efficient single-phase technique — the TH
+method introduced by \citet{Torabi2008} — to deal with the concerned
+MOLP model. Let the compact MOLP model be:
+
+\begin{equation}
+\begin{aligned}
+  &\text{Min}\; Z_1,\quad \text{Min}\; Z_2,\quad \text{Max}\; Z_3 \\
+  &\text{s.t.}\quad Ax \le b,\quad x \in X
+\end{aligned}
+\label{eq:molp}
+\end{equation}
+
+\textbf{Step~1:} Calculate the positive and negative ideal solutions
+(PIS and NIS, respectively) for objective function $h$; $h = 1, 2,
+3$.
+
+\begin{equation}
+Z_1^{\delta-\text{NIS}} = \text{Max}\{Z_1(x_2^{\delta-\text{PIS}}),\,
+Z_1(x_3^{\delta-\text{PIS}})\}
+\label{eq:nis1}
+\end{equation}
+
+\begin{equation}
+Z_2^{\delta-\text{NIS}} = \text{Max}\{Z_2(x_1^{\delta-\text{PIS}}),\,
+Z_2(x_3^{\delta-\text{PIS}})\}
+\label{eq:nis2}
+\end{equation}
+
+\begin{equation}
+Z_3^{\delta-\text{NIS}} = \text{Min}\{Z_3(x_1^{\delta-\text{PIS}}),\,
+Z_3(x_2^{\delta-\text{PIS}})\}
+\label{eq:nis3}
+\end{equation}
+
+\textbf{Step~2:} Calculate the satisfaction level of objective
+function $h$; $h = 1, 2, 3$ under solution vector $x$:
+
+\begin{equation}
+\mu_1(x) = \begin{cases}
+  1 & \text{if } Z_1 < Z_1^{\delta-\text{PIS}} \\[4pt]
+  \dfrac{Z_1^{\delta-\text{NIS}} - Z_1}
+        {Z_1^{\delta-\text{NIS}} - Z_1^{\delta-\text{PIS}}}
+    & \text{if } Z_1^{\delta-\text{PIS}} \le Z_1 \le Z_1^{\delta-\text{NIS}}\\[6pt]
+  0 & \text{if } Z_1 > Z_1^{\delta-\text{NIS}}
+\end{cases}
+\label{eq:mu1}
+\end{equation}
+
+\begin{equation}
+\mu_3(x) = \begin{cases}
+  1 & \text{if } Z_3 > Z_3^{\delta-\text{PIS}} \\[4pt]
+  \dfrac{Z_3 - Z_3^{\delta-\text{NIS}}}
+        {Z_3^{\delta-\text{PIS}} - Z_3^{\delta-\text{NIS}}}
+    & \text{if } Z_3^{\delta-\text{PIS}} \le Z_3 \le Z_3^{\delta-\text{NIS}}\\[6pt]
+  0 & \text{if } Z_3 < Z_3^{\delta-\text{NIS}}
+\end{cases}
+\label{eq:mu3}
+\end{equation}
+
+\textbf{Step~3:} Provide the single objective formulation based on
+the TH aggregation function:
+
+\begin{equation}
+\begin{aligned}
+  \text{Max}\;\lambda(x) &= \Gamma * \lambda_0 + (1-\Gamma)
+    \sum_h \vartheta_h * \mu_h(x) \\
+  \text{s.t.} \quad
+    &\lambda_0 \le \mu_h(x),\quad h = 1,2,3 \\
+    &x \in F(x)\lambda_0,\;\lambda \in [0,1] \\
+    &\sum_h \vartheta_h = 1,\quad \vartheta_h \ge 0
+\end{aligned}
+\label{eq:th}
+\end{equation}
+
+% ============================================================
+\section{Problem Statement}
+% ============================================================
+
+The designed [domain] supply chain network in this paper is based on
+a real case study and it contains [N] echelons including [echelon 1],
+[echelon 2], [echelon 3], [echelon 4], and [echelon 5], as shown
+in Fig.~\ref{fig:network}.
+
+\begin{itemize}
+  \item \textbf{[Echelon 1]:} [Product] supply does not have any
+        particular pattern and is tainted with uncertainty since
+        [source] behavior is not completely known or predictable.
+
+  \item \textbf{[Echelon 2]:} [Collection / production] process is
+        generally covered by mobile and local facilities, which are
+        distinguished by their capacities, functions, and costs.
+
+  \item \textbf{[Echelon 3]:} Being received by regional centers,
+        [product] units are tested to make sure they are safe against
+        [hazards] and capable of being fractionated into sub-products.
+
+  \item \textbf{[Echelon 4]:} The demand for [product] is accompanied
+        with a high level of uncertainty and has no regular order.
+
+  \item \textbf{[Echelon 5]:} The final destination of discarded
+        [product] is a disposal center.
+\end{itemize}
+
+\subsection{Notations}
+
+The following indices, parameters, and decision variables will be
+used for the purpose of model formulations (uncertain parameters are
+represented with a tilde on):
+
+\subsubsection{Indices}
+
+\begin{tabbing}
+  \hspace{1.8cm}\= \kill
+  $I$     \> Index of $i$th [donor/source] group ($i, i' \in I$).\\
+  $J_1$   \> Index of locations for $j_1$th fix [facility]
+             ($j_1 \in J_1$).\\
+  $J_2$   \> Index of locations for $j_2$th mobile [facility]
+             ($j_2 \in J_2$).\\
+  $J$     \> Index of locations for $j$th [facility]
+             ($j \in J,\, j = j_1 \cup j_2$).\\
+  $K$     \> Index of locations for $k$th regional center
+             ($k \in K$).\\
+  $R$     \> Index of locations for $r$th disposal center
+             ($r \in R$).\\
+  $P$     \> Index of $p$th [product] ($p \in P$).\\
+  $M$     \> Index of $m$th [method] ($m \in M$).\\
+  $H$     \> Index of $h$th demand zone ($h \in H$).\\
+  $T$     \> Index of $t$th time period ($t, t' \in T$).
+\end{tabbing}
+
+\subsubsection{Binary Variables}
+
+\begin{tabbing}
+  \hspace{1.8cm}\= \kill
+  $Y_j$    \> 1 if $j$th [facility] $j$ is established; 0
+              otherwise.\\
+  $Z'_{jk}$\> 1 if $j$th [facility] is allocated to $k$th regional
+              center; 0 otherwise.\\
+  $Z_{ij}$ \> 1 if $i$th [source] group is allocated to $j$th
+              [facility]; 0 otherwise.
+\end{tabbing}
+
+\subsection{Objective Functions}
+
+The proposed multi-objective formulation is structured as follows:
+
+\subsubsection{First Objective Function}
+The first objective function seeks to minimize the total network
+cost involving establishment cost (EC), operating cost (OC),
+transportation costs (TC), inventory cost (IC), production cost
+(PC) and unusable cost (UC) during multiple periods:
+
+\begin{equation}
+\text{Min}\; Z_1 = EC + OC + TC + IC + PC + UC
+\label{eq:z1}
+\end{equation}
+
+\begin{equation}
+EC = \sum_{j_1}\left(\tilde{E}_{j_1} + \tilde{F}_{j_1}
+     + \tilde{LA}_{j_1}\right) * Y_{j_1}
+     + \sum_{j_2}\left(\tilde{E}_{j_2} + \tilde{F}_{j_2}\right)
+     * Y_{j_2}
+\label{eq:ec}
+\end{equation}
+
+\begin{equation}
+OC = \sum_{m}\sum_{i}\sum_{j}\sum_{t}
+     \widetilde{OC}_m * V_{mijt}
+\label{eq:oc}
+\end{equation}
+
+\begin{equation}
+TC = \sum_{m}\sum_{j}\sum_{k}\sum_{t}
+     \widetilde{TC}_{jk} * V'_{mjkt}
+   + \sum_{k}\sum_{h}\sum_{p}\sum_{t}\sum_{t'}
+     \widetilde{TC}'_{kh} * W_{khptt'}
+\label{eq:tc}
+\end{equation}
+
+\begin{equation}
+IC = \sum_{p}\sum_{k}\sum_{t}\sum_{t'}
+     \widetilde{IC}_{pkt} * B_{pktt'}
+   + \sum_{p}\sum_{h}\sum_{t}\sum_{t'}
+     \widetilde{IC}'_{pht} * B'_{phtt'}
+\label{eq:ic}
+\end{equation}
+
+\begin{equation}
+PC = \sum_{p}\sum_{m}\sum_{k}\sum_{t}
+     \widetilde{PC}_{pm} * Q_{pmkt}
+\label{eq:pc}
+\end{equation}
+
+\begin{equation}
+UC = \sum_{p}\sum_{k}\sum_{r}\sum_{t}
+     \widetilde{TD}_{kr} * E_{pkrt}
+   + \sum_{p}\sum_{k}\sum_{r}\sum_{t}
+     \widetilde{TD}'_{kr} * E'_{pkrt'}
+   + \sum_{p}\sum_{h}\sum_{r}\sum_{t}
+     \widetilde{TD}''_{hr} * E''_{phrt'}
+\label{eq:uc}
+\end{equation}
+
+\subsubsection{Second Objective Function}
+The second objective function utilizes the following linear relation
+of [product] freshness introduced by \citet{Osvald2008}:
+
+\begin{equation}
+\text{Min}\; Z_2 = \sum_p \varphi_p
+\label{eq:z2}
+\end{equation}
+
+\begin{equation}
+\varphi_p = \sum_k \sum_h \sum_t \sum_{t'}
+  \vartheta_p * \text{Max}\!\left\{QLP_p,\,
+  \frac{t'-t}{L_p}\right\}
+  * \left(B_{pktt'} + B'_{phtt'}\right)
+\label{eq:phi}
+\end{equation}
+
+where $\varphi_p$ is quality loss function of $p^{\text{th}}$
+product, $QLP_p$ represents the point of quality reduction of
+$p^{\text{th}}$ product, and $L_p$ defines product's shelf life.
+
+\subsubsection{Third Objective Function}
+Locating [facilities] is an intricate decision making involving
+both qualitative and quantitative attributes:
+
+\begin{equation}
+\text{Max}\; Z_3 = \sum_{m}\sum_{i}\sum_{j_1}\sum_{t}
+  QF_{j_1} * V_{m,i,j_1,t}
+  + \sum_{m}\sum_{i}\sum_{j_2}\sum_{t}
+  QF'_{j_2} * V_{m,i,j_2,t}
+\label{eq:z3}
+\end{equation}
+
+\subsection{Model Constraints}
+
+\begin{equation}
+Z_{ij} \le Y_j \quad \forall\, i, j
+\label{eq:c1}
+\end{equation}
+
+\begin{equation}
+\sum_m \sum_i V_{mijt} \le \tilde{C}_j \quad \forall\, j,\, t
+\label{eq:c2}
+\end{equation}
+
+\begin{equation}
+\sum_m \sum_j V_{mijt} \le \tilde{S}_{it} \quad \forall\, i,\, t
+\label{eq:c3}
+\end{equation}
+
+\begin{equation}
+\delta_{ij} * Z_{ij} \le H \quad \forall\, i,\, j
+\label{eq:c4}
+\end{equation}
+
+\begin{equation}
+Z'_{jk}\!\left(\frac{\delta'_{jk}}{SP}\right) \le TI
+  \quad \forall\, j,\, k
+\label{eq:c5}
+\end{equation}
+
+\begin{equation}
+\sum_i V_{mijt} = \sum_k V'_{mjkt} \quad \forall\, m,\, j,\, t
+\label{eq:c6}
+\end{equation}
+
+\begin{equation}
+\varphi_m * \delta_{pm} * \sum_j V'_{mjkt} = Q_{pmkt}
+  \quad \forall\, p,\, m,\, k,\, t
+\label{eq:c7}
+\end{equation}
+
+\begin{equation}
+\sum_p PT_p * G_{pkt} \le \widetilde{OT}_{kt} \quad \forall\, k,\, t
+\label{eq:c8}
+\end{equation}
+
+\begin{equation}
+- \Psi \le X_{it} - X_{i't} \le \Psi \quad \forall\, i,\, i',\, t
+\label{eq:c9}
+\end{equation}
+
+\begin{equation}
+Z_{ij},\, Z'_{jk} \in \{0,1\} \quad \forall\, i,\, j,\, k
+\label{eq:bin}
+\end{equation}
+
+\subsection{Robust Framework}
+
+In this section, we utilize the robust optimization approach
+described in Section~3.2 to account for the uncertain environment.
+The robust counterpart of the deterministic programming model can be
+formulated as follows:
+
+\begin{equation}
+\text{Min}\; \xi
+\label{eq:robobj}
+\end{equation}
+
+\begin{multline}
+\sum_{j_1}\left(E^E_{j_1} + F^F_{j_1} + LA^{LA}_{j_1}\right)
+  + \sum_{j_2}\left(E^E_{j_2} + F^F_{j_2}\right)
+  + \sum_m \sum_i \sum_j \sum_t P^{OC}_m * V_{mijt}\\
+  + \sum_{m,j,k,t} P^{TC}_{j,k} * V'_{mjkt}
+  + \cdots
+  + \lambda^0 * \Gamma^0 \le \xi
+\label{eq:robust_full}
+\end{multline}
+
+% ============================================================
+\section{Case Description}
+% ============================================================
+
+[National / Regional Organization] has been working since [Year].
+According to statistics, [Organization] includes [N1] [facilities]
+and [N2] regional centers for testing and processing which are
+located in [N3] provinces of the country \cite{Abolghasemi2009}.
+To illustrate the usefulness of the proposed model, this paper
+investigates a real case study of [City] which is the capital of
+[Region] and the [Nth] most populated city of [Country] having a
+population of about [X] million.
+
+[City] consists of [N] districts, dispersed as shown in
+Fig.~\ref{fig:map}, and plays a critical role in the provision of
+[product] for the country. Based on the above descriptions, the
+established [facilities] are in charge of collecting [product] from
+the [source] points. The properties of each district are presented
+in Table~\ref{tab:districts}. The properties of each candidate
+[facility] and each hospital are presented in
+Tables~\ref{tab:facilities} and~\ref{tab:hospitals}, respectively.
+
+With respect to [relevant standard], [product] demand can be
+estimated based on the patients' population or according to each
+hospital's bed. Transportation cost between each pair of facilities
+is proportional to the traveling distance, estimated to be [X]\$ per
+kilometer.
+
+% ============================================================
+\section{Results and Discussions}
+% ============================================================
+
+In this section, the first phase is implemented by applying software
+[Name] for the purpose of obtaining the importance degree of each
+candidate local and mobile location.
+
+\textbf{Step~1. Calculating the weights of the DMs:} in this part,
+the importance degree of the DMs is computed according to
+Section~3.1.2. Using Eqs.~\eqref{eq:ek} and~\eqref{eq:gamma}, the
+weights of the [N] DMs are obtained as follows:
+$\Gamma_1 = 0.161$, $\Gamma_2 = 0.173$, $\Gamma_3 = 0.138$,
+$\Gamma_4 = 0.166$, $\Gamma_5 = 0.194$, and $\Gamma_6 = 0.168$.
+
+\textbf{Step~2. Calculating the weights of the attributes:} this
+part obtains the importance degree of each attribute based on
+model~\eqref{eq:maxq}. According to the DMs' preference-intervals
+for each attribute, say $I = \{0.1 \le \omega_1 \le 0.2,\;
+0.1 \le \omega_2 \le 0.3, \ldots\}$, the vector of attributes
+weights are computed as: $\omega = \{0.2, 0.1, 0.2, 0.3, 0.1, 0.1\}$.
+
+\textbf{Step~3. Identifying the candidate locations:} in this part,
+the most qualified candidate locations are identified and ranked
+based on the obtained weights.
+
+In continue, the computational experiments are carried out through
+CPLEX solver by utilizing software GAMS on a PC with Intel Core i7,
+CPU 2.4~GHz and 16~GB of RAM. As shown in Table~\ref{tab:results},
+the results obtained by robust and deterministic models are
+presented under the variability of uncertain parameters and
+conservatism level. For this purpose, we first set the values of
+the compensation coefficient ($\Upsilon$) to 0.4 and the relative
+importance of the objective functions ($\vartheta_1, \vartheta_2,
+\vartheta_3$) to 0.6, 0.2, and 0.2, respectively.
+
+A general expectation is that the network cost of the robust
+approach under parameters variability is higher than that of the
+deterministic mode since it imposes additional costs of handling
+uncertainty and making a stable network. By increasing the level of
+uncertainty, the cost increase becomes even more tangible.
+Furthermore, the influence of utilizing robust approach on computing
+time is negligible comparing to the deterministic attitude.
+
+\subsection{The Supply Chain Design Under Different Variability
+Levels of Uncertain Parameters}
+
+The impact of uncertainty levels on optimal structure of the supply
+chain provided by robust and deterministic approaches is mapped and
+compared in Fig.~\ref{fig:sensitivity}. A general understanding is
+that in addition to the existing local [facilities], by increasing
+the variability from 10\% to 50\%, a slight increase in the number
+of mobile [facilities] is justified to cover the realized
+perturbation.
+
+\subsection{The Model Performance Under Different Levels of
+Compensation Coefficients ($\Gamma$)}
+
+In this part, the impact of varying $\Gamma$ on the performance of
+the model is evaluated. As the value of $\Gamma$ increases the model
+forces the membership functions to get closer to each other while on
+the other hand, the lower levels of $\Gamma$ give the importance to
+the objective with higher weight.
+
+\subsection{The Model Performance Under Different Levels of
+Conservatism and Data Variability}
+
+This section aims to analyze the behavior of the objective function
+of cost while adopting different risk-averse attitudes and variability
+levels. The analysis is presented in three parts: (a) Sensitivity of
+the model to an uncertain production cost, (b) Sensitivity of the
+model to an uncertain capacity of a [facility], and (c) Sensitivity
+of the model to uncertain demand.
+
+% ============================================================
+\section{Discussions and Conclusions}
+% ============================================================
+
+Designing [domain] supply chain networks is tainted with a great
+degree of intricacies due to properties including rather irregular
+supply and demand, wastage and shortage costs as well as
+[domain]-related considerations (e.g., perishability of [product]),
+which are not easily tractable. With this significance in mind, this
+paper proposes a novel 3P-MAMOR model to formulate the importance of
+the factors above to best match the real world conditions. The
+proposed model aims to consider both cost-oriented and
+quality-oriented approaches by minimizing the overall network cost,
+preserving as much as possible the [product freshness], and seeking
+the most qualified locations for [facilities]. This paper also
+applies a real case study to accommodate the real world application
+of the proposed 3P-MAMOR model.
+
+According to the results obtained from the solution, it seems
+imperative to make a tradeoff between cost-oriented and
+quality-oriented approaches. Qualitative factors like availability,
+market environment, and transportation conditions have significant
+effect on finding the preferable locations for collection facilities.
+Moreover, the robust approach has dominated the deterministic model
+in terms of the mean and SD of the value of the total network cost.
+
+Future research can be directed in investigating the problem while
+using other MADM techniques such as fuzzy AHP or fuzzy TOPSIS to
+evaluate the critical factors involved. The interested practitioners
+can also develop the hospital level by accounting for compatibility
+procedures. Moreover, the mathematical modelling in realm of
+[donation system] could be developed by considering age-based
+variety of [products].
+
+% ============================================================
+%  TABLES
+% ============================================================
+
+% ---- Table 1: Nomenclature (2-column wide) -----------------
+\begin{table*}[ht]
+\caption{Nomenclature of the investigated papers' characteristics.}
+\label{tab:nomenclature}
+\tabfont
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{p{2.5cm}lp{2.5cm}lp{2.5cm}l}
+\toprule
+\multicolumn{2}{l}{\headfont Hierarchical level}
+ & \multicolumn{2}{l}{\headfont Modelling approach}
+ & \multicolumn{2}{l}{\headfont Performance measure} \\
+\midrule
+Collection    & CO & Simulation             & S   & Cost       & C  \\
+Production    & PR & Statistical analysis   & SA  & Distance   & D  \\
+Inventory     & IN & (Stochastic) DP        & (S)DP & Shortage  & SH \\
+Distribution  & DI & Integer Programming    & IP  & Outdates   & O  \\
+Integrated    & INT& (M)INLP                & (M)INLP & Freshness & F \\
+\midrule
+\multicolumn{2}{l}{\headfont Planning horizon}
+ & \multicolumn{2}{l}{\headfont Type of blood product}
+ & \multicolumn{2}{l}{\headfont Uncertainty approach} \\
+\midrule
+Strategic     & STR & Whole blood            & WB  & Fuzzy      & FZ \\
+Tactical      & TAC & Platelet               & PLT & Stochastic & ST \\
+Operational   & OPR & Plasma                 & PLS & Robust     & RO \\
+\midrule
+\multicolumn{2}{l}{\headfont Solution method}
+ & \multicolumn{2}{l}{\headfont Objective function}
+ & \multicolumn{2}{l}{} \\
+\midrule
+Exact         & EX & Single-objective       & SO  &            & \\
+(Meta)heuristic & ME & Multi-objective       & MO  &            & \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% ---- Table 2: District properties --------------------------
+\begin{table}[H]
+\caption{The properties of each district.}
+\label{tab:districts}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrp{2.0cm}}
+\toprule
+\headfont District & \headfont Population
+  & \headfont Rate (\%) & \headfont Supply
+  & \headfont (LONG$_i$, LAT$_i$) \\
+\midrule
+1  & 212,206 & 14 & 38 & (38.077, 46.311) \\
+2  & 169,047 & 11 & 29 & (38.063, 46.287) \\
+3  & 243,400 & 16 & 42 & (38.067, 46.255) \\
+4  & 316,126 & 21 & 55 & (38.076, 46.253) \\
+5  &  92,274 &  6 & 16 & (38.048, 46.366) \\
+6  &  94,897 &  6 & 16 & (38.086, 46.232) \\
+7  & 143,460 & 10 & 27 & (38.043, 46.191) \\
+8  &  28,700 &  2 &  6 & (38.081, 46.298) \\
+9  &     324 &  0 &  1 & (38.014, 46.423) \\
+10 & 194,564 & 13 & 34 & (38.112, 46.290) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- Table 3: Candidate facility properties ----------------
+\begin{table}[H]
+\caption{The properties of each candidate local and mobile
+[facility].}
+\label{tab:facilities}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lp{3.2cm}lp{2.0cm}}
+\toprule
+\headfont Row & \headfont Facility
+  & \headfont Type & \headfont (LONG$_i$, LAT$_i$) \\
+\midrule
+1 & [Facility Name 1] & Candidate local  & (38.073, 46.252) \\
+2 & [Facility Name 2] & Candidate local  & (38.073, 46.303) \\
+3 & [Facility Name 3] & Candidate local  & (38.066, 46.311) \\
+4 & [Facility Name 4] & Candidate local  & (38.076, 46.288) \\
+5 & [Facility Name 5] & Candidate local  & (38.065, 46.271) \\
+6 & [Facility Name 6] & Candidate local  & (38.059, 46.348) \\
+\midrule
+1 & [Mobile 1]        & Candidate mobile & (38.055, 46.278) \\
+2 & [Mobile 2]        & Candidate mobile & (38.061, 46.333) \\
+3 & [Mobile 3]        & Candidate mobile & (38.084, 46.265) \\
+4 & [Mobile 4]        & Candidate mobile & (38.063, 46.303) \\
+5 & [Mobile 5]        & Candidate mobile & (38.091, 46.264) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- Table 4: Demand zone properties -----------------------
+\begin{table}[H]
+\caption{The properties of each demand zone.}
+\label{tab:hospitals}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lp{2.8cm}rp{2.0cm}}
+\toprule
+\headfont Row & \headfont Hospital
+  & \headfont Beds & \headfont (LONG$_i$, LAT$_i$) \\
+\midrule
+1  & [Hospital 1]  & 599 & (38.108, 46.302) \\
+2  & [Hospital 2]  &  67 & (38.093, 46.279) \\
+3  & [Hospital 3]  &  85 & (38.076, 46.259) \\
+4  & [Hospital 4]  & 154 & (38.077, 46.279) \\
+5  & [Hospital 5]  & 307 & (38.082, 46.306) \\
+6  & [Hospital 6]  & 168 & (38.080, 46.306) \\
+7  & [Hospital 7]  &  56 & (38.069, 46.297) \\
+8  & [Hospital 8]  &  37 & (38.068, 46.297) \\
+9  & [Hospital 9]  & 124 & (38.060, 46.282) \\
+10 & [Hospital 10] &  93 & (38.078, 46.318) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- Table 5: Main results table (2-col wide) --------------
+\begin{table*}[ht]
+\caption{Summary of results under uncertain parameters and
+deterministic condition ($\Gamma=0.4$, $\vartheta_1=0.6$,
+$\vartheta_2=\vartheta_3=0.2$).}
+\label{tab:results}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.20}
+\begin{tabular}{lccccccc}
+\toprule
+\multirow{2}{*}{\headfont Var.}
+ & \headfont Deterministic $Z_1$
+ & \multicolumn{4}{c}{\headfont Robust $Z_1$ --- Conservatism level}
+ & \headfont Det.\ $Z_2$
+ & \headfont Det.\ time (s) \\
+\cmidrule(lr){3-6}
+ & & \headfont 60\% & \headfont 70\% & \headfont 80\% & \headfont 90\%
+ & & \\
+\midrule
+0\%  & 682,918 & \multicolumn{4}{c}{---}      & 688 & 72  \\
+10\% & 698,008 & 683,849 & 690,235 & 671,599 & 661,632 & 589 & --- \\
+20\% & 710,753 & 709,518 & 697,482 & 678,357 & 658,549 & 491 & 190 \\
+30\% & 708,092 & 695,032 & 739,653 & 708,092 & 728,294 & 305 & 282 \\
+40\% & 761,267 & 744,372 & 742,249 & 663,780 & 767,346 & 586 & 231 \\
+50\% & 775,397 & 794,836 & 786,078 & 680,403 & 773,581 & 345 & 206 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% ---- Table 6: Compensation coefficients --------------------
+\begin{table}[H]
+\caption{The model performance under different levels of
+compensation coefficients~($\Gamma$).}
+\label{tab:gamma}
+\tabfont
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{crrrrrrrr}
+\toprule
+\headfont Prob. & $\Gamma$ & $\vartheta_1,\vartheta_2,\vartheta_3$
+  & $Z_1$ & $Z_2$ & $Z_3$
+  & $\mu_1$ & $\mu_2$ & $\mu_3$ \\
+\midrule
+1 & 0.0 &              & 331,717 & 410 & 511 & 0.995 & 0.996 & 0.355 \\
+2 & 0.1 &              & 331,698 & 413 & 511 & 0.995 & 0.996 & 0.355 \\
+3 & 0.2 &              & 421,223 & 418 & 592 & 0.944 & 0.996 & 0.468 \\
+4 & 0.3 &              & 708,844 & 348 & 812 & 0.781 & 0.996 & 0.776 \\
+5 & 0.4 & $\vartheta_1=0.7$& 709,501 & 343 & 812 & 0.780 & 0.996 & 0.776 \\
+6 & 0.5 & $\vartheta_2=0.2$ & 706,425 & 418 & 812 & 0.780 & 0.996 & 0.776 \\
+7 & 0.6 & $\vartheta_3=0.1$ & 706,425 & 418 & 812 & 0.781 & 0.996 & 0.776 \\
+8 & 0.7 &              & 706,425 & 418 & 812 & 0.781 & 0.996 & 0.776 \\
+9 & 0.8 &              & 706,425 & 418 & 812 & 0.781 & 0.996 & 0.776 \\
+10& 0.9 &              & 706,322 & 440 & 812 & 0.781 & 0.995 & 0.776 \\
+11& 1.0 &              & 716,357 & 11884 & 812 & 0.776 & 0.874 & 0.776 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+%  FIGURES
+% ============================================================
+
+% ---- Figure 1: 3P-MAMOR framework flowchart ----------------
+\begin{figure*}[ht]
+\centering
+\begin{tikzpicture}[
+  box/.style={rectangle, draw=black, rounded corners=2pt,
+              minimum width=5.5cm, minimum height=0.55cm,
+              font=\footnotesize, align=center, fill=white},
+  arr/.style={-Stealth, thick},
+  phase/.style={rectangle, draw=black, dashed, rounded corners=3pt,
+                inner sep=6pt, font=\footnotesize\bfseries}
+]
+% ---- Phase 1 boxes -----------------------------------------
+\node[box] (id1) at (0,0)
+  {Determine the decision matrix for candidate [facilities]};
+\node[box] (id2) at (-2.5,-1.0)
+  {Determine the weights of DMs};
+\node[box] (id3) at (2.5,-1.0)
+  {Determine the weights of attributes};
+\node[box] (id4) at (0,-2.0)
+  {Rank the candidate [facilities]};
+\node[box] (id5) at (0,-3.0)
+  {Identify the importance of candidate [facilities]};
+
+\draw[arr] (id1) -- (id2);
+\draw[arr] (id1) -- (id3);
+\draw[arr] (id2) -- (id4);
+\draw[arr] (id3) -- (id4);
+\draw[arr] (id4) -- (id5);
+
+\node[phase, fit=(id1)(id2)(id3)(id4)(id5),
+      label={[font=\footnotesize\bfseries]left:\textbf{PHASE 1 (Identification)}}]
+  (ph1) {};
+
+% ---- Phase 2 boxes -----------------------------------------
+\node[box] (pr1) at (0,-4.2)
+  {Describe the multi-objective deterministic model};
+\node[box] (pr2) at (0,-5.0)
+  {Define the uncertain parameters};
+\node[box] (pr3) at (0,-5.8)
+  {Formulate the multi-objective robust model};
+
+\draw[arr] (id5) -- (pr1);
+\draw[arr] (pr1) -- (pr2);
+\draw[arr] (pr2) -- (pr3);
+
+\node[phase, fit=(pr1)(pr2)(pr3),
+      label={[font=\footnotesize\bfseries]left:\textbf{PHASE 2 (Protection)}}]
+  (ph2) {};
+
+% ---- Phase 3 boxes -----------------------------------------
+\node[box] (in1) at (0,-7.0)
+  {Determine positive and negative ideal solutions};
+\node[box] (in2) at (0,-7.8)
+  {Calculate the membership function for each objective};
+\node[box] (in3) at (0,-8.6)
+  {Convert the multi-objective model to single-objective};
+\node[box] (in4) at (0,-9.4)
+  {Obtain the efficient solution for each objective};
+
+\draw[arr] (pr3) -- (in1);
+\draw[arr] (in1) -- (in2);
+\draw[arr] (in2) -- (in3);
+\draw[arr] (in3) -- (in4);
+
+\node[phase, fit=(in1)(in2)(in3)(in4),
+      label={[font=\footnotesize\bfseries]left:\textbf{PHASE 3 (Integration)}}]
+  (ph3) {};
+
+\end{tikzpicture}
+\caption{Visual representation of the 3P-MAMOR modelling approach.}
+\label{fig:framework}
+\end{figure*}
+
+% ---- Figure 2: Supply chain network schematic --------------
+\begin{figure*}[ht]
+\centering
+\begin{tikzpicture}[
+  node distance=1.5cm,
+  entity/.style={rectangle, draw, rounded corners=2pt,
+                 minimum width=2.0cm, minimum height=0.6cm,
+                 font=\scriptsize, align=center, fill=white},
+  phase_box/.style={rectangle, draw=gray, dashed, rounded corners=3pt,
+                    font=\scriptsize\bfseries, inner sep=4pt,
+                    fill=gray!5},
+  arr/.style={-Stealth, thick, draw=black}
+]
+% Donors
+\node[entity] (donors) at (0,0) {Donors ($I$)};
+
+% Collection facilities
+\node[entity] (fix)    at (2.8, 0.6) {Fix Collection\\ Centers ($J_1$)};
+\node[entity] (mobile) at (2.8,-0.6) {Mobile Collection\\ Centers ($J_2$)};
+
+% Regional blood center
+\node[entity] (rbc) at (6.0, 0) {Regional Blood\\ Centers ($K$)};
+
+% Demand zones
+\node[entity] (demand) at (9.2, 0.6) {Demand Zones\\ ($H$)};
+
+% Disposal
+\node[entity] (disposal) at (9.2,-0.6) {Disposal\\ Centers ($R$)};
+
+% Arrows
+\draw[arr] (donors) -- (fix);
+\draw[arr] (donors) -- (mobile);
+\draw[arr] (fix)    -- (rbc);
+\draw[arr] (mobile) -- (rbc);
+\draw[arr] (rbc)    -- (demand);
+\draw[arr] (rbc)    -- (disposal);
+\draw[arr] (demand.south) -- ++(0,-0.4) -| (disposal.north);
+
+% Phase annotations
+\node[phase_box] at (1.4,-1.6) {\textbf{Collection Phase}};
+\node[phase_box] at (6.0,-1.6)
+  {\textbf{Production and Inventory Phases}};
+\node[phase_box] at (9.2,-1.6) {\textbf{Distribution Phase}};
+
+% Inset labels
+\node[font=\scriptsize, align=center] at (6.0, 0.85)
+  {\textit{Laboratory — Process — Storage}};
+
+\end{tikzpicture}
+\caption{The concerned [domain] supply chain overview.}
+\label{fig:network}
+\end{figure*}
+
+% ---- Figure 3: Sensitivity line chart with error bars ------
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width         = \columnwidth,
+  height        = 5.2cm,
+  xlabel        = {Variability (\%)},
+  ylabel        = {Total supply chain costs (\%)},
+  xtick         = {10,20,30,40,50},
+  xticklabels   = {10\%,20\%,30\%,40\%,50\%},
+  ymin          = 600000, ymax = 1250000,
+  ytick         = {600000,680000,760000,840000,920000,
+                   1000000,1080000,1160000,1240000},
+  yticklabel style = {font=\scriptsize,
+    /pgf/number format/fixed,
+    /pgf/number format/precision=0,
+    /pgf/number format/fixed zerofill=false},
+  xlabel style  = {font=\footnotesize},
+  ylabel style  = {font=\footnotesize},
+  tick label style = {font=\scriptsize},
+  legend style  = {font=\scriptsize, at={(0.98,0.05)},
+                   anchor=south east, draw=none},
+  axis lines    = left,
+  grid          = none,
+  line width    = 1pt,
+]
+% Deterministic — blue line with error bars (mean + SD)
+\addplot[color=elsblue, mark=*, mark size=2.5pt,
+         error bars/.cd, y dir=both, y explicit]
+  coordinates {
+    (10,  758190) +- (0,27503)
+    (20,  881051) +- (0,80261)
+    (30,  983367) +- (0,105669)
+    (40, 1037946) +- (0,128225)
+    (50, 1037946) +- (0,128225)
+  };
+\addlegendentry{Deterministic}
+
+% Robust — red/dark line with error bars
+\addplot[color=red!70!black, mark=square*, mark size=2.0pt,
+         error bars/.cd, y dir=both, y explicit]
+  coordinates {
+    (10, 661632) +- (0,12125)
+    (20, 658549) +- (0,35477)
+    (30, 685812) +- (0,51530)
+    (40, 665128) +- (0,46375)
+    (50, 647777) +- (0,56237)
+  };
+\addlegendentry{Robust}
+\end{axis}
+\end{tikzpicture}
+\caption{The mean and standard deviation of the first objective
+function value (Conservatism Level 90\%).}
+\label{fig:sensitivity}
+\end{figure}
+
+% ---- Figure 4: Schematic map of city districts -------------
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.70]
+% Simplified district shapes as irregular polygons
+% mimicking a geographic district map
+\fill[gray!20] (0,0) -- (3,0) -- (3.5,1.5) -- (2,2.5)
+               -- (0.5,2) -- cycle;
+\fill[gray!30] (3,0) -- (5.5,0) -- (5.5,2) -- (3.5,1.5) -- cycle;
+\fill[gray!15] (0.5,2) -- (2,2.5) -- (2,4) -- (0,4) -- cycle;
+\fill[gray!25] (2,2.5) -- (3.5,1.5) -- (4,3) -- (2,4) -- cycle;
+\fill[gray!10] (3.5,1.5) -- (5.5,2) -- (5.5,4) -- (4,3) -- cycle;
+\fill[gray!35] (0,4) -- (2,4) -- (2,5.5) -- (0,5.5) -- cycle;
+\fill[gray!20] (2,4) -- (4,3) -- (4.5,5.5) -- (2,5.5) -- cycle;
+\fill[gray!15] (4,3) -- (5.5,4) -- (5.5,5.5) -- (4.5,5.5) -- cycle;
+
+% District borders
+\draw[black, line width=0.5pt]
+  (0,0) -- (3,0) -- (3.5,1.5) -- (2,2.5) -- (0.5,2) -- cycle
+  (3,0) -- (5.5,0) -- (5.5,2) -- (3.5,1.5) -- cycle
+  (0.5,2) -- (2,2.5) -- (2,4) -- (0,4) -- cycle
+  (2,2.5) -- (3.5,1.5) -- (4,3) -- (2,4) -- cycle
+  (3.5,1.5) -- (5.5,2) -- (5.5,4) -- (4,3) -- cycle
+  (0,4) -- (2,4) -- (2,5.5) -- (0,5.5) -- cycle
+  (2,4) -- (4,3) -- (4.5,5.5) -- (2,5.5) -- cycle
+  (4,3) -- (5.5,4) -- (5.5,5.5) -- (4.5,5.5) -- cycle;
+
+% District labels
+\node[font=\tiny] at (1.5,0.8)  {\textbf{3}};
+\node[font=\tiny] at (4.2,0.8)  {\textbf{4}};
+\node[font=\tiny] at (0.8,3.0)  {\textbf{7}};
+\node[font=\tiny] at (2.8,2.8)  {\textbf{2}};
+\node[font=\tiny] at (4.5,2.5)  {\textbf{5}};
+\node[font=\tiny] at (1.0,4.8)  {\textbf{6}};
+\node[font=\tiny] at (3.0,4.8)  {\textbf{1}};
+\node[font=\tiny] at (4.8,4.8)  {\textbf{8}};
+
+% Facility markers (circles = regional, squares = local, triangles = mobile)
+\node[circle,fill=black,inner sep=2.5pt,
+      label={[font=\tiny]right:RBC}] at (2.5,2.0) {};
+\node[rectangle,fill=black,minimum size=5pt,
+      label={[font=\tiny]right:LBC}] at (1.2,1.2) {};
+\node[regular polygon,regular polygon sides=3,fill=black,
+      minimum size=5pt,
+      label={[font=\tiny]right:MBC}] at (3.8,1.8) {};
+
+% Legend
+\node[font=\tiny] at (2.8,-0.6)
+  {\tikz\node[circle,fill=black,inner sep=2pt]{};~Regional Blood Center
+   \quad
+   \tikz\node[rectangle,fill=black,minimum size=4pt]{};~Local Blood Center
+   \quad
+   \tikz\node[regular polygon,regular polygon sides=3,
+               fill=black,minimum size=4pt]{};~Mobile Blood Center};
+\end{tikzpicture}
+\caption{Geographic dispersion of districts of [City].}
+\label{fig:map}
+\end{figure}
+
+% ============================================================
+%  AUTHOR CONTRIBUTIONS & SUPPLEMENTARY
+% ============================================================
+\vspace{4pt}
+\noindent\textbf{Appendix A. Supplementary material}
+
+\noindent Supplementary data to this article can be found online at
+\url{https://doi.org/10.1016/j.cie.2019.XX.XXX}.
+
+% ============================================================
+%  REFERENCES — Elsevier numbered style (Vancouver)
+% ============================================================
+\balance
+\vspace{4pt}
+
+\begin{thebibliography}{99}
+\setlength{\itemsep}{1pt}
+\setlength{\parskip}{0pt}
+
+\bibitem{Author2015}
+Author, A., \& Author, B. (2015).
+Title of the referenced article.
+\textit{Journal Name}, \textit{78}, 259--270.
+\url{https://doi.org/10.1016/XXXX}
+
+\bibitem{WHO2016}
+WHO. (2016).
+Blood safety and availability.
+\textit{World Health Organization Report}.
+
+\bibitem{Tofighi2016}
+Tofighi, S., Ali~Torabi, S., \& Afshin~Mansouri, S. (2016).
+Humanitarian logistics network design under mixed uncertainty.
+\textit{European Journal of Operational Research},
+\textit{250}(1), 239--250.
+\url{https://doi.org/10.1016/j.ejor.2015.08.049}
+
+\bibitem{Torabi2015}
+Torabi, S.~A., Baghersad, M., \& Mansouri, S.~A. (2015).
+Resilient supplier selection and order allocation under operational
+and disruption risks.
+\textit{Transportation Research Part E},
+\textit{79}, 22--48.
+
+\bibitem{Samani2018}
+Samani, M.~R.~G., Torabi, S.~A., \& Hosseini-Motlagh, S.-M.\ (2018).
+Integrated blood supply chain planning for disaster relief.
+\textit{International Journal of Disaster Risk Reduction},
+\textit{27}, 168--188.
+
+\bibitem{Torabi2008}
+Torabi, S.~A., \& Hassini, E. (2008).
+An interactive possibilistic programming approach for multiple
+objective supply chain master planning.
+\textit{Fuzzy Sets and Systems},
+\textit{159}(2), 193--214.
+
+\bibitem{Belien2012}
+Beli\"{e}n, J., \& Forc\'{e}, H. (2012).
+Supply chain management of blood products: A literature review.
+\textit{European Journal of Operational Research},
+\textit{217}(1), 1--16.
+
+\bibitem{Osorio2015}
+Osorio, A.~F., Brailsford, S.~C., \& Smith, H.~K. (2015).
+A structured review of quantitative models in the blood supply chain.
+\textit{International Journal of Production Research},
+\textit{53}(24), 7191--7212.
+
+\bibitem{Bertsimas2003}
+Bertsimas, D., \& Sim, M. (2003).
+Robust discrete optimization and network flows.
+\textit{Mathematical Programming},
+\textit{98}(1--3), 49--71.
+
+\bibitem{Bertsimas2004}
+Bertsimas, D., \& Sim, M. (2004).
+The price of robustness.
+\textit{Operations Research},
+\textit{52}(1), 35--53.
+
+\bibitem{Ye2013}
+Ye, J. (2013).
+Multiple attribute group decision-making methods with unknown
+weights in intuitionistic fuzzy setting and interval-valued
+intuitionistic fuzzy setting.
+\textit{International Journal of General Systems},
+\textit{42}(5), 489--502.
+
+\bibitem{Osvald2008}
+Osvald, A., \& Stirn, L.~Z. (2008).
+A vehicle routing algorithm for the distribution of fresh vegetables
+and similar perishable food.
+\textit{Journal of Food Engineering},
+\textit{85}(2), 285--295.
+
+\bibitem{Abolghasemi2009}
+Abolghasemi, H., Maghsudlu, M., Amini~Kafi-Abad, S.,
+\& Cheraghali, A. (2009).
+Introduction to Iranian blood transfusion organization and blood
+safety in Iran.
+\textit{Iranian Journal of Public Health},
+\textit{38}(1), 82--87.
+
+\bibitem{Author2017}
+Author, R., \& Author, Z. (2017).
+Blood supply chain network design considering blood group
+compatibility under uncertainty.
+\textit{International Journal of Production Research},
+\textit{55}(7), 2013--2033.
+
+\bibitem{Author2014b}
+Author, A., Author, B., \& Author, C. (2014).
+Dynamic supply chain network design for the supply of blood in
+disasters: A robust model with real world application.
+\textit{Transportation Research Part E},
+\textit{70}, 225--244.
+
+\end{thebibliography}
+
+\end{document}
