@@ -1,72 +1,209 @@
-% ⚠️ The references from the references.bib needs to be extracted according to the list and then to be written according to the template format
+% ============================================================
+%  litmap_standalone.tex
+%  Standalone, portrait, text-width table styled after the
+%  Taylor & Francis "Applied Operations and Analytics" template.
+%  Compile with pdfLaTeX:  pdflatex litmap_standalone.tex
+% ============================================================
+\documentclass[10pt]{article}
 
-% tables/litmap.tex
-% tabular only — no table environment, no caption, no label.
-% Include in section file as:
-%   \input{tables/litmap.tex}
-\setlength{\tabcolsep}{6pt}
-\renewcommand{\arraystretch}{1.35}
-\rowcolors{3}{rowodd}{white}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{>{\raggedright\arraybackslash}p{3.8cm}
-                c
-                c
-                >{\columncolor{rarebg}}c
-                c
-                >{\columncolor{rarebg}}c
-                >{\columncolor{rarebg}}c}
-  \toprule
-  \rowcolor{headbg}
-    \color{headfg}\textbf{Work}
-    & \color{headfg}\textbf{Portfolio}
-    & \color{headfg}\textbf{Decision}
-    & \cellcolor{headbg}\color{headfg}\textbf{Sequential}
-    & \color{headfg}\textbf{Stochastic}
-    & \cellcolor{headbg}\color{headfg}\textbf{Contract}
-    & \cellcolor{headbg}\color{headfg}\textbf{Termination} \\
-  \rowcolor{headbg}
-    \color{headfg}\textbf{}
-    & \color{headfg}\textbf{level}
-    & \color{headfg}\textbf{type}
-    & \cellcolor{headbg}\color{headfg}\textbf{decisions}
-    & \color{headfg}\textbf{cash flows}
-    & \cellcolor{headbg}\color{headfg}\textbf{mechanics}
-    & \cellcolor{headbg}\color{headfg}\textbf{settlement} \\
-  \midrule
-  \citet{Yamakawa2019}        & \textcolor{symgreen}{\checkmark} & \textsc{\small S}    & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{KOSZTYAN2022}        & \textcolor{symgreen}{\checkmark} & \textsc{\small S}    & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{touran2006mathematical}  & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc/B} & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{touran2010probabilistic} & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc/B} & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{GHAPANCHI2012791}    & \textcolor{symgreen}{\checkmark} & \textsc{\small S}    & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{pourahmadi2015scenario}  & \textcolor{symgreen}{\checkmark} & \textsc{\small S}    & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{elsabek2018coordination} & \textcolor{symgrey}{--}          & \textsc{\small B}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--}          \\
-  \citet{beseiso2021}         & \textcolor{symgreen}{\checkmark} & \textsc{\small S}    & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{karimi2021scenario}  & \textcolor{symgreen}{\checkmark} & \textsc{\small S}    & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{bahroun2023artificial}   & \textcolor{symgrey}{--}          & \textsc{\small Sc}   & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{RANJBAR2022116134}   & \textcolor{symgreen}{\checkmark} & \textsc{\small S/Sc} & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          \\
-  \citet{szwarcfiter2023balancing}& \textcolor{symgreen}{\checkmark} & \textsc{\small Sc}   & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{asghari2023}         & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{mazhari2024}         & \textcolor{symgreen}{\checkmark} & \textsc{\small S/B}  & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{JIANG2024101016}     & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--} & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$} & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{Nabot2025}           & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc}   & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--}          & \textcolor{symgreen}{\checkmark} & \textcolor{symgreen}{\checkmark} \\
-  \citet{Darvish2025}         & \textcolor{symgreen}{\checkmark} & \textsc{\small B}    & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$}    & \textcolor{symamber}{$\circ$}    & \textcolor{symgreen}{\checkmark} \\
-  \citet{Gholami2025}         & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc}   & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgreen}{\checkmark} \\
-  \citet{Kehinde2025}         & \textcolor{symgreen}{\checkmark} & \textsc{\small B}    & \textcolor{symgreen}{\checkmark} & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{Ajibade2025}         & \textcolor{symgreen}{\checkmark} & \textsc{\small Sc}   & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{Huddar2025}          & \textcolor{symgreen}{\checkmark} & \textsc{\small B}    & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{Akbari2026}          & \textcolor{symgreen}{\checkmark} & \textsc{\small B}    & \textcolor{symgreen}{\checkmark} & \textcolor{symamber}{$\circ$}    & \textcolor{symgreen}{\checkmark} & \textcolor{symgreen}{\checkmark} \\
-  \citet{ebnerasoul2023}      & \textcolor{symgreen}{\checkmark} & \textsc{\small S}    & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{noroozi2016probabilistic}& \textcolor{symgreen}{\checkmark} & \textsc{\small B}  & \textcolor{symgrey}{--}          & \textcolor{symamber}{$\circ$}    & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \citet{JIANG2023104817}     & \textcolor{symgrey}{--}          & \textsc{\small B}    & \textcolor{symgreen}{\checkmark} & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          & \textcolor{symgrey}{--}          \\
-  \cmidrule{1-7}
-  \rowcolor{pwbg}
-    \color{headfg}\textbf{Present work}
-    & \cellcolor{pwbg}\color{headfg}\checkmark
-    & \color{headfg}\textbf{B}
-    & \cellcolor{pwbg}\color{headfg}\checkmark
-    & \color{headfg}\checkmark
-    & \cellcolor{pwbg}\color{headfg}\checkmark
-    & \cellcolor{pwbg}\color{headfg}\checkmark \\
-  \bottomrule
-\end{tabular}%
-}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% ── Fonts (same as template) ────────────────────────────────
+\usepackage{mathptmx}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\renewcommand{\sfdefault}{phv}
+
+% ── Page geometry: portrait A4, 170 mm text width ───────────
+\usepackage[
+  paperwidth  = 210mm,
+  paperheight = 297mm,
+  top         = 22mm,
+  bottom      = 28mm,
+  left        = 20mm,
+  right       = 20mm,
+  headsep     = 8pt,
+  footskip    = 16pt
+]{geometry}
+
+% ── Colours (only used for header / headings / links) ───────
+\usepackage[dvipsnames,table]{xcolor}
+\definecolor{tfjournalblue}{RGB}{0,80,158}
+\definecolor{tfgrey}{RGB}{80,80,80}
+
+% ── Header & footer ─────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\sffamily\color{tfgrey}APPLIED OPERATIONS AND ANALYTICS}
+\fancyhead[R]{\footnotesize\sffamily\color{tfgrey}\thepage}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\headrule}{\color{tfgrey}\hrule width\headwidth height\headrulewidth}
+
+% ── Spacing ─────────────────────────────────────────────────
+\usepackage{setstretch}
+\setstretch{1.05}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt plus 1pt}
+\emergencystretch=2em
+
+% ── Section heading (used for References) ───────────────────
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\fontsize{10.5}{13}\bfseries\itshape\color{tfjournalblue}}
+  {\thesection.}
+  {0.5em}
+  {}
+  [\vspace{-2pt}\color{tfjournalblue}\rule{\columnwidth}{0.4pt}]
+\titlespacing{\section}{0pt}{12pt plus 2pt}{4pt}
+
+% ── Symbols / floats ────────────────────────────────────────
+\usepackage{amsmath,amssymb}   % \checkmark, $\circ$
+\usepackage{float}
+
+% ── Tables ──────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{makecell}
+\newcommand{\tabfont}{\fontsize{8.5}{10.5}\selectfont}
+
+% ── Caption style (same as template) ────────────────────────
+\usepackage[
+  format          = plain,
+  labelfont       = {bf, small},
+  textfont        = {it, small},
+  labelsep        = period,
+  justification   = raggedright,
+  singlelinecheck = false
+]{caption}
+
+% ── Links ───────────────────────────────────────────────────
+\usepackage[
+  colorlinks = true,
+  linkcolor  = tfjournalblue,
+  citecolor  = tfjournalblue,
+  urlcolor   = tfjournalblue
+]{hyperref}
+\usepackage{url}
+\usepackage{microtype}
+
+% ── Switch: print the reference list under the table? ───────
+\newif\ifshowrefs
+\showrefstrue            % change to \showrefsfalse for table only
+
+% ── Hanging-indent reference entry (APA style) ──────────────
+\newcommand{\refitem}[1]{\par\noindent\hangindent=1.5em\hangafter=1 #1\par\vspace{2pt}}
+
+% ============================================================
+\begin{document}
+\thispagestyle{fancy}
+
+% ---- Table: Literature positioning ----
+\begin{table}[H]
+\caption{Positioning of the present work relative to the reviewed portfolio and project-decision studies.}
+\label{tab:litmap}
+\tabfont
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{l *{6}{>{\centering\arraybackslash}X}}
+\toprule
+\textbf{Work}
+  & \makecell[c]{\textbf{Portfolio}\\\textbf{level}}
+  & \makecell[c]{\textbf{Decision}\\\textbf{type}}
+  & \makecell[c]{\textbf{Sequential}\\\textbf{decisions}}
+  & \makecell[c]{\textbf{Stochastic}\\\textbf{cash flows}}
+  & \makecell[c]{\textbf{Contract}\\\textbf{mechanics}}
+  & \makecell[c]{\textbf{Termination}\\\textbf{settlement}} \\
+\midrule
+Yamakawa et al.\ (2019)               & \checkmark & S    & --         & $\circ$    & --         & --         \\
+Kosztyán et al.\ (2022)               & \checkmark & S    & --         & $\circ$    & --         & --         \\
+Touran (2006)                         & \checkmark & Sc/B & --         & $\circ$    & --         & --         \\
+Touran (2010)                         & \checkmark & Sc/B & --         & $\circ$    & --         & --         \\
+Ghapanchi et al.\ (2012)              & \checkmark & S    & --         & $\circ$    & --         & --         \\
+Pourahmadi et al.\ (2015)             & \checkmark & S    & --         & $\circ$    & --         & --         \\
+El-Sabek \& McCabe (2018)             & --         & B    & --         & --         & \checkmark & --         \\
+Beseiso \& Kumar (2021)               & \checkmark & S    & --         & $\circ$    & --         & --         \\
+Karimi et al.\ (2021)                 & \checkmark & S    & --         & $\circ$    & --         & --         \\
+Bahroun et al.\ (2023)                & --         & Sc   & \checkmark & --         & --         & --         \\
+Ranjbar et al.\ (2022)                & \checkmark & S/Sc & --         & --         & $\circ$    & --         \\
+Szwarcfiter et al.\ (2023)            & \checkmark & Sc   & \checkmark & $\circ$    & --         & --         \\
+Asghari et al.\ (2023)                & --         & --   & \checkmark & $\circ$    & --         & --         \\
+Mazhari \& Tajik (2024)               & \checkmark & S/B  & \checkmark & --         & --         & --         \\
+Jiang et al.\ (2024)                  & \checkmark & --   & \checkmark & $\circ$    & --         & --         \\
+Nabot et al.\ (2025)                  & \checkmark & Sc   & \checkmark & --         & \checkmark & \checkmark \\
+Darvish \& Sepehri (2025)             & \checkmark & B    & \checkmark & $\circ$    & $\circ$    & \checkmark \\
+Gholami et al.\ (2025)                & \checkmark & Sc   & \checkmark & $\circ$    & --         & \checkmark \\
+Kehinde (2025)                        & \checkmark & B    & \checkmark & \checkmark & --         & --         \\
+Ajibade (2025)                        & \checkmark & Sc   & \checkmark & $\circ$    & --         & --         \\
+Huddar \& Joshi (2025)                & \checkmark & B    & \checkmark & $\circ$    & --         & --         \\
+Akbari \& Akbarpour Shirazi (2026)    & \checkmark & B    & \checkmark & $\circ$    & \checkmark & \checkmark \\
+Ebnerasoul et al.\ (2023)             & \checkmark & S    & --         & $\circ$    & --         & --         \\
+Noroozi et al.\ (2016)                & \checkmark & B    & --         & $\circ$    & --         & --         \\
+Jiang et al.\ (2023)                  & --         & B    & \checkmark & --         & --         & --         \\
+\midrule
+\textbf{Present work} & \textbf{\checkmark} & \textbf{B} & \textbf{\checkmark}
+  & \textbf{\checkmark} & \textbf{\checkmark} & \textbf{\checkmark} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+%  REFERENCES (APA / T&F author-year, extracted from references.bib)
+% ============================================================
+\ifshowrefs
+\section*{References}
+
+\refitem{Ajibade, O.\ M. (2025). AI enhanced project management: Leveraging predictive analytics and intelligent automation. \textit{Int.\ J.\ Res.\ Publ.\ Rev.}, \textit{6}, 6828--6844.}
+
+\refitem{Akbari, M., \& Akbarpour Shirazi, M. (2026). A self-adjusting decision support system for strategic project portfolio prioritization using integrated AHP and reinforcement learning. \textit{Applied Operations and Analytics}, \textit{2}(1), 1--19. \url{https://doi.org/10.1080/29966892.2026.2694891}}
+
+\refitem{Asghari, V., Biglari, A.\ J., \& Hsu, S.-C. (2023). Multiagent reinforcement learning for project-level intervention planning under multiple uncertainties. \textit{Journal of Management in Engineering}, \textit{39}(2), 04022075. \url{https://doi.org/10.1061/JMENEA.MEENG-4883}}
+
+\refitem{Bahroun, Z., Tanash, M., As'ad, R., \& Alnajar, M. (2023). Artificial intelligence applications in project scheduling: A systematic review, bibliometric analysis, and prospects for future research. \textit{Management Systems in Production Engineering}, \textit{31}, 144--161. \url{https://doi.org/10.2478/mspe-2023-0017}}
+
+\refitem{Beseiso, M., \& Kumar, G. (2021). A fuzzy computational approach for selecting interdependent projects using prioritized criteria. \textit{Journal of Intelligent \& Fuzzy Systems}, \textit{40}(6), 11341--11354. \url{https://doi.org/10.3233/JIFS-202506}}
+
+\refitem{Darvish, A., \& Sepehri, M. (2025). Artificial intelligence-driven project portfolio optimization under deep uncertainty using adaptive reinforcement learning. \textit{Applied Sciences}, \textit{15}(23), 12713.}
+
+\refitem{Ebnerasoul, M., Ghannadpour, S.\ F., \& Haeri, A. (2023). A collective efficacy-based approach for bi-objective sustainable project portfolio selection using interdependency network model between projects. \textit{Environment, Development and Sustainability}, \textit{25}, 13981--14001. \url{https://doi.org/10.1007/s10668-022-02638-3}}
+
+\refitem{El-Sabek, L.\ M., \& McCabe, B.\ Y. (2018). Coordination challenges of production planning in the construction of international mega-projects in the Middle East. \textit{International Journal of Construction Education and Research}, \textit{14}(2), 118--140. \url{https://doi.org/10.1080/15578771.2016.1276109}}
+
+\refitem{Ghapanchi, A.\ H., Tavana, M., Khakbaz, M.\ H., \& Low, G. (2012). A methodology for selecting portfolios of projects with interactions and under uncertainty. \textit{International Journal of Project Management}, \textit{30}(7), 791--803. \url{https://doi.org/10.1016/j.ijproman.2012.01.012}}
+
+\refitem{Gholami, H., Azizi, A., Sabzehparvar, M., \& Jafari, D. (2025). A fuzzy multi-agent model of project portfolio scheduling and selection taking into account environmental resilience. \textit{Results in Control and Optimization}, \textit{19}, 100544.}
+
+\refitem{Huddar, V., \& Joshi, N. (2025). AI-driven project portfolio optimization for sustainable development: A decision support framework. In \textit{2025 First International Conference on Advances in Computer Science, Electrical, Electronics, and Communication Technologies (CE2CT)} (pp.\ 1035--1038). IEEE.}
+
+\refitem{Jiang, C., Li, X., Lin, J.-R., Liu, M., \& Ma, Z. (2023). Adaptive control of resource flow to optimize construction work and cash flow via online deep reinforcement learning. \textit{Automation in Construction}, \textit{150}, 104817. \url{https://doi.org/10.1016/j.autcon.2023.104817}}
+
+\refitem{Jiang, Y., Olmo, J., \& Atwi, M. (2024). Deep reinforcement learning for portfolio selection. \textit{Global Finance Journal}, \textit{62}, 101016. \url{https://doi.org/10.1016/j.gfj.2024.101016}}
+
+\refitem{Karimi, S., Saeed, M., \& Pishvaee, M. (2021). A scenario-based mathematical approach to a robust project portfolio selection problem under fuzzy uncertainty. \textit{Journal of Intelligent \& Fuzzy Systems}, \textit{42}, 1--14. \url{https://doi.org/10.3233/JIFS-210144}}
+
+\refitem{Kehinde, O. (2025). Leveraging data-driven decision-making for enhanced risk management and resource allocation in projects. \textit{International Journal of Computer Applications Technology and Research}, \textit{14}(2), 1--17.}
+
+\refitem{Kosztyán, Z.\ T., Katona, A.\ I., Kuppens, K., Kisgyörgy-Pál, M., Nachbagauer, A., \& Csizmadia, T. (2022). Exploring the structures and design effects of EU-funded R\&D\&I project portfolios. \textit{Technological Forecasting and Social Change}, \textit{180}, 121687. \url{https://doi.org/10.1016/j.techfore.2022.121687}}
+
+\refitem{Mazhari, N., \& Tajik, S. (2024). \textit{Evaluating the impact of artificial intelligence and machine learning in project portfolio management} [Master's thesis, Stockholm University]. \url{https://urn.kb.se/resolve?urn=urn:nbn:se:su:diva-242703}}
+
+\refitem{Nabot, A., Alnaimat, F., Jebreen, I., Al-Qerem, A., \& Ali, A.\ M. (2025). AI for software project management: Predicting delivery times \& resource allocation. In \textit{2025 12th International Conference on Information Technology (ICIT)} (pp.\ 277--284). IEEE.}
+
+\refitem{Noroozi, A., Mokhtari, H., Bagherpour, M., \& Sadjadi, S.\ J. (2016). A probabilistic portfolio budget allocation problem with CPI index under risk. \textit{Journal of Industrial and Production Engineering}, \textit{33}(4), 236--246. \url{https://doi.org/10.1080/21681015.2015.1136897}}
+
+\refitem{Pourahmadi, K., Nouri, S., \& Yaghoubi, S. (2015). A scenario based project portfolio selection. \textit{Management Science Letters}, 883--888. \url{https://doi.org/10.5267/j.msl.2015.6.008}}
+
+\refitem{Ranjbar, M., Nasiri, M.\ M., \& Torabi, S.\ A. (2022). Multi-mode project portfolio selection and scheduling in a build-operate-transfer environment. \textit{Expert Systems with Applications}, \textit{189}, 116134. \url{https://doi.org/10.1016/j.eswa.2021.116134}}
+
+\refitem{Szwarcfiter, C., Herer, Y.\ T., \& Shtub, A. (2023). Balancing project schedule, cost, and value under uncertainty: A reinforcement learning approach. \textit{Algorithms}, \textit{16}(8), 395. \url{https://doi.org/10.3390/a16080395}}
+
+\refitem{Touran, A. (2006). A mathematical model for establishing budget levels for a portfolio of transit projects. \textit{Proc., ICCCBE XI}. ICCCBE Montreal.}
+
+\refitem{Touran, A. (2010). Probabilistic approach for budgeting in portfolio of projects. \textit{Journal of Construction Engineering and Management}, \textit{136}(3), 361--370. \url{https://doi.org/10.1061/(ASCE)CO.1943-7862.0000128}}
+
+\refitem{Yamakawa, E.\ K., Cauchick-Miguel, P.\ A., Sousa-Zomer, T.\ T., \& Killen, C.\ P. (2019). Project portfolio management: A landscape of the literature. \textit{International Journal of Business Excellence}, \textit{18}(4), 450--487. \url{https://doi.org/10.1504/IJBEX.2019.101529}}
+\fi
+
+\end{document}
