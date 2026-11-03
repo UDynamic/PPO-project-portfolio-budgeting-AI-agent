@@ -1,16 +1,15 @@
-
 This section validates the environment mechanics and quantifies the
 optimality gap available to future learned policies. Three
 deterministic greedy heuristics and a manually computed
 full-information optimum are evaluated across four benchmark portfolio
-configurations of increasing structural complexity. The configurations
-are designed so that each one isolates a specific mechanic of the
-environment --- progress dynamics, advance payment timing, termination
-risk, multi-project coordination --- enabling precise attribution of
-each heuristic's failure mode. All episodes are executed through the
-Gymnasium environment described in Section~\ref{sec:problem}, with
-the SQLite audit ledger providing a complete per-period record of
-allocations, cash-flow events, and breach flags.
+configurations of increasing structural complexity. Each configuration
+isolates a specific mechanic of the environment --- progress dynamics,
+advance payment timing, termination risk, and multi-project
+coordination --- enabling precise attribution of each heuristic's
+failure mode. All episodes are executed through the Gymnasium
+environment described in Section~\ref{sec:problem}, with the SQLite
+audit ledger providing a complete per-period record of allocations,
+cash-flow events, and breach flags.
 
 % ------------------------------------------------------------
 \subsection{Shared Parameters}
@@ -18,18 +17,18 @@ allocations, cash-flow events, and breach flags.
 % ------------------------------------------------------------
 
 All four configurations share the contract and environment parameters
-in Table~\ref{tab:shared_params}, fixed across every episode and
-every solver so that observed performance differences are attributable
-solely to configuration structure and solver policy.
+listed in Table~\ref{tab:shared_params}, fixed across every episode
+and every solver so that observed performance differences are
+attributable solely to configuration structure and solver policy.
 
 \begin{table}[H]
   \centering
-  \input{tables/shared_params.tex}
+  \includegraphics[width=\textwidth]{tables/shared_params.pdf}
   \caption{Parameters shared across all benchmark configurations.
-    Within each milestone payment, advance recovery is applied first
-    to the gross payment; retention is deducted from the same gross
-    payment independently. Accumulated retention is released in full
-    at the final milestone.}
+    Advance recovery is applied first to the gross milestone payment;
+    retention is deducted from the same gross payment independently
+    and in parallel. Accumulated retention is released in full at the
+    final milestone.}
   \label{tab:shared_params}
 \end{table}
 
@@ -51,19 +50,37 @@ cleared in full and all accumulated retention is released.
 \label{subsec:configs}
 % ------------------------------------------------------------
 
-Table~\ref{tab:configs} summarises the four configurations. Each uses
-a fixed custom-ordinal efficiency sequence ($\eta_{i,t}$ set to a
-deterministic per-project list) under seed $= 0$, ensuring exact
-reproducibility.
+The four benchmark configurations are constructed from a common
+parameter baseline (Table~\ref{tab:shared_params}) by selectively
+overriding the structural dimensions listed in
+Table~\ref{tab:config_axes}: project count, start-time scheme,
+milestone and payment structure, and efficiency realisation. Each
+override activates exactly one additional mechanic relative to the
+previous configuration, so the ordering from TC-10SF-R to TC-3XMAIF-R
+traces a controlled complexity ladder. Table~\ref{tab:configs}
+summarises the resulting distinguishing parameters; all other fields
+retain the shared defaults.
 
 \begin{table}[H]
   \centering
-  \input{tables/configs.tex}
+  \includegraphics[width=\textwidth]{tables/config_axes.pdf}
+  \caption{Structural axes varied across benchmark configurations.
+    A checkmark indicates that the axis is activated (overridden from
+    the shared baseline) in the corresponding configuration.
+    TC-10SF-R serves as the degenerate single-project anchor; each
+    subsequent configuration adds exactly one structural dimension.}
+  \label{tab:config_axes}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/configs.pdf}
   \caption{Benchmark configuration summary. $N$: number of projects;
-    $D_i$: planned duration; $s_i$: planned start (episode period);
-    $M_i$: non-advance milestones; $\phi_i$: advance rate;
-    $\psi^{\mathrm{trig}}_i$: progress level at which the advance is
-    disbursed (0.00 means at project start).}
+    $D_i$: planned duration (periods); $s_i$: planned start (episode
+    period); $M_i$: non-advance milestones; $\phi_i$: advance rate;
+    $\psi^{\mathrm{trig}}_i$: cumulative progress threshold at which
+    the advance is disbursed (0.00 = project start);
+    $\eta_i$: efficiency sequence (fixed custom-ordinal under seed $= 0$).}
   \label{tab:configs}
 \end{table}
 
@@ -72,17 +89,7 @@ One project, one non-advance milestone, no advance payment, planned
 duration $D_i = 0$. The project has a single planned action at
 $\tau_i = 0$ and the hard deadline falls at episode period 2.
 Contract price $P_i = 120$; the single milestone carries weight
-$w = 1.0$. Table~\ref{tab:tc10sf} details the milestone payment
-trace for this configuration.
-
-\begin{table}[H]
-  \centering
-  \input{tables/tc_10sf_r.tex}
-  \caption{TC-10SF-R: milestone payment trace. Retention is withheld
-    and immediately released at the final milestone, giving net
-    payment $= 120$ with no advance deductions.}
-  \label{tab:tc10sf}
-\end{table}
+$w = 1.0$.
 
 \paragraph{TC-1LMAIF-R --- Delayed start and progress-triggered advance.}
 One project, planned start $s_i = 2$, planned duration $D_i = 3$
@@ -93,16 +100,6 @@ $\phi_i \times P_i = 24$ is disbursed only once cumulative progress
 $EV_{i,t} \geq 0.80$ is reached. Advance recovery rate
 $\rho_i = 0.50$ is the highest in the benchmark suite.
 Efficiency sequence: $[0.91,\, 1.17,\, 0.83,\, 0.91,\, 1.17,\, 0.83]$.
-Table~\ref{tab:tc1lmaif} shows the full payment trace.
-
-\begin{table}[H]
-  \centering
-  \input{tables/tc_1lmaif_r.tex}
-  \caption{TC-1LMAIF-R: milestone payment trace including advance
-    recovery and retention deductions. Retention is released in full
-    ($6.0$) at milestone $j=3$.}
-  \label{tab:tc1lmaif}
-\end{table}
 
 \paragraph{TC-10MAIF-R --- Diminishing efficiency and termination risk.}
 One project, planned start $s_i = 0$, planned duration $D_i = 3$,
@@ -110,19 +107,10 @@ three milestones, advance rate $\phi_i = 0.20$ disbursed at project
 start ($\psi^{\mathrm{trig}}_i = 0.00$), advance recovery rate
 $\rho_i = 0.20$. The efficiency sequence is monotonically decreasing:
 $[0.95,\, 0.91,\, 0.55,\, 0.40,\, 0.30,\, 0.20]$. The advance of
-$24$ is disbursed at $t = 0$. Table~\ref{tab:tc10maif} details the
-milestone payment trace; this configuration stress-tests the
+$24$ is disbursed at $t = 0$. This configuration stress-tests the
 termination mechanic as the sharp efficiency drop makes it
 progressively more expensive to keep
 $\delta_{i,t} \leq \delta^{\max}_i = 0.15$.
-
-\begin{table}[H]
-  \centering
-  \input{tables/tc_10maif_r.tex}
-  \caption{TC-10MAIF-R: milestone payment trace. Advance of $24$
-    disbursed at $t=0$; recovery rate $\rho_i = 0.20$.}
-  \label{tab:tc10maif}
-\end{table}
 
 \paragraph{TC-3XMAIF-R --- Multi-project with gap and overlap.}
 Three projects with heterogeneous scale
@@ -132,30 +120,8 @@ planned duration $D_i = 3$, three milestones, and advance rate
 $\phi_i = 0.20$ disbursed at project start. The episode has two
 structurally distinct phases: a \emph{gap phase} ($t = 4,\,5$) where
 no allocations are required and the budget accumulates, and an
-\emph{overlap phase} ($t = 7,\,8,\,9$) where Projects 1 and 2
+\emph{overlap phase} ($t = 7,\,8,\,9$) where Projects~1 and 2
 compete simultaneously for the shared reserve $B_t$.
-Table~\ref{tab:tc3xmaif_projects} summarises the per-project
-parameters and efficiency sequences, and
-Table~\ref{tab:tc3xmaif_advances} details the advance outflow
-schedule.
-
-\begin{table}[H]
-  \centering
-  \input{tables/tc_3xmaif_r_projects.tex}
-  \caption{TC-3XMAIF-R: per-project parameters and efficiency
-    sequences. None of the sequences is monotonically degrading;
-    the challenge is purely coordination and cash-flow timing.}
-  \label{tab:tc3xmaif_projects}
-\end{table}
-
-\begin{table}[H]
-  \centering
-  \input{tables/tc_3xmaif_r_advances.tex}
-  \caption{TC-3XMAIF-R: advance outflow schedule. The concurrent
-    outflows at $t=6$ and $t=7$ produce the largest single-period
-    deficit in the benchmark suite.}
-  \label{tab:tc3xmaif_advances}
-\end{table}
 
 % ------------------------------------------------------------
 \subsection{Solvers}
@@ -188,16 +154,140 @@ tractable algorithmic solver (LP or DP) is left as future work; the
 manual computation suffices to establish the performance ceiling across
 the four configurations studied here.
 
-All four methods are evaluated under seed $= 0$ with the fixed
-custom-ordinal efficiency sequences specified above, ensuring exact
-reproducibility across runs and solvers.
+All four methods are evaluated under seed $= 0$ with fixed
+custom-ordinal efficiency sequences, ensuring exact reproducibility
+across runs and solvers.
+
+% ------------------------------------------------------------
+\subsection{Traceback over the Optimised Solution}
+\label{subsec:traceback}
+% ------------------------------------------------------------
+
+This subsection decomposes the full-information optimum $\pi^*$ on
+TC-3XMAIF-R into its period-by-period mechanics. TC-3XMAIF-R is
+chosen because it is the only configuration in which $\pi^*$ achieves
+a positive NPV while every greedy heuristic records a loss; the
+traceback therefore identifies the exact decisions that convert a
+complex multi-project portfolio from loss-making to profitable.
+
+The episode runs from $t = 0$ to $t = T = 13$ and decomposes into
+four structural phases:
+
+\begin{enumerate}
+  \item \textbf{Pre-gap} ($t = 0$--$3$): Project~0 is the sole active
+        project. The optimum front-loads allocation into
+        high-efficiency periods to certify milestones early and
+        accumulate the budget reserve ahead of the gap.
+  \item \textbf{Gap} ($t = 4$--$5$): No project is active; the
+        portfolio balance accrues interest, net of any deficit charge
+        if the balance is negative. The gap is an artefact of the
+        staggered-start design and rewards policies that avoid entering
+        it with a deficit.
+  \item \textbf{Ramp-up and first overlap} ($t = 6$--$7$): Project~1
+        starts at $t = 6$ and Project~2 at $t = 7$, triggering advance
+        outflows of $48$ and $72$ respectively. The optimum sequences
+        these disbursements to preserve a positive balance through both.
+  \item \textbf{Full overlap} ($t = 8$--$9$) and \textbf{tail}
+        ($t = 10$--$13$): Projects~1 and 2 compete for the shared
+        reserve. The optimum exploits known efficiency sequences to
+        allocate first to whichever project yields the higher marginal
+        milestone return per unit of expenditure.
+\end{enumerate}
+
+\paragraph{Gantt timeline.}
+Figure~\ref{fig:gantt_optimal} shows the planned and realised activity
+intervals for all three projects under $\pi^*$, with milestone
+certification events annotated.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/gantt_optimal.png}
+  \caption{Gantt timeline for TC-3XMAIF-R under $\pi^*$.
+    Bars show planned (light) and realised (dark) active periods.
+    Vertical markers indicate milestone certifications;
+    triangle markers indicate advance disbursement events.
+    The gap phase ($t = 4$--$5$) and overlap phase ($t = 7$--$9$)
+    are shaded for reference.}
+  \label{fig:gantt_optimal}
+\end{figure}
+
+\paragraph{Cost baseline and EVM curves.}
+Figure~\ref{fig:cost_baseline_three} plots the Planned Value (PV),
+Earned Value (EV), and Actual Cost (AC) curves for each project under
+$\pi^*$. The cost baseline confirms that the optimum respects the
+S-curve planned expenditure profile during high-efficiency periods and
+intentionally under-spends during low-efficiency periods, accepting a
+controlled progress delay rather than incurring wasteful expenditure.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/01c_cost_baseline_E.png}
-  \caption{Cost baseline for the TC-3XMAIF-R configuration under optimal solution.}
+  \caption{Earned Value Management curves for TC-3XMAIF-R under
+    $\pi^*$. PV: planned value (S-curve baseline); EV: earned value
+    (realised progress $\times$ BAC); AC: actual cost (cumulative
+    allocation). The controlled EV--PV gap in the overlap phase
+    reflects deliberate delay acceptance to preserve the shared
+    budget reserve.}
   \label{fig:cost_baseline_three}
 \end{figure}
+
+\paragraph{Net cash-flow diagram.}
+Figure~\ref{fig:cashflow_optimal} disaggregates the period-by-period
+cash-flow into four components: allocation outflows, advance
+disbursements, milestone inflows (net of recovery and retention
+deductions), and the running portfolio balance $B_t$.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/cashflow_optimal.png}
+  \caption{Net cash-flow diagram for TC-3XMAIF-R under $\pi^*$.
+    Stacked bars show allocation outflows (negative) and milestone
+    inflows (positive) disaggregated by project. The running balance
+    $B_t$ (line) remains positive throughout; the advance outflows at
+    $t = 6$ and $t = 7$ are absorbed by the gap-phase accumulation.}
+  \label{fig:cashflow_optimal}
+\end{figure}
+
+\paragraph{Observation trace.}
+Table~\ref{tab:obs_trace} records the full observation vector
+$o_t = (B_t,\, \delta_{i,t},\, EV_{i,t},\, \mathrm{breach}_{i,t},\, \ldots)$
+at each episode period under $\pi^*$, drawn directly from the SQLite
+audit ledger. The table enables verification that breach flags,
+advance triggers, and termination conditions are correctly evaluated
+by the environment at each step.
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/obs_trace.pdf}
+  \caption{Per-period observation trace for TC-3XMAIF-R under $\pi^*$.
+    $B_t$: portfolio balance; $\delta_{i,t}$: progress delay for
+    project $i$; $\mathrm{adv}_{i}$: advance disbursed flag;
+    $\mathrm{br}_{i,t}$: breach flag; $\mathrm{ms}_{i,j}$: milestone
+    $j$ certified. Shading marks the gap phase and overlap phase.}
+  \label{tab:obs_trace}
+\end{table}
+
+\paragraph{Reward decomposition.}
+Table~\ref{tab:reward_trace} decomposes the per-period reward signal
+$r_t = \gamma^t \Delta B_t$ into its contributing events: allocation
+cost, advance inflow or outflow, milestone payment (gross), recovery
+deduction, retention deduction, retention release, and interest
+accrual. The final column accumulates the discounted sum $G_t =
+\sum_{\tau=0}^{t} \gamma^\tau \Delta B_\tau$, converging to $G =
++12.40$ at episode end.
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/reward_trace.pdf}
+  \caption{Per-period reward decomposition for TC-3XMAIF-R under
+    $\pi^*$. Each row corresponds to one episode period; columns
+    report the signed cash-flow contribution of each event class
+    and the cumulative discounted return $G_t$. Negative entries
+    in the allocation and advance columns represent outflows;
+    positive entries in the milestone and release columns represent
+    inflows net of deductions.}
+  \label{tab:reward_trace}
+\end{table}
 
 % ------------------------------------------------------------
 \subsection{Results}
@@ -243,10 +333,8 @@ cash inflows. The greedy policies, allocating from current-period
 signals only, cannot anticipate the trigger timing and over-allocate
 during the low-return period before the advance fires. Both
 $\pi^{\mathrm{rp}}$ and $\pi^{\mathrm{cu}}$ achieve identical NPV
-($-13.21$), indicating that the binding constraint is not the delay
-cap but payment timing: both rules satisfy the tolerance in the same
-periods, but neither correctly sequences allocation to capture the
-advance inflow early.
+($-13.21$), indicating that the binding constraint is payment timing
+rather than the delay cap.
 
 \paragraph{TC-10MAIF-R.}
 The monotonically diminishing efficiency sequence makes the
@@ -256,24 +344,23 @@ achieves only $-21.66$: the late-stage efficiency collapse
 uneconomical. Catchup-Next-T ($-27.22$) outperforms both Reach-Plan
 ($-35.06$) and Catchup-T ($-47.77$): its risk-averse lookahead
 front-loads work into the high-efficiency early periods, reducing
-expenditure in the near-inoperable late periods where each unit of
-allocation yields little progress. Catchup-T performs worst because
-its minimum-spend rule continues allocating into low-efficiency
-periods to maintain the tolerance floor, accumulating cost without
-meaningful progress. The best-heuristic gap of $5.56$ is the
-smallest in the suite, because the challenge here is project-level
+expenditure in the near-inoperable late periods. Catchup-T performs
+worst because its minimum-spend rule continues allocating into
+low-efficiency periods to maintain the tolerance floor, accumulating
+cost without meaningful progress. The best-heuristic gap of $5.56$ is
+the smallest in the suite, because the challenge here is project-level
 efficiency timing rather than multi-project coordination.
 
 \paragraph{TC-3XMAIF-R.}
 The multi-project configuration produces the starkest result. The
 full-information optimum achieves $+12.40$: with known efficiency
 sequences, the oracle times advance disbursements, milestone
-certifications, and the gap-phase budget accumulation to convert
-the complex portfolio into a profitable episode. Every greedy
-heuristic produces a loss --- Reach-Plan at $-59.75$, Catchup-T at
-$-62.38$, Catchup-Next-T at $-107.96$ --- and the best-heuristic
-gap reaches $72.15$, a $21\times$ increase over TC-10SF-R. The sign
-reversal (profitable optimum, loss-making heuristics) is the central
+certifications, and the gap-phase budget accumulation to convert the
+complex portfolio into a profitable episode. Every greedy heuristic
+produces a loss --- Reach-Plan at $-59.75$, Catchup-T at $-62.38$,
+Catchup-Next-T at $-107.96$ --- and the best-heuristic gap reaches
+$72.15$, a $21\times$ increase over TC-10SF-R. The sign reversal
+(profitable optimum, loss-making heuristics) is the central
 observation. The concurrent advance outflows at $t = 6$ ($-48$) and
 $t = 7$ ($-72$) create a large shared deficit that each single-project
 greedy rule handles independently, without accounting for how its own
@@ -281,7 +368,7 @@ allocation depletes the reserve available to the concurrent project.
 Catchup-Next-T collapses to $-107.96$ because its aggressive
 pre-emptive spend across all three simultaneously-active projects
 exhausts the budget during the overlap phase, leaving insufficient
-reserve to certify the high-value late milestones of Projects 1 and 2.
+reserve to certify the high-value late milestones of Projects~1 and 2.
 
 % ------------------------------------------------------------
 \subsection{Discussion}
@@ -297,25 +384,24 @@ The best-heuristic gap grows from $3.40$ (TC-10SF-R) to $14.70$
 simplest to most complex. TC-10MAIF-R ($5.56$) is the only departure
 from strict monotonicity: its challenge is project-level efficiency
 timing, not multi-project coordination, so the gap is smaller than
-TC-1LMAIF-R's despite higher individual-project difficulty. The gap in
-TC-3XMAIF-R is not marginal degradation; it reflects a structural
+TC-1LMAIF-R's despite higher individual-project difficulty. The gap
+in TC-3XMAIF-R is not marginal degradation; it reflects a structural
 failure of greedy allocation under shared-budget coordination
 requirements that no single-project rule can resolve.
 
 \paragraph{No single heuristic dominates.}
-Each heuristic is best on at least one configuration: Reach-Plan
-on TC-10SF-R, Catchup-Next-T on TC-10MAIF-R, Catchup-T on
-TC-3XMAIF-R. This confirms that the optimal policy is adaptive: the
-correct allocation depends jointly on the efficiency trajectory, the
-milestone payment structure, the advance trigger timing, and the
-phasing of concurrent projects --- a combination no fixed rule can
-capture. The failure mode of each heuristic is traceable to a specific
+Each heuristic is best on at least one configuration: Reach-Plan on
+TC-10SF-R, Catchup-Next-T on TC-10MAIF-R, Catchup-T on TC-3XMAIF-R.
+This confirms that the optimal policy is adaptive: the correct
+allocation depends jointly on the efficiency trajectory, the milestone
+payment structure, the advance trigger timing, and the phasing of
+concurrent projects --- a combination no fixed rule can capture.
+The failure mode of each heuristic is traceable to a specific
 structural feature: Reach-Plan over-spends in aggregate; Catchup-T
 under-anticipates the lookahead; Catchup-Next-T over-commits in the
 multi-project overlap phase.
 
-\paragraph{A well-defined improvement target exists for learned
-agents.}
+\paragraph{A well-defined improvement target exists for learned agents.}
 The full-information optimum $G(\pi^*)$ provides a concrete upper
 bound (Proposition~\ref{prop:upper_bound}) for each configuration.
 On TC-3XMAIF-R the swing between the best achievable ($+12.40$) and
@@ -327,6 +413,5 @@ configuration produces the expected pattern of cash-flow events
 retention release, interest accrual) correctly sequenced and
 financially consistent, and the full-information optimum exploits
 structural features that greedy rules are architecturally unable to
-access. This gap is the value of intelligent sequential allocation
-and constitutes the performance target for future RL agents trained
-on the environment of Section~\ref{sec:problem}.
+access. This gap constitutes the performance target for future RL
+agents trained on the environment of Section~\ref{sec:problem}.

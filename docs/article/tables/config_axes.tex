@@ -1,0 +1,50 @@
+% ============================================================
+%  tab_config_axes.tex
+%  Compile:  pdflatex tab_config_axes.tex
+%  Output :  tables/config_axes.pdf
+% ============================================================
+\documentclass[10pt,border=6pt]{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\renewcommand{\sfdefault}{phv}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage{pifont}   % \ding{51} = checkmark, \ding{55} = cross
+
+\newcommand{\tabfont}{\fontsize{8.5}{10.5}\selectfont}
+\newcommand{\yes}{\ding{51}}
+\newcommand{\no}{--}
+\setlength{\parindent}{0pt}
+
+% ============================================================
+\begin{document}
+\begin{minipage}{170mm}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X cccc}
+\toprule
+\textbf{Structural axis} & \textbf{TC-10SF-R} & \textbf{TC-1LMAIF-R} & \textbf{TC-10MAIF-R} & \textbf{TC-3XMAIF-R} \\
+\midrule
+Multi-project portfolio ($N > 1$)                  & \no  & \no  & \no  & \yes \\
+Delayed project start ($s_i > 0$)                  & \no  & \yes & \no  & \yes \\
+Multi-milestone payments ($M_i > 1$)               & \no  & \yes & \yes & \yes \\
+Advance payment ($\phi_i > 0$)                     & \no  & \yes & \yes & \yes \\
+Progress-triggered advance ($\psi^{\mathrm{trig}}_i > 0$) & \no & \yes & \no & \no \\
+High advance recovery rate ($\rho_i = 0.50$)       & \no  & \yes & \no  & \no  \\
+Diminishing efficiency sequence                    & \no  & \no  & \yes & \no  \\
+Termination risk (breach accumulation)             & \no  & \no  & \yes & \no  \\
+Gap phase (idle episode periods)                   & \no  & \no  & \no  & \yes \\
+Budget competition (overlap phase)                 & \no  & \no  & \no  & \yes \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\end{document}

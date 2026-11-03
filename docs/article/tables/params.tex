@@ -1,203 +1,66 @@
-% tables/params.tex
-% tabular only — no table environment, no caption, no label.
-% longtable handles its own float, caption, and page breaking.
-\footnotesize
-\renewcommand{\arraystretch}{1.1}
-\begin{longtable}{p{2.8cm} p{1.8cm} p{1.1cm} p{7.3cm}}
+% ============================================================
+%  params_standalone.tex   (single file)
+%  Compile:  pdflatex params_standalone.tex
+%  Output :  PDF cropped to the table only
+%            width  = 170 mm (template text width) + border
+%            height = table height + border
+% ============================================================
+\documentclass[10pt,border=6pt]{standalone}
 
-  \caption{Parameters fixed at commitment, grouped by function.
-  Mathematical parameters (Schedule, Contract, Portfolio) correspond
-  to the formulation in Section~\ref{subsec:environment}.
-  The Stochastic Primitive group contains the sole source of
-  uncertainty. The Structural group governs portfolio and milestone
-  dimensionality; all three are resolved at each \code{reset()} call.}
-\label{tab:params} \\
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
 
+% ── Fonts (same as template) ────────────────────────────────
+\usepackage{mathptmx}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\renewcommand{\sfdefault}{phv}
+
+% ── Symbols & table packages (same as template) ─────────────
+\usepackage{amsmath,amssymb}      % \mathbb
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+
+\newcommand{\tabfont}{\fontsize{8.5}{10.5}\selectfont}
+\setlength{\parindent}{0pt}
+
+% ============================================================
+\begin{document}
+\begin{minipage}{170mm}   % = template text width
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\linewidth}{l l l >{\raggedright\arraybackslash}X}
 \toprule
-\rowcolor{headbg}
-\textcolor{headfg}{\textbf{Parameter}} &
-\textcolor{headfg}{\textbf{Symbol}} &
-\textcolor{headfg}{\textbf{Domain}} &
-\textcolor{headfg}{\textbf{Definition}} \\
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Domain} & \textbf{Definition} \\
 \midrule
-\endfirsthead
-
-\multicolumn{4}{c}{\tablename~\thetable{} \textit{(continued)}} \\[4pt]
-\toprule
-\rowcolor{headbg}
-\textcolor{headfg}{\textbf{Parameter}} &
-\textcolor{headfg}{\textbf{Symbol}} &
-\textcolor{headfg}{\textbf{Domain}} &
-\textcolor{headfg}{\textbf{Definition}} \\
-\midrule
-\endhead
-
-\midrule
-\multicolumn{4}{r}{\textit{continued on next page\ldots}} \\
-\endfoot
-
+Planned start               & $s_i$                      & $\mathbb{Z}_{\geq 0}$ & Scheduled period at which project $i$ begins. \\
+Planned duration            & $D_i$                      & $\mathbb{Z}_{\geq 1}$ & Number of active periods planned for project $i$. \\
+Planned finish              & $f_i$                      & $\mathbb{Z}_{\geq 0}$ & $f_i = s_i + D_i$; derived at reset. \\
+S-curve shape               & $a_i,\; b_i$               & $\mathbb{R}^+$        & Beta CDF shape parameters governing $PV_i(\tau)$. \\
+Progress delay cap          & $\delta^{\max}_i$          & $[0,1]$               & Maximum admissible progress lag before the breach flag fires. \\
+Finish delay cap            & $\Delta^{\max}_i$          & $\mathbb{Z}_{>0}$     & Extra periods beyond $f_i$ before the hard deadline fires. \\
+Termination tolerance       & $\theta_i$                 & $\mathbb{Z}_{>0}$     & Grace-period length; models FIDIC Sub-Clause~15.1 (FIDIC, 2017). \\
+Budget at completion        & $\mathrm{BAC}_i$           & $\mathbb{R}_{>0}$     & Total planned contractor cost. \\
+Profit margin               & $\pi_i$                    & $\mathbb{R}_{\geq 0}$ & Contract price $P_i = \mathrm{BAC}_i(1+\pi_i)$. \\
+Advance payment rate        & $\phi_i$                   & $[0,0.3]$             & Advance $\mathrm{Adv}_i = \phi_i P_i$ paid at $t = s_i$; $0$ disables it. \\
+Advance recovery threshold  & $\psi^{\mathrm{rec}}_i$    & $[0,1]$               & Certified gross fraction above which recovery deductions start. \\
+Advance recovery rate       & $\delta^{\mathrm{rec}}_i$  & $[0,1]$               & Per-milestone deduction rate used to recover $\mathrm{Adv}_i$. \\
+Retention rate              & $\nu_i$                    & $[0,0.1]$             & $R^{\mathrm{held}}_{i,j} = \nu_i G_{i,j}$; released in full at $j = M_i$. \\
+Milestone weight            & $w_{i,j}$                  & $[0,1]$               & Fraction of $P_i$ paid at milestone $j$; $\sum_j w_{i,j} = 1$. \\
+Milestone progress threshold& $\psi_{i,j}$               & $(0,1]$               & Minimum $EV_{i,t}$ to certify milestone $j$; $\psi_{i,M_i} = 1$. \\
+Milestone timestep threshold& $\tau^{\mathrm{ms}}_{i,j}$ & $\mathbb{Z}_{\geq 0}$ & Earliest project time at which milestone $j$ can be certified. \\
+Initial budget              & $B_0$                      & $\mathbb{R}_{>0}$     & $B_0 = \kappa \sum_i \mathrm{BAC}_i$; derived at reset. \\
+Budget tightness            & $\kappa$                   & $\mathbb{R}_{>0}$     & Liquidity regime scalar. \\
+Discount factor             & $\gamma$                   & $(0,1]$               & Per-period discount on net cash-flow rewards (Damodaran, 2012). \\
+Annual interest rate        & $r$                        & $[0,1]$               & Monthly treasury-draw cost $= r/12$. \\
+Episode horizon             & $T$                        & $\mathbb{Z}_{>0}$     & Derived quantity; not a configuration entry. \\
+Work efficiency             & $\eta_{i,t}$               & ${\geq}0.01$          & Sole stochastic primitive; drawn per period per active project. \\
+Portfolio size              & $N$                        & $\mathbb{Z}_{>0}$     & Number of projects; sampled at each reset if a distribution. \\
+Milestone count             & $M_i$                      & $\mathbb{Z}_{>0}$     & Number of milestones of project $i$. \\
 \bottomrule
-\endlastfoot
-
-% ── Schedule ──────────────────────────────────────────────────────────────────
-\rowcolor{headbg}
-\multicolumn{4}{l}{\textcolor{headfg}{\textit{Schedule}}} \\
-
-Planned start
-  & $s_i$ & $\mathbb{Z}_{\geq 0}$
-  & Scheduled episode period at which project $i$ begins
-    (\code{planned\_start}). \\
-\rowcolor{RowAlt}
-Planned duration
-  & $D_i$ & $\mathbb{Z}_{\geq 1}$
-  & Number of active periods planned for project $i$
-    (\code{planned\_duration}); the minimum value $D_i=1$
-    models a single-period project whose full allocation
-    must be committed at $t=s_i$ \eqref{eq:scurve}. \\
-Planned finish
-  & $f_i$ & $\mathbb{Z}_{\geq 0}$
-  & $f_i = s_i + D_i$; derived at reset; defines the hard
-    deadline via \eqref{eq:horizon} and \eqref{eq:term_cond2}. \\
-\rowcolor{RowAlt}
-S-curve shape
-  & $a_i,\; b_i$ & $\mathbb{R}^+$
-  & Beta CDF shape parameters governing $PV_i(\tau)$
-    \eqref{eq:scurve} (\code{scurve\_a}, \code{scurve\_b}). \\
-Progress delay cap
-  & $\delta^{\max}_i$ & $[0,1]$
-  & Maximum admissible lag before breach flag
-    $\mathbb{1}^{\delta}_{i,t}$ activates \eqref{eq:term_cond1}
-    (\code{progress\_delay\_cap}). \\
-\rowcolor{RowAlt}
-Finish delay cap
-  & $\Delta^{\max}_i$ & $\mathbb{Z}_{>0}$
-  & Extra periods beyond $f_i$ before the hard deadline fires
-    \eqref{eq:term_cond2} (\code{finish\_delay\_cap}). \\
-Termination tolerance
-  & $\theta_i$ & $\mathbb{Z}_{>0}$
-  & Grace-period length; models FIDIC Sub-Clause~15.1
-    \citep{FIDIC2017, Ndekugri2008}
-    (\code{termination\_tolerance}). \\
-
-% ── Contract ──────────────────────────────────────────────────────────────────
-\rowcolor{headbg}
-\multicolumn{4}{l}{\textcolor{headfg}{\textit{Contract}}} \\
-
-\rowcolor{RowAlt}
-Budget at completion
-  & $\mathrm{BAC}_i$ & $\mathbb{R}_{>0}$
-  & Total planned contractor cost (\code{bac}). \\
-Profit margin
-  & $\pi_i$ & $\mathbb{R}_{\geq 0}$
-  & $P_i = \mathrm{BAC}_i(1+\pi_i)$
-    (\code{profit\_percent}). \\
-\rowcolor{RowAlt}
-Advance payment rate
-  & $\phi_i$ & $[0,0.3]$
-  & $\mathrm{Adv}_i = \phi_i P_i$ disbursed at $t = s_i$;
-    $\phi_i = 0$ disables the advance mechanism
-    (\code{advance\_percent}). \\
-Advance recovery threshold
-  & $\psi^{\mathrm{rec}}_i$ & $[0,1]$
-  & Cumulative certified gross fraction above which recovery
-    deductions commence \eqref{eq:advance_rec}
-    (\code{advance\_trigger}). \\
-\rowcolor{RowAlt}
-Advance recovery rate
-  & $\delta^{\mathrm{rec}}_i$ & $[0,1]$
-  & Per-milestone deduction rate applied to recover
-    $\mathrm{Adv}_i$ \eqref{eq:advance_rec}
-    (\code{advance\_recovery}). \\
-    Retention rate
-    & $\nu_i$ & $[0,0.1]$
-    & $R^{\mathrm{held}}_{i,j} = \nu_i G_{i,j}$; released in
-      full at $j = M_i$ (\code{retention\_rate}). \\
-  
-  % ── Milestone ─────────────────────────────────────────────────────────────────
-  \rowcolor{headbg}
-  \multicolumn{4}{l}{\textcolor{headfg}{\textit{Milestone}}} \\
-  
-  Milestone weight
-    & $w_{i,j}$ & $[0,1]$
-    & Fraction of $P_i$ paid at milestone $j$;
-      $\sum_j w_{i,j} = 1$ (\code{payment\_weight}). \\
-  \rowcolor{RowAlt}
-  Milestone progress threshold
-    & $\psi_{i,j}$ & $(0,1]$
-    & Minimum $EV_{i,t}$ required to certify milestone $j$;
-      $\psi_{i,M_i} = 1$ (\code{progress\_threshold}). \\
-  Milestone timestep threshold
-    & $\tau^{\mathrm{ms}}_{i,j}$ & $\mathbb{Z}_{\geq 0}$
-    & Earliest project-time for milestone $j$ certification;
-      episode threshold $= s_i + \tau^{\mathrm{ms}}_{i,j}$
-      \citep{FIDIC2017} (\code{timestep\_threshold}). \\
-  
-  % ── Portfolio ─────────────────────────────────────────────────────────────────
-\rowcolor{headbg}
-\multicolumn{4}{l}{\textcolor{headfg}{\textit{Portfolio}}} \\
-
-Initial budget
-  & $B_0$ & $\mathbb{R}_{>0}$
-  & $B_0 = \kappa \sum_i \mathrm{BAC}_i$; derived at reset. \\
-\rowcolor{RowAlt}
-Budget tightness
-  & $\kappa$ & $\mathbb{R}_{>0}$
-  & Liquidity regime scalar (\code{budget\_tightness}). \\
-Discount factor
-  & $\gamma$ & $(0,1]$
-  & Per-period discount applied to net cash-flow rewards
-    \citep{Damodaran2012} (\code{discount}). \\
-\rowcolor{RowAlt}
-Annual interest rate
-  & $r$ & $[0,1]$
-  & Monthly treasury-draw cost $= r/12$ per
-    \eqref{eq:interest}; plain scalar, not a distribution entry
-    (\code{annual\_interest\_rate}). \\
-Episode horizon
-  & $T$ & $\mathbb{Z}_{>0}$
-  & Derived from \eqref{eq:horizon}; not a config entry. \\
-
-% ── Stochastic Primitive ──────────────────────────────────────────────────────
-\rowcolor{headbg}
-\multicolumn{4}{l}{\textcolor{headfg}{\textit{Stochastic Primitive}}} \\
-
-\rowcolor{RowAlt}
-Work efficiency
-  & $\eta_{i,t}$ & ${\geq}0.01$
-  & Sole stochastic primitive; drawn per period per project
-    from a configurable distribution; \code{custom\_ordinal}
-    cycles deterministically for reproducible benchmarking;
-    realised after $x_{i,t}$ is committed
-    (\code{efficiency}). \\
-
-% ── Stochastic Primitive ──────────────────────────────────────────────────────
-\rowcolor{headbg}
-\multicolumn{4}{l}{\textcolor{headfg}{\textit{Stochastic Primitive}}} \\
-
-\rowcolor{RowAlt}
-Work efficiency
-  & $\eta_{i,t}$ & ${\geq}0.01$
-  & Sole stochastic primitive; drawn per period per active project
-    from a configurable distribution; \code{custom\_ordinal}
-    cycles deterministically for reproducible benchmarking;
-    realised after $x_{i,t}$ is committed
-    (\code{efficiency}). \\
-
-% ── Structural ────────────────────────────────────────────────────────────────
-\rowcolor{headbg}
-\multicolumn{4}{l}{\textcolor{headfg}{\textit{Structural}}} \\
-
-Portfolio size
-  & $N$ & $\mathbb{Z}_{>0}$
-  & Number of projects; sampled at each \code{reset()} if
-    configured as a distribution; determines observation and
-    action space dimensions (\code{n\_projects}). \\
-\rowcolor{RowAlt}
-Milestone count
-  & $M_i$ & $\mathbb{Z}_{>0}$
-  & Number of milestones per project $i$; determines the
-    lengths of $\{\psi_{i,j}\}$, $\{w_{i,j}\}$, and
-    $\{\tau^{\mathrm{ms}}_{i,j}\}$
-    (\code{n\_milestones}). \\
-
-\end{longtable}
+\end{tabularx}
+\end{minipage}
+\end{document}
