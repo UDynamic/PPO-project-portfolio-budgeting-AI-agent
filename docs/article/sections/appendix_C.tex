@@ -4,7 +4,6 @@
 
 \subsection{Repository Architecture Overview}
 \label{subsec:repo_overview}
-% ------------------------------------------------------------
 
 The complete implementation accompanying this paper --- the environment,
 the baseline solvers, the verification suite, and the literature-review
@@ -12,32 +11,25 @@ pipeline described in Section~\ref{sec:literature} --- is organised as a
 single version-controlled repository. The repository separates
 \emph{documentation} (this manuscript, the thesis, and the literature
 corpus) from \emph{implementation} (the environment, ledger, baselines,
-and tests), as summarised below.
+and tests), as shown in Figure~\ref{fig:repo_tree}.
 
-\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
-    ppm_env/
-    |-- notation.yaml        parameter dictionary (academic <-> code)
-    |-- docs/
-    |   |-- article/          LaTeX source of this manuscript
-    |   |-- lit_archive/      literature screening pipeline and corpus
-    |   |-- mscn/             supplementary thesis documentation
-    |   |-- pp_presentation/  thesis defense slides (university deliverable)
-    |   `-- thesis_farsi/     Persian thesis manuscript (university deliverable)
-    `-- src/
-        |-- db/               ledger schema, configs, run records
-        |-- env/              core CMDP environment implementation
-        `-- tests/            verification suite, baselines, gap analysis
-    \end{lstlisting}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig_repo_tree.pdf}
+  \caption{Repository directory structure (left: top-level tree;
+           right: \code{src/tests/} subtree).
+           \code{mscn/}, \code{pp\_presentation/}, and
+           \code{thesis\_farsi/} satisfy institutional
+           degree-completion requirements and fall outside the
+           reproducibility scope of this paper.}
+  \label{fig:repo_tree}
+\end{figure}
 
-The \code{mscn/}, \code{pp\_presentation/}, and \code{thesis\_farsi/}
-directories satisfy institutional degree-completion requirements and fall
-outside the reproducibility scope of this paper; they are listed here only
-for completeness. The \code{notation.yaml} file at the repository root
-provides an explicit, machine-readable correspondence between every
-academic symbol introduced in Section~\ref{sec:problem} and its
-counterpart variable name in the source code, and is intended as the
-primary cross-reference for readers wishing to connect the formal model to
-the implementation.
+The \code{notation.yaml} file at the repository root provides an
+explicit, machine-readable correspondence between every academic symbol
+introduced in Section~\ref{sec:problem} and its counterpart variable
+name in the source code, and is intended as the primary cross-reference
+for readers wishing to connect the formal model to the implementation.
 
 \medskip
 
@@ -51,7 +43,6 @@ gap-analysis figures reported in Section~\ref{sec:literature}.
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsection{Core Contribution Modules}
 \label{subsec:repo_contrib}
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 The modules implementing the formal model of Section~\ref{sec:problem}
 and the evaluation of Section~\ref{sec:evaluation} are contained entirely
@@ -74,134 +65,33 @@ which bundles four functionally distinct components: the Gymnasium
 compliance suite, the baseline and optimal solvers, the benchmark
 configuration generator together with its archived reference episodes,
 and the post-hoc analysis scripts used to produce the figures and tables
-of Section~\ref{sec:evaluation}.
-
-\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
-    src/tests/
-    |-- gym_test.py                 Gymnasium API compliance suite
-    |-- gym_certificate.png         compliance certificate (Appendix B)
-    |-- baseline_solvers.py         greedy heuristics and optimum solver
-    |-- reference_episodes_gen/     benchmark configuration generator
-    |-- reference_episodes_record/  archived configs and solutions
-    `-- analysis/                   gap-analysis and figure scripts
-    \end{lstlisting}
-
-The \code{reference\_episodes\_record/} directory retains the configuration
-set and recorded solutions used to validate the environment and to produce
-the four benchmark configurations evaluated in Section~\ref{sec:evaluation};
-it is intended as a working template for practitioners who wish to
-instantiate the environment against their own company data.
+of Section~\ref{sec:evaluation}. The \code{reference\_episodes\_record/}
+directory retains the configuration set and recorded solutions used to
+validate the environment and to produce the four benchmark configurations
+evaluated in Section~\ref{sec:evaluation}; it is intended as a working
+template for practitioners who wish to instantiate the environment
+against their own company data.
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsection{Concept-to-Implementation Traceability Matrix}
 \label{subsec:repo_matrix}
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 \Cref{tab:repo_map} maps every concept and promised contribution named in
 the main text to its corresponding location in the repository, and is
 provided to support independent verification of the claims made
 throughout this paper.
 
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{p{4.1cm} p{1.6cm} p{3.9cm} p{4.0cm}}
-\caption{Traceability matrix mapping concepts and promised contributions
-to their implementation in the repository.}
-\label{tab:repo_map} \\
-\toprule
-\rowcolor{headbg}
-\textcolor{headfg}{\textbf{Concept / Contribution}} &
-\textcolor{headfg}{\textbf{Ref.}} &
-\textcolor{headfg}{\textbf{Repository Location}} &
-\textcolor{headfg}{\textbf{Role}} \\
-\midrule
-\endfirsthead
-
-\multicolumn{4}{c}{{\tablename\ \thetable{} -- continued}} \\
-\toprule
-\rowcolor{headbg}
-\textcolor{headfg}{\textbf{Concept / Contribution}} &
-\textcolor{headfg}{\textbf{Ref.}} &
-\textcolor{headfg}{\textbf{Repository Location}} &
-\textcolor{headfg}{\textbf{Role}} \\
-\midrule
-\endhead
-
-\midrule
-\multicolumn{4}{r}{\textit{continued on next page}} \\
-\endfoot
-
-\bottomrule
-\endlastfoot
-
-Academic--code notation dictionary & \S\ref{sec:problem} &
-\code{notation.yaml} &
-Maps formal symbols to code identifiers \\
-
-\rowcolor{RowAlt}
-EVM/S-curve state representation &
-\S\ref{sec:problem} & \code{src/env/} &
-State vector construction \\
-
-FIDIC cash-flow transition dynamics &
-\S\ref{sec:problem} & \code{src/env/} &
-Advance, retention, interest, and milestone logic \\
-
-\rowcolor{RowAlt}
-Two-condition termination gate &
-\S\ref{sec:problem} & \code{src/env/} &
-Episode termination evaluation \\
-
-SQLite audit ledger &
-\S\ref{sec:problem} & \code{src/db/} &
-Schema definition and per-run event logging \\
-
-\rowcolor{RowAlt}
-Benchmark portfolio configurations &
-\S\ref{sec:evaluation} & \code{src/db/} &
-Stored configuration instances for evaluation runs \\
-
-Gymnasium compliance verification &
-App.~\ref{app:gym_certificate} & \code{src/tests/} &
-API conformance tests and certificate generation \\
-
-\rowcolor{RowAlt}
-Greedy heuristic baselines (Reach-Plan, Catchup-T, Catchup-Next-T) &
-\S\ref{sec:evaluation} & \code{src/tests/} &
-Deterministic baseline policies \\
-
-Manually computed full-information optimum &
-\S\ref{sec:evaluation} & \code{src/tests/} &
-Upper-bound benchmark solver \\
-
-\rowcolor{RowAlt}
-Benchmark configuration generation and reference episodes &
-\S\ref{sec:evaluation} & \code{src/tests/} &
-Configuration matrix, episode archive, and company-data templates \\
-
-Gap-analysis figures and dashboards &
-\S\ref{sec:evaluation} & \code{src/tests/} &
-Post-hoc analysis and figure generation \\
-
-\rowcolor{RowAlt}
-Literature screening, Stages 1--3 &
-\S\ref{subsubsec:prisma} & \code{docs/lit\_archive/} &
-Readability triage, relevance filtering, structured extraction \\
-
-Synthesis dashboard and literature map &
-\S\ref{subsubsec:prisma} & \code{docs/lit\_archive/} &
-Gap matrix, domain charts, synthesis table generation \\
-
-\rowcolor{RowAlt}
-Manuscript source &
---- & \code{docs/article/} &
-LaTeX source, figures, and tables for this paper \\
-
-\end{longtable}
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/repo_map.pdf}
+  \caption{Traceability matrix mapping concepts and promised contributions
+           to their implementation in the repository.}
+  \label{tab:repo_map}
+\end{table}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \subsection{Reproducibility Notes}
 \label{subsec:repo_reproducibility}
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 The mapping in \Cref{tab:repo_map} reflects a specific snapshot of the
 repository at the time of writing; subsequent development may reorganise

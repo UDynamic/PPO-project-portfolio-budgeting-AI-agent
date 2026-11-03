@@ -1,0 +1,62 @@
+% ============================================================
+%  tab_gym_summary.tex
+%  Gymnasium compatibility test — section summary
+%  Compile:  pdflatex tab_gym_summary.tex
+%  Output :  tables/gym_summary.pdf
+% ============================================================
+\documentclass[10pt,border=6pt]{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\renewcommand{\sfdefault}{phv}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+
+\newcommand{\tabfont}{\fontsize{8.5}{10.5}\selectfont}
+\newcommand{\code}[1]{\texttt{#1}}
+\setlength{\parindent}{0pt}
+
+% ============================================================
+\begin{document}
+\begin{minipage}{170mm}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\linewidth}{
+    c
+    >{\raggedright\arraybackslash}X
+    r
+    @{\hspace{10pt}}
+    c
+    >{\raggedright\arraybackslash}X
+    r
+}
+\toprule
+{\S} & {Section} & {Passed} & {\S} & {Section} & {Passed} \\
+\midrule
+1  & Import \& Instantiation         & 8\,/\,8   &
+6  & Random Policy Rollout           & 6\,/\,6   \\
+2  & Space Declarations              & 7\,/\,7   &
+7  & Zero-Action Rollout             & 1\,/\,1   \\
+3  & \code{reset()} Contract         & 13\,/\,13 &
+8  & Greedy Rollout                  & 1\,/\,1   \\
+4  & \code{step()} Contract          & 10\,/\,10 &
+9  & Multi-Episode Stability         & 2\,/\,2   \\
+5  & Determinism                     & 2\,/\,2   &
+10 & \code{gymnasium.utils.check\_env} & 1\,/\,1 \\
+\midrule
+\multicolumn{4}{l}{\textbf{Total}} &
+\multicolumn{2}{r}{\textbf{51\,/\,51}} \\
+\bottomrule
+\end{tabularx}
+\smallskip
+\tabfont\textit{Config: \code{TC-3XMAIF-R}. Generated: 2026-10-20. All 51 checks pass; 0 failures.}
+\end{minipage}
+\end{document}

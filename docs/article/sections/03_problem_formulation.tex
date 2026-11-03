@@ -347,7 +347,7 @@ in Figure~\ref{fig:state_machine}.
 
 \begin{figure}[htbp]
   \centering
-  \resizebox{\textwidth}{!}{\input{figures/state_machine.pdf}}
+  \includegraphics[width=\textwidth]{figures/state_machine.pdf}
   \caption{Project lifecycle state machine. Condition~1 (progress
     delay breach, $\mathbb{1}^{\delta}_{i,t}=1$) decrements the
     grace-period counter; Condition~2 (hard deadline,
@@ -393,7 +393,12 @@ truncates immediately.
 
 Table~\ref{tab:params} consolidates all parameters fixed at commitment.
 
-\input{tables/params.pdf}
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/params.pdf}
+  \caption{Model parameters and their domains.}
+  \label{tab:params}
+\end{table}
 
 % ------------------------------------------------------------
 \subsection{Full-Foresight Upper Bound and Intractability}
@@ -851,7 +856,7 @@ available budget, both normalised by $B_0$.
 
 \begin{table}[H]
   \centering
-  \input{tables/obs_vector.pdf}
+  \includegraphics[width=\textwidth]{tables/obs_vector.pdf}
   \caption{Observation vector $o_t$ \eqref{eq:obs_vector}: components,
     normalisation, and clipping bounds. Per-project block $i$ occupies
     indices $7i$ through $7i+6$.}
