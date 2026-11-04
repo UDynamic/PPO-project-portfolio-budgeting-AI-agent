@@ -597,95 +597,12 @@ The stochastic transition $\mathcal{P}(S_{t+1} \mid S_t,
 Algorithm~\ref{alg:kernel}.
 
 \begin{algorithm}[H]
-\caption{Within-period transition kernel at episode step $t$}
-\label{alg:kernel}
-\begin{algorithmic}[1]
-
-\Statex \textcolor{headfg}{\colorbox{headbg}{\textbf{\small
-  Phase 1 --- Early (pre-allocation)}}}
-
-\For{each project $i \in \{0,\ldots,N-1\}$}
-  \If{$\sigma_{i,t} = \texttt{active}$ \textbf{and}
-      $t \geq f_i + \Delta^{\max}_i - 1$}
-    \tagterm
-    \State $\sigma_{i,t} \leftarrow \texttt{terminated}$;\quad
-           compute $S_i$ \eqref{eq:settlement};\quad
-           $V_t \mathrel{+}= S_i$
-  \EndIf
-  \If{$\sigma_{i,t} = \texttt{active}$}
-    \tagschedule
-    \State Compute $PV_i(\tau_i)$ via \eqref{eq:scurve};\quad
-           update EVM indices \eqref{eq:SPI}--\eqref{eq:TCPI}
-    \tagcontract
-    \For{each uncertified milestone $j$ with
-         $EV_{i,t} \geq \psi_{i,j}$ \textbf{and}
-         $t \geq s_i + \tau^{\mathrm{ms}}_{i,j}$}
-      \State Certify $j$;\quad
-             compute $\hat{P}_{i,j}$ \eqref{eq:net_payment};\quad
-             $V_t \mathrel{+}= \hat{P}_{i,j}$
-    \EndFor
-  \EndIf
-\EndFor
-
-\Statex
-\Statex \textcolor{headfg}{\colorbox{headbg}{\textbf{\small
-  Phase 2 --- Action application}}}
-
-\State Apply projection \eqref{eq:projection} to
-       $\tilde{\boldsymbol{\alpha}}_t$ $\;\Rightarrow\;$
-       $\boldsymbol{\alpha}_t$
-\For{each project $i$ with $\sigma_{i,t} = \texttt{active}$}
-  \State $x_{i,t} \leftarrow \alpha_{i,t} \cdot B_t$
-  \tagschedule
-  \State Draw $\eta_{i,t}$ from project $i$'s configured distribution
-  \State Update $EV_{i,t}$,\; $\mathrm{ACWP}_{i,t}$ via
-         \eqref{eq:progress_rec}
-  \tagcost
-  \State Compute treasury-draw interest $c^r_{i,t}$
-         \eqref{eq:interest}
-\EndFor
-
-\Statex
-\Statex \textcolor{headfg}{\colorbox{headbg}{\textbf{\small
-  Phase 3 --- Late (post-allocation)}}}
-
-\For{each project $i$ with $\sigma_{i,t} = \texttt{active}$}
-  \tagschedule
-  \State Recompute EVM indices with post-allocation $EV_{i,t}$
-  \tagcontract
-  \For{each uncertified milestone $j$ newly satisfying
-       $EV_{i,t} \geq \psi_{i,j}$ \textbf{and}
-       $t \geq s_i + \tau^{\mathrm{ms}}_{i,j}$}
-    \State Certify $j$;\quad
-           compute $\hat{P}_{i,j}$ \eqref{eq:net_payment};\quad
-           $V_t \mathrel{+}= \hat{P}_{i,j}$
-  \EndFor
-  \tagterm
-  \State Evaluate $\mathbb{1}^{\delta}_{i,t}$ \eqref{eq:term_cond1};\quad
-         update $\theta^{\mathrm{rem}}_{i,t}$ via \eqref{eq:counter}
-  \If{$\theta^{\mathrm{rem}}_{i,t} = 0$}
-    \State $\sigma_{i,t} \leftarrow \texttt{terminated}$;\quad
-           compute $S_i$ \eqref{eq:settlement};\quad
-           $V_t \mathrel{+}= S_i$
-  \ElsIf{$EV_{i,t} = 1$ \textbf{and} all milestones certified}
-    \State $\sigma_{i,t} \leftarrow \texttt{completed}$
-  \EndIf
-\EndFor
-
-\Statex
-\Statex \textcolor{headfg}{\colorbox{headbg}{\textbf{\small
-  Phase 4 --- Balance and counter update}}}
-
-\tagcost
-\State $B_{t+1} \leftarrow B_t + V_t
-       - \textstyle\sum_i x_{i,t}
-       - \textstyle\sum_i c^r_{i,t}$
-       \hfill\eqref{eq:balance}
-\tagschedule
-\State $\tau_i \leftarrow \tau_i + 1$ \quad
-       for all $i$ with $\sigma_{i,t} = \texttt{active}$
-
-\end{algorithmic}
+  \centering
+  \includegraphics[width=\textwidth]{algorithms/alg_kernel.pdf}
+  \caption{Within-period transition kernel at episode step $t$.
+           Rows are numbered sequentially; indentation encodes nesting depth.
+           Right column gives the equation number for each update rule.}
+  \label{alg:kernel}
 \end{algorithm}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
