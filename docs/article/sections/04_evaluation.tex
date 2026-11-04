@@ -24,11 +24,7 @@ attributable solely to configuration structure and solver policy.
 \begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{tables/shared_params.pdf}
-  \caption{Parameters shared across all benchmark configurations.
-    Advance recovery is applied first to the gross milestone payment;
-    retention is deducted from the same gross payment independently
-    and in parallel. Accumulated retention is released in full at the
-    final milestone.}
+  \caption[Configuration Shared Parameters]{Parameters shared across all benchmark configurations.}
   \label{tab:shared_params}
 \end{table}
 
@@ -64,25 +60,13 @@ retain the shared defaults.
 \begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{tables/config_axes.pdf}
-  \caption{Structural axes varied across benchmark configurations.
-    A checkmark indicates that the axis is activated (overridden from
-    the shared baseline) in the corresponding configuration.
-    TC-10SF-R serves as the degenerate single-project anchor; each
-    subsequent configuration adds exactly one structural dimension.}
+  \caption[Complexity Structure Matrix]{Structural dimensions
+    activated per benchmark configuration. Each configuration adds
+    exactly one dimension over its predecessor; the first serves as
+    the degenerate single-project anchor.}
   \label{tab:config_axes}
 \end{table}
 
-\begin{table}[H]
-  \centering
-  \includegraphics[width=\textwidth]{tables/configs.pdf}
-  \caption{Benchmark configuration summary. $N$: number of projects;
-    $D_i$: planned duration (periods); $s_i$: planned start (episode
-    period); $M_i$: non-advance milestones; $\phi_i$: advance rate;
-    $\psi^{\mathrm{trig}}_i$: cumulative progress threshold at which
-    the advance is disbursed (0.00 = project start);
-    $\eta_i$: efficiency sequence (fixed custom-ordinal under seed $= 0$).}
-  \label{tab:configs}
-\end{table}
 
 \paragraph{TC-10SF-R --- Isolated atom.}
 One project, one non-advance milestone, no advance payment, planned
@@ -122,6 +106,15 @@ structurally distinct phases: a \emph{gap phase} ($t = 4,\,5$) where
 no allocations are required and the budget accumulates, and an
 \emph{overlap phase} ($t = 7,\,8,\,9$) where Projects~1 and 2
 compete simultaneously for the shared reserve $B_t$.
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/configs.pdf}
+  \caption[Benchmark Configurations]{Per-configuration parameter
+    summary. All other fields retain the shared baseline defaults
+    of Table~\ref{tab:shared_params}.}
+  \label{tab:configs}
+\end{table}
 
 % ------------------------------------------------------------
 \subsection{Solvers}
@@ -202,12 +195,9 @@ certification events annotated.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/gantt_optimal.png}
-  \caption{Gantt timeline for TC-3XMAIF-R under $\pi^*$.
-    Bars show planned (light) and realised (dark) active periods.
-    Vertical markers indicate milestone certifications;
-    triangle markers indicate advance disbursement events.
-    The gap phase ($t = 4$--$5$) and overlap phase ($t = 7$--$9$)
-    are shaded for reference.}
+  \caption[Optimal Gantt Timeline]{Planned and realised activity
+    intervals for the three-project configuration under the
+    full-information optimum $\pi^*$.}
   \label{fig:gantt_optimal}
 \end{figure}
 
@@ -222,12 +212,8 @@ controlled progress delay rather than incurring wasteful expenditure.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/01c_cost_baseline_E.png}
-  \caption{Earned Value Management curves for TC-3XMAIF-R under
-    $\pi^*$. PV: planned value (S-curve baseline); EV: earned value
-    (realised progress $\times$ BAC); AC: actual cost (cumulative
-    allocation). The controlled EV--PV gap in the overlap phase
-    reflects deliberate delay acceptance to preserve the shared
-    budget reserve.}
+  \caption[Project Cost Baselines]{EVM curves under the
+    full-information optimum $\pi^*$.}
   \label{fig:cost_baseline_three}
 \end{figure}
 
@@ -240,11 +226,8 @@ deductions), and the running portfolio balance $B_t$.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/cashflow_optimal.png}
-  \caption{Net cash-flow diagram for TC-3XMAIF-R under $\pi^*$.
-    Stacked bars show allocation outflows (negative) and milestone
-    inflows (positive) disaggregated by project. The running balance
-    $B_t$ (line) remains positive throughout; the advance outflows at
-    $t = 6$ and $t = 7$ are absorbed by the gap-phase accumulation.}
+  \caption[Portfolio Net Cash Flow]{Period-by-period net cash flow
+    under $\pi^*$.}
   \label{fig:cashflow_optimal}
 \end{figure}
 
@@ -259,11 +242,9 @@ by the environment at each step.
 \begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{tables/obs_trace.pdf}
-  \caption{Per-period observation trace for TC-3XMAIF-R under $\pi^*$.
-    $B_t$: portfolio balance; $\delta_{i,t}$: progress delay for
-    project $i$; $\mathrm{adv}_{i}$: advance disbursed flag;
-    $\mathrm{br}_{i,t}$: breach flag; $\mathrm{ms}_{i,j}$: milestone
-    $j$ certified. Shading marks the gap phase and overlap phase.}
+  \caption[Observation Traceback]{Agent observation vector $o_t$
+    at each active period under the full-information optimum
+    $\pi^*$, drawn from the SQLite audit ledger.}
   \label{tab:obs_trace}
 \end{table}
 
@@ -279,13 +260,9 @@ accrual. The final column accumulates the discounted sum $G_t =
 \begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{tables/reward_trace.pdf}
-  \caption{Per-period reward decomposition for TC-3XMAIF-R under
-    $\pi^*$. Each row corresponds to one episode period; columns
-    report the signed cash-flow contribution of each event class
-    and the cumulative discounted return $G_t$. Negative entries
-    in the allocation and advance columns represent outflows;
-    positive entries in the milestone and release columns represent
-    inflows net of deductions.}
+  \caption[Reward Traceback]{Per-period reward decomposition under
+    $\pi^*$: signed cash-flow contribution of each event class and
+    cumulative discounted return $G_t$.}
   \label{tab:reward_trace}
 \end{table}
 
@@ -297,17 +274,6 @@ accrual. The final column accumulates the discounted sum $G_t =
 Figure~\ref{fig:gap_plot} reports cumulative episode NPV $G =
 \sum_{t=0}^{T} \gamma^t \Delta B_t$ for each method across the four
 configurations, ordered by increasing structural complexity.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{figures/gap_plot.png}
-  \caption{Cumulative episode NPV $G$ for three deterministic greedy
-    heuristics and the full-information optimum across four benchmark
-    configurations ordered by increasing portfolio complexity. The
-    widening gap confirms that rule-based allocation deteriorates
-    systematically as structural complexity grows.}
-  \label{fig:gap_plot}
-\end{figure}
 
 \paragraph{TC-10SF-R.}
 On the isolated single-period configuration all three heuristics
@@ -369,6 +335,14 @@ Catchup-Next-T collapses to $-107.96$ because its aggressive
 pre-emptive spend across all three simultaneously-active projects
 exhausts the budget during the overlap phase, leaving insufficient
 reserve to certify the high-value late milestones of Projects~1 and 2.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/gap_plot.png}
+  \caption[Optimality Gap]{Episode NPV by configuration and solver;
+    gap widens monotonically with structural complexity.}
+  \label{fig:gap_plot}
+\end{figure}
 
 % ------------------------------------------------------------
 \subsection{Discussion}
