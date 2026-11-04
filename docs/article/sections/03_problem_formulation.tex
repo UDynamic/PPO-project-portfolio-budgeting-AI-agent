@@ -73,12 +73,9 @@ The formulation rests on four structural assumptions.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/cashflow_timeline.pdf}
-  \caption{Cash-flow timeline for project $i$ under FIDIC contract
+  \caption[Cash-flow Timeline]{Cash-flow timeline for project $i$ under FIDIC contract
     mechanics. The budget-to-progress conversion is subject to
-    stochastic efficiency $\eta_{i,t}$, the sole source of uncertainty
-    in the model. Net milestone payments $\hat{P}_{i,j}$
-    \eqref{eq:net_payment} are received at certification;
-    the final payment includes the full retention release.}
+    stochastic efficiency $\eta_{i,t}$.}
   \label{fig:cashflow_timeline}
 \end{figure}
 
@@ -345,15 +342,13 @@ calibration required.
 The state machine governing each project's lifecycle is illustrated
 in Figure~\ref{fig:state_machine}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/state_machine.pdf}
-  \caption{Project lifecycle state machine. Condition~1 (progress
-    delay breach, $\mathbb{1}^{\delta}_{i,t}=1$) decrements the
-    grace-period counter; Condition~2 (hard deadline,
-    $\mathbb{1}^{T}_{i,t}=1$) terminates immediately regardless of
-    counter state. Settlement $S_i$ \eqref{eq:settlement} enters
-    portfolio inflows at the termination period.}
+  \caption[Termination State Logic]{Breach-tolerance counter
+    dynamics: delay breach decrements the counter; hard-deadline
+    violation forces immediate termination. Settlement $S_i$
+    \eqref{eq:settlement} enters portfolio inflows at termination.}
   \label{fig:state_machine}
 \end{figure}
 
@@ -396,7 +391,7 @@ Table~\ref{tab:params} consolidates all parameters fixed at commitment.
 \begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{tables/params.pdf}
-  \caption{Model parameters and their domains.}
+  \caption[Parameters Table]{Model parameters and their domains.}
   \label{tab:params}
 \end{table}
 
@@ -599,7 +594,7 @@ Algorithm~\ref{alg:kernel}.
 \begin{algorithm}[H]
   \centering
   \includegraphics[width=\textwidth]{algorithms/alg_kernel.pdf}
-  \caption{Within-period transition kernel at episode step $t$.
+  \caption[Transition Kernel]{Within-period transition kernel at episode step $t$.
            Rows are numbered sequentially; indentation encodes nesting depth.
            Right column gives the equation number for each update rule.}
   \label{alg:kernel}
@@ -774,7 +769,7 @@ available budget, both normalised by $B_0$.
 \begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{tables/obs_vector.pdf}
-  \caption{Observation vector $o_t$ \eqref{eq:obs_vector}: components,
+  \caption[Observation vector]{Observation vector $o_t$ \eqref{eq:obs_vector}: components,
     normalisation, and clipping bounds. Per-project block $i$ occupies
     indices $7i$ through $7i+6$.}
   \label{tab:obs_vector}
