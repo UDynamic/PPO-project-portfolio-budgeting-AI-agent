@@ -85,13 +85,10 @@ organisation is detailed in Appendix~\ref{app:repo_map}. The PRISMA
 flow diagram quantifying records at each stage is provided in
 Appendix~\ref{app:prisma}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \input{figures/screening_pipeline.tex}
-    \caption{Three-stage PRISMA-aligned screening pipeline, arranged as
-      a serpentine flow. Boxes denote automated processing stages;
-      diamonds denote pass/fail gates; dashed arrows indicate rejection
-      routing. Implementation details and repository locations are
+    \caption{Three-stage PRISMA-aligned screening pipeline. Implementation details and repository locations are
       provided in Appendix~\ref{app:repo_map}.}
     \label{fig:screening_pipeline}
   \end{figure}
@@ -446,7 +443,7 @@ the environment that Step~2 now delivers.
     \includegraphics[width=\textwidth]{figures/maturity.pdf}
     \caption{Maturity progression toward a deployable portfolio-level
       decision-support system. Step~2, completed by the present work,
-      enables Step~3. Dashed border and arrow denote future work.}
+      enables Step~3.}
     \label{fig:maturity}
   \end{figure}
 
@@ -462,13 +459,19 @@ Section~\ref{sec:evaluation}, providing a quantified optimality gap
 that grows monotonically with portfolio complexity and defines the
 improvement target for future RL agents.
 
-\begin{table}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{tables/litmap.pdf}
-    \caption{Representative literature mapped against modelling
-      dimensions of the present framework. \textit{Decision type}:
-      S\,=\,selection, Sc\,=\,scheduling, B\,=\,budgeting.
-      \checkmark~=~fully addressed;\; $\circ$~=~partially
-      addressed;\; {--}~=~not addressed.}
-    \label{tab:litmap}
-  \end{table}
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/litmap.pdf}
+  \caption{Representative literature mapped against the modelling
+    dimensions of the present framework.\\[4pt]
+    \begin{tabular}{@{}ll@{\hspace{10mm}}ll@{}}
+      \textit{Decision type:}
+        & S\,=\,selection
+        & \checkmark & fully addressed \\
+      & Sc\,=\,scheduling
+        & $\circ$    & partially addressed \\
+      & B\,=\,budgeting
+        & {--}       & not addressed \\
+    \end{tabular}}
+  \label{tab:litmap}
+\end{table}
