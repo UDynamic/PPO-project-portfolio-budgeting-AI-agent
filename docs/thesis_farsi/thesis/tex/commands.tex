@@ -25,9 +25,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% دستورات وابسته به استیل مراجع:
 %% اگر از استیل‌های natbib (plainnat-fa، asa-fa، chicago-fa) استفاده می‌کنید، خط زیر را فعال و بعدی‌اش را غیرفعال کنید.
-%\usepackage{natbib}
-%\newcommand{\citelatin}[1]{\cite{#1}\LTRfootnote{\citeauthor*{#1}}}
-%\newcommand{\citeplatin}[1]{\citep{#1}\LTRfootnote{\citeauthor*{#1}}}
+% \usepackage{natbib}
+\newcommand{\citelatin}[1]{\cite{#1}\LTRfootnote{\citeauthor*{#1}}}
+\newcommand{\citeplatin}[1]{\citep{#1}\LTRfootnote{\citeauthor*{#1}}}
 %% اگر از سایر استیل‌ها استفاده می‌کنید، خط بالا را غیرفعال و خط‌های زیر را فعال کنید.
 \let\citep\cite
 \let\citelatin\cite
@@ -71,7 +71,7 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 
 % بسته‌ لازم برای تنظیم سربرگ‌ها
 \usepackage{fancyhdr}
-%\usepackage{enumitem}
+\usepackage{enumitem}
 \usepackage{setspace}
 % بسته‌های لازم برای نوشتن الگوریتم
 \usepackage{algorithm}
@@ -189,6 +189,8 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 \def\listfigurename{فهرست تصاویر}
 \def\listtablename{فهرست جداول}
 
+\newcommand{\code}[1]{\texttt{#1}}
+
 % دستور های لازم برای تعریف ترجمهٔ دستورات الگوریتم
 \makeatletter
 \renewcommand{\algorithmicrequire}{\if@RTL\textbf{ورودی:}\else\textbf{Require:}\fi}
@@ -223,6 +225,10 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 \renewcommand{\algorithmicendloop}{\algorithmicend\if@RTL\textbf{ حلقهٔ }\else\ \fi\algorithmicloop}
 \renewcommand{\algorithmiccomment}[1]{\{{\itshape #1}\}}
 \makeatletter
+
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% دستورهایی برای سفارشی کردن سربرگ صفحات:

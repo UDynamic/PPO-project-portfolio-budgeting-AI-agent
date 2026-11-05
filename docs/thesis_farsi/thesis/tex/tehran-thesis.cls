@@ -63,7 +63,7 @@
 \def\secondlatinadvisor#1{\gdef\@secondlatinadvisor{#1}}
 \def\latinname#1{\gdef\@latinname{#1}}
 \def\latinsurname#1{\gdef\@latinsurname{#1}}
-\def\en-abstract#1{\gdef\@en-abstract{#1}}
+\def\enabstract#1{\gdef\@enabstract{#1}}
 \def\latinkeywords#1{\gdef\@latinkeywords{#1}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newif\if@bscthesis
@@ -538,7 +538,7 @@ inner xsep=-1.3cm,inner ysep=0.4cm]
 \thispagestyle{empty}
 \section*{Abstract}
 % \addcontentsline{toc}{section}{چکیده}
-\@en-abstract
+\@enabstract
 \par
 \noindent
 \paragraph{Keywords}
@@ -601,14 +601,14 @@ inner xsep=-1.3cm,inner ysep=0.4cm]
 	in  \@latinsubject 
 \else
 	A Thesis submitted to the Graduate Studies Office
-    \\In partial fulfillment of the requirements for
-    \\The degree of 
+    \newline In partial fulfillment of the requirements for
+    \newline The degree of 
 	\if@mscthesis
 	 Master of Science
 	\else
 	 Doctor of Philosophy
 	\fi
-	\\in  \@latinsubject{} - \@latinfield{}
+	\newline in  \@latinsubject{} - \@latinfield{}
 	%\baselineskip=.750cm
 	%\addtolength{\baselineskip}{-5mm}
 \fi
@@ -666,7 +666,7 @@ Advisors:
 \vfill
 %
 \end{titlepage}
-\fi}
+}
 
 \def\onvan{عنوان}
 \def\writtenfor{برای دریافت درجهٔ }
