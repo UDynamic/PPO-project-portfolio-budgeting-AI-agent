@@ -103,46 +103,21 @@
 \fi\fi
 }
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% جلد زرکوب به فارسی (بدون اساتید مشاور)
+%% جلد زرکوب به فارسی (تک‌آرمه — مطابق قالب دانشگاه)
 \newcommand{\coverPage}{\begin{titlepage}
-%\topmargin=-30pt
-\vspace{-10mm}
-% دستورات دوآرمه
-\begin{latin}
-\hskip-1cm
-\makebox[\textwidth+2cm][c]{
-\begin{minipage}{5cm}
-	\centering
-	\includegraphics[height=4cm]{eng-logo}
-\end{minipage}
-\begin{minipage}{\textwidth - 8cm}
-	\begin{center}
-	\begin{persian}
-		\begin{onehalfspacing}
-		{\normalsize \bf \@university \\}
-		{\normalsize \bf \@college \\}
-		{\large\bfseries\@faculty \\}
-		{\large\bfseries\@department}
-		\end{onehalfspacing}
-	\end{persian}
-	\end{center}
-\end{minipage}
-\begin{minipage}{5cm}
-	\centering
-	\includegraphics[height=4cm]{logo}
-\end{minipage}
-}
-\end{latin}
-% دستورات تک‌آرمه
-%\centerline{{\includegraphics[width=5cm]{logo}}}
-%\centerline{\bf \@university}
-%\centerline{\large\bfseries\@faculty}
-% بعد از آرم‌ها
 \centering
+\vspace{-5mm}
+% آرم دانشگاه — تک‌آرمه
+\includegraphics[height=4cm]{logo}
+\par
+\vskip 5mm
+{\normalsize\bfseries \@college}\\[2pt]
+{\normalsize\bfseries \@department}
+\par
 \vskip 1.5cm
 {\huge\titlefont\bfseries \@title}\par
-\vskip 5mm
-\if@bscthesis 
+\vskip 8mm
+\if@bscthesis
 	{\large\bfseries{پروژهٔ کارشناسی \@subject}
 	\ifx\@field\undefined%
 		\relax
@@ -151,17 +126,14 @@
 	\fi
 	}
 \else
-	{\large\bfseries \@projectLabel\ \writtenfor
-	\@degree{} 
-	}
-	{\large\bfseries{در رشتهٔ \@subject}}
-	\vskip .2cm
-	\centerline{\large \bfseries%
-		گرایش \@field}
-\fi	
-\vskip 1cm
+	{\large\bfseries \@projectLabel{} \writtenfor\@degree{}}\\[4pt]
+	{\large\bfseries در رشتهٔ \@subject}\\[2pt]
+	{\large\bfseries گرایش \@field}
+\fi
 \par
-{\Large\bfseries{\@name\ \ \@surname}}
+\vskip 1cm
+{\large\bfseries دانشجو~:~\@name{} \@surname}\\[4pt]
+{\large\bfseries \@studentID}
 \par
 \vskip 1cm
 \large
@@ -172,22 +144,13 @@
 	\fi
 \else
 \ifx\@secondsupervisor\undefined%
-استاد راهنما
-{\Large\bfseries\par
-\@firstsupervisor}
+{\large\bfseries استاد راهنما~:~\@firstsupervisor}
 \else
-\large
-اساتید راهنما
-\par
-{\Large\bfseries \@firstsupervisor{} و \@secondsupervisor}
+{\large\bfseries اساتید راهنما~:~\@firstsupervisor{} و \@secondsupervisor}
 \fi\fi}
-
-
 \par
-\vskip 6mm
-%\vfill
+\vskip 1cm
 {\large \@thesisdate}
-%\vfill
 \end{titlepage}%
 } % end of coverPage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -317,110 +280,67 @@
 \@thesisdate}
 \end{flushleft}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% تاییدیه هیات داوران
+%% تأییدیه هیأت داوران جلسهٔ دفاع — مطابق قالب دانشگاه
 \newcommand{\davaranPage}{
 \cleardoublepage
-%\setcounter{page}{1}
 \thispagestyle{empty}
 
-\begin{minipage}{4cm}
-	\raggedleft
-	\includegraphics[height=3cm]{logo}
-\end{minipage}
-\begin{minipage}{\textwidth - 8cm}
-	\begin{center}
-		\begin{onehalfspacing}
-		{\normalsize \bf \@university \\}
-		{\normalsize \bf \@college \\}
-		{\large\bfseries\@faculty \\}
-		%{\large\bfseries\@department}
-		\end{onehalfspacing}
-	\end{center}
-\end{minipage}
-\begin{minipage}{4cm}
-	\raggedright
-	\includegraphics[height=3cm]{eng-logo}
-\end{minipage}
-
 \begin{center}
-{\Large\bfseries
-	گواهی دفاع از \@projectLabel{}ٔ \@degree{}
-}
+{\Large\bfseries تأییدیهٔ هیأت داوران جلسهٔ دفاع از \@projectLabel{}}
 \end{center}
-%\vspace{.5cm}
-هیأت داوران \@projectLabel{}ٔ \@degree{} آقای~/~خانم \@name{} \@surname{} به شمارهٔ دانشجویی \@studentID{} در رشتهٔ \@subject{}~-~گرایش \@field{} را در تاریخ ............ با عنوان «\@title{}»\\
-\makebox[\textwidth][l]{
-\parbox{0.7\textwidth}{
-\makebox[2cm]{}\hspace{1ex}\makebox[2cm]{به عدد}\makebox[5cm]{به حروف}\\
-\makebox[2cm][l]{با نمرهٔ نهایی}\hspace{1ex}\framebox[2cm]{\strut}\framebox[5cm]{\strut}
-\\
-\\
-\makebox[2cm][l]{و درجهٔ}\hspace{1ex}\framebox[3cm]{\strut}\hspace{1ex}
-ارزیابی کرد.
-}
-}
+\vspace{.6cm}
+
+\noindent
+\begin{tabular}{r p{0.75\textwidth}}
+نام دانشکده:   & \@college \\[4pt]
+نام دانشجو:    & \@name{} \@surname \\[4pt]
+عنوان \@projectLabel{}: & \@title \\[4pt]
+تاریخ دفاع:   & \dotfill \\[4pt]
+رشته:          & \@subject \\[4pt]
+گرایش:         & \@field \\[4pt]
+\end{tabular}
+
+\vspace{.8cm}
 
 \newcounter{davaranCounter}
 \begin{table}[h]
 \small
 \begin{onehalfspacing}
-\begin{tabular}{| >{\centering\arraybackslash}m{0.03\textwidth} | >{\centering\arraybackslash}m{.17\textwidth} | >{\centering\arraybackslash}m{.17\textwidth} |>{\centering\arraybackslash}m{.1\textwidth}|>{\centering\arraybackslash}m{.2\textwidth}|>{\centering\arraybackslash}m{.15\textwidth}|}
+\begin{tabular}{| >{\centering\arraybackslash}m{0.04\textwidth} | >{\centering\arraybackslash}m{.18\textwidth} | >{\centering\arraybackslash}m{.22\textwidth} | >{\centering\arraybackslash}m{.12\textwidth} | >{\centering\arraybackslash}m{.22\textwidth} | >{\centering\arraybackslash}m{.1\textwidth} |}
 \hline
-{\bfseries\begin{sideways}ردیف\end{sideways}} & {\bfseries مشخصات هیأت داوران} & {\bfseries نام و نام خانوادگی} & {\bfseries مرتبهٔ دانشگاهی} &	{\bfseries دانشگاه یا مؤسسه} & {\bfseries امضا} \\
+{\bfseries ردیف} & {\bfseries سمت} & {\bfseries نام و نام خانوادگی} & {\bfseries مرتبه} & {\bfseries دانشگاه یا مؤسسه} & {\bfseries امضا} \\
 \hline
 \ifx\@firstsupervisor\undefined
 \else \stepcounter{davaranCounter}
-\arabic{davaranCounter} &	استاد راهنما & \@firstsupervisor & \@firstsupervisorrank & دانشگاه تهران & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\arabic{davaranCounter} & استاد راهنما & \@firstsupervisor & \@firstsupervisorrank & \@university & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\hline
 \fi
 \ifx\@secondsupervisor\undefined%
 \else \stepcounter{davaranCounter}
-\arabic{davaranCounter} &	استاد راهنما & \@secondsupervisor & \@secondsupervisorrank & دانشگاه تهران & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
-\fi
+\arabic{davaranCounter} & استاد راهنما & \@secondsupervisor & \@secondsupervisorrank & \@university & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
 \hline
+\fi
 \ifx\@firstadvisor\undefined%
-\else \stepcounter{davaranCounter}
-\arabic{davaranCounter} & استاد مشاور & \@firstadvisor & \@firstadvisorrank & دانشگاه تهران & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
-\fi
-\ifx\@secondadvisor\undefined%
-\else \stepcounter{davaranCounter}
-\arabic{davaranCounter} & استاد مشاور & \@secondadvisor & \@secondadvisorrank & دانشگاه تهران & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
-\fi
+\stepcounter{davaranCounter}
+\arabic{davaranCounter} & استاد مشاور & --- & --- & --- & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
 \hline
-\ifx\@internaljudge\undefined%
 \else \stepcounter{davaranCounter}
-\arabic{davaranCounter} & استاد داور داخلی & \@internaljudge & \@internaljudgerank & دانشگاه تهران & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\arabic{davaranCounter} & استاد مشاور & \@firstadvisor & \@firstadvisorrank & \@university & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
 \hline
 \fi
 \ifx\@externaljudge\undefined%
 \else \stepcounter{davaranCounter}
-\arabic{davaranCounter} & استاد مدعو & \@externaljudge & \@externaljudgerank & \@externaljudgeuniversity & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\arabic{davaranCounter} & استاد مدعو خارجی & \@externaljudge & \@externaljudgerank & \@externaljudgeuniversity & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
 \hline
 \fi
-\ifx\@graduatedeputy\undefined%
+\ifx\@internaljudge\undefined%
 \else \stepcounter{davaranCounter}
-\arabic{davaranCounter} & نمایندهٔ تحصیلات تکمیلی دانشکده & \@graduatedeputy & \@graduatedeputyrank &  دانشگاه تهران & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\arabic{davaranCounter} & استاد مدعو داخلی & \@internaljudge & \@internaljudgerank & \@university & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
 \hline
 \fi
 \end{tabular}
 \end{onehalfspacing}
 \end{table}
-
-\begin{center}
-\noindent
-	\begin{minipage}{0.45\textwidth}
-		\begin{center}
-			نام و نام خانوادگی معاون تحصیلات تکمیلی و پژوهشی دانشکده~/~گروه:\\
-			تاریخ و امضا:
-		\end{center}
-	\end{minipage}
-	\hspace{0.08\textwidth}
-	\begin{minipage}{0.45\textwidth}
-		\begin{center}
-			نام و نام خانوادگی معاون آموزشی و تحصیلات تکمیلی پردیس دانشکده‌های فنی:\\
-			تاریخ و امضا:
-		\end{center}
-	\end{minipage}
-\end{center}
 } % End of davaranPage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% تأییدیه‌ی صحت و اصالت نتایج
