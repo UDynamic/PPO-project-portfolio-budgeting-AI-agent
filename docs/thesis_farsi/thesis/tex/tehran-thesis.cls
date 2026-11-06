@@ -1,3 +1,5 @@
+% !TEX root = ../main.tex
+
 %%
 %%  This is file `tehran-thesis.cls',
 %%  It is a modification of IUST-Thesis by Mahmood Amintoosi
