@@ -155,7 +155,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\besmPage}{
 %% بسم الله الرحمن الرحیم
-\cleardoublepage
+\clearpage
 \thispagestyle{empty}
 \hfill
 \begin{center}
@@ -281,7 +281,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% تأییدیه هیأت داوران جلسهٔ دفاع — مطابق قالب دانشگاه
 \newcommand{\davaranPage}{
-\cleardoublepage
+\clearpage
 \thispagestyle{empty}
 
 \begin{center}
@@ -344,7 +344,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% تأییدیهٔ صحت و اصالت نتایج — مطابق قالب دانشگاه
 \newcommand{\esalatPage}{
-\cleardoublepage
+\clearpage
 \thispagestyle{empty}
 \begin{center}
 {\Large\bfseries تأییدیهٔ صحت و اصالت نتایج}
@@ -377,7 +377,7 @@
 %% مجوز بهره‌برداری از پایان‌نامه — مطابق قالب دانشگاه
 \newcommand{\mojavezPage}
 {
-\cleardoublepage
+\clearpage
 \thispagestyle{empty}
 \begin{center}
 {\Large\bfseries مجوز بهره‌برداری از \@projectLabel{}}
@@ -429,7 +429,7 @@ $\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا 
 \ifx\@dedication\undefined%
     \relax
 \else
-    \cleardoublepage
+    \clearpage
     \thispagestyle{empty}
     %\vspace{-40mm}
     \@dedication
@@ -442,7 +442,7 @@ $\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا 
 \ifx\@acknowledgement\undefined%
 	\relax
 \else   
-	\cleardoublepage
+	\clearpage
 	\thispagestyle{empty}
 	\centerline{\Large \bfseries قدردانی}
 	\vspace{1cm}
@@ -455,7 +455,7 @@ $\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا 
 
 %% چکیده فارسی
 \newcommand\abstractPage{
-	\cleardoublepage
+	\clearpage
 	\thispagestyle{empty}
 	\section*{چکیده}
 	% \addcontentsline{toc}{section}{چکیده}
@@ -628,9 +628,8 @@ pdfdirection={R2L}
 }
 
 %%-----------------------------------------------------------
-%% (1) LOF title: تصاویر → اشکال
+%% (1) LOF title: set in commands.tex line 191
 %%-----------------------------------------------------------
-\renewcommand{\listfigurename}{فهرست اشکال}
 
 %%-----------------------------------------------------------
 %% (2–4) TOC / LOF / LOT: smaller title, centered, smaller entries, dotted leaders
