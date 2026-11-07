@@ -234,6 +234,7 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% دستورهایی برای سفارشی کردن سربرگ صفحات:
+\newcommand{\shorttitle}{توسعهٔ یک عامل\ldots}
 %\newcommand{\SetHeader}[1]{
 % دستور زیر معادل با گزینه twoside است.
 %\csname@twosidetrue\endcsname
@@ -250,7 +251,7 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 % شکل‌دهی شماره و عنوان فصل در سربرگ
 \renewcommand{\chaptermark}[1]{\markboth{\@chapapp~\thechapter:\ #1}{}}
 \makeatletter
-\renewcommand{\rightmark}[1]{\@title}
+\renewcommand{\rightmark}[1]{\shorttitle}
 \makeatother
 %}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
