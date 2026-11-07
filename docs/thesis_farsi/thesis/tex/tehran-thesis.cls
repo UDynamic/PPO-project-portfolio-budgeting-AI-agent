@@ -107,7 +107,6 @@
 \newcommand{\coverPage}{\begin{titlepage}
 \centering
 \vspace{-5mm}
-% آرم دانشگاه — تک‌آرمه
 \includegraphics[height=4cm]{logo}
 \par
 \vskip 5mm
@@ -343,61 +342,76 @@
 \end{table}
 } % End of davaranPage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% تأییدیه‌ی صحت و اصالت نتایج
+%% تأییدیهٔ صحت و اصالت نتایج — مطابق قالب دانشگاه
 \newcommand{\esalatPage}{
 \cleardoublepage
 \thispagestyle{empty}
 \begin{center}
-{\Large \titlefont\bfseries
-تعهدنامهٔ اصالت اثر\\
-}
-\vspace{.5cm}
-باسمه تعالی 
-\vspace{.5cm}
+{\Large\bfseries تأییدیهٔ صحت و اصالت نتایج}
 \end{center}
-\doublespacing 
-
-اینجانب 
-\@name \ \@surname \
-تأیید می‌کنم که مطالب مندرج در این \@projectLabel{} حاصل کار پژوهشی اینجانب است و به دستاوردهای پژوهشی دیگران که در این نوشته از آن‌ها استفاده شده است مطابق مقررات ارجاع گردیده است. این \@projectLabel{} قبلاً برای احراز هیچ مدرک هم‌سطح یا بالاتری ارائه نشده است.
-
 \vspace{1cm}
-\begin{center}
-\begin{tabular}{lr}
-نام و نام خانوادگی دانشجو:   & 	\@name{} \@surname \\
- تاریخ و امضای دانشجو: & \\
-\end{tabular}
-\end{center}
+\noindent{\bfseries باسمه تعالی}
+\vspace{.5cm}
+
+\onehalfspacing
+\noindent
+اینجانب \@name{} \@surname{} به شمارهٔ دانشجویی \@studentID{} دانشجوی رشتهٔ
+\@subject{} گرایش \@field{} مقطع تحصیلی کارشناسی ارشد تأیید می‌نمایم که کلیهٔ
+نتایج این \@projectLabel{}/رساله حاصل کار اینجانب و بدون هرگونه دخل و تصرف است
+و موارد نسخه‌برداری‌شده از آثار دیگران را با ذکر کامل مشخصات منبع ذکر کرده‌ام.
+درصورت اثبات خلاف مندرجات فوق، به تشخیص دانشگاه مطابق با ضوابط و مقررات
+حاکم (قانون حمایت از حقوق مؤلفان و مصنفان و قانون ترجمه و تکثیر کتب و نشریات
+و آثار صوتی، ضوابط و مقررات آموزشی، پژوهشی و انضباطی \ldots) با اینجانب رفتار
+خواهد شد و حق هرگونه اعتراض درخصوص احقاق حقوق مکتسب و تشخیص و تعیین
+تخلف و مجازات را از خویش سلب می‌نمایم. در ضمن، مسؤولیت هرگونه پاسخگویی به
+اشخاص اعم از حقیقی و حقوقی و مراجع ذی‌صلاح (اعم از اداری و قضایی) به عهدهٔ
+اینجانب خواهد بود و دانشگاه هیچ‌گونه مسؤولیتی در این خصوص نخواهد داشت.
+
+\vspace{2cm}
+\begin{flushright}
+نام و نام خانوادگی:~~ \@name{} \@surname\\[1.2cm]
+امضا و تاریخ:~~ \@thesisdate
+\end{flushright}
 }
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% مجوز بهره‌برداری از پایان‌نامه
+%% مجوز بهره‌برداری از پایان‌نامه — مطابق قالب دانشگاه
 \newcommand{\mojavezPage}
 {
 \cleardoublepage
 \thispagestyle{empty}
-\ \vfill
-\vspace{-12cm}
-\tikzstyle{tmpvip}=%
-[ultra thick,rectangle,draw=black!72,rounded corners=2mm,%
-inner xsep=-1.3cm,inner ysep=0.4cm]
 \begin{center}
-\begin{tikzpicture}
-\node[tmpvip](mainbox){%
-\begin{minipage}{0.7\textwidth}
-\begin{persian}
-\begin{center}
-
-\textbf{کلیهٔ حقوق مادی  و معنوی این اثر}
- 
-\textbf{متعلّق به دانشگاه تهران است.}
-
+{\Large\bfseries مجوز بهره‌برداری از \@projectLabel{}}
 \end{center}
-\end{persian}
-\end{minipage}};
-%\node[viptitle] at (mainbox.west){\ding{'153}};
-\end{tikzpicture}
-\end{center}
-\ \vfill
+\vspace{1cm}
+
+\onehalfspacing
+\noindent
+بهره‌برداری از این \@projectLabel{} در چهارچوب مقررات کتابخانه و با توجه به محدودیتی
+که توسط استاد راهنما به شرح زیر تعیین می‌شود، بلامانع است:
+
+\vspace{.8cm}
+\noindent
+$\square$~~بهره‌برداری از این \@projectLabel{}/رساله برای همگان بلامانع است.
+
+\vspace{.4cm}
+\noindent
+$\square$~~بهره‌برداری از این \@projectLabel{}/رساله با اخذ مجوز از استاد راهنما، بلامانع است.
+
+\vspace{.4cm}
+\noindent
+$\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا تاریخ \dotfill ممنوع است.
+
+\vspace{2cm}
+\noindent
+نام استاد راهنما:~~~~\@firstsupervisor
+
+\vspace{1cm}
+\noindent
+تاریخ:~~~~\@thesisdate
+
+\vspace{1cm}
+\noindent
+امضا:
 }
 
 % \def\frame{\newpage
@@ -612,6 +626,51 @@ pdfdirection={R2L}
 }
 \makeatother
 }
+
+%%-----------------------------------------------------------
+%% (1) LOF title: تصاویر → اشکال
+%%-----------------------------------------------------------
+\renewcommand{\listfigurename}{فهرست اشکال}
+
+%%-----------------------------------------------------------
+%% (2–4) TOC / LOF / LOT: smaller title, centered, smaller entries, dotted leaders
+%%       All tocloft settings deferred to AtBeginDocument to avoid option clash
+%%-----------------------------------------------------------
+\AtBeginDocument{%
+\renewcommand{\contentsname}{فهرست مطالب}%
+%% TOC title: smaller and centered
+\renewcommand{\cfttoctitlefont}{\hfill\large\bfseries}%
+\renewcommand{\cftaftertoctitle}{\hfill}%
+\setlength{\cftbeforetoctitleskip}{0pt}%
+\setlength{\cftaftertoctitleskip}{1em}%
+%% LOF title: centered
+\renewcommand{\cftloftitlefont}{\hfill\large\bfseries}%
+\renewcommand{\cftafterloftitle}{\hfill}%
+\setlength{\cftbeforeloftitleskip}{0pt}%
+\setlength{\cftafterloftitleskip}{1em}%
+%% LOT title: centered
+\renewcommand{\cftlottitlefont}{\hfill\large\bfseries}%
+\renewcommand{\cftafterlottitle}{\hfill}%
+\setlength{\cftbeforelottitleskip}{0pt}%
+\setlength{\cftafterlottitleskip}{1em}%
+%% Smaller font for all entries
+\renewcommand{\cftchapfont}{\small\bfseries}%
+\renewcommand{\cftchappagefont}{\small\bfseries}%
+\renewcommand{\cftsecfont}{\small}%
+\renewcommand{\cftsecpagefont}{\small}%
+\renewcommand{\cftsubsecfont}{\small}%
+\renewcommand{\cftsubsecpagefont}{\small}%
+\renewcommand{\cftfigfont}{\small}%
+\renewcommand{\cftfigpagefont}{\small}%
+\renewcommand{\cfttabfont}{\small}%
+\renewcommand{\cfttabpagefont}{\small}%
+%% Dotted leaders for all entries including chapters
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}%
+\renewcommand{\cftfigleader}{\cftdotfill{\cftdotsep}}%
+\renewcommand{\cfttableader}{\cftdotfill{\cftdotsep}}%
+}
+
+
 
 %%
 %% Author: Sina Momken

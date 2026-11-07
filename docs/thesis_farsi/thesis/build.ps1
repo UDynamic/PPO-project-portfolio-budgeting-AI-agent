@@ -1,5 +1,6 @@
+Remove-Item -Path "latexBuild\*" -Force -Recurse -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path "latexBuild" | Out-Null
-Remove-Item -Path "latexBuild\*" -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path "latexBuild\tex" | Out-Null
 
 xelatex -synctex=1 -interaction=nonstopmode -output-directory=latexBuild main
 bibtex8 -W -c cp1256fa latexBuild\main
