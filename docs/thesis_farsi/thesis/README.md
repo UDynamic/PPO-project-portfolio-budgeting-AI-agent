@@ -1,4 +1,130 @@
-# tehran-thesis
+# Thesis Build Workflows — پایان‌نامه مهریار قرقانی
+
+> This section documents the project-specific setup, build process, and customizations made to the `tehran-thesis` template for this thesis. The original template README is appended at the bottom for reference.
+
+---
+
+## Project Structure
+
+```
+thesis/
+├── main.tex
+├── build.ps1
+├── latexBuild/          # output directory (auto-created by build)
+│   └── tex/             # MUST exist — TeX Live writes \include aux files here
+├── tex/                 # source files
+│   ├── tehran-thesis.cls
+│   ├── faTitle.tex
+│   ├── enTitle.tex
+│   ├── commands.tex
+│   ├── thesis_preamble.tex
+│   ├── chapter1.tex ... chapter5.tex
+│   └── appendix1.tex ... appendix3.tex
+├── img/
+└── figures/
+    ├── logo.png          # Persian logo (used on cover page)
+    └── logo_en.jpg       # English logo (not used currently)
+```
+
+---
+
+## VS Code / Cursor Workshop Commands
+
+Open command palette with `Ctrl+Shift+P`, then type:
+
+| Action | Command |
+|--------|---------|
+| Kill running compiler | `LaTeX Workshop: Kill LaTeX compiler` |
+| Reload VS Code window | `Developer: Reload Window` |
+
+> **Most used workflow after a modification:**
+> 1. `Ctrl+Shift+P` → `LaTeX Workshop: Kill LaTeX compiler`
+> 2. `Ctrl+Shift+P` → `LaTeX Workshop: Kill LaTeX compiler` (run twice to make sure)
+> 3. Switch to a separate PowerShell terminal and run the clean build below.
+
+---
+
+## Build Script
+
+Run from the thesis root folder:
+
+```powershell
+.\build.ps1
+```
+
+### build.ps1 contents
+
+```powershell
+Remove-Item -Path "latexBuild\*" -Force -Recurse -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path "latexBuild" | Out-Null
+# TeX Live writes \include aux files relative to -output-directory, so latexBuild\tex\ must exist
+New-Item -ItemType Directory -Force -Path "latexBuild\tex" | Out-Null
+
+xelatex -synctex=1 -interaction=nonstopmode -output-directory=latexBuild main
+bibtex8 -W -c cp1256fa latexBuild\main
+xelatex -synctex=1 -interaction=nonstopmode -output-directory=latexBuild main
+xelatex -synctex=1 -interaction=nonstopmode -output-directory=latexBuild main
+```
+
+---
+
+## Clean Compile Process After a Modification
+
+Use this when the PDF is stale or the compiler is stuck:
+
+1. In VS Code/Cursor:
+   - `Ctrl+Shift+P` → `LaTeX Workshop: Kill LaTeX compiler`
+   - `Ctrl+Shift+P` → `LaTeX Workshop: Kill LaTeX compiler` (twice)
+
+2. Open a **separate PowerShell terminal** (not the VS Code integrated terminal) and run:
+
+```powershell
+cd "F:\0. Univesity\Masters\05. Master's thesis\ppm_env\docs\thesis_farsi\thesis"
+.\build.ps1
+```
+
+---
+
+## Diagnosing Build Errors
+
+### Check for fatal errors
+```powershell
+Select-String -Pattern "^\!|Emergency|can't write|can't open|No such file" -Path "latexBuild\main.log" -CaseSensitive
+```
+
+### Check for all errors and warnings
+```powershell
+Select-String -Pattern "undefined|warning|error|rerun" -Path "latexBuild\main.log" | Select-Object -First 50
+```
+
+---
+
+## Known Issues & Fixes
+
+### `! I can't write on file './tex/chapter1.aux'`
+TeX Live writes aux files for `\include`d files into `latexBuild\tex\`, which must exist.
+The build script creates it automatically. If it still fails:
+
+```powershell
+icacls tex /grant "Everyone:(OI)(CI)(F)" /T
+```
+
+---
+
+## Class File Notes (`tehran-thesis.cls`)
+
+- **Cover page**: single centered Persian logo (`logo.png`), no dual-logo layout
+- **Front-matter pages**: all use `\clearpage` (not `\cleardoublepage`) — no blank pages between preamble pages
+- **TOC/LOF/LOT**: smaller font, centered titles, dotted leaders — configured via `tocloft` in `\AtBeginDocument`
+- **`\titlePage`**: commented out in `thesis_preamble.tex` — the double-logo page before the judges page is removed
+- **Glossary/Acronyms**: removed — `\usepackage{glossaries}` commented out in `commands.tex`, inputs and `\printglossary` commented out in `main.tex` and `thesis_preamble.tex`
+- **Figure list title**: `فهرست اشکال` (not تصاویر) — set in `commands.tex` line 191
+
+---
+
+---
+
+# tehran-thesis (Original Template README)
 
 [![GitHub release](https://img.shields.io/github/release/sinamomken/tehran-thesis.svg?style=flat-square)](https://github.com/sinamomken/tehran-thesis/releases/latest)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sinamomken/tehran-thesis/Build?style=flat-square)](https://github.com/sinamomken/tehran-thesis/actions/workflows/build.yml)
@@ -62,7 +188,7 @@ git clone https://github.com/sinamomken/tehran-thesis --single-branch
 1. Contains self-describing texts explaining how to use this template and notes about writing each chapter of a thesis.
 1. Ability to choose different Persian bibliography styles for various specialities, compliant with author-number or author-date systems.
 1. Smart glossaries management using `glossaries` package and `xindy` backend.
-1. Commenting & review directly inside draft version of tex files, by using ` todonotes` package.
+1. Commenting & review directly inside draft version of tex files, by using `todonotes` package.
 1. Ability to include figures, different tabulars, `tikz` diagrams, Persian & English algorithms and colorized code listings; And their catalogue.
 1. Standard headers, odd/even margins and page numberings.
 
@@ -84,44 +210,20 @@ Therefor, it doesn't need any installation. However, it uses many technologies t
   * [`persian-bib`][persian-bib]: Bibliography styles are provided by `persian-bib` package.
   * [`glossaries`][glossaries]: Advanced glossary management package.
   * [`todonotes`][todonotes]: Provides commenting and todo notes available in your tex files.
-*  `latexmk`: equivalent of `make` for latex projects (should be included in a full `texlive` installation).
+* `latexmk`: equivalent of `make` for latex projects (should be included in a full `texlive` installation).
 * [`bibtex`][bibtex]: bibliography creation backend engine (should be included in a full `texlive` installation) and [`persian-bib`][persian-bib] package.
 * [`xindy`][xindy]: glossary/indexing backend engine.
   * `persian` or `persian-variant3` language should be installed for xindy (not available by default in Ubuntu 16.04).
 * A TeX editor/IDE with RTL support, e.g. [`BiDiTexmaker`][biditexmaker].
 * \[Optional\] X Series 2 & Junicode Fonts installed in your system.
 
-## Screenshots
-#### tehran-thesis in BiDiTexmaker  
-![biditexmaker](./img/biditexmaker.png "biditexmaker")
-
-#### tehran-thesis in BiDiTexmaker (draft mode)  
-![biditexmaker-draft](./img/biditexmaker-draft.png "biditexmaker-draft")
-
-#### Example of citation to various sources  
-<img src="./img/cite-example.jpg" alt="cite-example" width="49%"/> <img src="./img/bibliography.jpg" alt="bibliography" width="49%"/>
-
-#### Glossary and index  
-<img src="./img/fa2en-glossary.jpg" alt="fa2en-glossary" width="49%"/> <img src="./img/index.jpg" alt="index" width="49%"/>
-
-#### Colorized codes and todo notes (in draft version)  
-<img src="./img/algs-codes.jpg" alt="colorized codes" width="49%"/> <img src="./img/todos.jpg" alt="todo notes" width="49%"/>
-
-More screenshots are available in [`img`][imgs] folder.
-
 [egufa site]: https://github.com/sinamomken/tehran-thesis/wiki/%D9%85%D8%B3%D8%AA%D9%86%D8%AF%D8%A7%D8%AA-%D9%86%DA%AF%D8%A7%D8%B1%D8%B4-%D9%BE%D8%A7%DB%8C%D8%A7%D9%86%E2%80%8C%D9%86%D8%A7%D9%85%D9%87-%D8%AF%D8%B1-%D9%BE%D8%B1%D8%AF%DB%8C%D8%B3-%D8%AF%D8%A7%D9%86%D8%B4%DA%A9%D8%AF%D9%87%E2%80%8C%D9%87%D8%A7%DB%8C-%D9%81%D9%86%DB%8C-%D8%AF%D8%A7%D9%86%D8%B4%DA%AF%D8%A7%D9%87-%D8%AA%D9%87%D8%B1%D8%A7%D9%86
-
 [irfonts]: https://earmin.com/scict-standard-persian-fonts/
-
 [iust-template]: http://www.parsilatex.com/joomla/index.php/remository/Thesis_Templates/%D8%A7%D8%B3%D8%AA%DB%8C%D9%84-%D9%84%D8%A7%D8%AA%DA%A9-%D8%A8%D8%B1%D8%A7%DB%8C-%D9%BE%D8%A7%DB%8C%D8%A7%D9%86%E2%80%8C%D9%86%D8%A7%D9%85%D9%87%E2%80%8C%D9%87%D8%A7%DB%8C-%DA%A9%D8%A7%D8%B1%D8%B4%D9%86%D8%A7%D8%B3%DB%8C-%D8%AA%D8%A7-%D8%AF%DA%A9%D8%AA%D8%B1%D8%A7%DB%8C-%D8%AF%D8%A7%D9%86%D8%B4%DA%AF%D8%A7%D9%87-%D8%B9%D9%84%D9%85-%D9%88-%D8%B5%D9%86%D8%B9%D8%AA-%D8%A7%DB%8C%D8%B1%D8%A7%D9%86/
-
 [biditexmaker]: http://www.parsilatex.com/joomla/index.php?option=com_remository&Itemid=82&func=select&id=2
-
 [imgs]: https://github.com/sinamomken/tehran-thesis/tree/master/img
-
 [irmug-persian]: http://wiki.irmug.com/index.php/%D9%82%D9%84%D9%85%D9%87%D8%A7%DB%8C_%D8%B3%D8%B1%DB%8C_%D8%A7%DB%8C%DA%A9%D8%B3_%D9%86%D8%B3%D8%AE%D9%87%D9%94_%DB%B2
 [irmug-english]: http://wiki.irmug.com/index.php/X_Series_2
-
 [texlive]: https://tug.org/texlive/
 [mactex]: https://tug.org/mactex/
 [xepersian]: https://ctan.org/pkg/xepersian
