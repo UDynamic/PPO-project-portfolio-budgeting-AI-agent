@@ -101,7 +101,11 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 
 % بسته زیر باگ ناشی از فراخوانی بسته‌های زیاد را برطرف می‌کند.
 \usepackage{morewrites}
+
+\usepackage{float}
 %%%%%%%%%%%%%%%%%%%%%%%%%%
+\raggedbottom
+
 % فراخوانی بسته زی‌پرشین (باید آخرین بسته باشد)
 \usepackage[extrafootnotefeatures, localise=on, displaymathdigits=persian]{xepersian}
 
@@ -355,3 +359,26 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 
 \tolerance=5000
 \emergencystretch=15pt
+
+%%% صفحهٔ جداگانه برای عنوان فصل (فقط فصل‌های شماره‌دار، نه پیوست‌ها)
+\makeatletter
+\let\std@chapter\@chapter
+\def\@chapter[#1]#2{%
+    \if@mainmatter
+        \refstepcounter{chapter}%
+        \addcontentsline{toc}{chapter}{\protect\numberline{\thechapter}#1}%
+        \chaptermark{#1}%
+        \clearpage
+        \thispagestyle{empty}%
+        \vspace*{\fill}%
+        \begin{center}%
+            {\huge\bfseries \@chapapp\ \thechapter}\\[1.5em]%
+            {\LARGE\bfseries #2}%
+        \end{center}%
+        \vspace*{\fill}%
+        \clearpage
+    \else
+        \std@chapter[#1]{#2}%
+    \fi
+}
+\makeatother
