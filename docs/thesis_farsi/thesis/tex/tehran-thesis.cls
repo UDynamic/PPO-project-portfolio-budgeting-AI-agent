@@ -467,10 +467,7 @@ $\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا 
 
 \def\latinabstract{
 %% Latin abstract Page
-\cleardoublepage\newpage
-\thispagestyle{empty}
-~
-\newpage
+\clearpage
 \thispagestyle{empty}
 \section*{Abstract}
 % \addcontentsline{toc}{section}{چکیده}
@@ -491,7 +488,6 @@ $\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا 
 %% Latin title page
 \clearpage
 \thispagestyle{empty}
-~
 \begin{titlepage}
 \vspace{-10mm}
 %% Double logo commands
