@@ -1,4 +1,5 @@
 Remove-Item -Path "latexBuild\*" -Force -Recurse -ErrorAction SilentlyContinue
+Remove-Item -Path "main.aux","main.bbl","main.blg" -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path "latexBuild" | Out-Null
 New-Item -ItemType Directory -Force -Path "latexBuild\tex" | Out-Null
 
