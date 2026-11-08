@@ -1,0 +1,41 @@
+% !TeX root=../main.tex
+
+\chapter{آزمون سازگاری محیط با \lr{Gymnasium}}
+\label{app:gym_certificate}
+\label{app:gym_tests}
+%\thispagestyle{empty}
+
+فایل \code{tests/gym\_test.py} محیط \code{PortfolioBudgetingEnv} را در
+ده بخش آزمایشی و ۵۱ بررسی جداگانه آزمون می‌کند. این بررسی‌ها
+شامل موارد زیر هستند: درون‌ریزی و نمونه‌سازی، اعلان فضاها، پایبندی
+متدهای \code{reset()} و \code{step()} به قرارداد رابط
+برنامه‌نویسی، قطعیت (\lr{determinism}) با \lr{seed} ثابت و
+متغیر، اجرای سیاست تصادفی و سیاست‌های حدی (عمل صفر و حریصانه)،
+پایداری در اجرای چنداپیزودی، و بررسی‌کننده‌ی رسمی
+\code{gymnasium.utils.check\_env}. این مجموعه آزمون روی پیکربندی
+آزمون \code{TC-3XMAIF-R} (سه پروژه، زمان‌های شروع ترکیبی،
+دنباله‌های کارایی ثابت) اجرا شده است.
+جدول~\ref{tab:gym_summary} این ده بخش را خلاصه می‌کند و
+جدول~\ref{tab:gym_certificate} هر ۵۱ بررسی را یک‌به‌یک فهرست
+می‌کند. همه‌ی بررسی‌ها با موفقیت انجام شدند.
+
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/tab_gym_summary.pdf}
+  \caption[خلاصه‌ی آزمون سازگاری با \lr{Gymnasium}]{خلاصه‌ی آزمون
+           سازگاری با \lr{Gymnasium} ---
+           \code{PortfolioBudgetingEnv}، پیکربندی \code{TC-3XMAIF-R}،
+           تولیدشده در \lr{2026-10-20}.}
+  \label{tab:gym_summary}
+\end{table}
+
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/tab_gym_certificate.pdf}
+  \caption[گواهی سازگاری]{گواهی کامل سازگاری --- هر ۵۱ بررسی در ۱۰
+           بخش. \code{PortfolioBudgetingEnv}، پیکربندی
+           \code{TC-3XMAIF-R}، تولیدشده در \lr{2026-10-20\,17:07}.}
+  \label{tab:gym_certificate}
+\end{table}

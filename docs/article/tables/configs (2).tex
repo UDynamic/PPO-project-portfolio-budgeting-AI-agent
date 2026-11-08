@@ -1,0 +1,54 @@
+% ============================================================
+%  tab_configs.tex
+%  Compile:  pdflatex tab_configs.tex
+%  Output :  tables/configs.pdf
+% ============================================================
+\documentclass[10pt,border=6pt]{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\renewcommand{\sfdefault}{phv}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage{multirow}
+
+\newcommand{\tabfont}{\fontsize{8.5}{10.5}\selectfont}
+\setlength{\parindent}{0pt}
+
+% ============================================================
+\begin{document}
+\begin{minipage}{170mm}
+\tabfont
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+%
+% Columns: Config | N | BAC_i | s_i | D_i | M_i | phi_i | psi_trig | rho_i | eta sequence
+%
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}l c >{\raggedright\arraybackslash}X c c c c c c >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Config} & $N$ & $\mathrm{BAC}_i$ & $s_i$ & $D_i$ & $M_i$ & $\phi_i$ & $\psi^{\mathrm{trig}}_i$ & $\rho_i$ & $\eta_i$ sequence \\
+\midrule
+TC-10SF-R   & 1 & 100 & 0 & 0 & 1 & 0.00 & -- & -- & $[1,1,1]$ \\
+TC-1LMAIF-R & 1 & 100 & 2 & 3 & 3 & 0.20 & 0.80 & 0.50 & $[0.91, 1.17, 0.83, 0.91, 1.17, 0.83]$ \\
+TC-10MAIF-R & 1 & 100 & 0 & 3 & 3 & 0.20 & 0.00 & 0.20 & $[0.95, 0.91, 0.55, 0.40, 0.30, 0.20]$ \\
+\multirow{3}{*}{TC-3XMAIF-R} & \multirow{3}{*}{3}
+  & 100 & 0 & 3 & 3 & 0.20 & 0.00 & 0.20 & $[0.91, 1.17, 0.83, 0.91, 1.17, 0.83]$ \\
+& & 200 & 6 & 3 & 3 & 0.20 & 0.00 & 0.20 & $[1.00, 0.95, 0.90, 0.85, 0.80, 0.75]$ \\
+& & 300 & 7 & 3 & 3 & 0.20 & 0.00 & 0.20 & $[0.85, 0.90, 0.95, 1.00, 1.05, 1.10]$ \\
+\bottomrule
+\end{tabularx}
+%
+\smallskip
+\tabfont\textit{Note.} $s_i$: planned episode start; $D_i$: planned duration (periods); $M_i$: non-advance milestones;
+$\phi_i$: advance rate; $\psi^{\mathrm{trig}}_i$: progress trigger for advance disbursement;
+$\rho_i$: advance recovery rate per milestone. Profit margin $\pi_i = 0.20$ throughout;
+contract price $P_i = 1.20 \times \mathrm{BAC}_i$. Efficiency sequences are fixed under seed $= 0$.
+\end{minipage}
+\end{document}

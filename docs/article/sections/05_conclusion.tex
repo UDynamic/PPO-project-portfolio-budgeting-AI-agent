@@ -1,0 +1,179 @@
+% ------------------------------------------------------------
+\subsection{Summary of Contributions}
+\label{subsec:summary}
+% ------------------------------------------------------------
+
+This paper addresses a structural gap in the project portfolio
+management literature: the absence of a formal, computationally
+tractable framework for operational budget allocation across a
+committed portfolio of FIDIC-governed projects under cash-flow
+uncertainty.
+
+Three contributions are delivered.
+
+\textbf{C1 --- Gymnasium-compatible MDP environment.}
+\texttt{PortfolioBudgetingEnv} is a fully parameterisable, open-source
+Gymnasium environment encoding the complete FIDIC cash-flow cycle:
+advance payment and progressive recovery, progress-weighted milestone
+payments with configurable weights and timestep eligibility
+constraints, retention withholding and release, treasury-draw interest
+on project cash deficits, and a two-condition termination gate with a
+project-specific cure-period counter. The sole stochastic primitive is
+the budget-to-progress efficiency $\eta_{i,t}$, drawn each period from
+a configurable distribution. All parameters --- schedule, contract,
+and portfolio --- are specified through a configuration dictionary
+whose entries are probability distributions, enabling domain
+randomisation and calibration to any project-based sector without
+code modification. Gymnasium API compliance is verified across 51
+checks in 10 test sections. A SQLite audit ledger records every
+allocation, cash-flow event, breach flag, and EVM index at each step,
+making policy behaviour fully interpretable.
+
+\textbf{C2 --- Formal MDP specification.}
+The portfolio budget allocation problem is formalised as a
+finite-horizon MDP $\mathcal{M} = (\mathcal{S}, \mathcal{A},
+\mathcal{P}, R, \gamma, T)$ with state dimension $9N + 1$, a
+$7N + 2$ dimensional observation vector derived from actionable
+signals rather than raw EVM indices, a three-step action projection
+guaranteeing feasibility for any policy output, and a reward function
+equal to the discounted net portfolio cash flow. All structural
+incentives --- completion, breach avoidance, milestone timing, and
+treasury-draw deterrence --- emerge from the financial mechanics
+without auxiliary penalty terms. The Markov property holds exactly:
+the full portfolio state $S_t$ is a sufficient statistic for the
+observable history.
+
+\textbf{C3 --- Benchmark evaluation and quantified optimality gap.}
+Three deterministic greedy heuristics (Reach-Plan, Catchup-T,
+Catchup-Next-T) are evaluated against a manually computed
+full-information optimum across four benchmark configurations of
+increasing structural complexity, with fixed efficiency sequences
+ensuring exact reproducibility. The best-heuristic optimality gap
+grows from $3.40$ NPV units on the isolated single-project atom to
+$72.15$ units on the three-project coordinated portfolio --- a
+$21\times$ increase. On the most complex configuration, every greedy
+heuristic produces a loss while the full-information optimum remains
+profitable, establishing both the validity of the environment
+mechanics and a concrete performance target for future learned agents.
+
+% ------------------------------------------------------------
+\subsection{Implications}
+\label{subsec:implications}
+% ------------------------------------------------------------
+
+\paragraph{For sequential decision-making research.}
+The environment provides a problem instance that is simultaneously
+realistic (FIDIC mechanics calibrated to empirical construction
+practice), formally specified (closed-form MDP with exact Markov
+property), and computationally tractable (polynomial step cost,
+episode length $T \sim 20$--$30$ periods for representative
+portfolios). The intractability of exact stochastic optimisation ---
+$K^{NT}$ scenario-tree leaves, $K^{72} \approx 10^{50}$ for a
+moderate three-project instance --- makes this a well-motivated
+benchmark for RL and approximate dynamic programming methods. The
+full-information optimum provides an exact upper bound
+(Proposition~\ref{prop:upper_bound}) against which any policy can
+be evaluated without requiring a solver.
+
+\paragraph{For project management practice.}
+The experiment results show that no fixed rule performs consistently
+well: the optimal policy is adaptive to the efficiency trajectory,
+the milestone payment structure, the advance trigger timing, and the
+phasing of concurrent projects simultaneously. For a portfolio manager,
+this implies that rule-of-thumb allocation --- even well-calibrated
+rules such as Catchup-T, which tracks the contractual tolerance floor
+--- leaves substantial value on the table as portfolio complexity
+grows. The audit ledger provides a deployment-ready interpretability
+layer: every allocation, payment, and breach event is recorded per
+period, making the environment suitable as a decision-support tool
+even before a learned policy is trained.
+
+\paragraph{For domain randomisation and generalisation.}
+Each parameter in the configuration dictionary can be specified as a
+probability distribution, and $N$ (portfolio size) can itself be a
+configurable random variable. This design supports episode-level
+domain randomisation \citep{Tobin2017} natively, without any
+modification to the environment code. A policy trained across a
+distribution of configurations is exposed to diverse advance
+structures, efficiency profiles, milestone weights, and portfolio
+sizes within each training run, a prerequisite for generalisation
+across the range of contract types and market conditions encountered
+in practice.
+
+% ------------------------------------------------------------
+\subsection{Limitations}
+\label{subsec:limitations}
+% ------------------------------------------------------------
+
+The present formulation makes three deliberate simplifications, each
+of which is a natural boundary for future extension.
+
+\textbf{Independent projects.} Projects interact only through the
+shared budget $B_t$. Shared workforce or equipment pools, technology
+spillovers, and client-side interdependencies are not modelled.
+Extending to resource-coupled projects would require augmenting the
+state space with resource inventories and adding coupling constraints
+to the action projection.
+
+\textbf{Milestone payments only.} The payment structure follows FIDIC
+milestone-certification mechanics. Time-based, cost-plus, and hybrid
+contract forms are not currently supported, though the configuration
+dictionary architecture accommodates them through additional milestone
+profile parameters.
+
+\textbf{Single stochastic primitive.} The budget-to-progress
+efficiency $\eta_{i,t}$ absorbs all uncertainty. Scope changes,
+external price shocks, and client payment delays are exogenous. This
+restriction cleanly identifies the allocation problem structure; a
+multi-source uncertainty extension would require additional state
+components to maintain the Markov property.
+
+% ------------------------------------------------------------
+\subsection{Future Work}
+\label{subsec:future}
+% ------------------------------------------------------------
+
+The environment and benchmark established here define a clear research
+agenda.
+
+\textbf{RL agent training.}
+The immediate next step is to train a policy --- PPO \citep{Schulman2017}
+is a natural starting point given its stability in continuous action
+spaces --- on a domain-randomised distribution of configurations and
+evaluate it against the benchmark configurations of
+Section~\ref{sec:evaluation}. The full-information gap of
+Figure~\ref{fig:gap_plot} provides the evaluation target; a trained
+policy that closes a substantial fraction of the TC-3XMAIF-R gap
+($72.15$ units) would constitute a meaningful improvement over all
+greedy baselines.
+
+\textbf{LLM-augmented policies.}
+The observation vector $o_t$ is structured, low-dimensional
+($7N + 2$ components), and semantically interpretable --- each
+component has a direct financial or contractual meaning. This makes
+it a natural input for large language model-based reasoning agents
+integrated via LangChain or similar frameworks, with the benchmark
+heuristics serving as reward signals for in-context action scoring.
+The primary challenge for such an approach is generalisation across
+configurations: a policy that overfits to the four benchmark
+efficiency sequences does not transfer to novel portfolios. Generalisation
+configurations designed to inject controlled uncertainty --- varied
+S-curve shapes, heterogeneous milestone weights, mixed advance
+structures --- are the appropriate next step for evaluating policy
+robustness.
+
+\textbf{Formal algorithmic upper bound.}
+The manually computed $Z^*$ is exact for the four fixed-efficiency
+configurations but does not extend to stochastic settings. A Linear
+Programming relaxation of the deterministic oracle problem
+\eqref{eq:ub_obj}, or a Dynamic Programming solution for small
+instances, would provide a tighter and algorithmically verifiable
+bound against which trained policies can be compared.
+
+\textbf{Real-world deployment.}
+Integration with Oracle Primavera P6 or equivalent portfolio management
+information systems would enable deployment as a decision-support
+tool, with live EVM exports providing the state vector and the
+environment serving as a scenario simulator for prospective allocation
+decisions. The SQLite audit ledger is structurally compatible with
+standard EVM reporting schemas and requires no additional instrumentation.

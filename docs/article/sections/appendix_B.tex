@@ -1,0 +1,29 @@
+\code{tests/gym\_test.py} exercises \code{PortfolioBudgetingEnv} across
+ten test sections and 51 individual checks, covering import and
+instantiation, space declarations, the \code{reset()} and \code{step()}
+API contracts, determinism under fixed and varying seeds, random-policy and
+degenerate (zero-action, greedy) rollouts, multi-episode stability, and the
+official \code{gymnasium.utils.check\_env} checker.
+The suite is run against benchmark configuration \code{TC-3XMAIF-R}
+(3 projects, mixed start times, fixed efficiency sequences).
+Table~\ref{tab:gym_summary} summarises the ten sections;
+Table~\ref{tab:gym_certificate} lists all 51 individual checks.
+All checks pass.
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/tab_gym_summary.pdf}
+  \caption[Gymnasium Compatibility Test Summary]{Gymnasium compatibility test summary ---
+           \code{PortfolioBudgetingEnv}, config \code{TC-3XMAIF-R},
+           generated 2026-10-20.}
+  \label{tab:gym_summary}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/tab_gym_certificate.pdf}
+  \caption[Compatibility Certificate]{Full compatibility certificate --- all 51 individual checks
+           across 10 sections. \code{PortfolioBudgetingEnv},
+           config \code{TC-3XMAIF-R}, generated 2026-10-20\,17:07.}
+  \label{tab:gym_certificate}
+\end{table}

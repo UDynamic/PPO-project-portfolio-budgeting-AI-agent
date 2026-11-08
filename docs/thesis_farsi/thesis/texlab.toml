@@ -1,0 +1,7 @@
+﻿[build]
+executable = "latexmk"
+args = ["-xelatex", "-synctex=1", "-interaction=nonstopmode", "%f"]
+
+[chktex]
+onEdit = false
+onSave = false

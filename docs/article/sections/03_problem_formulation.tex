@@ -1,0 +1,880 @@
+% ============================================================
+%  SECTION 3 — PROBLEM FORMULATION
+% ============================================================
+
+This section develops the complete mathematical specification of the
+portfolio budget allocation problem and its realisation as a
+Gymnasium-compatible reinforcement learning environment.
+Section~\ref{subsec:problem_statement} states the scope and structural
+assumptions. Section~\ref{subsec:environment} defines the environment
+primitives: progress dynamics, FIDIC cash-flow mechanics, EVM
+performance signals, the termination mechanic, and the treasury
+balance. Section~\ref{subsec:parameters} consolidates all parameters.
+Section~\ref{subsec:theoretical_ub} derives the full-foresight upper
+bound and establishes why the exact stochastic problem is
+computationally intractable at portfolio scale.
+Section~\ref{subsec:mdp} presents the MDP formulation: state space,
+action space, action projection, transition kernel, reward function,
+and the observation vector that constitutes the environment's
+interface to any policy.
+
+% ------------------------------------------------------------
+\subsection{Problem Statement and Scope}
+\label{subsec:problem_statement}
+% ------------------------------------------------------------
+
+
+
+The problem is at strategic governance level. A portfolio of $N$ contracted
+projects is fixed: commitments are signed, start dates are scheduled,
+and contracts are parameterised consistently with FIDIC Red, Yellow,
+and Silver Book forms \citep{FIDIC2017}. A portfolio manager exercises
+a single recurring decision at each discrete planning period
+$t \in \{0, 1, \ldots, T\}$: the monetary budget $x_{i,t} \geq 0$
+directed to each active project $i$. The episode horizon is
+\begin{equation}
+  T = \max_{i} \bigl(f_i + \Delta^{\max}_i\bigr) - 1,
+  \label{eq:horizon}
+\end{equation}
+where $f_i = s_i + D_i$ is the planned finish and $\Delta^{\max}_i$
+is the maximum permitted finish overrun for project $i$; period $t=0$
+aligns with the earliest planned project start. All outcomes of
+interest --- milestone achievement, cash inflows, schedule adherence,
+and project termination --- flow through the allocation decision.
+Portfolio selection is treated as an exogenous input
+\citep{Archer1999}.
+
+The formulation rests on four structural assumptions.
+
+\begin{enumerate}[label=(\roman*)]
+  \item \emph{Independent bilateral contracts.} Projects interact only
+    through the shared portfolio cash balance; no resource or workforce
+    sharing occurs, consistent with standard EPC contracting practice.
+
+  \item \emph{Budget as the sole control.} The contractor's internal
+    resource decisions are absorbed into a stochastic efficiency scalar
+    $\eta_{i,t} \geq 0.01$; the manager observes how much physical
+    progress a budget allocation yields, not how it is achieved.
+    $\eta_{i,t}$ is the sole stochastic primitive and is not observable
+    before $x_{i,t}$ is committed.
+
+  \item \emph{Discrete monthly periods.} The unit period is one
+    calendar month, reflecting the standard governance cycle.
+    A budget tightness ratio $\kappa = B_0 / \sum_i \mathrm{BAC}_i$
+    parameterises the liquidity regime.
+
+  \item \emph{FIDIC contract mechanics.} Advance payment and
+    recovery, milestone revenues, retention withholding and release,
+    and termination settlement are all configurable, accommodating the
+    full range of particular conditions encountered in practice.
+\end{enumerate}
+
+% cashflow diagram
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/cashflow_timeline.pdf}
+  \caption[Cash-flow Timeline]{Cash-flow timeline for project $i$ under FIDIC contract
+    mechanics. The budget-to-progress conversion is subject to
+    stochastic efficiency $\eta_{i,t}$.}
+  \label{fig:cashflow_timeline}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{Environment Primitives}
+\label{subsec:environment}
+% ------------------------------------------------------------
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Progress and Expenditure Dynamics}
+\label{subsubsec:progress}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Let $\tau_i$ denote the project-time elapsed for project $i$ since its
+planned start $s_i$, incremented by one each period the project is
+active. Budget $x_{i,t}$ converts to physical progress through the
+stochastic efficiency scalar $\eta_{i,t}$:
+\begin{equation}
+  EV_{i,t}
+    = \min\!\Bigl(1,\;
+        EV_{i,t-1} + \eta_{i,t} \cdot \frac{x_{i,t}}{\mathrm{BAC}_i}
+      \Bigr),
+  \quad
+  \mathrm{ACWP}_{i,t} = \mathrm{ACWP}_{i,t-1} + x_{i,t},
+  \label{eq:progress_rec}
+\end{equation}
+with $EV_{i,0} = \mathrm{ACWP}_{i,0} = 0$. Here $\mathrm{BAC}_i$
+is the Budget at Completion and $EV_{i,t} \in [0,1]$ is the fraction
+of work completed (Budgeted Cost of Work Performed divided by
+$\mathrm{BAC}_i$). The progress increment $\eta_{i,t} x_{i,t} /
+\mathrm{BAC}_i$ is realised only after allocation is committed;
+$\eta_{i,t}$ is drawn from a project-specific distribution whose family
+and parameters are supplied in the configuration dictionary.
+
+The \emph{planned} cumulative progress follows a normalised S-curve
+parameterised by Beta shape parameters $(a_i, b_i)$
+\citep{Kenley2009}:
+\begin{equation}
+  PV_i(\tau) = I_{\tau / D_i}(a_i,\, b_i),
+  \quad \tau \in [0, D_i],\quad D_i \geq 1,
+  \label{eq:scurve}
+\end{equation}
+where $I_u(\cdot,\cdot)$ is the regularised incomplete Beta function
+and $D_i \in \mathbb{Z}_{\geq 1}$ is the planned duration in periods.
+The minimum admissible duration is one period ($D_i = 1$), which
+models a project whose entire planned scope must be delivered within a
+single allocation at $t = s_i$: the Beta CDF maps $\tau = 0
+\mapsto 0$ and $\tau = 1 \mapsto 1$, so the manager has exactly one
+period to commit the full allocation before the hard deadline fires at
+$t = s_i + 1$.
+$PV_i(\tau_i)$ is the planned progress at the current project-time;
+$PV_i(\tau_i + 1)$ and $PV_i(\tau_i + 2)$ serve as one- and
+two-period lookaheads used in the observation vector and the baseline
+policies.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{FIDIC Cash-Flow Mechanics}
+\label{subsubsec:cashflow}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\paragraph{Contract price and advance payment.}
+The contract price is $P_i = \mathrm{BAC}_i (1 + \pi_i)$, where $\pi_i$
+is the profit margin. If the contract includes an advance payment
+($\phi_i > 0$), the portfolio receives at project start ($t = s_i$):
+\begin{equation}
+  \mathrm{Adv}_i = \phi_i \cdot P_i,
+  \label{eq:advance}
+\end{equation}
+where $\phi_i$ is the advance payment rate. When
+$\phi_i = 0$ no advance is disbursed, the recovery mechanism is
+inactive, and $A^{\mathrm{rec}}_{i,j} = 0$ for all milestones.
+The advance is modelled as a synthetic milestone $j = 0$ with progress
+threshold zero, certified automatically at $t = s_i$, so that
+$\hat{P}_{i,0} = \mathrm{Adv}_i$ enters $V_{s_i}$ through
+\eqref{eq:Vt} without special-casing.
+
+Recovery of the advance from subsequent milestone payments follows the
+FIDIC Sub-Clause~14.2 mechanism \citep{FIDIC2017}, governed by two
+project-specific parameters: a commencement threshold
+$\psi^{\mathrm{rec}}_i \in [0,1]$ and a per-payment deduction rate
+$\delta^{\mathrm{rec}}_i \in [0,1]$. Let
+$G^{\mathrm{cum}}_{i,j} = \sum_{k=1}^{j} G_{i,k}$ denote the
+cumulative gross certified payment through milestone $j$. The advance
+recovery deduction at milestone $j$ is:
+\begin{equation}
+  A^{\mathrm{rec}}_{i,j}
+    = \begin{cases}
+        \min\!\bigl(\delta^{\mathrm{rec}}_i \cdot G_{i,j},\;
+          \mathrm{Adv}^{\mathrm{rem}}_{i,j}\bigr)
+          & \text{if } G^{\mathrm{cum}}_{i,j-1} \geq
+            \psi^{\mathrm{rec}}_i \cdot P_i
+            \text{ and } \phi_i > 0, \\
+        0 & \text{otherwise,}
+      \end{cases}
+  \label{eq:advance_rec}
+\end{equation}
+where $\mathrm{Adv}^{\mathrm{rem}}_{i,j}$ is the advance balance
+outstanding before milestone $j$ is certified, ensuring the total
+recovered never exceeds $\mathrm{Adv}_i$. When
+$\psi^{\mathrm{rec}}_i = 0$ ,
+recovery deductions commence from the very first milestone payment.
+
+\paragraph{Milestone certification and net payments.}
+Milestones $j = 1, \ldots, M_i$ are ordered by progress threshold
+$\psi_{i,1} < \cdots < \psi_{i,M_i} = 1$. Milestone $j$ is certified
+at the first period $t$ satisfying both
+$EV_{i,t} \geq \psi_{i,j}$ and $t \geq s_i + \tau^{\mathrm{ms}}_{i,j}$,
+where $\tau^{\mathrm{ms}}_{i,j}$ is the project-time threshold
+enforcing the FIDIC Sub-Clause~14.3 payment interval
+\citep{FIDIC2017}. Certification is monotone. The net cash received
+upon certifying milestone $j$ is:
+\begin{equation}
+  \hat{P}_{i,j}
+    = G_{i,j}
+      - A^{\mathrm{rec}}_{i,j}
+      - R^{\mathrm{held}}_{i,j}
+      + R^{\mathrm{rel}}_{i,j},
+  \label{eq:net_payment}
+\end{equation}
+where $G_{i,j} = w_{i,j} P_i$ is the gross payment ($w_{i,j}$ is the
+milestone weight, $\sum_{j=1}^{M_i} w_{i,j} = 1$);
+$A^{\mathrm{rec}}_{i,j}$ is the advance recovery deduction
+\eqref{eq:advance_rec};
+$R^{\mathrm{held}}_{i,j} = \nu_i G_{i,j}$ is the retention withheld;
+and $R^{\mathrm{rel}}_{i,j}$ equals the total accumulated retention
+only at the final milestone, zero otherwise. When $\phi_i > 0$, the
+full payment identity
+$\mathrm{Adv}_i + \sum_{j=1}^{M_i} \hat{P}_{i,j} = P_i$ holds
+exactly; when $\phi_i = 0$ it reduces to
+$\sum_{j=1}^{M_i} \hat{P}_{i,j} = P_i$.
+Payments are received in the period of certification.
+
+\paragraph{Period aggregate inflow.}
+The total portfolio inflow at period $t$ is:
+\begin{equation}
+  V_t
+    = \sum_{i=0}^{N-1} \sum_{j=0}^{M_i}
+        \hat{P}_{i,j} \cdot
+        \mathbf{1}\!\bigl[t^{\mathrm{cert}}_{i,j} = t\bigr]
+      + \sum_{i \in \mathcal{P}_t^{\mathrm{term}}} S_i,
+  \label{eq:Vt}
+\end{equation}
+where $t^{\mathrm{cert}}_{i,j}$ is the certification period of
+milestone $j$ (null if uncertified), $\mathcal{P}_t^{\mathrm{term}}$
+collects projects newly terminated at $t$, and $S_i$ is the
+termination settlement defined in Section~\ref{subsubsec:termination}.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{EVM Performance Signals}
+\label{subsubsec:evm}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The Earned Value Management framework \citep{Fleming2010} provides
+four diagnostic indices computed each period from observable state.
+The Earned Schedule $\mathrm{ES}_{i,t}$ is obtained by inverting the
+planned S-curve at the current actual progress level: it is the
+project-time $\tau^* \in [0, D_i]$ such that $I_{\tau^*/D_i}(a_i,
+b_i) = EV_{i,t}$, computed by binary search. The four indices are:
+\begin{align}
+  \mathrm{SPI}_{i,t}
+    &= \frac{\mathrm{ES}_{i,t}}{\tau_i},
+  \label{eq:SPI} \\
+  \mathrm{CPI}_{i,t}
+    &= \frac{EV_{i,t} \cdot \mathrm{BAC}_i}{\mathrm{ACWP}_{i,t}},
+  \label{eq:CPI} \\
+  \mathrm{EAC}_{i,t}
+    &= \mathrm{ACWP}_{i,t}
+       + \frac{\mathrm{BAC}_i - EV_{i,t} \cdot \mathrm{BAC}_i}
+              {\mathrm{CPI}_{i,t} \cdot \mathrm{SPI}_{i,t}},
+  \label{eq:EAC} \\
+  \mathrm{TCPI}_{i,t}
+    &= \frac{\mathrm{BAC}_i - EV_{i,t} \cdot \mathrm{BAC}_i}
+            {\mathrm{BAC}_i - \mathrm{ACWP}_{i,t}}.
+  \label{eq:TCPI}
+\end{align}
+
+The Earned Schedule SPI \eqref{eq:SPI} is used in place of the
+classical $\mathrm{SPI} = \mathrm{EV}/\mathrm{PV}$ because it
+continues to degrade after the planned finish date, correctly
+distinguishing a project one period late from one several periods late
+\citep{Lipke2003}. The composite denominator in \eqref{eq:EAC}
+incorporates both cost and schedule inefficiency into the
+cost-at-completion forecast \citep{christensen1993est}; $\mathrm{TCPI}
+> 1.10$ is widely considered an unrecoverable cost overrun trajectory
+\citep{Fleming2010}. $\mathrm{SPI}_{i,t}$, $\mathrm{CPI}_{i,t}$, 
+and $\mathrm{EAC}_{i,t}$ are logged to the audit ledger; they serve as intermediates from which the catchup-allocation and
+target-milestone observation features are derived, but are not
+themselves included in the observation vector $o_t$.
+Denominators that are effectively zero default to one.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Termination Mechanic}
+\label{subsubsec:termination}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Termination is an endogenous environment mechanic, not an agent
+action. Two conditions are evaluated independently each period.
+
+\paragraph{Condition 1 --- Progress delay breach.}
+The signed progress lag at period $t$ is:
+\begin{equation}
+  \delta_{i,t} = PV_i(\tau_i) - EV_{i,t}.
+  \label{eq:progress_lag}
+\end{equation}
+A breach flag is raised when the lag exceeds the contractual cap:
+\begin{equation}
+  \mathbb{1}^{\delta}_{i,t}
+    = \mathbf{1}\!\bigl[\delta_{i,t} > \delta^{\max}_i\bigr],
+  \label{eq:term_cond1}
+\end{equation}
+where $\delta^{\max}_i \in [0,1]$ is fixed at commitment, grounded in
+the FIDIC engineer's authority to issue a notice when progress falls
+materially behind programme \citep{FIDIC2017}.
+
+\paragraph{Condition 2 --- Hard deadline.}
+A hard deadline fires unconditionally at:
+\begin{equation}
+  \mathbb{1}^{T}_{i,t}
+  = \mathbf{1}\!\bigl[t = f_i + \Delta^{\max}_i - 1\bigr],
+  \label{eq:term_cond2}
+\end{equation}
+triggering immediate termination regardless of the breach counter
+state.
+
+\paragraph{Cure-period counter.}
+Condition~1 activates a cure-period counter modelling the FIDIC
+Sub-Clause~15.1 recovery interval \citep{FIDIC2017, Ndekugri2008}:
+\begin{equation}
+  \theta^{\mathrm{rem}}_{i,t}
+    = \begin{cases}
+        \max\!\bigl(0,\; \theta^{\mathrm{rem}}_{i,t-1} - 1\bigr)
+          & \text{if } \mathbb{1}^{\delta}_{i,t} = 1, \\
+        \theta_i
+          & \text{otherwise,}
+      \end{cases}
+  \label{eq:counter}
+\end{equation}
+initialised at $\theta^{\mathrm{rem}}_{i,s_i} = \theta_i$. Soft
+termination executes when $\theta^{\mathrm{rem}}_{i,t} = 0$. Hard
+termination \eqref{eq:term_cond2} is evaluated in the early phase
+(before allocation); Condition~1 and counter updates apply in the late
+phase (after allocation and progress realisation). The counter
+$\theta^{\mathrm{rem}}_{i,t}$ is part of the observable state and is
+directly exposed in the observation vector; the agent influences it
+indirectly through allocations that drive $EV_{i,t}$ relative to
+$PV_i(\tau_i)$.
+
+\paragraph{Termination settlement.}
+Upon termination of project $i$ at period $t$, the net settlement
+cash flow is:
+\begin{equation}
+  S_i = EV_{i,t} \cdot P_i - \mathrm{CF}^+_i,
+  \label{eq:settlement}
+\end{equation}
+where $\mathrm{CF}^+_i$ is the cumulative inflow received for project
+$i$ through period $t$. The first term is the contractor's entitlement
+for work physically delivered; the second is what has already been
+collected. $S_i > 0$ when delivered work exceeds prior receipts;
+$S_i < 0$ imposes a net obligation on the portfolio (advance not yet
+recovered). In either case $S_i$ is fully determined by contract
+parameters and the progress level at termination, with no external
+calibration required.
+
+The state machine governing each project's lifecycle is illustrated
+in Figure~\ref{fig:state_machine}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/state_machine.pdf}
+  \caption[Termination State Logic]{Breach-tolerance counter
+    dynamics: delay breach decrements the counter; hard-deadline
+    violation forces immediate termination. Settlement $S_i$
+    \eqref{eq:settlement} enters portfolio inflows at termination.}
+  \label{fig:state_machine}
+\end{figure}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Treasury Balance and Interest}
+\label{subsubsec:balance}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The net cash flow in period $t$ is $\Delta B_t = V_t -
+\sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t} - \sum_i
+c^r_{i,t}$, where $c^r_{i,t}$ is the treasury-draw interest charged
+to project $i$:
+\begin{equation}
+  c^r_{i,t}
+    = \frac{r}{12} \cdot
+      \max\!\bigl(0,\; \mathrm{CF}^-_{i,t-1} + x_{i,t}
+        - \mathrm{CF}^+_{i,t-1}\bigr),
+  \label{eq:interest}
+\end{equation}
+where $\mathrm{CF}^-_{i,t}$ and $\mathrm{CF}^+_{i,t}$ are cumulative
+outflows and inflows for project $i$ through period $t$, and $r$ is
+the annual interest rate. Interest accrues when cumulative spending on
+a project exceeds cumulative receipts --- that is, when the project is
+drawing on treasury reserves rather than being self-funded by milestone
+inflows. The portfolio balance evolves as:
+\begin{equation}
+  B_{t+1} = B_t + \Delta B_t.
+  \label{eq:balance}
+\end{equation}
+When $B_t \leq 0$ and no advance payments are pending, the episode
+truncates immediately.
+
+% ------------------------------------------------------------
+\subsection{Parameter Reference}
+\label{subsec:parameters}
+% ------------------------------------------------------------
+
+Table~\ref{tab:params} consolidates all parameters fixed at commitment.
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/params.pdf}
+  \caption[Parameters Table]{Model parameters and their domains.}
+  \label{tab:params}
+\end{table}
+
+% ------------------------------------------------------------
+\subsection{Full-Foresight Upper Bound and Intractability}
+\label{subsec:theoretical_ub}
+% ------------------------------------------------------------
+
+\subsubsection{Deterministic Oracle Upper Bound}
+\label{subsubsec:ub}
+
+Consider a hypothetical oracle that knows the full efficiency sequence
+$(\eta_{i,t})_{i,t}$ before making any decision. Under deterministic
+efficiency, $EV_{i,t}$ is a deterministic function of
+$\{x_{i,\tau}\}_{\tau \leq t}$, so all milestone certification times
+and termination periods are computable ex ante. The oracle maximises:
+\begin{equation}
+  Z^* = \max_{\{x_{i,t} \geq 0\}}
+    \sum_{t=0}^{T} \gamma^{t} \Delta B_t,
+  \label{eq:ub_obj}
+\end{equation}
+subject to $\sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
+\leq B_t$ for all $t$, with the balance evolving via
+\eqref{eq:balance} and all inflows $V_t$ computed deterministically
+from the known efficiency trajectory.
+
+\begin{proposition}[Full-foresight upper bound]
+\label{prop:upper_bound}
+Let $Z^*$ be the value of \eqref{eq:ub_obj} on a realised efficiency
+trajectory. Let $Z^\pi$ be the discounted cumulative reward achieved
+by any causal policy $\pi$ --- one that commits $x_{i,t}$ using only
+information available at time $t$ --- on the same trajectory. Then:
+\begin{equation}
+  \sup_{\pi \in \Pi^{\mathrm{causal}}}
+    \mathbb{E}\!\bigl[Z^\pi\bigr]
+  \leq Z^*.
+  \label{eq:upper_bound}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Fix any realised trajectory. Any allocation sequence produced by a
+causal policy is also feasible in \eqref{eq:ub_obj} solved on the
+same realisations, since feasibility constraints are identical and the
+oracle optimises over a strictly larger information set. Therefore
+$Z^\pi \leq Z^*$ pointwise over trajectories, and the inequality
+is preserved in expectation.
+\end{proof}
+
+The gap $Z^* - \mathbb{E}[Z^\pi]$ decomposes into the cost of
+uncertainty and the quality of the policy. In this work $Z^*$ is
+computed by hand for each benchmark configuration with full knowledge
+of the efficiency draws realised during each play session, via the
+interactive \texttt{play.py} interface. These manually obtained
+solutions constitute the upper-bound reference reported in
+Section~\ref{sec:evaluation}.
+
+\subsubsection{Intractability of Exact Stochastic Optimisation}
+\label{subsubsec:intractability}
+
+The exact stochastic counterpart of \eqref{eq:ub_obj} requires
+optimising over policies that map observed history to allocations
+while respecting the non-anticipativity constraint that $x_{i,t}$
+depends only on information available at time $t$. The canonical
+solution method is scenario-tree enumeration \citep{Birge2011}.
+Discretising $\eta_{i,t}$ to $K$ values per project per period, the
+tree has
+\begin{equation}
+  |\mathcal{S}| = K^{N \cdot T}
+  \label{eq:tree_size}
+\end{equation}
+leaf nodes. For a moderate portfolio with $N = 3$ projects, $T = 24$
+periods, and $K = 5$ discrete scenarios per project per period:
+$|\mathcal{S}| = 5^{72} \approx 10^{50}$. At $N = 10$ projects the
+count reaches $5^{240} \approx 10^{167}$, exceeding the number of
+atoms in the observable universe by more than 80 orders of magnitude.
+This scaling is intrinsic to the multi-stage stochastic formulation
+and independent of solver technology. The endogenous active-set
+dynamics --- each termination event structurally changes
+$\mathcal{P}_t^{\mathrm{active}}$ and bifurcates the scenario tree
+--- introduce a second source of combinatorial growth beyond
+\eqref{eq:tree_size}.
+
+This intractability motivates the MDP formulation of
+Section~\ref{subsec:mdp}: replacing scenario-tree enumeration with
+sampled trajectory experience, where the computational cost per step
+is independent of $|\mathcal{S}|$.
+
+% ------------------------------------------------------------
+\subsection{MDP Formulation}
+\label{subsec:mdp}
+% ------------------------------------------------------------
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Formal MDP Specification}
+\label{subsubsec:mdp_def}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\begin{definition}[Portfolio Budget Allocation MDP]
+\label{def:mdp}
+The portfolio budget allocation problem is formalised as a
+finite-horizon Markov Decision Process \citep{Puterman1994}:
+\begin{equation}
+  \mathcal{M} = \bigl(\mathcal{S},\;\mathcal{A},\;
+    \mathcal{P},\;R,\;\gamma,\;T\bigr),
+  \label{eq:mdp_tuple}
+\end{equation}
+with state space $\mathcal{S}$, action space $\mathcal{A}$, transition
+kernel $\mathcal{P}$, reward function $R$, discount factor $\gamma$,
+and horizon $T$.
+\end{definition}
+
+\paragraph{State space.}
+The state $S_t$ at period $t$ collects, for each project $i$, the
+following components:
+\begin{itemize}[nosep]
+  \item actual progress $EV_{i,t} \in [0,1]$,
+  \item cumulative actual cost $\mathrm{ACWP}_{i,t} \in \mathbb{R}_{\geq 0}$,
+  \item EVM indices $\mathrm{SPI}_{i,t},\; \mathrm{CPI}_{i,t},\;
+        \mathrm{EAC}_{i,t},\; \mathrm{TCPI}_{i,t}$,
+  \item project status $\sigma_{i,t} \in \{\texttt{pending},\,
+        \texttt{active},\, \texttt{completed},\, \texttt{terminated}\}$,
+  \item cure-period counter $\theta^{\mathrm{rem}}_{i,t} \in
+        \{0, \ldots, \theta_i\}$,
+\end{itemize}
+together with the portfolio cash balance $B_t \in \mathbb{R}_{\geq 0}$.
+The full state is:
+\begin{equation}
+  S_t \;\in\; \mathcal{S}
+  \;\subseteq\; [0,1]^N \times \mathbb{R}^N_{\geq 0}
+    \times \mathbb{R}^{4N} \times \Sigma^N
+    \times \mathbb{Z}^N_{\geq 0} \times \mathbb{R}_{\geq 0},
+  \label{eq:state_space}
+\end{equation}
+where $\Sigma = \{\texttt{pending},\texttt{active},\texttt{completed},
+\texttt{terminated}\}$. The state dimension is $9N+1$ per period.
+All components are observable at decision time. The sole unobservable
+quantity is $\eta_{i,t}$, realised only after $x_{i,t}$ is committed.
+
+The Markov property holds exactly: $S_{t+1}$ depends on
+$(S_t, \mathbf{x}_t, \boldsymbol{\eta}_t)$ only, not on the prior
+history $(S_0, \mathbf{x}_0, \ldots, S_{t-1}, \mathbf{x}_{t-1})$.
+The full portfolio state $S_t$ is a sufficient statistic for the
+observable history, making the MDP formulation exact rather than
+approximate.
+
+\paragraph{Action space.}
+The policy outputs an allocation fraction vector
+$\boldsymbol{\alpha}_t \in [0,1]^N$ with the interpretation that
+project $i$ receives fraction $\alpha_{i,t}$ of the available budget.
+The monetary allocation is $x_{i,t} = \alpha_{i,t} \cdot B_t$.
+
+\paragraph{Action projection.}
+To guarantee feasibility for any raw policy output
+$\tilde{\boldsymbol{\alpha}}_t \in \mathbb{R}^N$, the environment
+applies three sequential projection rules before executing the
+transition:
+
+\begin{enumerate}[label=(\roman*)]
+  \item \emph{Inactive zeroing.}
+    $\tilde{\alpha}_{i,t} \leftarrow 0$ for all $i$ with
+    $\sigma_{i,t} \neq \texttt{active}$.
+
+  \item \emph{Per-project allocation cap.}
+    The monetary allocation to project $i$ is capped at
+    \begin{equation}
+      x_{i,t} \leq \frac{\mathrm{BAC}_i}{\eta^{\min}_i},
+      \label{eq:alloc_cap}
+    \end{equation}
+    where $\eta^{\min}_i$ is the lower bound of project $i$'s
+    efficiency distribution (closed-form for fixed and uniform
+    families; defaulting to 0.01 otherwise). This cap guarantees
+    that a single full allocation always suffices to complete a
+    project regardless of the efficiency draw.
+
+  \item \emph{Budget projection.}
+    The active sub-vector is projected onto the budget simplex:
+    \begin{equation}
+      \boldsymbol{\alpha}_t^{\mathrm{active}}
+        = \frac{\max(\tilde{\boldsymbol{\alpha}}_t^{\mathrm{active}},\,\mathbf{0})}
+               {\bigl\|\max(\tilde{\boldsymbol{\alpha}}_t^{\mathrm{active}},\,
+                 \mathbf{0})\bigr\|_1 \vee 1},
+      \label{eq:projection}
+    \end{equation}
+    where $\vee$ denotes the maximum operator (denominator at least
+    one when all values are non-positive). The resulting monetary
+    allocations $x_{i,t} = \alpha_{i,t} B_t$ satisfy
+    $\sum_i x_{i,t} \leq B_t$ by construction.
+\end{enumerate}
+
+This projection is differentiable almost everywhere and preserves
+gradient flow through policy networks during training
+\citep{Schulman2017}.
+
+\paragraph{Transition kernel.}
+The stochastic transition $\mathcal{P}(S_{t+1} \mid S_t,
+\boldsymbol{\alpha}_t)$ is realised by
+Algorithm~\ref{alg:kernel}.
+
+\begin{algorithm}[H]
+  \centering
+  \includegraphics[width=\textwidth]{algorithms/alg_kernel.pdf}
+  \caption[Transition Kernel]{Within-period transition kernel at episode step $t$.
+           Rows are numbered sequentially; indentation encodes nesting depth.
+           Right column gives the equation number for each update rule.}
+  \label{alg:kernel}
+\end{algorithm}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Reward Function}
+\label{subsubsec:reward}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The per-period reward is the discounted net portfolio cash flow:
+\begin{equation}
+  r_t = \gamma^{t} \cdot \Delta B_t
+      = \gamma^{t} \!\left(
+          V_t
+          - \sum_{i \in \mathcal{P}_t^{\mathrm{active}}} x_{i,t}
+          - \sum_{i} c^r_{i,t}
+        \right).
+  \label{eq:reward}
+\end{equation}
+Advance payments received at $t = s_i$ for projects with $s_i = 0$
+are absorbed into the initial budget endowment $B_0$ at reset and are
+excluded from $\Delta B_t$. Because advances are granted unconditionally
+at contract commencement regardless of any allocation decision, including
+them in $r_0$ would inflate every episode's return by a fixed constant
+that carries no information about policy quality --- a form of reward
+bias that obscures the true performance signal without affecting the
+optimal policy ranking. 
+
+The policy optimisation objective is:
+\begin{equation}
+  \pi^* = \argmax_{\pi}
+    \;\mathbb{E}_{\pi}\!\left[
+      G = \sum_{t=0}^{T} r_t
+    \right],
+  \label{eq:mdp_objective}
+\end{equation}
+where the expectation is over the distribution of trajectories induced
+by $\pi$ and the efficiency draws $\{\eta_{i,t}\}$.
+
+\paragraph{Structural incentive properties.}
+The reward \eqref{eq:reward} embeds all performance incentives through
+the financial structure of the environment, without auxiliary penalty
+terms:
+
+\begin{enumerate}[label=(\roman*)]
+  \item \emph{Completion incentive.} At project completion, the
+    accumulated retention $\nu_i P_i$ is released together with the
+    final milestone payment, delivering a concentrated inflow that
+    rewards policies which drive projects to full certification.
+
+  \item \emph{Termination deterrent.} A negative settlement $S_i$
+    enters $V_t$ as a direct revenue reduction, making termination
+    financially costly without any hand-crafted penalty coefficient.
+    The threat is proportional to the gap between disbursed advances
+    and certified milestone value, incentivising the agent to pace
+    allocations consistent with actual progress.
+
+  \item \emph{Timing incentive.} Under $\gamma < 1$, certifying
+    milestone $j$ earlier yields $\hat{P}_{i,j}$ at a higher discount
+    weight. A return-maximising policy therefore front-loads
+    allocations to projects where milestone acceleration is
+    feasible \citep{Damodaran2012}.
+
+    \item \emph{Treasury-draw deterrent.} In milestone-payment
+    contracts, cumulative expenditure on a project follows the
+    cost-baseline S-curve while inflows arrive only at discrete
+    certification events, creating a negative working capital trough
+    that persists until milestone receipts catch up with spending.
+    Interest cost $c^r_{i,t}$ \eqref{eq:interest} charges the
+    portfolio for this trough at rate $r/12$ per period: even when
+    the portfolio balance $B_t$ is large (relaxed budget regime,
+    $\kappa \gg 1$), the agent cannot over-allocate freely, because
+    pushing cumulative outflows ahead of cumulative inflows on any
+    project incurs a carrying cost that erodes the discounted return.
+    This embeds the working-capital discipline of real project
+    finance directly into the reward signal, without a separate
+    penalty term.
+\end{enumerate}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Observation Vector}
+\label{subsubsec:obs}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Rather than exposing the raw state $S_t$ directly, the environment
+presents a policy-facing observation vector $o_t \in \mathbb{R}^{7N+2}$
+constructed from $S_t$ by extracting and normalising the signals most
+directly relevant to the allocation decision. The raw EVM indices
+($\mathrm{SPI}$, $\mathrm{CPI}$, $\mathrm{EAC}$, $\mathrm{TCPI}$)
+serve as intermediates and are not included in $o_t$; instead, they
+are aggregated into two groups of actionable per-project features.
+
+\paragraph{Catchup signals.} These encode the minimum spend to avoid
+a contractual breach, computed from the S-curve lookahead. At
+project-time $\tau_i$, the minimum cumulative progress required by
+end of the current period to stay within the delay cap is:
+\begin{equation}
+  \underline{EV}_{i,t}
+    = \max\!\bigl(0,\; PV_i(\tau_i + 1) - \delta^{\max}_i\bigr).
+  \label{eq:min_prog}
+\end{equation}
+The catchup allocation (current period) is:
+\begin{equation}
+  x^{\mathrm{cu}}_{i,t}
+    = \max\!\bigl(0,\; \underline{EV}_{i,t} - EV_{i,t}\bigr)
+      \cdot \mathrm{BAC}_i.
+  \label{eq:catchup}
+\end{equation}
+The next-period lookahead extends one step further using
+$PV_i(\tau_i + 2)$ in place of $PV_i(\tau_i + 1)$:
+\begin{equation}
+  x^{\mathrm{cu}+1}_{i,t}
+    = \max\!\bigl(0,\; PV_i(\tau_i + 2) - \delta^{\max}_i
+      - EV_{i,t}\bigr) \cdot \mathrm{BAC}_i.
+  \label{eq:catchup_next}
+\end{equation}
+
+\paragraph{Target milestone signals.} The target milestone
+$j^*_{i,t}$ is the next uncertified milestone for project $i$ at
+period $t$. Four signals are derived from it:
+\begin{align}
+  \Delta\psi^*_{i,t}
+    &= \max\!\bigl(0,\; \psi_{i,j^*} - EV_{i,t}\bigr),
+  \label{eq:target_pg} \\
+  \Delta\tau^*_{i,t}
+    &= \bigl(s_i + \tau^{\mathrm{ms}}_{i,j^*}\bigr) - t,
+  \label{eq:target_tg} \\
+  x^*_{i,t}
+    &= \Delta\psi^*_{i,t} \cdot \mathrm{BAC}_i,
+  \label{eq:target_alloc} \\
+  \mathrm{NPV}^*_{i,t}
+    &= \frac{\hat{P}^*_{i,t}}
+            {\gamma^{\max(0,\,\Delta\tau^*_{i,t})}}
+       - x^*_{i,t},
+  \label{eq:target_npv}
+\end{align}
+where $\hat{P}^*_{i,t} = \hat{P}_{i,j^*}$ is the net payment of the
+target milestone. Equation \eqref{eq:target_npv} discounts the
+expected payment back to the current period and subtracts the
+investment required, giving the net present value of unlocking the
+next milestone under the assumption that the payment arrives at the
+earliest eligible period.
+
+\paragraph{Observation construction.} The observation vector is the
+flattened, clipped concatenation:
+\begin{equation}
+  o_t = \Bigl(
+    \bigl\{
+      \theta^{\mathrm{rem}}_{i,t},\;
+      \tilde{x}^{\mathrm{cu}}_{i,t},\;
+      \tilde{x}^{\mathrm{cu}+1}_{i,t},\;
+      \Delta\psi^*_{i,t},\;
+      \widetilde{\Delta\tau}^*_{i,t},\;
+      \tilde{x}^*_{i,t},\;
+      \widetilde{\mathrm{NPV}}^*_{i,t}
+    \bigr\}_{i=0}^{N-1},\;
+    \widetilde{\Delta B}_{t},\;
+    \tilde{B}_t
+  \Bigr),
+  \label{eq:obs_vector}
+\end{equation}
+where tilde notation denotes normalisation by $B_0$ (for monetary
+quantities), by $T$ (for timestep gaps), or by
+$\max_i |\mathrm{NPV}^*_{i,t}|$ (for the NPV component), followed
+by clipping to the ranges listed in Table~\ref{tab:obs_vector}.
+For pending or completed projects, all per-project fields are set
+to zero. The portfolio scalars $\widetilde{\Delta B}_t$ and
+$\tilde{B}_t$ are the last-period net cash flow and the current
+available budget, both normalised by $B_0$.
+
+\begin{table}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tables/obs_vector.pdf}
+  \caption[Observation vector]{Observation vector $o_t$ \eqref{eq:obs_vector}: components,
+    normalisation, and clipping bounds. Per-project block $i$ occupies
+    indices $7i$ through $7i+6$.}
+  \label{tab:obs_vector}
+\end{table}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Gymnasium-Compatible Implementation}
+\label{subsubsec:impl}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The MDP is implemented as \code{PortfolioBudgetingEnv},
+a configurable Gymnasium-compatible environment \citep{Towers2024},
+exposing the standard \code{reset()} / \code{step()} interface with:
+\begin{itemize}[nosep]
+  \item \code{observation\_space}: $\mathrm{Box}(7N+2)$ with
+    per-component bounds as in Table~\ref{tab:obs_vector};
+  \item \code{action\_space}: $\mathrm{Box}([0,1]^N)$, raw
+    allocation fractions of $B_t$.
+\end{itemize}
+
+\paragraph{Configuration dictionary.}
+All environment behaviour is governed by a single configuration
+dictionary passed at initialisation. The dictionary contains two
+classes of entries that together fully specify an experiment.
+
+The first class covers the \emph{mathematical parameters} of the
+formulation, consolidated in Table~\ref{tab:params}: contract
+parameters ($\mathrm{BAC}_i$, $\pi_i$, $\phi_i$,
+$\psi^{\mathrm{rec}}_i$, $\delta^{\mathrm{rec}}_i$, $\nu_i$,
+$w_{i,j}$), schedule parameters ($s_i$, $D_i$, $a_i$, $b_i$,
+$\psi_{i,j}$, $\tau^{\mathrm{ms}}_{i,j}$, $\delta^{\max}_i$,
+$\Delta^{\max}_i$, $\theta_i$), and portfolio-level scalars
+($\kappa$, $\gamma$, $r$).
+
+The second class covers \emph{structural parameters} consolidated in
+the lower two groups of Table~\ref{tab:params}: the portfolio size $N$
+(\code{n\_projects}), the per-project milestone count $M_i$
+(\code{n\_milestones}), and the stochastic efficiency sequence
+$\{\eta_{i,t}\}$ (\code{efficiency}), the sole stochastic primitive.
+Every entry in both classes
+is specified as a distribution family together with up to four
+parameters, supporting \code{fixed},
+\code{uniform}, \code{normal}, \code{beta},
+\code{triangular}, \code{lognormal},
+\code{truncated\_normal}, \code{categorical}, and
+\code{custom\_ordinal} families. The \code{custom\_ordinal} family
+accepts a deterministic sequence --- a flat list for single-project
+configurations or a per-project list of lists for portfolio
+configurations --- and cycles through it in order each episode,
+enabling exact reproducibility of efficiency draws for controlled
+benchmarking. For per-project scalar parameters the flat list is
+indexed by project index $i$, assigning each project a fixed value
+from the sequence; for the efficiency primitive $\eta_{i,t}$ the
+index is instead the project-time $\tau_i$, cycling through the
+sequence across periods. This design allows any parameter to be held constant
+for controlled experiments or drawn fresh each episode for domain
+randomisation \citep{Tobin2017}.
+
+\paragraph{Episode lifecycle.}
+At each \code{reset()}, $N$ is sampled from its configured
+distribution and all per-project parameters are drawn independently;
+the horizon $T$ is then derived automatically from \eqref{eq:horizon}.
+Episodes terminate when all projects reach \code{completed} or
+\code{terminated} status, when $t \geq T$, or when $B_t \leq 0$
+with no advance payments pending. A SQLite audit ledger records every
+allocation, cash-flow event, EVM index, and breach flag at each step,
+making the behaviour of any policy fully interpretable and
+reproducible.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\subsubsection{Deterministic Benchmark Policies}
+\label{subsubsec:baselines}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Three deterministic benchmark policies are defined over $o_t$ to
+provide performance baselines and quantify the gap to the
+full-foresight upper bound. Each reads directly from the catchup
+signals in $o_t$ and passes through the same three-step projection
+\eqref{eq:projection} as any other policy.
+
+\paragraph{Reach-Plan ($\pi^{\mathrm{rp}}$).}
+Allocate exactly enough to bring each active project to its on-plan
+progress $PV_i(\tau_i + 1)$:
+\begin{equation}
+  x^{\mathrm{rp}}_{i,t}
+    = \max\!\bigl(0,\; PV_i(\tau_i+1) - EV_{i,t}\bigr) \cdot
+      \mathrm{BAC}_i.
+  \label{eq:reach_plan}
+\end{equation}
+This closes the progress gap fully each period but ignores milestone
+timing, contract profitability, and budget scarcity.
+
+\paragraph{Catchup-T ($\pi^{\mathrm{cu}}$).}
+Allocate the minimum required to avoid a breach this period:
+$x^{\mathrm{cu}}_{i,t}$ from \eqref{eq:catchup}.
+This is the least-cost strategy that avoids activating the breach
+counter each period.
+
+\paragraph{Catchup-Next-T ($\pi^{\mathrm{cu}+1}$).}
+One-period lookahead: allocate $x^{\mathrm{cu}+1}_{i,t}$ from
+\eqref{eq:catchup_next}, preventing both current- and next-period
+breaches at the cost of higher early expenditure and lower discounted
+returns.
+
+The three policies span a range from aggressive (Reach-Plan, highest
+spend) to conservative (Catchup-T, minimum spend), providing a
+meaningful baseline interval. Their performance across four benchmark
+configurations is analysed in Section~\ref{sec:evaluation}.

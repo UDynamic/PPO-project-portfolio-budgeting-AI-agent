@@ -1,0 +1,687 @@
+% !TEX root = ../main.tex
+
+%%
+%%  This is file `tehran-thesis.cls',
+%%  It is a modification of IUST-Thesis by Mahmood Amintoosi
+%%  which itself is a change of Tabriz_thesis by Vahid Damanafshan
+%%  which itself is a change of xepersian-thesis by Vafa Khalighi
+%%
+%%  Author: Sina Momken, sina.momken@gmail.com
+%%	Base author: Mahmood Amintoosi, m.amintoosi@gmail.com
+%%  https://github.com/sinamomken/tehran-thesis
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesClass{tehran-thesis}
+              [05/09/2017 v0.1
+ Persian thesis document class in XeLaTeX for University of Tehran projects/theses/dissertations]
+\DeclareOption*{\PassOptionsToClass{\CurrentOption}{book}}
+\ProcessOptions
+\LoadClass[a4paper,12pt]{book}
+\def\university#1{\gdef\@university{#1}}
+\def\college#1{\gdef\@college{#1}}
+\def\faculty#1{\gdef\@faculty{#1}}
+\def\department#1{\gdef\@department{#1}}
+\def\degree#1{\gdef\@degree{#1}}
+\def\thesisdate#1{\gdef\@thesisdate{#1}}
+\newcommand{\firstsupervisor}[1]{\def\@firstsupervisor{#1}}
+\newcommand{\firstsupervisorrank}[1]{\def\@firstsupervisorrank{#1}}
+\newcommand{\secondsupervisor}[1]{\def\@secondsupervisor{#1}}
+\newcommand{\secondsupervisorrank}[1]{\def\@secondsupervisorrank{#1}}
+\newcommand{\firstadvisor}[1]{\def\@firstadvisor{#1}}
+\newcommand{\firstadvisorrank}[1]{\def\@firstadvisorrank{#1}}
+\newcommand{\secondadvisor}[1]{\def\@secondadvisor{#1}}
+\newcommand{\secondadvisorrank}[1]{\def\@secondadvisorrank{#1}}
+\newcommand{\internaljudge}[1]{\def\@internaljudge{#1}}
+\newcommand{\internaljudgerank}[1]{\def\@internaljudgerank{#1}}
+\newcommand{\externaljudge}[1]{\def\@externaljudge{#1}}
+\newcommand{\externaljudgerank}[1]{\def\@externaljudgerank{#1}}
+\newcommand{\externaljudgeuniversity}[1]{\def\@externaljudgeuniversity{#1}}
+\newcommand{\graduatedeputy}[1]{\def\@graduatedeputy{#1}}
+\newcommand{\graduatedeputyrank}[1]{\def\@graduatedeputyrank{#1}}
+\def\name#1{\gdef\@name{#1}}
+\def\surname#1{\gdef\@surname{#1}}
+\def\dedication#1{\gdef\@dedication{#1}}
+\long\def\acknowledgement#1{\gdef\@acknowledgement{#1}}
+\def\keywords#1{\gdef\@keywords{#1}}
+\long\def\fa-abstract#1{\gdef\@fa-abstract{#1}}
+\def\subject#1{\gdef\@subject{#1}}
+\def\field#1{\gdef\@field{#1}}
+\def\projectLabel#1{\gdef\@projectLabel{#1}}
+\def\studentID#1{\gdef\@studentID{#1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\latintitle#1{\gdef\@latintitle{#1}}
+\def\latinauthor#1{\gdef\@latinauthor{#1}}
+\def\latindegree#1{\gdef\@latindegree{#1}}
+\def\latinuniversity#1{\gdef\@latinuniversity{#1}}
+\def\latincollege#1{\gdef\@latincollege{#1}}
+\def\latinfaculty#1{\gdef\@latinfaculty{#1}}
+\def\latindepartment#1{\gdef\@latindepartment{#1}}
+\def\latinthesisdate#1{\gdef\@latinthesisdate{#1}}
+\def\latinsubject#1{\gdef\@latinsubject{#1}}
+\def\latinfield#1{\gdef\@latinfield{#1}}
+\def\firstlatinsupervisor#1{\gdef\@firstlatinsupervisor{#1}}
+\def\secondlatinsupervisor#1{\gdef\@secondlatinsupervisor{#1}}
+\def\firstlatinadvisor#1{\gdef\@firstlatinadvisor{#1}}
+\def\secondlatinadvisor#1{\gdef\@secondlatinadvisor{#1}}
+\def\latinname#1{\gdef\@latinname{#1}}
+\def\latinsurname#1{\gdef\@latinsurname{#1}}
+\def\enabstract#1{\gdef\@enabstract{#1}}
+\def\latinkeywords#1{\gdef\@latinkeywords{#1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newif\if@bscthesis
+\@bscthesisfalse
+\DeclareOption{bsc}{\@bscthesistrue}
+\newif\if@mscthesis
+\@mscthesisfalse
+\DeclareOption{msc}{\@mscthesistrue}
+\newif\if@irfonts
+\@irfontsfalse
+\DeclareOption{irfonts}{\@irfontstrue}
+\ProcessOptions
+
+\ifx\@projectLabel\undefined%
+{
+\if@mscthesis
+{\projectLabel{پایان‌نامه}}
+\else
+ \if@bscthesis
+ {\projectLabel{پروژه}}
+ \else
+{\projectLabel{رساله}}
+\fi\fi
+}\fi
+
+\ifx\@degree\undefined%
+{
+\if@mscthesis
+\degree{کارشناسی ارشد}
+\else
+\if@bscthesis
+\degree{کارشناسی}
+\else
+\degree{دکتری}
+\fi\fi
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% جلد زرکوب به فارسی (تک‌آرمه — مطابق قالب دانشگاه)
+\newcommand{\coverPage}{\begin{titlepage}
+\centering
+\vspace{-5mm}
+\includegraphics[height=4cm]{logo}
+\par
+\vskip 5mm
+{\normalsize\bfseries \@college}\\[2pt]
+{\normalsize\bfseries \@department}
+\par
+\vskip 1.5cm
+{\huge\titlefont\bfseries \@title}\par
+\vskip 8mm
+\if@bscthesis
+	{\large\bfseries{پروژهٔ کارشناسی \@subject}
+	\ifx\@field\undefined%
+		\relax
+	\else
+		گرایش \@field
+	\fi
+	}
+\else
+	{\large\bfseries \@projectLabel{} \writtenfor\@degree{}}\\[4pt]
+	{\large\bfseries در رشتهٔ \@subject}\\[2pt]
+	{\large\bfseries گرایش \@field}
+\fi
+\par
+\vskip 1cm
+{\large\bfseries دانشجو~:~\@name{} \@surname}\\[4pt]
+{\large\bfseries \@studentID}
+\par
+\vskip 1cm
+\large
+{
+\ifx\@firstsupervisor\undefined%
+	\ifx\@secondsupervisor\undefined%
+	\else
+	\fi
+\else
+\ifx\@secondsupervisor\undefined%
+{\large\bfseries استاد راهنما~:~\@firstsupervisor}
+\else
+{\large\bfseries اساتید راهنما~:~\@firstsupervisor{} و \@secondsupervisor}
+\fi\fi}
+\par
+\vskip 1cm
+{\large \@thesisdate}
+\end{titlepage}%
+} % end of coverPage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\besmPage}{
+%% بسم الله الرحمن الرحیم
+\clearpage
+\thispagestyle{empty}
+\hfill
+\begin{center}
+\includegraphics[width=10cm]{img/besm}
+\end{center}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% فرم داخلی جلد به فارسی (دارای استاد مشاور)
+\newcommand{\titlePage}{\begin{titlepage}
+%\topmargin=-30pt
+\vspace{-10mm}
+% دستورات دوآرمه
+\begin{latin}
+\hskip-1cm
+\makebox[\textwidth+2cm][c]{
+\begin{minipage}{5cm}
+	\centering
+	\includegraphics[height=4cm]{eng-logo}
+\end{minipage}
+\begin{minipage}{\textwidth - 8cm}
+	\begin{center}
+	\begin{persian}
+		\begin{onehalfspacing}
+		{\normalsize \bf \@university \\}
+		{\normalsize \bf \@college \\}
+		{\large\bfseries\@faculty \\}
+		{\large\bfseries\@department}
+		\end{onehalfspacing}
+	\end{persian}
+	\end{center}
+\end{minipage}
+\begin{minipage}{5cm}
+	\centering
+	\includegraphics[height=4cm]{logo}
+\end{minipage}
+}
+\end{latin}
+% دستورات تک‌آرمه
+%\centerline{{\includegraphics[width=5cm]{logo}}}
+%\centerline{\bf \@university}
+%\centerline{\large\bfseries\@faculty}
+% بعد از آرم‌ها
+\centering
+\vskip 1.5cm
+{\huge\titlefont\bfseries \@title}\par
+\vskip 5mm
+\if@bscthesis 
+	{\large\bfseries{پروژهٔ کارشناسی \@subject}
+	\ifx\@field\undefined%
+		\relax
+	\else
+		گرایش \@field
+	\fi
+	}
+\else
+	{\large\bfseries \@projectLabel{} \writtenfor
+	\@degree{} 
+	}
+	{\large\bfseries{در رشتهٔ \@subject}}
+	\vskip .2cm
+	\centerline{\large \bfseries%
+		گرایش \@field}
+\fi	
+\vskip 1cm
+\par
+{\Large\bfseries{\@name\ \ \@surname}}
+\par
+\vskip 15mm
+\large
+{
+\ifx\@firstsupervisor\undefined%
+	\ifx\@secondsupervisor\undefined%
+	\else
+	\fi
+\else
+\ifx\@secondsupervisor\undefined%
+استاد راهنما
+{\Large\bfseries\par
+\@firstsupervisor}
+\else
+\large
+اساتید راهنما
+\par
+{\Large\bfseries \@firstsupervisor{} و \@secondsupervisor}
+\fi\fi}
+\par\large
+{\ifx\@firstadvisor\undefined%
+\ifx\@secondadvisor\undefined%
+\else\fi
+\else
+\ifx\@secondadvisor\undefined%
+استاد مشاور
+{\Large\bfseries\par
+\@firstadvisor}
+\else
+
+\large
+استادان مشاور
+\par
+{\Large\bfseries\@firstadvisor{} و \@secondadvisor}
+\fi\fi}
+
+\par
+\vskip 6mm
+%\vfill
+{\large \@thesisdate}
+%\vfill
+\end{titlepage}%
+} % end of titlePage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\titlepage{\if@RTL\cleardoublepage\else\clearpage\fi
+  \thispagestyle{empty}
+  \parindent 0pt \parskip 10pt plus 1fil minus 1fil
+  \def\baselinestretch{1}\@normalsize\vbox to \vsize\bgroup\vbox to 9in\bgroup}
+\def\endtitlepage{\par\kern 0pt\egroup\vss\egroup}
+
+\def\signature{\vspace{1cm}
+\begin{flushleft}
+{%\nastaliq \scriptsize 
+\@name\ \@surname \\
+\@thesisdate}
+\end{flushleft}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% تأییدیه هیأت داوران جلسهٔ دفاع — مطابق قالب دانشگاه
+\newcommand{\davaranPage}{
+\clearpage
+\thispagestyle{empty}
+
+\begin{center}
+{\Large\bfseries تأییدیهٔ هیأت داوران جلسهٔ دفاع از \@projectLabel{}}
+\end{center}
+\vspace{.6cm}
+
+\noindent
+\begin{tabular}{r p{0.75\textwidth}}
+نام دانشکده:   & \@college \\[4pt]
+نام دانشجو:    & \@name{} \@surname \\[4pt]
+عنوان \@projectLabel{}: & \@title \\[4pt]
+تاریخ دفاع:   & \dotfill \\[4pt]
+رشته:          & \@subject \\[4pt]
+گرایش:         & \@field \\[4pt]
+\end{tabular}
+
+\vspace{.8cm}
+
+\newcounter{davaranCounter}
+\begin{table}[h]
+\small
+\begin{onehalfspacing}
+\begin{tabular}{| >{\centering\arraybackslash}m{0.04\textwidth} | >{\centering\arraybackslash}m{.18\textwidth} | >{\centering\arraybackslash}m{.22\textwidth} | >{\centering\arraybackslash}m{.12\textwidth} | >{\centering\arraybackslash}m{.22\textwidth} | >{\centering\arraybackslash}m{.1\textwidth} |}
+\hline
+{\bfseries ردیف} & {\bfseries سمت} & {\bfseries نام و نام خانوادگی} & {\bfseries مرتبه} & {\bfseries دانشگاه یا مؤسسه} & {\bfseries امضا} \\
+\hline
+\ifx\@firstsupervisor\undefined
+\else \stepcounter{davaranCounter}
+\arabic{davaranCounter} & استاد راهنما & \@firstsupervisor & \@firstsupervisorrank & \@university & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\hline
+\fi
+\ifx\@secondsupervisor\undefined%
+\else \stepcounter{davaranCounter}
+\arabic{davaranCounter} & استاد راهنما & \@secondsupervisor & \@secondsupervisorrank & \@university & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\hline
+\fi
+\ifx\@firstadvisor\undefined%
+\stepcounter{davaranCounter}
+\arabic{davaranCounter} & استاد مشاور & --- & --- & --- & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\hline
+\else \stepcounter{davaranCounter}
+\arabic{davaranCounter} & استاد مشاور & \@firstadvisor & \@firstadvisorrank & \@university & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\hline
+\fi
+\ifx\@externaljudge\undefined%
+\else \stepcounter{davaranCounter}
+\arabic{davaranCounter} & استاد مدعو خارجی & \@externaljudge & \@externaljudgerank & \@externaljudgeuniversity & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\hline
+\fi
+\ifx\@internaljudge\undefined%
+\else \stepcounter{davaranCounter}
+\arabic{davaranCounter} & استاد مدعو داخلی & \@internaljudge & \@internaljudgerank & \@university & \rule[-.3\baselineskip]{0pt}{2\normalbaselineskip} \\
+\hline
+\fi
+\end{tabular}
+\end{onehalfspacing}
+\end{table}
+} % End of davaranPage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% تأییدیهٔ صحت و اصالت نتایج — مطابق قالب دانشگاه
+\newcommand{\esalatPage}{
+\clearpage
+\thispagestyle{empty}
+\begin{center}
+{\Large\bfseries تأییدیهٔ صحت و اصالت نتایج}
+\end{center}
+\vspace{1cm}
+\noindent{\bfseries باسمه تعالی}
+\vspace{.5cm}
+
+\onehalfspacing
+\noindent
+اینجانب \@name{} \@surname{} به شمارهٔ دانشجویی \@studentID{} دانشجوی رشتهٔ
+\@subject{} گرایش \@field{} مقطع تحصیلی کارشناسی ارشد تأیید می‌نمایم که کلیهٔ
+نتایج این \@projectLabel{}/رساله حاصل کار اینجانب و بدون هرگونه دخل و تصرف است
+و موارد نسخه‌برداری‌شده از آثار دیگران را با ذکر کامل مشخصات منبع ذکر کرده‌ام.
+درصورت اثبات خلاف مندرجات فوق، به تشخیص دانشگاه مطابق با ضوابط و مقررات
+حاکم (قانون حمایت از حقوق مؤلفان و مصنفان و قانون ترجمه و تکثیر کتب و نشریات
+و آثار صوتی، ضوابط و مقررات آموزشی، پژوهشی و انضباطی \ldots) با اینجانب رفتار
+خواهد شد و حق هرگونه اعتراض درخصوص احقاق حقوق مکتسب و تشخیص و تعیین
+تخلف و مجازات را از خویش سلب می‌نمایم. در ضمن، مسؤولیت هرگونه پاسخگویی به
+اشخاص اعم از حقیقی و حقوقی و مراجع ذی‌صلاح (اعم از اداری و قضایی) به عهدهٔ
+اینجانب خواهد بود و دانشگاه هیچ‌گونه مسؤولیتی در این خصوص نخواهد داشت.
+
+\vspace{2cm}
+\begin{flushright}
+نام و نام خانوادگی:~~ \@name{} \@surname\\[1.2cm]
+امضا و تاریخ:~~ \@thesisdate
+\end{flushright}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% مجوز بهره‌برداری از پایان‌نامه — مطابق قالب دانشگاه
+\newcommand{\mojavezPage}
+{
+\clearpage
+\thispagestyle{empty}
+\begin{center}
+{\Large\bfseries مجوز بهره‌برداری از \@projectLabel{}}
+\end{center}
+\vspace{1cm}
+
+\onehalfspacing
+\noindent
+بهره‌برداری از این \@projectLabel{} در چهارچوب مقررات کتابخانه و با توجه به محدودیتی
+که توسط استاد راهنما به شرح زیر تعیین می‌شود، بلامانع است:
+
+\vspace{.8cm}
+\noindent
+$\square$~~بهره‌برداری از این \@projectLabel{}/رساله برای همگان بلامانع است.
+
+\vspace{.4cm}
+\noindent
+$\square$~~بهره‌برداری از این \@projectLabel{}/رساله با اخذ مجوز از استاد راهنما، بلامانع است.
+
+\vspace{.4cm}
+\noindent
+$\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا تاریخ \dotfill ممنوع است.
+
+\vspace{2cm}
+\noindent
+نام استاد راهنما:~~~~\@firstsupervisor
+
+\vspace{1cm}
+\noindent
+تاریخ:~~~~\@thesisdate
+
+\vspace{1cm}
+\noindent
+امضا:
+}
+
+% \def\frame{\newpage
+% \thispagestyle{empty}
+% \begin{framed}\thispagestyle{empty}}
+% \def\endframe{\thispagestyle{empty}\end{framed}
+% \thispagestyle{empty}
+% \newpage
+% }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% بخش تقدیم
+%% پایان‌نامه خود را تقدیم کنید! %%
+\newcommand{\taghdimPage}
+{
+\ifx\@dedication\undefined%
+    \relax
+\else
+    \clearpage
+    \thispagestyle{empty}
+    %\vspace{-40mm}
+    \@dedication
+\fi
+}
+
+%% قدردانی (فارسی)
+\newcommand{\ghadrdaniPage}
+{
+\ifx\@acknowledgement\undefined%
+	\relax
+\else   
+	\clearpage
+	\thispagestyle{empty}
+	\centerline{\Large \bfseries قدردانی}
+	\vspace{1cm}
+	\par\noindent
+	\@acknowledgement
+% با استفاده از دستور زیر، امضای شما، به طور خودکار، درج می‌شود.
+	\signature 
+\fi
+}
+
+%% چکیده فارسی
+\newcommand\abstractPage{
+	\clearpage
+	\thispagestyle{empty}
+	\section*{چکیده}
+	% \addcontentsline{toc}{section}{چکیده}
+	\@fa-abstract
+	\par\noindent
+	\paragraph{واژگان کلیدی}
+	\@keywords
+}
+
+\def\latinabstract{
+%% Latin abstract Page
+\clearpage
+\thispagestyle{empty}
+\section*{Abstract}
+% \addcontentsline{toc}{section}{چکیده}
+\@enabstract
+\par
+\noindent
+\paragraph{Keywords}
+\@latinkeywords
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% Latin Abstract and Title pages
+
+\font\supervisorfont=cmbxti10
+
+\newcommand{\latinTitlePage}{%
+%% Latin title page
+\clearpage
+\thispagestyle{empty}
+\begin{titlepage}
+\vspace{-10mm}
+%% Double logo commands
+\begin{latin}
+\hskip-1cm
+\makebox[\textwidth+2cm][c]{
+\begin{minipage}{5cm}
+	\centering
+	\includegraphics[height=4cm]{eng-logo-en}
+\end{minipage}
+\begin{minipage}{\linewidth - 8cm}
+	\begin{center}
+		\begin{onehalfspacing}
+		{\normalsize \bf \@latinuniversity \\}
+		{\normalsize \bf \@latincollege \\}
+		{\large\bfseries\@latinfaculty \\}
+		{\large\bfseries\@latindepartment \\}
+		\end{onehalfspacing}
+	\end{center}
+\end{minipage}
+\begin{minipage}{5cm}
+	\centering
+	\includegraphics[height=4cm]{logo-en}
+\end{minipage}
+}
+\end{latin}
+%% Single logo commands
+%\centerline{{\includegraphics[width=5cm]{logo-en}}}
+%\centerline{\bf \@latinuniversity}
+%\centerline{\large\bfseries\@latinfaculty}
+%% After logos
+\centering
+\vskip 1.5cm
+{%\latintitlefont 
+\Huge\latintitlefont\bfseries
+\@latintitle}
+%\baselineskip=.750cm \par
+\vskip 15mm
+{
+\large
+\if@bscthesis 
+    Bachelor of Science Thesis
+	in  \@latinsubject 
+\else
+	A Thesis submitted to the Graduate Studies Office
+    \newline In partial fulfillment of the requirements for
+    \newline The degree of 
+	\if@mscthesis
+	 Master of Science
+	\else
+	 Doctor of Philosophy
+	\fi
+	\newline in  \@latinsubject{} - \@latinfield{}
+	%\baselineskip=.750cm
+	%\addtolength{\baselineskip}{-5mm}
+\fi
+}
+\vskip 15mm
+{\bfseries\latinby}\par
+{\large %\supervisorfont
+\rm \Large\bfseries \@latinname \; \@latinsurname}\par
+
+\vskip 15mm
+
+\large
+{\ifx\@firstlatinsupervisor\undefined%
+\ifx\@secondlatinsupervisor\undefined%
+\else\fi
+\else
+\ifx\@secondlatinsupervisor\undefined%
+Supervisor:
+{\Large\bfseries\par
+\@firstlatinsupervisor}
+\else
+\large
+Supervisors:
+\par
+{\Large\bfseries \@firstlatinsupervisor{} and \@secondlatinsupervisor}
+\fi\fi}
+\par
+\large
+{\ifx\@firstlatinadvisor\undefined%
+\ifx\@secondlatinadvisor\undefined%
+\else\fi
+\else
+\ifx\@secondlatinadvisor\undefined%
+Advisor:
+{\Large\bfseries\par
+\@firstlatinadvisor}
+\else
+
+\large
+Advisors:
+\par
+{\Large\bfseries\@firstlatinadvisor{} and \@secondlatinadvisor}
+\fi\fi}
+\vskip 5mm
+
+\par
+\vskip 1cm
+
+{\@latinthesisdate}
+\par
+\vskip 1cm
+
+\par
+
+\vfill
+%
+\end{titlepage}
+}
+
+\def\onvan{عنوان}
+\def\writtenfor{برای دریافت درجهٔ }
+\def\by{پژوهشگر}
+\def\latinby{By:}
+\def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
+\hbox{}
+\thispagestyle{empty}
+\newpage
+\if@twocolumn\hbox{}\newpage\fi\fi\fi}
+
+\AtBeginDocument{
+\makeatletter
+% تعیین مشخصات فایل PDF
+\hypersetup{
+pdftitle={\@latintitle},
+pdfauthor={\@latinname \@latinsurname},
+pdfsubject={Thesis in \@latinsubject},
+pdfkeywords={\@latinkeywords},
+pdfdirection={R2L}
+}
+\makeatother
+}
+
+%%-----------------------------------------------------------
+%% (1) LOF title: set in commands.tex line 191
+%%-----------------------------------------------------------
+
+%%-----------------------------------------------------------
+%% (2–4) TOC / LOF / LOT: smaller title, centered, smaller entries, dotted leaders
+%%       All tocloft settings deferred to AtBeginDocument to avoid option clash
+%%-----------------------------------------------------------
+\AtBeginDocument{%
+\renewcommand{\contentsname}{فهرست مطالب}%
+%% TOC title: smaller and centered
+\renewcommand{\cfttoctitlefont}{\hfill\large\bfseries}%
+\renewcommand{\cftaftertoctitle}{\hfill}%
+\setlength{\cftbeforetoctitleskip}{0pt}%
+\setlength{\cftaftertoctitleskip}{1em}%
+%% LOF title: centered
+\renewcommand{\cftloftitlefont}{\hfill\large\bfseries}%
+\renewcommand{\cftafterloftitle}{\hfill}%
+\setlength{\cftbeforeloftitleskip}{0pt}%
+\setlength{\cftafterloftitleskip}{1em}%
+%% LOT title: centered
+\renewcommand{\cftlottitlefont}{\hfill\large\bfseries}%
+\renewcommand{\cftafterlottitle}{\hfill}%
+\setlength{\cftbeforelottitleskip}{0pt}%
+\setlength{\cftafterlottitleskip}{1em}%
+%% Smaller font for all entries
+\renewcommand{\cftchapfont}{\small\bfseries}%
+\renewcommand{\cftchappagefont}{\small\bfseries}%
+\renewcommand{\cftsecfont}{\small}%
+\renewcommand{\cftsecpagefont}{\small}%
+\renewcommand{\cftsubsecfont}{\small}%
+\renewcommand{\cftsubsecpagefont}{\small}%
+\renewcommand{\cftfigfont}{\small}%
+\renewcommand{\cftfigpagefont}{\small}%
+\renewcommand{\cfttabfont}{\small}%
+\renewcommand{\cfttabpagefont}{\small}%
+%% Dotted leaders for all entries including chapters
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}%
+\renewcommand{\cftfigleader}{\cftdotfill{\cftdotsep}}%
+\renewcommand{\cfttableader}{\cftdotfill{\cftdotsep}}%
+}
+
+
+
+%%
+%% Author: Sina Momken
+%%
+%% Base author: M.Amintoosi
+%% 
+%% Copyright © 2019-     by Hadi Safari (tehran-thesis)
+%% Copyright © 2017-     by Sina Momken (tehran-thesis)
+%% Copyright © 2012-2012 by Mahmood Amintoosi (IUST-Thesis)
+%% Copyright © 2011-2012 by Vahid Damanafshan (Tabriz_thesis)
+%% Copyright © 2008-2011 by Vafa Khalighi (xepersian-thesis.cls)
+%% 
+%% Distributable under GNU GENERAL PUBLIC LICENSE Version 3.
+%% 
+%% This work is "maintained" by Sina Momken & Hadi Safari.
+%% 
+%% Special thanks to Mahmood Amintoosi, Vahid Damanafshan and Vafa Khalighi for their invaluable work.
+%%
+%% End of file `tehran-thesis.cls'.

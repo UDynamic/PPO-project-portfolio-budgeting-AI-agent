@@ -151,7 +151,7 @@ class PortfolioBudgetingEnv(gym.Env):
             except Exception:
                 pass
 
-        self._cum_reward = self._pending_advance_inflow   # advance already in budget
+        self._cum_reward = 0.0   # advance is in budget baseline, not in reward signal
 
         h.reset_history(self.episode_id, len(self.projects))
         return self._build_obs(), self._build_info()
@@ -394,7 +394,7 @@ class PortfolioBudgetingEnv(gym.Env):
         # period-T view: progress, plan fields, and breach state as they stood
         # when the allocation was applied — not the T+1 lookahead.
         # _recorded_ncf adds back the t=0 advance for display only — it was
-        # already in budget and _cum_reward from reset, so it must not re-enter
+        # already credited to budget at reset, so it must not re-enter
         # period_inflow, budget, or reward.
         _recorded_t          = self.t
         _recorded_ncf        = net_cashflow + _t0_display_inflow
@@ -458,7 +458,7 @@ class PortfolioBudgetingEnv(gym.Env):
             projects=self.projects, proj_state=self.proj_state,
             milestones=self.milestones, milestone_state=self.milestone_state,
             episode_id=self.episode_id,
-            net_cashflow=self._last_net_cashflow, cum_reward=0.0,
+            net_cashflow=self._last_net_cashflow, cum_reward=self._cum_reward,
         )
         return None
 
@@ -596,7 +596,10 @@ class PortfolioBudgetingEnv(gym.Env):
             np.clip(self._last_net_cashflow / ib, -2.0, 2.0),
             np.clip(self.budget             / ib,  0.0, 2.0),
         ])
-        return np.array(obs, dtype=np.float32)
+        return np.array(obs, dtype=np.float32).clip(
+            self.observation_space.low,
+            self.observation_space.high,
+        )
 
     # ── info builder ──────────────────────────────────────────────────────────
 

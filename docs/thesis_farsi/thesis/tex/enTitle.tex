@@ -1,0 +1,57 @@
+% !TeX root=../main.tex
+
+% در این فایل، عنوان پایان‌نامه، مشخصات خود و چکیده پایان‌نامه را به انگلیسی، وارد کنید.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\latinuniversity{Iran University of Science and Technology}
+\latincollege{Industrial Engineering}
+\latinfaculty{Industrial Engineering Department}
+\latindepartment{Industrial Engineering}
+\latinsubject{Engineering Management}
+\latinfield{Engineering Management}
+\latintitle{Development of a Deep Reinforcement Learning Agent for Optimized Project Portfolio Budgeting under Cash-Flow Uncertainty}
+\firstlatinsupervisor{Dr. Seyed Farid Ghannadpour}
+\secondlatinsupervisor{}
+\firstlatinadvisor{}
+%\secondlatinadvisor{Second Advisor}
+\latinname{Mahriar}
+\latinsurname{Gharaghani}
+\latinthesisdate{Sep 2026}
+\latinkeywords{Project Portfolio Management, Budget Allocation, Markov Decision Process, Reinforcement Learning, FIDIC Contracts, Earned Value Management, Gymnasium Environment}
+\enabstract{
+    Allocating a shared capital reserve across a portfolio of
+  simultaneously executing contracted projects is a high-frequency,
+  high-stakes decision for engineering contractors. Classical
+  approaches either assume full foresight or collapse the portfolio
+  to a single project, leaving practitioners with no principled tool
+  for the sequential, multi-project setting under real-world
+  uncertainty. This paper addresses that gap by delivering a
+  verified, Gymnasium-compatible simulation environment designed as
+  the learning substrate for reinforcement learning agents targeting
+  portfolio-level investment decisions.
+  We formalise the problem as a Markov Decision Process in which a
+  portfolio manager allocates budget fractions across $N$ concurrent
+  projects at each discrete period. The state encodes Earned Value
+  Management indicators, S-curve planned progress, milestone payment
+  lookaheads, and a per-project breach-tolerance counter. The
+  transition dynamics reproduce the full FIDIC contract cash-flow
+  cycle: advance payment and recovery, milestone gross payments with
+  retention and interest, and a two-condition termination gate. The
+  reward signal is the $\gamma$-discounted portfolio net cash flow,
+  accumulating to an episode NPV. A full-foresight oracle bound is
+  derived analytically, establishing the ceiling against which
+  learned agents will be evaluated.
+  The environment ships with a SQLite audit ledger that records every
+  allocation, cash-flow event, and breach flag, eliminating the
+  black-box opacity inherent to learned policies. To verify
+  environment mechanics and quantify the performance ceiling available
+  to future agents, deterministic greedy heuristics and a manually
+  computed full-information optimum are evaluated across benchmark
+  configurations of increasing structural complexity. The optimality
+  gap widens by more than an order of magnitude from the simplest to
+  the most complex configuration, and on the hardest instance every
+  rule-based policy yields a loss while the full-information optimum
+  remains profitable --- confirming that shared-budget coordination
+  cannot be recovered by any fixed allocation rule and establishing a
+  well-defined learning target for the RL agent.
+}
