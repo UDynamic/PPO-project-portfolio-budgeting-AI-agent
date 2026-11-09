@@ -2,6 +2,8 @@
 
 > This section documents the project-specific setup, build process, and customizations made to the `tehran-thesis` template for this thesis. The original template README is appended at the bottom for reference.
 
+
+> Don't use workshop and worklab extensions. Use powershell terminal at the root : thesis\ and run .\build.ps1
 ---
 
 ## Project Structure
