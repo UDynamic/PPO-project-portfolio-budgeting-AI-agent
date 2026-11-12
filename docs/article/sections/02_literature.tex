@@ -369,7 +369,9 @@ Direct application of RL to portfolio-level budget allocation under
 contractual cash-flow mechanics remains absent from the literature.
 The present work provides the first MDP formulation of this problem
 and the first empirical demonstration that deterministic greedy
-heuristics systematically underperform a full-information optimum as
+heuristics systematically underperform a formally verified
+full-information optimum---confirmed by exhaustive enumeration over all
+feasible allocation sequences under fixed efficiency realisations---as
 portfolio complexity grows, establishing a quantified improvement
 target for future learned policies.
 
@@ -428,10 +430,11 @@ paper closes. The contribution is a verified, configurable MDP
 environment that encodes the full FIDIC cash-flow cycle and a
 two-condition termination mechanic, released as a Gymnasium-compatible
 package with a complete SQLite audit ledger. Deterministic greedy
-heuristics are benchmarked against a full-information optimum,
-producing a quantified optimality gap that grows monotonically with
-portfolio complexity and establishes the performance target for future
-learned agents.
+heuristics are benchmarked against a formally verified
+full-information optimum---confirmed optimal by exhaustive enumeration over all
+feasible allocation sequences under fixed efficiency realisations---producing a
+quantified optimality gap that grows monotonically with portfolio complexity and
+establishes the performance target for future learned agents.
 
 \textbf{Step~3} --- validated deployment, including RL agent training
 and integration with incumbent project management information systems
@@ -455,10 +458,12 @@ parameterisable contract mechanics, stochastic budget-to-progress
 efficiency as the single uncertainty source, and an endogenous
 two-condition termination mechanic --- constitutes the primary
 methodological contribution. Deterministic greedy heuristics are
-evaluated against a full-information optimum in
-Section~\ref{sec:evaluation}, providing a quantified optimality gap
-that grows monotonically with portfolio complexity and defines the
-improvement target for future RL agents.
+evaluated against a formally verified full-information optimum in
+Section~\ref{sec:evaluation}---where optimality is confirmed by
+exhaustive enumeration over the Cartesian product of per-period action
+sets under fixed efficiency realisations---providing a quantified
+optimality gap that grows monotonically with portfolio complexity and
+defines the improvement target for future RL agents.
 
 \begin{table}[H]
   \centering
