@@ -28,7 +28,6 @@
   Gymnasium-compatible simulation environment designed as the learning
   substrate for reinforcement learning agents targeting portfolio-level
   investment decisions.
-
   We formalise the problem as a Markov Decision Process in which a
   portfolio manager allocates budget fractions across $N$ concurrent
   projects at each discrete period. The state encodes Earned Value
@@ -42,7 +41,6 @@
   and verified by exhaustive enumeration over the Cartesian product of
   per-period action sets, confirming no alternative allocation sequence
   yields a higher cumulative discounted return.
-
   The environment ships with a SQLite audit ledger that records every
   allocation, cash-flow event, and breach flag, eliminating black-box
   opacity. Deterministic greedy heuristics and the verified

@@ -498,7 +498,7 @@ $\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا 
 	\centering
 	\includegraphics[height=4cm]{eng-logo-en}
 \end{minipage}
-\begin{minipage}{\linewidth - 8cm}
+\begin{minipage}{\dimexpr\textwidth-8cm\relax}
 	\begin{center}
 		\begin{onehalfspacing}
 		{\normalsize \bf \@latinuniversity \\}
