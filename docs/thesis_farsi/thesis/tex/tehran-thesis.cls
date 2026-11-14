@@ -490,35 +490,14 @@ $\square$~~بهره‌برداری از این \@projectLabel{}/رساله تا 
 \thispagestyle{empty}
 \begin{titlepage}
 \vspace{-10mm}
-%% Double logo commands
+%% Single centred logo — matches the university PDF template
 \begin{latin}
-\hskip-1cm
-\makebox[\textwidth+2cm][c]{
-\begin{minipage}{5cm}
-	\centering
-	\includegraphics[height=4cm]{eng-logo-en}
-\end{minipage}
-\begin{minipage}{\linewidth - 8cm}
-	\begin{center}
-		\begin{onehalfspacing}
-		{\normalsize \bf \@latinuniversity \\}
-		{\normalsize \bf \@latincollege \\}
-		{\large\bfseries\@latinfaculty \\}
-		{\large\bfseries\@latindepartment \\}
-		\end{onehalfspacing}
-	\end{center}
-\end{minipage}
-\begin{minipage}{5cm}
-	\centering
-	\includegraphics[height=4cm]{logo-en}
-\end{minipage}
-}
+\begin{center}
+	\includegraphics[height=4cm]{logo_en}\\[5mm]
+	{\normalsize\bfseries \@latinuniversity}\\[2pt]
+	{\normalsize\bfseries \@latinfaculty}
+\end{center}
 \end{latin}
-%% Single logo commands
-%\centerline{{\includegraphics[width=5cm]{logo-en}}}
-%\centerline{\bf \@latinuniversity}
-%\centerline{\large\bfseries\@latinfaculty}
-%% After logos
 \centering
 \vskip 1.5cm
 {%\latintitlefont 

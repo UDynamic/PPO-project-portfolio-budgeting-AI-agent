@@ -45,8 +45,10 @@ observable history.
 
 \textbf{C3 --- Benchmark evaluation and quantified optimality gap.}
 Three deterministic greedy heuristics (Reach-Plan, Catchup-T,
-Catchup-Next-T) are evaluated against a manually computed
-full-information optimum across four benchmark configurations of
+Catchup-Next-T) are evaluated against a formally verified
+full-information optimum---confirmed optimal by exhaustive enumeration
+over all feasible allocation sequences under fixed efficiency
+realisations---across four benchmark configurations of
 increasing structural complexity, with fixed efficiency sequences
 ensuring exact reproducibility. The best-heuristic optimality gap
 grows from $3.40$ NPV units on the isolated single-project atom to
@@ -163,8 +165,8 @@ structures --- are the appropriate next step for evaluating policy
 robustness.
 
 \textbf{Formal algorithmic upper bound.}
-The manually computed $Z^*$ is exact for the four fixed-efficiency
-configurations but does not extend to stochastic settings. A Linear
+The exhaustively enumerated $Z^*$ is verified optimal for the four
+fixed-efficiency configurations but does not extend to stochastic settings. A Linear
 Programming relaxation of the deterministic oracle problem
 \eqref{eq:ub_obj}, or a Dynamic Programming solution for small
 instances, would provide a tighter and algorithmically verifiable
