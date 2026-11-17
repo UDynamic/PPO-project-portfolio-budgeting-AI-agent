@@ -8,3 +8,7 @@ bibtex8 -W -c cp1256fa latexBuild\main
 makeindex latexBuild\main
 xelatex -synctex=1 -interaction=nonstopmode -output-directory=latexBuild main
 xelatex -synctex=1 -interaction=nonstopmode -output-directory=latexBuild main
+
+xelatex -synctex=1 -interaction=nonstopmode -output-directory=latexBuild highlights
+
+xelatex -synctex=1 -interaction=nonstopmode -output-directory=latexBuild titlepage

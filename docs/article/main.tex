@@ -268,40 +268,27 @@ RL Environment Design, Benchmarks, and Optimality Gap Analysis}}
 
 \begin{abstract}
 
-  The project portfolio management literature has concentrated almost
-  exclusively on project \emph{selection}, leaving the complementary
-  \emph{operational governance} problem---how to allocate a shared capital
-  reserve across concurrently executing contracted projects, period by period,
-  under performance uncertainty---without a formal problem structure or
-  principled benchmarks. This paper addresses that gap.
-
-  We formalise portfolio budget allocation as a Markov Decision Process in
-  which a manager distributes budget fractions across $N$ concurrent
-  FIDIC-contracted projects at each discrete period. The state encodes Earned
-  Value Management indicators, S-curve planned progress, milestone payment
-  lookaheads, and a per-project breach-tolerance counter. Transition dynamics
-  reproduce the full FIDIC cash-flow cycle---advance payment and recovery,
-  milestone payments with retention and interest, and a two-condition
-  termination gate---with the reward signal being the $\gamma$-discounted
-  portfolio net cash flow. The resulting Gymnasium-compatible environment is
-  fully configurable via probability distributions over contract parameters
-  and ships with a SQLite audit ledger for complete policy transparency.
-
-  Three deterministic greedy heuristics are evaluated against a formally
-  verified full-information optimum---confirmed by exhaustive enumeration over
-  all feasible allocation sequences---across four benchmark configurations of
-  increasing portfolio complexity. The optimality gap widens monotonically by
-  more than an order of magnitude; on the hardest instance every rule-based
-  policy yields a loss while the oracle remains profitable. This confirms that
-  shared-budget coordination cannot be recovered by any fixed allocation rule
-  and establishes a well-defined performance target for reinforcement learning
-  agents.
+  Project portfolio management research has focused almost exclusively on
+  project selection, leaving the operational governance problem---how to
+  allocate a shared capital reserve across concurrently executing contracted
+  projects under uncertainty---without a formal structure or principled
+  benchmarks. This paper addresses that gap. We formalise portfolio budget
+  allocation as a Markov Decision Process in which a manager distributes
+  budget fractions across $N$ concurrent FIDIC-contracted projects at each
+  discrete period, with transition dynamics encoding the full contract
+  cash-flow cycle and the reward signal being the discounted portfolio net
+  cash flow. Three greedy heuristics are evaluated against a verified
+  full-information optimum across four benchmark configurations of increasing
+  complexity. The optimality gap widens by more than an order of magnitude;
+  on the hardest instance every rule-based policy yields a loss while the
+  oracle remains profitable, confirming that shared-budget coordination cannot
+  be recovered by any fixed allocation rule and establishing a clear
+  performance target for reinforcement learning agents.
 
   \medskip
-  \noindent\textbf{Keywords:} project portfolio management; operational
-  governance; budget allocation under uncertainty; Markov decision process;
-  reinforcement learning; FIDIC contracts; earned value management;
-  optimality gap; simulation.
+  \noindent\textbf{Keywords:} portfolio management; budget allocation;
+  Markov decision process; reinforcement learning; earned value management;
+  simulation.
 
   \end{abstract}
 
@@ -374,6 +361,31 @@ diagnose and correct \LaTeX{} compilation errors arising from large-scale
 formatting changes. After using this tool, the authors reviewed and edited
 all outputs as needed and take full responsibility for the content of the
 published article.
+
+\FloatBarrier
+
+% ============================================================
+%  FUNDING
+% ============================================================
+
+\section*{Funding}
+
+This work was supported by Tehran Industrial Towns Company
+(Shahrakhaye Sanati Tehran), Tehran, Iran.
+
+\FloatBarrier
+
+% ============================================================
+%  CREDIT AUTHOR STATEMENT
+% ============================================================
+
+\section*{CRediT Author Statement}
+
+\textbf{Mahriar Gharaghani:} Conceptualization, Methodology, Software,
+Formal analysis, Investigation, Data curation, Visualization,
+Writing~--~original draft.
+\textbf{Seyed Farid Ghannadpour:} Conceptualization, Supervision,
+Writing~--~review and editing.
 
 \FloatBarrier
 
