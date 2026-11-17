@@ -268,47 +268,41 @@ RL Environment Design, Benchmarks, and Optimality Gap Analysis}}
 
 \begin{abstract}
 
-  Allocating a shared capital reserve across a portfolio of simultaneously
-  executing contracted projects is a high-frequency, high-stakes decision
-  for engineering contractors. Classical approaches either assume full
-  foresight or reduce the portfolio to a single project, leaving no
-  principled tool for the sequential, multi-project setting under
-  uncertainty. This paper addresses that gap with a verified,
-  Gymnasium-compatible simulation environment designed as the learning
-  substrate for reinforcement learning agents targeting portfolio-level
-  investment decisions.
-  
-  We formalise the problem as a Markov Decision Process in which a
-  portfolio manager allocates budget fractions across $N$ concurrent
-  projects at each discrete period. The state encodes Earned Value
-  Management indicators, S-curve planned progress, milestone payment
-  lookaheads, and a per-project breach-tolerance counter. Transition
-  dynamics reproduce the full FIDIC contract cash-flow cycle---advance
-  payment and recovery, milestone gross payments with retention and
-  interest, and a two-condition termination gate---with the reward signal
-  being the $\gamma$-discounted portfolio net cash flow, accumulating to
-  an episode NPV. A full-foresight oracle bound is derived analytically
-  and verified by exhaustive enumeration over the Cartesian product of
-  per-period action sets, confirming no alternative allocation sequence
-  yields a higher cumulative discounted return.
-  
-  The environment ships with a SQLite audit ledger that records every
-  allocation, cash-flow event, and breach flag, eliminating black-box
-  opacity. Deterministic greedy heuristics and the verified
-  full-information optimum are evaluated across benchmark configurations
-  of increasing complexity. The optimality gap widens by more than an
-  order of magnitude from the simplest to the most complex configuration;
-  on the hardest instance every rule-based policy yields a loss while the
-  oracle remains profitable---confirming that shared-budget coordination
-  cannot be recovered by any fixed allocation rule and establishing a
-  well-defined learning target for future RL agents.
-  
+  The project portfolio management literature has concentrated almost
+  exclusively on project \emph{selection}, leaving the complementary
+  \emph{operational governance} problem---how to allocate a shared capital
+  reserve across concurrently executing contracted projects, period by period,
+  under performance uncertainty---without a formal problem structure or
+  principled benchmarks. This paper addresses that gap.
+
+  We formalise portfolio budget allocation as a Markov Decision Process in
+  which a manager distributes budget fractions across $N$ concurrent
+  FIDIC-contracted projects at each discrete period. The state encodes Earned
+  Value Management indicators, S-curve planned progress, milestone payment
+  lookaheads, and a per-project breach-tolerance counter. Transition dynamics
+  reproduce the full FIDIC cash-flow cycle---advance payment and recovery,
+  milestone payments with retention and interest, and a two-condition
+  termination gate---with the reward signal being the $\gamma$-discounted
+  portfolio net cash flow. The resulting Gymnasium-compatible environment is
+  fully configurable via probability distributions over contract parameters
+  and ships with a SQLite audit ledger for complete policy transparency.
+
+  Three deterministic greedy heuristics are evaluated against a formally
+  verified full-information optimum---confirmed by exhaustive enumeration over
+  all feasible allocation sequences---across four benchmark configurations of
+  increasing portfolio complexity. The optimality gap widens monotonically by
+  more than an order of magnitude; on the hardest instance every rule-based
+  policy yields a loss while the oracle remains profitable. This confirms that
+  shared-budget coordination cannot be recovered by any fixed allocation rule
+  and establishes a well-defined performance target for reinforcement learning
+  agents.
+
   \medskip
-  \noindent\textbf{Keywords:} project portfolio management; budget
-  allocation under performance uncertainty; constrained Markov decision
-  process; reinforcement learning; FIDIC contracts; earned value
-  management; Gymnasium environment; greedy baseline; optimality gap.
-  
+  \noindent\textbf{Keywords:} project portfolio management; operational
+  governance; budget allocation under uncertainty; Markov decision process;
+  reinforcement learning; FIDIC contracts; earned value management;
+  optimality gap; simulation.
+
   \end{abstract}
 
 \FloatBarrier
