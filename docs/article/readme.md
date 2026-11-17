@@ -1,1 +1,0 @@
-Targeting International journal of project management 
