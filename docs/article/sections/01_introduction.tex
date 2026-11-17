@@ -13,7 +13,8 @@ When a portfolio of such projects executes simultaneously under a
 shared capital commitment, the risks compound: a performance shortfall
 on one project propagates through the shared budget to all others, and
 the decision of how much to allocate to each project at each period
-can determine whether the portfolio succeeds or fails.
+can determine whether the portfolio succeeds or fails
+\citep{Mottee2026, Uusitalo2026}.
 
 Despite this, the formal treatment of portfolio-level budget allocation
 as a sequential decision problem is largely absent from the project
@@ -21,11 +22,17 @@ portfolio management literature. Research has concentrated on the
 \emph{selection} stage --- which projects to include --- while the
 \emph{operational governance} stage --- how to manage a committed
 portfolio through to completion --- has received comparatively little
-analytical treatment \citep{Archer1999, Cooper2001, Turner2014}.
+analytical treatment \citep{Archer1999, Cooper2001, Turner2014,
+Zwikael2026, Luan2026}.
 The present work fills this gap by delivering a verified simulation
 environment that makes the problem tractable for data-driven methods
 and establishing a performance baseline that quantifies the cost of
-naive allocation.
+naive allocation. The need for such environments is consistent with
+the broader observation that AI and data-driven tools promise
+significant gains in project decision-making, yet their contribution
+to measurable project value remains limited without a well-defined
+problem structure and a performance reference \citep{Mariani2026,
+Pompei2026}.
 
 We consider a portfolio of projects, each governed by a bilateral
 contract consistent with FIDIC forms \citep{FIDIC2017}, executing
@@ -45,9 +52,16 @@ The present contribution operates at the portfolio governance layer
 of the three-tier project management hierarchy \citep{PMI2017}.
 Portfolio selection --- which projects to commit to --- is treated as
 an exogenous input, consistent with the two-stage governance model of
-\citet{Turner2014}. At the governance layer, the portfolio manager
+\citet{Turner2014} and the living business case governance framework
+of \citet{Zwikael2026}, in which the project owner's accountability
+shifts from approval to active monitoring and revision once a
+portfolio is committed. At the governance layer, the portfolio manager
 does not control project execution directly but allocates budget to
-each project and observes earned value outcomes. Project termination
+each project and observes earned value outcomes. This corresponds to
+what \citet{Jiang2026} term the operational governance layer, where
+structural responses to evolving uncertainty are enacted through
+resource allocation decisions rather than through direct
+re-organisation \citep{Luan2026}. Project termination
 is not a deliberate agent action but an endogenous environment
 mechanic triggered by one of two independent conditions: a hard
 deadline, which fires immediately if the episode period reaches the
