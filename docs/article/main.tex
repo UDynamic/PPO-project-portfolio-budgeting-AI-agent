@@ -245,8 +245,8 @@ RL Environment Design, Benchmarks, and Optimality Gap Analysis}}
 
 \author{
 \begin{tabular}{c}
-    \textbf{Mahriar Gharaghani}\thanks{Corresponding author: mahriargharaghani@gmail.com} \\
-    \textbf{Seyed Farid Ghannadpour} \\[6pt]
+    \textbf{Mahriar Gharaghani}\thanks{mahriar\_gharaghani@ind.iust.ac.ir} \quad
+    \textbf{Seyed Farid Ghannadpour}\thanks{Corresponding author: ghannadpour@iust.ac.ir} \\[6pt]
     \textit{Department of Industrial Engineering, Iran University of Science and Technology} \\
     \textit{Tehran, Iran}
 \end{tabular}
@@ -268,47 +268,28 @@ RL Environment Design, Benchmarks, and Optimality Gap Analysis}}
 
 \begin{abstract}
 
-  Allocating a shared capital reserve across a portfolio of simultaneously
-  executing contracted projects is a high-frequency, high-stakes decision
-  for engineering contractors. Classical approaches either assume full
-  foresight or reduce the portfolio to a single project, leaving no
-  principled tool for the sequential, multi-project setting under
-  uncertainty. This paper addresses that gap with a verified,
-  Gymnasium-compatible simulation environment designed as the learning
-  substrate for reinforcement learning agents targeting portfolio-level
-  investment decisions.
-  
-  We formalise the problem as a Markov Decision Process in which a
-  portfolio manager allocates budget fractions across $N$ concurrent
-  projects at each discrete period. The state encodes Earned Value
-  Management indicators, S-curve planned progress, milestone payment
-  lookaheads, and a per-project breach-tolerance counter. Transition
-  dynamics reproduce the full FIDIC contract cash-flow cycle---advance
-  payment and recovery, milestone gross payments with retention and
-  interest, and a two-condition termination gate---with the reward signal
-  being the $\gamma$-discounted portfolio net cash flow, accumulating to
-  an episode NPV. A full-foresight oracle bound is derived analytically
-  and verified by exhaustive enumeration over the Cartesian product of
-  per-period action sets, confirming no alternative allocation sequence
-  yields a higher cumulative discounted return.
-  
-  The environment ships with a SQLite audit ledger that records every
-  allocation, cash-flow event, and breach flag, eliminating black-box
-  opacity. Deterministic greedy heuristics and the verified
-  full-information optimum are evaluated across benchmark configurations
-  of increasing complexity. The optimality gap widens by more than an
-  order of magnitude from the simplest to the most complex configuration;
+  Project portfolio management research has focused almost exclusively on
+  project selection, leaving the operational governance problem---how to
+  allocate a shared capital reserve across concurrently executing contracted
+  projects under uncertainty---without a formal structure or principled
+  benchmarks. This paper addresses that gap. We formalise portfolio budget
+  allocation as a Markov Decision Process in which a manager distributes
+  budget fractions across $N$ concurrent FIDIC-contracted projects at each
+  discrete period, with transition dynamics encoding the full contract
+  cash-flow cycle and the reward signal being the discounted portfolio net
+  cash flow. Three greedy heuristics are evaluated against a verified
+  full-information optimum across four benchmark configurations of increasing
+  complexity. The optimality gap widens by more than an order of magnitude;
   on the hardest instance every rule-based policy yields a loss while the
-  oracle remains profitable---confirming that shared-budget coordination
-  cannot be recovered by any fixed allocation rule and establishing a
-  well-defined learning target for future RL agents.
-  
+  oracle remains profitable, confirming that shared-budget coordination cannot
+  be recovered by any fixed allocation rule and establishing a clear
+  performance target for reinforcement learning agents.
+
   \medskip
-  \noindent\textbf{Keywords:} project portfolio management; budget
-  allocation under performance uncertainty; constrained Markov decision
-  process; reinforcement learning; FIDIC contracts; earned value
-  management; Gymnasium environment; greedy baseline; optimality gap.
-  
+  \noindent\textbf{Keywords:} portfolio management; budget allocation;
+  Markov decision process; reinforcement learning; earned value management;
+  simulation.
+
   \end{abstract}
 
 \FloatBarrier
@@ -360,6 +341,51 @@ RL Environment Design, Benchmarks, and Optimality Gap Analysis}}
 \section{Conclusion}
 \label{sec:conclusion}
 \input{sections/05_conclusion.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  DECLARATION OF GENERATIVE AI USE
+% ============================================================
+
+\section*{Declaration of Generative AI and AI-Assisted Technologies
+          in the Manuscript Preparation Process}
+
+During the preparation of this work the authors used Claude Sonnet~4.6
+(Anthropic) to assist with document-wide consistency checks, cross-reference
+verification, and \LaTeX{} source debugging. Specifically, the tool was
+employed to identify and resolve internal inconsistencies across sections
+when content was revised, to verify that all labels, citations, and
+cross-references remained coherent throughout the manuscript, and to
+diagnose and correct \LaTeX{} compilation errors arising from large-scale
+formatting changes. After using this tool, the authors reviewed and edited
+all outputs as needed and take full responsibility for the content of the
+published article.
+
+\FloatBarrier
+
+% ============================================================
+%  FUNDING
+% ============================================================
+
+\section*{Funding}
+
+This work was supported by Tehran Industrial Towns Company
+(Shahrakhaye Sanati Tehran), Tehran, Iran.
+
+\FloatBarrier
+
+% ============================================================
+%  CREDIT AUTHOR STATEMENT
+% ============================================================
+
+\section*{CRediT Author Statement}
+
+\textbf{Mahriar Gharaghani:} Conceptualization, Methodology, Software,
+Formal analysis, Investigation, Data curation, Visualization,
+Writing~--~original draft.
+\textbf{Seyed Farid Ghannadpour:} Conceptualization, Supervision,
+Writing~--~review and editing.
 
 \FloatBarrier
 

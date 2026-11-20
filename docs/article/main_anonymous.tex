@@ -1,0 +1,378 @@
+\documentclass[11pt,a4paper]{article}
+
+% ============================================================
+%  PACKAGES
+% ============================================================
+
+% Encoding & fonts
+\usepackage[T1]{fontenc}
+
+% Mathematics
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+
+% Colors & tables
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{longtable}
+
+% Figures & graphics
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{rotating}
+
+% TikZ & PGF
+\usepackage{tikz}
+\usetikzlibrary{positioning, decorations.pathreplacing, shapes, arrows,
+                backgrounds, fit, patterns, shapes.geometric, arrows.meta, calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Algorithms
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Layout & formatting
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{mdframed}
+\usepackage{listings}
+\usepackage{placeins}
+\usepackage{appendix}
+
+% References & links
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{natbib}
+\usepackage{tabularx}
+
+
+% ============================================================
+%  HYPHENATION / JUSTIFICATION SETTINGS
+% ============================================================
+\usepackage{microtype}        % font expansion/kerning, smooths justification
+\usepackage[none]{hyphenat}   % completely disables automatic hyphenation
+
+% Never allow overfull lines; stretch spacing instead of breaking words
+\sloppy
+\emergencystretch=3em
+
+% ============================================================
+%  PAGE GEOMETRY
+% ============================================================
+
+\geometry{a4paper, top=3cm, bottom=3cm, left=3cm, right=3cm}
+
+% ============================================================
+%  COLORS
+% ============================================================
+
+% Category tag colors
+\definecolor{TagScheduleBg}{HTML}{EAF3DE}
+\definecolor{TagScheduleFg}{HTML}{3B6D11}
+\definecolor{TagContractBg}{HTML}{E6F1FB}
+\definecolor{TagContractFg}{HTML}{0C447C}
+\definecolor{TagCostBg}{HTML}{FAEEDA}
+\definecolor{TagCostFg}{HTML}{633806}
+\definecolor{TagPenaltyBg}{HTML}{FCEBEB}
+\definecolor{TagPenaltyFg}{HTML}{791F1F}
+\definecolor{TagTermBg}{HTML}{F0EBFA}
+\definecolor{TagTermFg}{HTML}{4B1F8C}
+\definecolor{RowAlt}{HTML}{F8F7F4}
+
+% PRISMA diagram colors
+\definecolor{prismaBlue}{RGB}{31,119,180}
+\definecolor{prismaLightBlue}{RGB}{174,214,241}
+\definecolor{prismaGreen}{RGB}{44,160,44}
+\definecolor{prismaLightGreen}{RGB}{198,239,206}
+\definecolor{prismaGray}{RGB}{127,127,127}
+\definecolor{prismaOrange}{RGB}{214,39,40}
+\definecolor{prismaLightOrange}{RGB}{255,205,210}
+
+% Literature table colors
+\definecolor{symgreen}{HTML}{1A7A4A}   % full \checkmark
+\definecolor{symamber}{HTML}{B45309}   % partial \circ
+\definecolor{symgrey}{HTML}{9CA3AF}    % not addressed --
+\definecolor{rarebg}{HTML}{EFF6FF}     % rare-column header tint
+\definecolor{headbg}{HTML}{1E3A5F}     % header row background
+\definecolor{headfg}{HTML}{FFFFFF}     % header row text
+\definecolor{pwbg}{HTML}{14532D}       % present-work row background
+\definecolor{rowodd}{HTML}{F8FAFC}     % alternating odd-row tint
+
+% ============================================================
+%  FLOW-DIAGRAM THEME (violet / orange / teal / blue / gray / red)
+% ============================================================
+
+% Named tints -- edit once here to re-tune the whole theme
+\colorlet{flowViolet}{violet!70!black}
+\colorlet{flowVioletBg}{violet!10}
+\colorlet{flowOrange}{orange!70!red}
+\colorlet{flowOrangeBg}{orange!8}
+\colorlet{flowTeal}{teal!70!black}
+\colorlet{flowTealBg}{teal!8}
+\colorlet{flowBlue}{blue!60!black}
+\colorlet{flowBlueBg}{blue!8}
+\colorlet{flowGray}{gray!60}
+\colorlet{flowGrayBg}{gray!6}
+\colorlet{flowRed}{red!55!black}
+\colorlet{flowRedBg}{red!6}
+
+% Color-only styles: combine with any shape style (rectangle, diamond, ...)
+\tikzset{
+  flowColorA/.style      = {draw=flowViolet, fill=flowVioletBg},
+  flowColorB/.style      = {draw=flowOrange, fill=flowOrangeBg},
+  flowColorC/.style       = {draw=flowTeal,  fill=flowTealBg},
+  flowColorD/.style       = {draw=flowBlue,  fill=flowBlueBg},
+  flowColorGray/.style    = {draw=flowGray,  fill=flowGrayBg},
+  flowColorReject/.style  = {draw=flowRed,   fill=flowRedBg},
+  arrowMain/.style        = {-{Latex[length=6pt]}, thick, black!70},
+  arrowReject/.style      = {-{Latex[length=6pt]}, thick, flowRed, dashed},
+}
+
+% ============================================================
+%  TIKZ STYLES
+% ============================================================
+
+\tikzset{
+  box/.style  = {draw, rectangle, rounded corners=4pt,
+                 text width=7.0cm, align=center,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=white, draw=black!70},
+  excl/.style = {draw, rectangle, rounded corners=4pt,
+                 text width=5.5cm, align=left,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=pink!25, draw=red!50!black},
+  incl/.style = {draw, rectangle, rounded corners=4pt,
+                 text width=7.0cm, align=center,
+                 minimum height=1.2cm, inner sep=7pt,
+                 fill=green!15, draw=green!60!black},
+  phase/.style= {draw, rectangle, rounded corners=4pt,
+                 text width=1.5cm, align=center,
+                 minimum height=1.2cm, inner sep=5pt,
+                 fill=blue!10, draw=blue!50!black,
+                 font=\bfseries\small},
+  arr/.style  = {->, >=stealth, thick},
+  arr2/.style = {->, >=stealth, dashed, thick},
+}
+
+% ============================================================
+%  CATEGORY TAG MACROS
+% ============================================================
+
+\newcommand{\tagschedule}{%
+  \,\colorbox{TagScheduleBg}{\textcolor{TagScheduleFg}{\scriptsize\textsf{Schedule}}}}
+\newcommand{\tagcontract}{%
+  \,\colorbox{TagContractBg}{\textcolor{TagContractFg}{\scriptsize\textsf{Contract}}}}
+\newcommand{\tagcost}{%
+  \,\colorbox{TagCostBg}{\textcolor{TagCostFg}{\scriptsize\textsf{Cost}}}}
+\newcommand{\tagpenalty}{%
+  \,\colorbox{TagPenaltyBg}{\textcolor{TagPenaltyFg}{\scriptsize\textsf{Penalty}}}}
+\newcommand{\tagterm}{%
+  \,\colorbox{TagTermBg}{\textcolor{TagTermFg}{\scriptsize\textsf{Termination}}}}
+
+% ============================================================
+%  THEOREM ENVIRONMENTS
+% ============================================================
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+% ============================================================
+%  CUSTOM COMMANDS
+% ============================================================
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\text{Var}}
+\newcommand{\Cov}{\text{Cov}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\argmax}{\operatorname{argmax}}
+\newcommand{\argmin}{\operatorname{argmin}}
+
+% ============================================================
+%  INLINE CODE & PATH STYLE
+% ============================================================
+\usepackage{tcolorbox}          % already safe to add; no conflict
+\tcbuselibrary{skins}
+
+% Light-gray highlight for inline code/paths: \code{...}
+\definecolor{inlineBg}{HTML}{F0F0F0}
+\newcommand{\code}[1]{%
+  \tcbox[on line,
+    colback=inlineBg, colframe=inlineBg,
+    boxrule=0pt, arc=2pt,
+    top=0.5pt, bottom=0.5pt, left=2pt, right=2pt,
+    fontupper=\ttfamily\footnotesize\color{black}]{#1}}
+    
+% ============================================================
+%  CODE BLOCKS  (replaces the old \lstset)
+% ============================================================
+\lstset{
+    basicstyle=\ttfamily\small\color{black},
+    backgroundcolor=\color{inlineBg},
+    frame=single,
+    framerule=0pt,
+    rulecolor=\color{inlineBg},
+    breaklines=true,
+    keepspaces=true,
+    showstringspaces=false,
+}
+
+% ============================================================
+%  HYPERREF SETUP
+% ============================================================
+
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+% ============================================================
+%  TITLE & AUTHORS
+% ============================================================
+
+\title{\textbf{Project Portfolio Budgeting as a Markov Decision Process:
+RL Environment Design, Benchmarks, and Optimality Gap Analysis}}
+
+\author{}
+
+\date{}
+
+% ============================================================
+%  DOCUMENT
+% ============================================================
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+%  ABSTRACT
+% ============================================================
+
+\begin{abstract}
+
+  Project portfolio management research has focused almost exclusively on
+  project selection, leaving the operational governance problem---how to
+  allocate a shared capital reserve across concurrently executing contracted
+  projects under uncertainty---without a formal structure or principled
+  benchmarks. This paper addresses that gap. We formalise portfolio budget
+  allocation as a Markov Decision Process in which a manager distributes
+  budget fractions across $N$ concurrent FIDIC-contracted projects at each
+  discrete period, with transition dynamics encoding the full contract
+  cash-flow cycle and the reward signal being the discounted portfolio net
+  cash flow. Three greedy heuristics are evaluated against a verified
+  full-information optimum across four benchmark configurations of increasing
+  complexity. The optimality gap widens by more than an order of magnitude;
+  on the hardest instance every rule-based policy yields a loss while the
+  oracle remains profitable, confirming that shared-budget coordination cannot
+  be recovered by any fixed allocation rule and establishing a clear
+  performance target for reinforcement learning agents.
+
+  \medskip
+  \noindent\textbf{Keywords:} portfolio management; budget allocation;
+  Markov decision process; reinforcement learning; earned value management;
+  simulation.
+
+  \end{abstract}
+
+\FloatBarrier
+
+% ============================================================
+%  INTRODUCTION
+% ============================================================
+
+\section{Introduction}
+\label{sec:introduction}
+\input{sections/01_introduction.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  LITERATURE REVIEW
+% ============================================================
+
+\section{Literature Review}
+\label{sec:literature}
+\input{sections/02_literature.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  PROBLEM FORMULATION
+% ============================================================
+
+\section{Problem Formulation}
+\label{sec:problem}
+\input{sections/03_problem_formulation.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  EVALUATION  (uncomment when ready)
+% ============================================================
+
+\section{Evaluation}
+\label{sec:evaluation}
+\input{sections/04_evaluation.tex}
+
+\FloatBarrier
+
+% ============================================================
+%  CONCLUSION  (uncomment when ready)
+% ============================================================
+
+\section{Conclusion}
+\label{sec:conclusion}
+\input{sections/05_conclusion.tex}
+
+\FloatBarrier
+
+% [AI DECLARATION REMOVED FOR DOUBLE-BLIND REVIEW]
+
+% [FUNDING REMOVED FOR DOUBLE-BLIND REVIEW]
+
+% [CREDIT STATEMENT REMOVED FOR DOUBLE-BLIND REVIEW]
+
+% ============================================================
+%  BIBLIOGRAPHY
+% ============================================================
+
+\bibliographystyle{apalike}
+\bibliography{references}
+\clearpage
+% ============================================================
+%  APPENDIX A — PRISMA 2020 Flow Diagram
+% ============================================================
+\appendix
+\section{Appendix A : PRISMA 2020 Flow Diagram}
+\label{app:prisma}
+\input{sections/appendix_A.tex}
+\FloatBarrier
+
+% ============================================================
+%  APPENDIX B — Gymnasium Compatibility Certificate
+% ============================================================
+
+\section{Appendix B : Gymnasium Compatibility Certificate}
+\label{app:gym_certificate}
+\input{sections/appendix_B.tex}
+\FloatBarrier
+
+% ============================================================
+%  APPENDIX C — REPOSITORY ARCHITECTURE AND CONCEPT MAP 
+% ============================================================
+\section{Reopsitory Architecture and Concept Map}
+\label{app:repo_map}
+\input{sections/appendix_C.tex}
+
+\end{document}
